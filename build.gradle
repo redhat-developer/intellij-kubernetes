@@ -1,0 +1,37 @@
+plugins {
+    id "org.jetbrains.intellij"
+    id "org.jetbrains.kotlin.jvm"
+}
+
+dependencies {
+    implementation "org.jetbrains.kotlin:kotlin-gradle-plugin"
+    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8"
+    implementation "io.fabric8:kubernetes-client:4.6.3"
+    testImplementation "junit:junit:4.11"
+    testImplementation "org.jetbrains.kotlin:kotlin-test-junit"
+}
+
+configurations {
+    compile {
+        exclude group: 'org.slf4j', module: 'slf4j-api'
+    }
+    integrationTestImplementation.extendsFrom testImplementation
+    integrationTestRuntimeOnly.extendsFrom testRuntimeOnly
+}
+
+intellij {
+    version ideaVersion
+    pluginName 'org.jboss.tools.intellij.kubernetes'
+}
+
+group 'org.jboss.tools.intellij'
+version projectVersion
+
+publishPlugin {
+    token    jetBrainsToken
+    channels jetBrainsChannel
+}
+
+repositories {
+    mavenCentral()
+}
