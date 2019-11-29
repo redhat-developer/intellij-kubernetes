@@ -17,12 +17,13 @@ import com.intellij.ide.util.treeView.NodeDescriptor
 import com.intellij.ide.util.treeView.PresentableNodeDescriptor
 import com.intellij.openapi.util.IconLoader
 import io.fabric8.kubernetes.api.model.HasMetadata
+import io.fabric8.kubernetes.api.model.Namespace
 import io.fabric8.kubernetes.client.KubernetesClientException
 import io.fabric8.kubernetes.client.NamespacedKubernetesClient
 import org.jboss.tools.intellij.kubernetes.model.KubernetesResourcesModel
 
 class KubernetesTreeStructure : AbstractTreeStructure() {
-    private val root = KubernetesResourcesModel.kubeClient;
+    private val root = KubernetesResourcesModel.getClient();
 
     override fun getParentElement(element: Any?): Any? {
         return when(element) {
@@ -35,24 +36,40 @@ class KubernetesTreeStructure : AbstractTreeStructure() {
 
     override fun getChildElements(element: Any): Array<Any> {
         try {
-            if (element == root) {
-                return KubernetesResourcesModel.getNamespaces().toTypedArray();
+            return when(element) {
+                root ->
+                    KubernetesResourcesModel.getNamespaces().toTypedArray()
+                is Namespace ->
+                    KubernetesResourcesModel.getPods(element.metadata.name).toTypedArray()
+                else ->
+                    emptyArray()
             }
-            return emptyArray();
         } catch(e: KubernetesClientException) {
-            return arrayOf(e);
+            return arrayOf(e)
         }
     }
 
     override fun commit() {
     }
 
-    override fun getRootElement(): Any {
+    override fun getRootElement(): Any? {
         return root;
     }
 
     override fun hasSomethingToCommit(): Boolean {
         return false;
+    }
+
+    override fun isToBuildChildrenInBackground(element: Any?): Boolean {
+        return true
+    }
+
+    override fun isValid(element: Any?): Boolean {
+        return true
+    }
+
+    override fun isAlwaysLeaf(element: Any?): Boolean {
+        return false
     }
 
     override fun createDescriptor(element: Any, parentDescriptor: NodeDescriptor<*>?): NodeDescriptor<*> {
@@ -81,7 +98,7 @@ class KubernetesTreeStructure : AbstractTreeStructure() {
     class ErrorNode(element: java.lang.Exception): KubernetesNode(element, null) {
 
         override fun update(presentation: PresentationData?) {
-            presentation?.presentableText = (element as java.lang.Exception).message;
+            presentation?.presentableText = "Error: " + (element as java.lang.Exception).message;
             presentation?.setIcon(AllIcons.General.BalloonError)
         }
     }

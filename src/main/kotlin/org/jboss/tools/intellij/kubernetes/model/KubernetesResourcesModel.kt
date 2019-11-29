@@ -11,23 +11,29 @@
 package org.jboss.tools.intellij.kubernetes.model
 
 import io.fabric8.kubernetes.api.model.Namespace
+import io.fabric8.kubernetes.api.model.Pod
 import io.fabric8.kubernetes.client.ConfigBuilder
 import io.fabric8.kubernetes.client.DefaultKubernetesClient
 import io.fabric8.kubernetes.client.NamespacedKubernetesClient
 
 object KubernetesResourcesModel {
 
-    val kubeClient: NamespacedKubernetesClient = DefaultKubernetesClient(ConfigBuilder().build())
-    private var namespaces: MutableCollection<Namespace> = mutableListOf()
+    private val cluster = Cluster(createClient())
+
+    fun getClient(): NamespacedKubernetesClient {
+        return cluster.client
+    }
 
     fun getNamespaces(): List<Namespace> {
-        if (namespaces.isEmpty()) {
-            namespaces.addAll(kubeClient.namespaces().list().items)
-        }
-        return namespaces.toList();
+        return cluster.getNamespaces();
     }
 
-    fun refresh() {
-
+    fun getPods(namespace: String): List<Pod> {
+        return cluster.getPods(namespace)
     }
+
+    private fun createClient(): NamespacedKubernetesClient {
+        return DefaultKubernetesClient(ConfigBuilder().build());
+    }
+
 }
