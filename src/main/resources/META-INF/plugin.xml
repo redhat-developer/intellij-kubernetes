@@ -18,6 +18,10 @@
   <actions>
       <group id="org.jboss.tools.intellij.kubernetes.tree" popup="true">
       <!-- Application Explorer -->
+          <!-- Application Explorer -->
+          <action class="org.jboss.tools.intellij.kubernetes.actions.RefreshAction"
+                  id="org.jboss.tools.intellij.kubernetes.actions.Refresh"
+                  text="Refresh" />
       </group>
   </actions>
 

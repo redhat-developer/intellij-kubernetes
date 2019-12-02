@@ -21,13 +21,13 @@ import com.intellij.ui.content.ContentFactory
 import com.intellij.ui.tree.AsyncTreeModel
 import com.intellij.ui.tree.StructureTreeModel
 import com.intellij.ui.treeStructure.Tree
+import org.jboss.tools.intellij.kubernetes.tree.KubernetesTreeModel
 import org.jboss.tools.intellij.kubernetes.tree.KubernetesTreeStructure
 
 class KubernetesToolWindowFactory: ToolWindowFactory {
 
     override fun createToolWindowContent(project: Project, toolWindow: ToolWindow) {
-
-        val model = StructureTreeModel(false);
+        val model = KubernetesTreeModel();
         model.setStructure(KubernetesTreeStructure())
         val tree = Tree(AsyncTreeModel(model))
         tree.cellRenderer = NodeRenderer();

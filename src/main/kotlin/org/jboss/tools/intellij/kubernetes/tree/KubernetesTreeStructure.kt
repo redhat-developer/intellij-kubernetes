@@ -64,10 +64,6 @@ class KubernetesTreeStructure : AbstractTreeStructure() {
         return true
     }
 
-    override fun isValid(element: Any?): Boolean {
-        return true
-    }
-
     override fun isAlwaysLeaf(element: Any?): Boolean {
         return false
     }
@@ -105,14 +101,14 @@ class KubernetesTreeStructure : AbstractTreeStructure() {
 
     open class KubernetesNode(element: Any, parentNode: NodeDescriptor<*>?): PresentableNodeDescriptor<Any>(null, parentNode) {
 
+        private val element = element;
+
         override fun update(presentation: PresentationData?) {
             presentation?.presentableText = element.toString();
         }
-
-        private val element = element;
-
         override fun getElement(): Any {
             return element;
         }
+
     }
 }

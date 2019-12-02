@@ -18,7 +18,18 @@ import io.fabric8.kubernetes.client.NamespacedKubernetesClient
 
 object KubernetesResourcesModel {
 
-    private val cluster = Cluster(createClient())
+    interface ResourcesChangedListener {
+        fun removed(removed: List<Any>)
+        fun added(removed: List<Any>)
+        fun modified(removed: List<Any>)
+    }
+
+    private var cluster = createCluster()
+    private var listeners = mutableListOf<ResourcesChangedListener>()
+
+    private fun createCluster(): Cluster {
+        return Cluster(DefaultKubernetesClient(ConfigBuilder().build()))
+    }
 
     fun getClient(): NamespacedKubernetesClient {
         return cluster.client
@@ -32,8 +43,21 @@ object KubernetesResourcesModel {
         return cluster.getPods(namespace)
     }
 
-    private fun createClient(): NamespacedKubernetesClient {
-        return DefaultKubernetesClient(ConfigBuilder().build());
+    fun addListener(listener: ResourcesChangedListener) {
+        listeners.add(listener)
     }
 
+    private fun fireRemoved(removed: List<Any>) {
+        listeners.forEach{listener -> listener.removed(removed)}
+    }
+
+    private fun fireAdded(added: List<Any>) {
+        listeners.forEach{listener -> listener.added(added)}
+    }
+
+    fun refresh() {
+        val oldClient = cluster.client
+        cluster = createCluster()
+        fireRemoved(listOf(oldClient))
+    }
 }
