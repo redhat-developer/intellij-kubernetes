@@ -2,10 +2,11 @@ package org.jboss.tools.intellij.kubernetes.model
 
 import io.fabric8.kubernetes.api.model.Namespace
 import io.fabric8.kubernetes.api.model.Pod
-import io.fabric8.kubernetes.client.NamespacedKubernetesClient
+import io.fabric8.kubernetes.client.ConfigBuilder
+import io.fabric8.kubernetes.client.DefaultKubernetesClient
 import java.util.stream.Collectors
 
-class Cluster(val client: NamespacedKubernetesClient) {
+class Cluster(val client: DefaultKubernetesClient = DefaultKubernetesClient(ConfigBuilder().build())) {
 
     private var namespaceProviders: MutableList<NamespaceProvider> = mutableListOf()
         get() {
@@ -22,12 +23,8 @@ class Cluster(val client: NamespacedKubernetesClient) {
     }
 
     fun getPods(name: String): List<Pod> {
-        val namespace = getNamespaceProvider(name)
-        if (namespace == null) {
-            return emptyList<Pod>()
-        } else {
-            return namespace.getChildren(PodsProvider.KIND);
-        }
+        val provider = getNamespaceProvider(name)
+        return provider?.getChildren(PodsProvider.KIND) ?: emptyList()
     }
 
     private fun getNamespaceProvider(name: String): NamespaceProvider? {

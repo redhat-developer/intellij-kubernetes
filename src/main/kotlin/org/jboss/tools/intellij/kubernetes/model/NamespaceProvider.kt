@@ -10,9 +10,6 @@ class NamespaceProvider(private val client: NamespacedKubernetesClient, val name
 
     fun <T> getChildren(kind: Class<T>): List<T> {
         val provider: ResourceKindProvider? = children.find { provider -> kind == provider.kind }
-        if (provider == null) {
-            return emptyList()
-        }
-        return provider.resources as List<T>
+        return provider?.resources as? List<T> ?: emptyList()
     }
 }

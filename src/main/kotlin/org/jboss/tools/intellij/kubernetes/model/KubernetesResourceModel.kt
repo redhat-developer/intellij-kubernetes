@@ -10,25 +10,22 @@
  ******************************************************************************/
 package org.jboss.tools.intellij.kubernetes.model
 
+import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.Namespace
 import io.fabric8.kubernetes.api.model.Pod
-import io.fabric8.kubernetes.client.ConfigBuilder
-import io.fabric8.kubernetes.client.DefaultKubernetesClient
 import io.fabric8.kubernetes.client.NamespacedKubernetesClient
 
-object KubernetesResourcesModel {
-
-    interface ResourcesChangedListener {
-        fun removed(removed: List<Any>)
-        fun added(removed: List<Any>)
-        fun modified(removed: List<Any>)
-    }
+object KubernetesResourceModel {
 
     private var cluster = createCluster()
-    private var listeners = mutableListOf<ResourcesChangedListener>()
+    private val observable = ResourceChangedObservableImpl();
 
     private fun createCluster(): Cluster {
-        return Cluster(DefaultKubernetesClient(ConfigBuilder().build()))
+        return Cluster()
+    }
+
+    fun addListener(listener: ResourceChangedObservableImpl.ResourcesChangedListener) {
+        observable.addListener(listener);
     }
 
     fun getClient(): NamespacedKubernetesClient {
@@ -43,21 +40,25 @@ object KubernetesResourcesModel {
         return cluster.getPods(namespace)
     }
 
-    fun addListener(listener: ResourcesChangedListener) {
-        listeners.add(listener)
-    }
-
-    private fun fireRemoved(removed: List<Any>) {
-        listeners.forEach{listener -> listener.removed(removed)}
-    }
-
-    private fun fireAdded(added: List<Any>) {
-        listeners.forEach{listener -> listener.added(added)}
-    }
-
     fun refresh() {
-        val oldClient = cluster.client
+        refresh(null)
+    }
+
+    fun refresh(resource: Any?) {
+        when(resource) {
+            is NamespacedKubernetesClient -> refreshRoot()
+            is HasMetadata -> refreshResource(resource)
+        }
+    }
+
+    private fun refreshRoot() {
+        val client = cluster.client
         cluster = createCluster()
-        fireRemoved(listOf(oldClient))
+        observable.fireModified(listOf(client))
+    }
+
+    private fun refreshResource(resource: HasMetadata) {
+
+        observable.fireModified(listOf(resource))
     }
 }
