@@ -7,12 +7,12 @@ import io.fabric8.kubernetes.client.NamespacedKubernetesClient
 class PodsProvider(private val client: NamespacedKubernetesClient, private val namespace: Namespace): ResourceKindProvider {
 
     companion object {
-        @JvmField val KIND = Pod::class.java;
+        val KIND = Pod::class.java;
     }
 
     override val kind = KIND
 
-    override val resources: MutableList<Pod> = mutableListOf<Pod>()
+    override val resources: MutableList<Pod> = mutableListOf()
         get() {
             if (field.isEmpty()) {
                 val pods = client.pods().inNamespace(namespace.metadata.name).list().items

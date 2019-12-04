@@ -23,7 +23,7 @@ import io.fabric8.kubernetes.client.NamespacedKubernetesClient
 import org.jboss.tools.intellij.kubernetes.model.KubernetesResourceModel
 
 class KubernetesTreeStructure : AbstractTreeStructure() {
-    private val root = KubernetesResourceModel.getClient();
+    private val root = KubernetesResourceModel.getCluster();
 
     override fun getParentElement(element: Any?): Any? {
         return when(element) {

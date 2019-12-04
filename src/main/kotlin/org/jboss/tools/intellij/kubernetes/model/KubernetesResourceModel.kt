@@ -28,16 +28,16 @@ object KubernetesResourceModel {
         observable.addListener(listener);
     }
 
-    fun getClient(): NamespacedKubernetesClient {
+    fun getCluster(): NamespacedKubernetesClient {
         return cluster.client
     }
 
     fun getNamespaces(): List<Namespace> {
-        return cluster.getNamespaces();
+        return cluster.getAllNamespaces();
     }
 
     fun getPods(namespace: String): List<Pod> {
-        return cluster.getPods(namespace)
+        return cluster.getNamespaceProvider(namespace)?.getPods() ?: emptyList()
     }
 
     fun refresh() {

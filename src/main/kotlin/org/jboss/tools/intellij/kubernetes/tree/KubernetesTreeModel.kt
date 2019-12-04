@@ -72,7 +72,7 @@ class KubernetesTreeModel: StructureTreeModel(true) {
 
     /*
      * using treewalker
-     * 
+     *
         private fun invalidate(element: HasMetadata, consumer: Consumer<DefaultMutableTreeNode>) {
         invoker.invokeLater {
             val visitor: TreeVisitor = object: ByComponent<HasMetadata, DefaultMutableTreeNode>(element, DefaultMutableTreeNode::class.java) {
