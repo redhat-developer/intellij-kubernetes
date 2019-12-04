@@ -14,5 +14,8 @@ import io.fabric8.kubernetes.api.model.HasMetadata
 
 interface ResourceKindProvider {
     val kind: Class<out HasMetadata>
-    val resources: List<HasMetadata>
+    val allResources: List<HasMetadata>
+    fun hasResource(resource: HasMetadata): Boolean
+    fun clear(resource: HasMetadata)
+    fun clear()
 }

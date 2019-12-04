@@ -33,7 +33,12 @@ class Cluster(val client: DefaultKubernetesClient = DefaultKubernetesClient(Conf
     }
 
     fun getNamespaceProvider(name: String): NamespaceProvider? {
-        return namespaceProviders.find { nsResource -> name == nsResource.namespace.metadata.name }
+        return namespaceProviders.find { provider -> name == provider.namespace.metadata.name }
+    }
+
+    fun clearNamespaceProvider(resource: HasMetadata) {
+        namespaceProviders.find { it.hasResource(resource) }
+            ?.clear(resource)
     }
 
     private fun loadAllNameSpaces(): Sequence<HasMetadata> {

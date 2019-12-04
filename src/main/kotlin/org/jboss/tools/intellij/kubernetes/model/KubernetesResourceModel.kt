@@ -39,10 +39,6 @@ object KubernetesResourceModel {
         return cluster.getNamespaceProvider(namespace)?.getPods() ?: emptyList()
     }
 
-    fun refresh() {
-        refresh(null)
-    }
-
     fun refresh(resource: Any?) {
         when(resource) {
             is NamespacedKubernetesClient -> refreshRoot()
@@ -51,10 +47,12 @@ object KubernetesResourceModel {
     }
 
     private fun refreshRoot() {
+        cluster = createCluster()
         observable.fireModified(listOf(cluster.client))
     }
 
     private fun refreshResource(resource: HasMetadata) {
+        cluster.clearNamespaceProvider(resource)
         observable.fireModified(listOf(resource))
     }
 }

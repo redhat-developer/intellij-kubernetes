@@ -22,12 +22,32 @@ class PodsProvider(private val client: NamespacedKubernetesClient, private val n
 
     override val kind = KIND
 
-    override val resources: MutableList<Pod> = mutableListOf()
+    override val allResources: MutableList<Pod> = mutableListOf()
         get() {
             if (field.isEmpty()) {
-                val pods = client.pods().inNamespace(namespace.metadata.name).list().items
+                val pods = getAllPods()
                 field.addAll(pods)
             }
             return field
         }
+
+    override fun hasResource(resource: HasMetadata): Boolean {
+        return allResources.contains(resource)
+    }
+
+    override fun clear(resource: HasMetadata) {
+        if (resource !is Pod) {
+            return
+        }
+        allResources.remove(resource)
+        allResources.add(getPod(resource.metadata.name))
+    }
+
+    override fun clear() {
+        allResources.clear()
+    }
+
+    private fun getAllPods() = client.pods().inNamespace(namespace.metadata.name).list().items
+    private fun getPod(name: String) = client.pods().inNamespace(namespace.metadata.name).withName(name).get()
+
 }
