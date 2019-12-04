@@ -6,7 +6,8 @@ plugins {
 dependencies {
     implementation "org.jetbrains.kotlin:kotlin-gradle-plugin"
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8"
-    implementation "io.fabric8:kubernetes-client:4.6.3"
+    implementation "io.fabric8:kubernetes-client:4.6.4"
+    implementation "io.fabric8:openshift-client:4.6.4"
     testImplementation "junit:junit:4.11"
     testImplementation "org.jetbrains.kotlin:kotlin-test-junit"
 }

@@ -11,7 +11,6 @@
 package org.jboss.tools.intellij.kubernetes.model
 
 import io.fabric8.kubernetes.api.model.HasMetadata
-import io.fabric8.kubernetes.api.model.Namespace
 import io.fabric8.kubernetes.api.model.Pod
 import io.fabric8.kubernetes.client.NamespacedKubernetesClient
 
@@ -32,7 +31,7 @@ object KubernetesResourceModel {
         return cluster.client
     }
 
-    fun getNamespaces(): List<Namespace> {
+    fun getNamespaces(): List<HasMetadata> {
         return cluster.getAllNamespaces();
     }
 
@@ -52,13 +51,10 @@ object KubernetesResourceModel {
     }
 
     private fun refreshRoot() {
-        val client = cluster.client
-        cluster = createCluster()
-        observable.fireModified(listOf(client))
+        observable.fireModified(listOf(cluster.client))
     }
 
     private fun refreshResource(resource: HasMetadata) {
-
         observable.fireModified(listOf(resource))
     }
 }

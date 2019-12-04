@@ -8,6 +8,16 @@
  * Contributors:
  * Red Hat, Inc. - initial API and implementation
  ******************************************************************************/
+/*******************************************************************************
+ * Copyright (c) 2019 Red Hat, Inc.
+ * Distributed under license by Red Hat, Inc. All rights reserved.
+ * This program is made available under the terms of the
+ * Eclipse Public License v2.0 which accompanies this distribution,
+ * and is available at http://www.eclipse.org/legal/epl-v20.html
+ *
+ * Contributors:
+ * Red Hat, Inc. - initial API and implementation
+ ******************************************************************************/
 package org.jboss.tools.intellij.kubernetes.actions
 
 import com.intellij.icons.AllIcons.Actions.Refresh
@@ -23,7 +33,7 @@ class RefreshAction: AnAction(Refresh) {
 
     override fun actionPerformed(event: AnActionEvent?) {
         val tree: Tree = getTree(event)
-        val selectedNode = tree?.selectionModel?.selectionPath?.lastPathComponent
+        val selectedNode = tree.selectionModel.selectionPath?.lastPathComponent
         val modelObject = getDescriptorElement(selectedNode)
         KubernetesResourceModel.refresh(modelObject)
     }
@@ -36,7 +46,7 @@ class RefreshAction: AnAction(Refresh) {
         if (node !is DefaultMutableTreeNode) {
             return null
         }
-        return ((node as DefaultMutableTreeNode).userObject as NodeDescriptor<*>).element
+        return (node.userObject as NodeDescriptor<*>).element
     }
 
 }

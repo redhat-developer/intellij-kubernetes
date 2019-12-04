@@ -18,7 +18,6 @@ import com.intellij.ide.util.treeView.PresentableNodeDescriptor
 import com.intellij.openapi.util.IconLoader
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.Namespace
-import io.fabric8.kubernetes.client.KubernetesClientException
 import io.fabric8.kubernetes.client.NamespacedKubernetesClient
 import org.jboss.tools.intellij.kubernetes.model.KubernetesResourceModel
 
@@ -44,7 +43,7 @@ class KubernetesTreeStructure : AbstractTreeStructure() {
                 else ->
                     emptyArray()
             }
-        } catch(e: KubernetesClientException) {
+        } catch(e: RuntimeException) {
             return arrayOf(e)
         }
     }
