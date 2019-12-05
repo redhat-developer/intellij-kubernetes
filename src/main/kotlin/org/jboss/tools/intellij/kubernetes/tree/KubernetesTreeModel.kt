@@ -37,20 +37,22 @@ class KubernetesTreeModel: StructureTreeModel(true) {
     }
 
     private fun invalidate(element: Any) {
-        invoker.invokeLater {
+        invoker.invokeLaterIfNeeded {
             val path = getTreePath(element)
-            if (path != null) {
-                invalidate(path, true)
+            if (path?.lastPathComponent == root) {
+                // invalidate root
+                invalidate({})
             }
+            invalidate(path, true)
         }
     }
 
-    private fun getTreePath(element: Any): TreePath? {
+    private fun getTreePath(element: Any): TreePath {
         return when (element) {
             is NamespacedKubernetesClient
                 -> TreePath(root)
             is HasMetadata
-                -> findTreePath(element, root as DefaultMutableTreeNode)
+                -> findTreePath(element, root as DefaultMutableTreeNode) ?: TreePath(root)
             else
                 -> TreePath(root)
         }
@@ -64,7 +66,7 @@ class KubernetesTreeModel: StructureTreeModel(true) {
             if (child !is DefaultMutableTreeNode) {
                 continue
             }
-            if (isElementNode(child, element)) {
+            if (hasElement(element, child)) {
                 return TreePath(child.path);
             }
             val path = findTreePath(element, child as? DefaultMutableTreeNode);
@@ -75,7 +77,7 @@ class KubernetesTreeModel: StructureTreeModel(true) {
         return null;
     }
 
-    private fun isElementNode(node: DefaultMutableTreeNode, element: Any?): Boolean {
+    private fun hasElement( element: Any?, node: DefaultMutableTreeNode): Boolean {
         val descriptor = node.userObject as? NodeDescriptor<*>
         return descriptor?.element == element
     }

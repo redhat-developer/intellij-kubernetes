@@ -22,11 +22,9 @@ import io.fabric8.kubernetes.client.NamespacedKubernetesClient
 import org.jboss.tools.intellij.kubernetes.model.KubernetesResourceModel
 
 class KubernetesTreeStructure : AbstractTreeStructure() {
-    private val root = KubernetesResourceModel.getCluster();
-
     override fun getParentElement(element: Any?): Any? {
         return when(element) {
-            element === root -> null
+            element == rootElement -> null
             element is NodeDescriptor<*> -> (element as NodeDescriptor<*>).parentDescriptor;
             element is HasMetadata -> (element as HasMetadata).metadata.namespace;
             else -> null;
@@ -36,7 +34,7 @@ class KubernetesTreeStructure : AbstractTreeStructure() {
     override fun getChildElements(element: Any): Array<Any> {
         try {
             return when(element) {
-                root ->
+                rootElement ->
                     KubernetesResourceModel.getNamespaces().toTypedArray()
                 is Namespace ->
                     KubernetesResourceModel.getPods(element.metadata.name).toTypedArray()
@@ -48,16 +46,11 @@ class KubernetesTreeStructure : AbstractTreeStructure() {
         }
     }
 
-    override fun commit() {
-    }
+    override fun commit() = Unit
 
-    override fun getRootElement(): Any? {
-        return root;
-    }
+    override fun getRootElement() = KubernetesResourceModel.getCluster()
 
-    override fun hasSomethingToCommit(): Boolean {
-        return false;
-    }
+    override fun hasSomethingToCommit() = false
 
     override fun isToBuildChildrenInBackground(element: Any?): Boolean {
         return true

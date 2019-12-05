@@ -18,7 +18,7 @@ import io.fabric8.openshift.client.OpenShiftClient
 
 class Cluster(val client: DefaultKubernetesClient = DefaultKubernetesClient(ConfigBuilder().build())) {
 
-    private var namespaceProviders: MutableList<NamespaceProvider> = mutableListOf()
+    private val namespaceProviders: MutableList<NamespaceProvider> = mutableListOf()
         get() {
             if (field.isEmpty()) {
                 field.addAll(
