@@ -39,7 +39,7 @@ class KubernetesTreeModel: StructureTreeModel(true) {
     private fun invalidate(element: Any) {
         invoker.invokeLaterIfNeeded {
             val path = getTreePath(element)
-            if (path?.lastPathComponent == root) {
+            if (path.lastPathComponent == root) {
                 // invalidate root
                 invalidate({})
             }
