@@ -11,16 +11,14 @@
 package org.jboss.tools.intellij.kubernetes.model
 
 import io.fabric8.kubernetes.api.model.HasMetadata
+import io.fabric8.kubernetes.api.model.Namespace
 import io.fabric8.kubernetes.api.model.Pod
 import io.fabric8.kubernetes.client.NamespacedKubernetesClient
 
-class NamespaceProvider(private val client: NamespacedKubernetesClient, val namespace: HasMetadata) {
+class NamespaceProvider(private val client: NamespacedKubernetesClient, val namespace: Namespace) {
 
-    private val kindProviders: List<ResourceKindProvider> = mutableListOf(PodsProvider(client, namespace))
-
-    fun getName(): String {
-        return namespace.metadata.name
-    }
+    private val kindProviders: MutableMap<Class<*>, ResourceKindProvider> =
+        mutableMapOf(Pair(PodsProvider.KIND, PodsProvider(client, namespace)))
 
     fun getPods(): List<Pod> {
         return getResources(PodsProvider.KIND)
@@ -30,26 +28,26 @@ class NamespaceProvider(private val client: NamespacedKubernetesClient, val name
         if (namespace == resource) {
             return true
         }
-        return kindProviders.stream()
+        return kindProviders.values.stream()
             .anyMatch{ it.hasResource(resource) }
     }
 
     fun clear(resource: HasMetadata) {
-        kindProviders.find { it.hasResource(resource) }
+        kindProviders.values.find { it.hasResource(resource) }
             ?.clear(resource)
     }
 
     fun clear(kind: Class<HasMetadata>) {
-        kindProviders.find { kind == it.kind }
+        kindProviders.values.find { kind == it.kind }
             ?.clear()
     }
 
     fun clear() {
-        kindProviders.forEach{ it.clear() }
+        kindProviders.forEach{ it.value.clear() }
     }
 
     private fun <T> getResources(kind: Class<T>): List<T> {
-        val provider: ResourceKindProvider? = kindProviders.find { kind == it.kind }
+        val provider: ResourceKindProvider? = kindProviders.values.find { kind == it.kind }
         return (provider?.allResources as? List<T>) ?: emptyList()
     }
 }

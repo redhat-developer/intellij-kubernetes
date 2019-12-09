@@ -11,7 +11,7 @@
 package org.jboss.tools.intellij.kubernetes.model
 
 interface ResourceChangeObservable {
-    fun addListener(listener: ResourceChangedObservableImpl.ResourcesChangedListener)
+    fun addListener(listener: ResourceChangedObservableImpl.ResourceChangeListener)
     fun fireRemoved(removed: List<Any>)
     fun fireAdded(added: List<Any>)
     fun fireModified(removed: List<Any>)
@@ -19,15 +19,21 @@ interface ResourceChangeObservable {
 
 open class ResourceChangedObservableImpl: ResourceChangeObservable {
 
-    interface ResourcesChangedListener {
+    interface ResourceChangeListener {
         fun removed(removed: List<Any>)
         fun added(removed: List<Any>)
-        fun modified(removed: List<Any>)
+        fun modified(modified: List<Any>)
     }
 
-    private var listeners = mutableListOf<ResourcesChangedListener>()
+    open class ResourceChangeAdapter: ResourceChangeListener {
+        override fun removed(removed: List<Any>) = Unit
+        override fun added(removed: List<Any>) = Unit
+        override fun modified(modified: List<Any>) = Unit
+    }
 
-    override fun addListener(listener: ResourcesChangedListener) {
+    private var listeners = mutableListOf<ResourceChangeListener>()
+
+    override fun addListener(listener: ResourceChangeListener) {
         listeners.add(listener)
     }
 

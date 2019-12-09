@@ -14,7 +14,8 @@ import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.Pod
 import io.fabric8.kubernetes.client.NamespacedKubernetesClient
 
-class PodsProvider(private val client: NamespacedKubernetesClient, private val namespace: HasMetadata): ResourceKindProvider {
+class PodsProvider(private val client: NamespacedKubernetesClient, private val namespace: HasMetadata)
+    : ResourceKindProvider {
 
     companion object {
         val KIND = Pod::class.java;
@@ -48,6 +49,7 @@ class PodsProvider(private val client: NamespacedKubernetesClient, private val n
     }
 
     private fun getAllPods() = client.pods().inNamespace(namespace.metadata.name).list().items
+
     private fun getPod(name: String) = client.pods().inNamespace(namespace.metadata.name).withName(name).get()
 
 }

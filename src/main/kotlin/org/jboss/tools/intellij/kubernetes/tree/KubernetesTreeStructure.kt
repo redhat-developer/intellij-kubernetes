@@ -25,7 +25,6 @@ class KubernetesTreeStructure : AbstractTreeStructure() {
     override fun getParentElement(element: Any?): Any? {
         return when(element) {
             element == rootElement -> null
-            element is NodeDescriptor<*> -> (element as NodeDescriptor<*>).parentDescriptor;
             element is HasMetadata -> (element as HasMetadata).metadata.namespace;
             else -> null;
         }
@@ -35,20 +34,20 @@ class KubernetesTreeStructure : AbstractTreeStructure() {
         try {
             return when(element) {
                 rootElement ->
-                    KubernetesResourceModel.getNamespaces().toTypedArray()
+                    KubernetesResourceModel.getAllNamespaces().toTypedArray()
                 is Namespace ->
                     KubernetesResourceModel.getPods(element.metadata.name).toTypedArray()
                 else ->
                     emptyArray()
             }
         } catch(e: RuntimeException) {
-            return arrayOf(e)
+            return arrayOf(ErrorNode(e))
         }
     }
 
     override fun commit() = Unit
 
-    override fun getRootElement() = KubernetesResourceModel.getCluster()
+    override fun getRootElement() = KubernetesResourceModel.getClient()
 
     override fun hasSomethingToCommit() = false
 
@@ -63,27 +62,35 @@ class KubernetesTreeStructure : AbstractTreeStructure() {
     override fun createDescriptor(element: Any, parentDescriptor: NodeDescriptor<*>?): NodeDescriptor<*> {
         return when(element) {
             is NamespacedKubernetesClient -> ClusterNode(element)
-            is HasMetadata -> HasMetaDataNode(element)
+            is Namespace -> NamespaceNode(element)
+            is HasMetadata -> HasMetadataNode(element)
             is Exception -> ErrorNode(element)
-            else -> KubernetesNode(element, parentDescriptor);
+            else -> ResourceNode(element, parentDescriptor);
         }
     }
 
-    class ClusterNode(element: NamespacedKubernetesClient): KubernetesNode(element, null) {
+    class ClusterNode(element: NamespacedKubernetesClient): ResourceNode(element, null) {
         override fun update(presentation: PresentationData?) {
             presentation?.presentableText = (element as NamespacedKubernetesClient).masterUrl.toString()
             presentation?.setIcon(IconLoader.getIcon("/icons/kubernetes-cluster.svg"))
         }
     }
 
-    class HasMetaDataNode(element: HasMetadata): KubernetesNode(element, null) {
+    class NamespaceNode(element: Namespace): ResourceNode(element, null) {
         override fun update(presentation: PresentationData?) {
-            presentation?.presentableText = ((element as HasMetadata).metadata.name);
+            presentation?.presentableText = ((element as Namespace).metadata.name);
             presentation?.setIcon(IconLoader.getIcon("/icons/project.png"))
         }
     }
 
-    class ErrorNode(element: java.lang.Exception): KubernetesNode(element, null) {
+    class HasMetadataNode(element: HasMetadata): ResourceNode(element, null) {
+        override fun update(presentation: PresentationData?) {
+            presentation?.presentableText = (element as HasMetadata).metadata.name;
+            presentation?.setIcon(IconLoader.getIcon("/icons/project.png"))
+        }
+    }
+
+    class ErrorNode(element: java.lang.Exception): ResourceNode(element, null) {
 
         override fun update(presentation: PresentationData?) {
             presentation?.presentableText = "Error: " + (element as java.lang.Exception).message;
@@ -91,7 +98,7 @@ class KubernetesTreeStructure : AbstractTreeStructure() {
         }
     }
 
-    open class KubernetesNode(element: Any, parentNode: NodeDescriptor<*>?): PresentableNodeDescriptor<Any>(null, parentNode) {
+    open class ResourceNode(element: Any, parentNode: NodeDescriptor<*>?): PresentableNodeDescriptor<Any>(null, parentNode) {
 
         private val element = element;
 

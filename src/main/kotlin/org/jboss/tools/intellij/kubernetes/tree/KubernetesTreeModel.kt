@@ -21,15 +21,15 @@ import javax.swing.tree.TreePath
 
 class KubernetesTreeModel: StructureTreeModel(true) {
     init {
-        KubernetesResourceModel.addListener(object: ResourceChangedObservableImpl.ResourcesChangedListener {
+        KubernetesResourceModel.addListener(object: ResourceChangedObservableImpl.ResourceChangeListener {
             override fun removed(removed: List<Any>) {
             }
 
             override fun added(removed: List<Any>) {
             }
 
-            override fun modified(removed: List<Any>) {
-                removed.forEach {
+            override fun modified(modified: List<Any>) {
+                modified.forEach {
                     invalidate(it)
                 };
             }

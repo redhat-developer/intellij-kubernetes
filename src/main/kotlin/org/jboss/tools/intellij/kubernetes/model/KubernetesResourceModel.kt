@@ -11,28 +11,33 @@
 package org.jboss.tools.intellij.kubernetes.model
 
 import io.fabric8.kubernetes.api.model.HasMetadata
+import io.fabric8.kubernetes.api.model.Namespace
 import io.fabric8.kubernetes.api.model.Pod
 import io.fabric8.kubernetes.client.NamespacedKubernetesClient
+import java.util.function.Consumer
 
 object KubernetesResourceModel {
 
+    private val watch = KubernetesResourceWatch(AddResource())
     private var cluster = createCluster()
-    private val observable = ResourceChangedObservableImpl();
+    private val observable = ResourceChangedObservableImpl()
 
     private fun createCluster(): Cluster {
-        return Cluster()
+        val cluster = Cluster()
+        watch.start(cluster.client)
+        return cluster;
     }
 
-    fun addListener(listener: ResourceChangedObservableImpl.ResourcesChangedListener) {
+    fun addListener(listener: ResourceChangedObservableImpl.ResourceChangeListener) {
         observable.addListener(listener);
     }
 
-    fun getCluster(): NamespacedKubernetesClient {
+    fun getClient(): NamespacedKubernetesClient {
         return cluster.client
     }
 
-    fun getNamespaces(): List<HasMetadata> {
-        return cluster.getAllNamespaces();
+    fun getAllNamespaces(): List<Namespace> {
+        return cluster.getAllNamespaces()
     }
 
     fun getPods(namespace: String): List<Pod> {
@@ -41,18 +46,38 @@ object KubernetesResourceModel {
 
     fun refresh(resource: Any?) {
         when(resource) {
-            is NamespacedKubernetesClient -> refreshRoot()
-            is HasMetadata -> refreshResource(resource)
+            is NamespacedKubernetesClient -> refresh()
+            is Namespace -> refresh(resource)
+            is HasMetadata -> refresh(resource)
         }
     }
 
-    private fun refreshRoot() {
+    private fun refresh() {
+        cluster.client.close()
         cluster = createCluster()
         observable.fireModified(listOf(cluster.client))
     }
 
-    private fun refreshResource(resource: HasMetadata) {
+    private fun refresh(resource: Namespace) {
         cluster.clearNamespaceProvider(resource)
         observable.fireModified(listOf(resource))
+    }
+
+    fun add(resource: HasMetadata) {
+        when(resource) {
+            is Namespace -> add(resource as Namespace)
+        }
+    }
+
+    private fun add(namespace: Namespace) {
+        if (cluster.add(namespace)) {
+            observable.fireModified(listOf(cluster.client))
+        }
+    }
+
+    class AddResource: Consumer<HasMetadata> {
+        override fun accept(resource: HasMetadata) {
+            add(resource)
+        }
     }
 }

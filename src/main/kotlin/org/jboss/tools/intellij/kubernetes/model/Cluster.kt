@@ -11,50 +11,51 @@
 package org.jboss.tools.intellij.kubernetes.model
 
 import io.fabric8.kubernetes.api.model.HasMetadata
+import io.fabric8.kubernetes.api.model.Namespace
 import io.fabric8.kubernetes.client.ConfigBuilder
 import io.fabric8.kubernetes.client.DefaultKubernetesClient
-import io.fabric8.kubernetes.client.KubernetesClientException
-import io.fabric8.openshift.client.OpenShiftClient
 
 class Cluster(val client: DefaultKubernetesClient = DefaultKubernetesClient(ConfigBuilder().build())) {
 
-    private val namespaceProviders: MutableList<NamespaceProvider> = mutableListOf()
+    private val namespaceProviders: MutableMap<String, NamespaceProvider> = mutableMapOf()
         get() {
             if (field.isEmpty()) {
-                field.addAll(
+                field.plus(
                     loadAllNameSpaces()
-                        .map { namespace: HasMetadata -> NamespaceProvider(client, namespace) })
+                        .map { namespace: Namespace ->
+                            Pair(namespace.metadata.name, NamespaceProvider(client, namespace)) })
             }
             return field
         }
 
-    fun getAllNamespaces(): List<HasMetadata> {
-        return namespaceProviders.map { provider -> provider.namespace }
+    fun getAllNamespaces(): List<Namespace> {
+        return namespaceProviders.values.map { provider -> provider.namespace }
     }
 
     fun getNamespaceProvider(name: String): NamespaceProvider? {
-        return namespaceProviders.find { provider -> name == provider.namespace.metadata.name }
+        return namespaceProviders[name]
     }
 
     fun clearNamespaceProvider(resource: HasMetadata) {
-        namespaceProviders.find { it.hasResource(resource) }
-            ?.clear(resource)
+        val entry = namespaceProviders.entries.find { it.value.hasResource(resource) }
+        namespaceProviders.remove(entry?.key)
     }
 
-    private fun loadAllNameSpaces(): Sequence<HasMetadata> {
-        var namespaces: List<HasMetadata> = emptyList()
-        try {
-            namespaces = loadKubernetesNamespaces()
-        } catch(e: KubernetesClientException) {
-            namespaces = loadOpenShiftProjects()
+    fun add(namespace: Namespace?): Boolean {
+        if (namespace == null) {
+            return false
         }
-        return namespaces.asSequence()
+        val provider = NamespaceProvider(client, namespace)
+        return namespaceProviders.putIfAbsent(namespace.metadata.name, provider) == null
     }
 
-    private fun loadKubernetesNamespaces() =
-        client.namespaces().list().items
+    private fun loadAllNameSpaces(): Sequence<Namespace> {
+        return  client.namespaces().list().items.asSequence()
+    }
 
-    private fun loadOpenShiftProjects() =
-        client.adapt(OpenShiftClient::class.java).projects().list().items
+    private fun getNamespace(name: String?): Namespace? {
+        return namespaceProviders[name]
+            ?.namespace
+    }
 
 }
