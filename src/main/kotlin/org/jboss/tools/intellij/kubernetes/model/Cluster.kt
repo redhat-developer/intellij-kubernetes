@@ -41,18 +41,12 @@ class Cluster(val client: DefaultKubernetesClient = DefaultKubernetesClient(Conf
         namespaceProviders.remove(entry?.key)
     }
 
-    fun add(namespace: Namespace?): Boolean {
-        if (namespace == null) {
-            return false
-        }
+    fun add(namespace: Namespace): Boolean {
         val provider = NamespaceProvider(client, namespace)
         return namespaceProviders.putIfAbsent(namespace.metadata.name, provider) == null
     }
 
-    fun remove(namespace: Namespace?): Boolean {
-        if (namespace == null) {
-            return false
-        }
+    fun remove(namespace: Namespace): Boolean {
         return namespaceProviders.remove(namespace.metadata.name) != null
     }
 
