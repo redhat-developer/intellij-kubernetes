@@ -68,7 +68,7 @@ object KubernetesResourceModel {
 
     fun add(resource: HasMetadata) {
         when(resource) {
-            is Namespace -> add(resource as Namespace)
+            is Namespace -> add(resource)
         }
     }
 
@@ -80,7 +80,7 @@ object KubernetesResourceModel {
 
     fun remove(resource: HasMetadata) {
         when(resource) {
-            is Namespace -> remove(resource as Namespace)
+            is Namespace -> remove(resource)
         }
     }
 
