@@ -40,12 +40,11 @@ class KubernetesResourceWatch(private val addOperation: Consumer<in HasMetadata>
         return client.namespaces().watch(object : Watcher<Namespace> {
             override fun eventReceived(action: Watcher.Action, namespace: Namespace) {
                 when (action) {
-                    Watcher.Action.ADDED -> {
+                    Watcher.Action.ADDED ->
                         addOperation.accept(namespace)
-                    }
-                    Watcher.Action.DELETED -> {
+
+                    Watcher.Action.DELETED ->
                         removeOperation.accept(namespace)
-                    }
                 }
             }
 
