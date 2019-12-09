@@ -18,7 +18,10 @@ import java.util.function.Consumer
 
 object KubernetesResourceModel {
 
-    private val watch = KubernetesResourceWatch(AddResource())
+    private val watch = KubernetesResourceWatch(
+        ResourceAdded(),
+        ResourceRemoved())
+
     private var cluster = createCluster()
     private val observable = ResourceChangedObservableImpl()
 
@@ -75,9 +78,28 @@ object KubernetesResourceModel {
         }
     }
 
-    class AddResource: Consumer<HasMetadata> {
+    fun remove(resource: HasMetadata) {
+        when(resource) {
+            is Namespace -> remove(resource as Namespace)
+        }
+    }
+
+    private fun remove(namespace: Namespace) {
+        if (cluster.remove(namespace)) {
+            observable.fireModified(listOf(cluster.client))
+        }
+    }
+
+    class ResourceAdded: Consumer<HasMetadata> {
         override fun accept(resource: HasMetadata) {
             add(resource)
         }
     }
+
+    class ResourceRemoved: Consumer<HasMetadata> {
+        override fun accept(resource: HasMetadata) {
+            remove(resource)
+        }
+    }
+
 }

@@ -49,6 +49,13 @@ class Cluster(val client: DefaultKubernetesClient = DefaultKubernetesClient(Conf
         return namespaceProviders.putIfAbsent(namespace.metadata.name, provider) == null
     }
 
+    fun remove(namespace: Namespace?): Boolean {
+        if (namespace == null) {
+            return false
+        }
+        return namespaceProviders.remove(namespace.metadata.name) != null
+    }
+
     private fun loadAllNameSpaces(): Sequence<Namespace> {
         return  client.namespaces().list().items.asSequence()
     }

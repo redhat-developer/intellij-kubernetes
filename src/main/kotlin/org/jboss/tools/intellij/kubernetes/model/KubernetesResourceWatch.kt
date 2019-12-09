@@ -18,7 +18,8 @@ import io.fabric8.kubernetes.client.Watch
 import io.fabric8.kubernetes.client.Watcher
 import java.util.function.Consumer
 
-class KubernetesResourceWatch(private val addOperation: Consumer<in HasMetadata>) {
+class KubernetesResourceWatch(private val addOperation: Consumer<in HasMetadata>,
+                              private val removeOperation: Consumer<in HasMetadata>) {
 
     private var watches: MutableList<Watch> = mutableListOf()
 
@@ -41,6 +42,9 @@ class KubernetesResourceWatch(private val addOperation: Consumer<in HasMetadata>
                 when (action) {
                     Watcher.Action.ADDED -> {
                         addOperation.accept(namespace)
+                    }
+                    Watcher.Action.DELETED -> {
+                        removeOperation.accept(namespace)
                     }
                 }
             }
