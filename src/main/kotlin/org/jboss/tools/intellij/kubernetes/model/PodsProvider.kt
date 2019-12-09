@@ -11,11 +11,12 @@
 package org.jboss.tools.intellij.kubernetes.model
 
 import io.fabric8.kubernetes.api.model.HasMetadata
+import io.fabric8.kubernetes.api.model.Namespace
 import io.fabric8.kubernetes.api.model.Pod
 import io.fabric8.kubernetes.client.NamespacedKubernetesClient
 
-class PodsProvider(private val client: NamespacedKubernetesClient, private val namespace: HasMetadata)
-    : ResourceKindProvider {
+class PodsProvider(private val client: NamespacedKubernetesClient, private val namespace: Namespace)
+    : ResourceKindProvider<HasMetadata> {
 
     companion object {
         val KIND = Pod::class.java;

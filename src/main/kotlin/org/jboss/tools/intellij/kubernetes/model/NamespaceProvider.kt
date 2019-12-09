@@ -17,8 +17,9 @@ import io.fabric8.kubernetes.client.NamespacedKubernetesClient
 
 class NamespaceProvider(private val client: NamespacedKubernetesClient, val namespace: Namespace) {
 
-    private val kindProviders: MutableMap<Class<*>, ResourceKindProvider> =
-        mutableMapOf(Pair(PodsProvider.KIND, PodsProvider(client, namespace)))
+    private val kindProviders: MutableMap<Class<out HasMetadata>, ResourceKindProvider<out HasMetadata>> = mutableMapOf(
+        Pair(PodsProvider.KIND, PodsProvider(client, namespace))
+    )
 
     fun getPods(): List<Pod> {
         return getResources(PodsProvider.KIND)
@@ -46,8 +47,12 @@ class NamespaceProvider(private val client: NamespacedKubernetesClient, val name
         kindProviders.forEach{ it.value.clear() }
     }
 
-    private fun <T> getResources(kind: Class<T>): List<T> {
-        val provider: ResourceKindProvider? = kindProviders.values.find { kind == it.kind }
-        return (provider?.allResources as? List<T>) ?: emptyList()
+    private fun <T: HasMetadata> getResources(kind: Class<T>): List<T> {
+        val provider = kindProviders.values.find { kind == it.kind }
+        if (provider?.allResources is List) {
+            return provider.allResources as List<T>
+        } else {
+            return emptyList()
+        }
     }
 }

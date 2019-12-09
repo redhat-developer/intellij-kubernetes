@@ -12,9 +12,9 @@ package org.jboss.tools.intellij.kubernetes.model
 
 import io.fabric8.kubernetes.api.model.HasMetadata
 
-interface ResourceKindProvider {
-    val kind: Class<out HasMetadata>
-    val allResources: List<HasMetadata>
+interface ResourceKindProvider<T: HasMetadata> {
+    val kind: Class<out T>
+    val allResources: List<out T>
     fun hasResource(resource: HasMetadata): Boolean
     fun clear(resource: HasMetadata)
     fun clear()
