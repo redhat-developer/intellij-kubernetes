@@ -36,9 +36,8 @@ class Cluster(val client: DefaultKubernetesClient = DefaultKubernetesClient(Conf
         return namespaceProviders[name]
     }
 
-    fun clearNamespaceProvider(resource: HasMetadata) {
-        val entry = namespaceProviders.entries.find { it.value.hasResource(resource) }
-        namespaceProviders.remove(entry?.key)
+    fun getNamespaceProvider(resource: HasMetadata): NamespaceProvider? {
+        return namespaceProviders.values.find { it.hasResource(resource) }
     }
 
     fun add(namespace: Namespace): Boolean {

@@ -21,8 +21,17 @@ class NamespaceProvider(private val client: NamespacedKubernetesClient, val name
         Pair(PodsProvider.KIND, PodsProvider(client, namespace))
     )
 
-    fun getPods(): List<Pod> {
+    fun getPods(): Collection<Pod> {
         return getResources(PodsProvider.KIND)
+    }
+
+    private fun <T: HasMetadata> getResources(kind: Class<T>): Collection<T> {
+        val provider = kindProviders.values.find { kind == it.kind }
+        if (provider?.allResources is Collection<*>) {
+            return provider.allResources as Collection<T>
+        } else {
+            return emptyList()
+        }
     }
 
     fun hasResource(resource: HasMetadata): Boolean {
@@ -47,12 +56,12 @@ class NamespaceProvider(private val client: NamespacedKubernetesClient, val name
         kindProviders.forEach{ it.value.clear() }
     }
 
-    private fun <T: HasMetadata> getResources(kind: Class<T>): List<T> {
-        val provider = kindProviders.values.find { kind == it.kind }
-        if (provider?.allResources is List) {
-            return provider.allResources as List<T>
+    fun add(resource: HasMetadata): Boolean {
+        val provider = kindProviders[resource::class.java]
+        if (provider != null) {
+            return provider.add(resource)
         } else {
-            return emptyList()
+            return false;
         }
     }
 }

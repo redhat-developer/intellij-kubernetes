@@ -43,7 +43,7 @@ object KubernetesResourceModel {
         return cluster.getAllNamespaces()
     }
 
-    fun getPods(namespace: String): List<Pod> {
+    fun getPods(namespace: String): Collection<Pod> {
         return cluster.getNamespaceProvider(namespace)?.getPods() ?: emptyList()
     }
 
@@ -62,18 +62,30 @@ object KubernetesResourceModel {
     }
 
     private fun refresh(resource: Namespace) {
-        cluster.clearNamespaceProvider(resource)
-        observable.fireModified(listOf(resource))
+        val provider = cluster.getNamespaceProvider(resource)
+        if (provider != null) {
+            provider.clear()
+            observable.fireModified(listOf(resource))
+        }
     }
 
     fun add(resource: HasMetadata) {
         when(resource) {
             is Namespace -> add(resource)
+            is Pod -> add(resource)
         }
     }
 
     private fun add(namespace: Namespace) {
         if (cluster.add(namespace)) {
+            observable.fireModified(listOf(cluster.client))
+        }
+    }
+
+    private fun add(pod: Pod) {
+        val provider = cluster.getNamespaceProvider(pod.metadata.name)
+        if (provider != null
+            && provider.add(pod)) {
             observable.fireModified(listOf(cluster.client))
         }
     }
