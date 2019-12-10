@@ -20,6 +20,7 @@ import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.Namespace
 import io.fabric8.kubernetes.client.NamespacedKubernetesClient
 import org.jboss.tools.intellij.kubernetes.model.KubernetesResourceModel
+import org.jboss.tools.intellij.kubernetes.model.PodsProvider
 
 class KubernetesTreeStructure : AbstractTreeStructure() {
     override fun getParentElement(element: Any?): Any? {
@@ -36,7 +37,7 @@ class KubernetesTreeStructure : AbstractTreeStructure() {
                 rootElement ->
                     KubernetesResourceModel.getAllNamespaces().toTypedArray()
                 is Namespace ->
-                    KubernetesResourceModel.getPods(element.metadata.name).toTypedArray()
+                    KubernetesResourceModel.getResource(element.metadata.name, PodsProvider.KIND).toTypedArray()
                 else ->
                     emptyArray()
             }

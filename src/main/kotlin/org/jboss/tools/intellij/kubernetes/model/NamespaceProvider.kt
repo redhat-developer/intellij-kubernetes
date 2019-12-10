@@ -12,7 +12,6 @@ package org.jboss.tools.intellij.kubernetes.model
 
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.Namespace
-import io.fabric8.kubernetes.api.model.Pod
 import io.fabric8.kubernetes.client.NamespacedKubernetesClient
 
 class NamespaceProvider(private val client: NamespacedKubernetesClient, val namespace: Namespace) {
@@ -21,11 +20,7 @@ class NamespaceProvider(private val client: NamespacedKubernetesClient, val name
         Pair(PodsProvider.KIND, PodsProvider(client, namespace))
     )
 
-    fun getPods(): Collection<Pod> {
-        return getResources(PodsProvider.KIND)
-    }
-
-    private fun <T: HasMetadata> getResources(kind: Class<T>): Collection<T> {
+    public fun <T: HasMetadata> getResources(kind: Class<T>): Collection<T> {
         val provider = kindProviders.values.find { kind == it.kind }
         if (provider?.allResources is Collection<*>) {
             return provider.allResources as Collection<T>

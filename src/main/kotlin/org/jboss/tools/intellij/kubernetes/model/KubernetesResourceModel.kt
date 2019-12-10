@@ -43,8 +43,8 @@ object KubernetesResourceModel {
         return cluster.getAllNamespaces()
     }
 
-    fun getPods(namespace: String): Collection<Pod> {
-        return cluster.getNamespaceProvider(namespace)?.getPods() ?: emptyList()
+    fun getResource(namespace: String, kind: Class<out HasMetadata>): Collection<out HasMetadata> {
+        return cluster.getNamespaceProvider(namespace)?.getResources(kind) ?: emptyList()
     }
 
     fun refresh(resource: Any?) {
