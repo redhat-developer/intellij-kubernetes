@@ -36,8 +36,12 @@ class Cluster(val client: DefaultKubernetesClient = DefaultKubernetesClient(Conf
         return namespaceProviders[name]
     }
 
+    fun getNamespaceProvider(namespace: Namespace): NamespaceProvider? {
+        return getNamespaceProvider(namespace.metadata.name)
+    }
+
     fun getNamespaceProvider(resource: HasMetadata): NamespaceProvider? {
-        return namespaceProviders.values.find { it.hasResource(resource) }
+        return getNamespaceProvider(resource.metadata.namespace)
     }
 
     fun add(namespace: Namespace): Boolean {

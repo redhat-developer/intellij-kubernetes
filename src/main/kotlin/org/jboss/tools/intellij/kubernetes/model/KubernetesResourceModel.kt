@@ -12,7 +12,6 @@ package org.jboss.tools.intellij.kubernetes.model
 
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.Namespace
-import io.fabric8.kubernetes.api.model.Pod
 import io.fabric8.kubernetes.client.NamespacedKubernetesClient
 import java.util.function.Consumer
 
@@ -43,11 +42,7 @@ object KubernetesResourceModel {
         return cluster.getAllNamespaces()
     }
 
-    fun getAllResources(namespace: String): Collection<out HasMetadata> {
-        return cluster.getNamespaceProvider(namespace)?.getAllResources() ?: emptyList()
-    }
-
-    fun getResource(namespace: String, kind: Class<out HasMetadata>): Collection<out HasMetadata> {
+    fun getResource(namespace: String, kind: Class<out HasMetadata>): Collection<HasMetadata> {
         return cluster.getNamespaceProvider(namespace)?.getResources(kind) ?: emptyList()
     }
 
@@ -75,34 +70,43 @@ object KubernetesResourceModel {
 
     fun add(resource: HasMetadata) {
         when(resource) {
-            is Namespace -> add(resource)
-            is Pod -> add(resource)
+            is Namespace -> addNamespace(resource)
+            else -> addNamespaceChild(resource)
         }
     }
 
-    private fun add(namespace: Namespace) {
+    private fun addNamespace(namespace: Namespace) {
         if (cluster.add(namespace)) {
             observable.fireModified(listOf(cluster.client))
         }
     }
 
-    private fun add(pod: Pod) {
-        val provider = cluster.getNamespaceProvider(pod.metadata.name)
+    private fun addNamespaceChild(resource: HasMetadata) {
+        val provider = cluster.getNamespaceProvider(resource)
         if (provider != null
-            && provider.add(pod)) {
-            observable.fireModified(listOf(cluster.client))
+            && provider.add(resource)) {
+            observable.fireModified(listOf(provider.namespace))
         }
     }
 
     fun remove(resource: HasMetadata) {
         when(resource) {
-            is Namespace -> remove(resource)
+            is Namespace -> removeNamespace(resource)
+            else -> removeNamespaceChild(resource)
         }
     }
 
-    private fun remove(namespace: Namespace) {
+    private fun removeNamespace(namespace: Namespace) {
         if (cluster.remove(namespace)) {
             observable.fireModified(listOf(cluster.client))
+        }
+    }
+
+    private fun removeNamespaceChild(resource: HasMetadata) {
+        val provider = cluster.getNamespaceProvider(resource)
+        if (provider != null
+            && provider.remove(resource)) {
+            observable.fireModified(listOf(provider.namespace))
         }
     }
 

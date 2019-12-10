@@ -59,4 +59,12 @@ class PodsProvider(private val client: NamespacedKubernetesClient, private val n
         }
         return allResources.add(resource)
     }
+
+    override fun remove(resource: HasMetadata): Boolean {
+        if (resource !is Pod) {
+            return false
+        }
+        return allResources.removeIf { resource.metadata.name == it.metadata.name }
+    }
+
 }

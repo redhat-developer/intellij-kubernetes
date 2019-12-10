@@ -20,35 +20,21 @@ class NamespaceProvider(private val client: NamespacedKubernetesClient, val name
         Pair(PodsProvider.KIND, PodsProvider(client, namespace))
     )
 
-    fun getAllResources(): Collection<out HasMetadata>? {
+    fun getAllResources(): Collection<HasMetadata>? {
         return kindProviders.values.flatMap { it.allResources }
     }
 
-    public fun <T: HasMetadata> getResources(kind: Class<T>): Collection<T> {
-        val provider = kindProviders.values.find { kind == it.kind }
+    fun <T: HasMetadata> getResources(kind: Class<T>): Collection<T> {
+        val provider = kindProviders[kind]
+        var allResources: Collection<T> = emptyList()
         if (provider?.allResources is Collection<*>) {
-            return provider.allResources as Collection<T>
-        } else {
-            return emptyList()
+            allResources = provider.allResources as Collection<out T>
         }
-    }
-
-    fun hasResource(resource: HasMetadata): Boolean {
-        if (namespace == resource) {
-            return true
-        }
-        return kindProviders.values.stream()
-            .anyMatch{ it.hasResource(resource) }
-    }
-
-    fun clear(resource: HasMetadata) {
-        kindProviders.values.find { it.hasResource(resource) }
-            ?.clear(resource)
+        return allResources
     }
 
     fun clear(kind: Class<HasMetadata>) {
-        kindProviders.values.find { kind == it.kind }
-            ?.clear()
+        kindProviders[kind]?.clear()
     }
 
     fun clear() {
@@ -57,10 +43,19 @@ class NamespaceProvider(private val client: NamespacedKubernetesClient, val name
 
     fun add(resource: HasMetadata): Boolean {
         val provider = kindProviders[resource::class.java]
+        var added = false
         if (provider != null) {
-            return provider.add(resource)
-        } else {
-            return false;
+            added = provider.add(resource);
         }
+        return added
+    }
+
+    fun remove(resource: HasMetadata): Boolean {
+        var removed = false
+        val provider = kindProviders[resource::class.java]
+        if (provider != null) {
+            removed = provider.remove(resource);
+        }
+        return removed
     }
 }

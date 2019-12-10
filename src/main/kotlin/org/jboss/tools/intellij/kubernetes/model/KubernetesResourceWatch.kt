@@ -12,6 +12,7 @@ package org.jboss.tools.intellij.kubernetes.model
 
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.Namespace
+import io.fabric8.kubernetes.api.model.Pod
 import io.fabric8.kubernetes.client.KubernetesClientException
 import io.fabric8.kubernetes.client.NamespacedKubernetesClient
 import io.fabric8.kubernetes.client.Watch
@@ -25,15 +26,13 @@ class KubernetesResourceWatch(private val addOperation: Consumer<in HasMetadata>
 
     fun start(client: NamespacedKubernetesClient) {
         stop()
-        watches.add(watch(client))
+        watches.addAll(arrayOf(
+            watchNamespaces(client),
+            watchPods(client)))
     }
 
     fun stop() {
         stopWatch(watches)
-    }
-
-    private fun watch(client: NamespacedKubernetesClient): Watch {
-        return watchNamespaces(client)
     }
 
     private fun watchNamespaces(client: NamespacedKubernetesClient): Watch {
@@ -45,6 +44,23 @@ class KubernetesResourceWatch(private val addOperation: Consumer<in HasMetadata>
 
                     Watcher.Action.DELETED ->
                         removeOperation.accept(namespace)
+                }
+            }
+
+            override fun onClose(cause: KubernetesClientException?) {
+            }
+        })
+    }
+
+    private fun watchPods(client: NamespacedKubernetesClient): Watch {
+        return client.pods().inAnyNamespace().watch(object : Watcher<Pod> {
+            override fun eventReceived(action: Watcher.Action, pod: Pod) {
+                when (action) {
+                    Watcher.Action.ADDED ->
+                        addOperation.accept(pod)
+
+                    Watcher.Action.DELETED ->
+                        removeOperation.accept(pod)
                 }
             }
 

@@ -19,4 +19,5 @@ interface ResourceKindProvider<T: HasMetadata> {
     fun clear(resource: HasMetadata)
     fun clear()
     fun add(resource: HasMetadata): Boolean
+    fun remove(resource: HasMetadata): Boolean
 }
