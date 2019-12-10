@@ -20,6 +20,10 @@ class NamespaceProvider(private val client: NamespacedKubernetesClient, val name
         Pair(PodsProvider.KIND, PodsProvider(client, namespace))
     )
 
+    fun getAllResources(): Collection<out HasMetadata>? {
+        return kindProviders.values.flatMap { it.allResources }
+    }
+
     public fun <T: HasMetadata> getResources(kind: Class<T>): Collection<T> {
         val provider = kindProviders.values.find { kind == it.kind }
         if (provider?.allResources is Collection<*>) {

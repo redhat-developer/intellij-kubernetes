@@ -43,6 +43,10 @@ object KubernetesResourceModel {
         return cluster.getAllNamespaces()
     }
 
+    fun getAllResources(namespace: String): Collection<out HasMetadata> {
+        return cluster.getNamespaceProvider(namespace)?.getAllResources() ?: emptyList()
+    }
+
     fun getResource(namespace: String, kind: Class<out HasMetadata>): Collection<out HasMetadata> {
         return cluster.getNamespaceProvider(namespace)?.getResources(kind) ?: emptyList()
     }
