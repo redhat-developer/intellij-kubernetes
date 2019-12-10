@@ -11,69 +11,57 @@
 package org.jboss.tools.intellij.kubernetes.model
 
 import io.fabric8.kubernetes.api.model.HasMetadata
-import io.fabric8.kubernetes.api.model.Namespace
-import io.fabric8.kubernetes.api.model.Pod
 import io.fabric8.kubernetes.client.KubernetesClientException
 import io.fabric8.kubernetes.client.NamespacedKubernetesClient
 import io.fabric8.kubernetes.client.Watch
 import io.fabric8.kubernetes.client.Watcher
-import java.util.function.Consumer
+import io.fabric8.kubernetes.client.dsl.Watchable
 
-class KubernetesResourceWatch(private val addOperation: Consumer<in HasMetadata>,
-                              private val removeOperation: Consumer<in HasMetadata>) {
+class KubernetesResourceWatch(private val addOperation: (HasMetadata) -> Unit,
+                              private val removeOperation: (HasMetadata) -> Unit) {
 
     private var watches: MutableList<Watch> = mutableListOf()
 
     fun start(client: NamespacedKubernetesClient) {
         stop()
         watches.addAll(arrayOf(
-            watchNamespaces(client),
-            watchPods(client)))
+            watch{ client.namespaces() },
+            watch{ client.pods().inAnyNamespace() }))
     }
 
     fun stop() {
         stopWatch(watches)
     }
 
-    private fun watchNamespaces(client: NamespacedKubernetesClient): Watch {
-        return client.namespaces().watch(object : Watcher<Namespace> {
-            override fun eventReceived(action: Watcher.Action, namespace: Namespace) {
-                when (action) {
-                    Watcher.Action.ADDED ->
-                        addOperation.accept(namespace)
-
-                    Watcher.Action.DELETED ->
-                        removeOperation.accept(namespace)
-                }
-            }
-
-            override fun onClose(cause: KubernetesClientException?) {
-            }
-        })
+    private fun <T: HasMetadata> watch(watchSupplier: () -> Watchable<Watch, Watcher<T>>): Watch {
+        return watchSupplier().watch(ResourceWatcher(addOperation, removeOperation))
     }
 
-    private fun watchPods(client: NamespacedKubernetesClient): Watch {
-        return client.pods().inAnyNamespace().watch(object : Watcher<Pod> {
-            override fun eventReceived(action: Watcher.Action, pod: Pod) {
-                when (action) {
-                    Watcher.Action.ADDED ->
-                        addOperation.accept(pod)
-
-                    Watcher.Action.DELETED ->
-                        removeOperation.accept(pod)
-                }
-            }
-
-            override fun onClose(cause: KubernetesClientException?) {
-            }
-        })
-    }
 
     private fun stopWatch(watches: MutableList<Watch>) {
         watches.removeAll {
             it.close()
             true
         }
+    }
+
+    private class ResourceWatcher<T: HasMetadata>(private val addOperation: (T) -> Unit,
+                                                   private val removeOperation: (T) -> Unit)
+        : Watcher<T> {
+        override fun eventReceived(action: Watcher.Action?, resource: T) {
+            when (action) {
+                Watcher.Action.ADDED ->
+                    addOperation(resource)
+
+                Watcher.Action.DELETED ->
+                    removeOperation(resource)
+                else -> Unit
+            }
+        }
+
+        override fun onClose(cause: KubernetesClientException?) {
+        }
+
     }
 
 }

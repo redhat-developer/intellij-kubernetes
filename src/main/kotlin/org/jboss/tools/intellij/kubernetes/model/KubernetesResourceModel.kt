@@ -13,14 +13,12 @@ package org.jboss.tools.intellij.kubernetes.model
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.Namespace
 import io.fabric8.kubernetes.client.NamespacedKubernetesClient
-import java.util.function.Consumer
 
 object KubernetesResourceModel {
 
     private val watch = KubernetesResourceWatch(
-        ResourceAdded(),
-        ResourceRemoved())
-
+        { add(it) },
+        { remove(it) })
     private var cluster = createCluster()
     private val observable = ResourceChangedObservableImpl()
 
@@ -109,17 +107,4 @@ object KubernetesResourceModel {
             observable.fireModified(listOf(provider.namespace))
         }
     }
-
-    class ResourceAdded: Consumer<HasMetadata> {
-        override fun accept(resource: HasMetadata) {
-            add(resource)
-        }
-    }
-
-    class ResourceRemoved: Consumer<HasMetadata> {
-        override fun accept(resource: HasMetadata) {
-            remove(resource)
-        }
-    }
-
 }
