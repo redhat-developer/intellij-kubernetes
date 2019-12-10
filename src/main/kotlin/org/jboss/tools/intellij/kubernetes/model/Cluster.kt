@@ -20,16 +20,15 @@ class Cluster(val client: DefaultKubernetesClient = DefaultKubernetesClient(Conf
     private val namespaceProviders: MutableMap<String, NamespaceProvider> = mutableMapOf()
         get() {
             if (field.isEmpty()) {
-                field.plus(
-                    loadAllNameSpaces()
-                        .map { namespace: Namespace ->
-                            Pair(namespace.metadata.name, NamespaceProvider(client, namespace)) })
+                val namespaceProviders = loadAllNameSpaces()
+                    .map { Pair(it.metadata.name, NamespaceProvider(client, it)) }
+                field.putAll(namespaceProviders)
             }
             return field
         }
 
     fun getAllNamespaces(): List<Namespace> {
-        return namespaceProviders.values.map { provider -> provider.namespace }
+        return namespaceProviders.entries.map { it.value.namespace }
     }
 
     fun getNamespaceProvider(name: String): NamespaceProvider? {
