@@ -13,9 +13,6 @@ package org.jboss.tools.intellij.kubernetes.tree
 import com.intellij.ide.util.treeView.AbstractTreeStructure
 import com.intellij.ide.util.treeView.NodeDescriptor
 import com.intellij.ui.tree.StructureTreeModel
-import io.fabric8.kubernetes.api.model.HasMetadata
-import io.fabric8.kubernetes.api.model.Namespace
-import io.fabric8.kubernetes.client.NamespacedKubernetesClient
 import org.jboss.tools.intellij.kubernetes.model.KubernetesResourceModel
 import org.jboss.tools.intellij.kubernetes.model.ResourceChangedObservableImpl
 import javax.swing.tree.DefaultMutableTreeNode
@@ -56,7 +53,6 @@ class KubernetesTreeModel: StructureTreeModel(true) {
         invoker.invokeLaterIfNeeded {
             val path = pathSupplier()
             if (path.lastPathComponent == root) {
-                // invalidate root
                 invalidateRoot()
             }
             invalidate(path, true)
@@ -72,20 +68,23 @@ class KubernetesTreeModel: StructureTreeModel(true) {
     }
 
     private fun getTreePath(element: Any?): TreePath {
-        val path = when (element) {
-            is NamespacedKubernetesClient
-                -> TreePath(root)
-            is Namespace,
-            is HasMetadata
-                -> findTreePath(element as HasMetadata, root as? DefaultMutableTreeNode)
-            else
-                -> null
-        }
+        val path =
+            if (isRootNode(element)) {
+                TreePath(root)
+            } else {
+                findTreePath(element, root as? DefaultMutableTreeNode)
+            }
         return path ?: TreePath(root)
     }
 
-    private fun findTreePath(element: HasMetadata, start: DefaultMutableTreeNode?): TreePath? {
-        if (start == null) {
+    private fun isRootNode(element: Any?): Boolean {
+        val descriptor = (root as? DefaultMutableTreeNode)?.userObject as? NodeDescriptor<*>
+        return descriptor?.element == element
+    }
+
+    private fun findTreePath(element: Any?, start: DefaultMutableTreeNode?): TreePath? {
+        if (element == null
+            || start == null) {
             return null;
         }
         for (child in start.children()) {
@@ -95,7 +94,7 @@ class KubernetesTreeModel: StructureTreeModel(true) {
             if (hasElement(element, child)) {
                 return TreePath(child.path);
             }
-            val path = findTreePath(element, child as? DefaultMutableTreeNode);
+            val path = findTreePath(element, child);
             if (path != null) {
                 return path;
             }

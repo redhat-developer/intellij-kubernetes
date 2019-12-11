@@ -61,9 +61,10 @@ object KubernetesResourceModel {
     }
 
     private fun refresh() {
-        cluster.client.close()
+        val oldClient = cluster.client
+        oldClient.close()
         cluster = createCluster()
-        observable.fireModified(listOf(cluster.client))
+        observable.fireModified(listOf(oldClient))
     }
 
     private fun refresh(resource: Namespace) {
