@@ -25,9 +25,14 @@ import org.jboss.tools.intellij.kubernetes.model.PodsProvider
 class KubernetesTreeStructure : AbstractTreeStructure() {
     override fun getParentElement(element: Any?): Any? {
         return when(element) {
-            element == rootElement -> null
-            element is HasMetadata -> (element as HasMetadata).metadata.namespace;
-            else -> null;
+            rootElement ->
+                null
+            is Namespace ->
+                rootElement
+            is HasMetadata ->
+                KubernetesResourceModel.getNamespace(element.metadata.namespace)
+            else ->
+                rootElement
         }
     }
 
@@ -37,12 +42,12 @@ class KubernetesTreeStructure : AbstractTreeStructure() {
                 rootElement ->
                     KubernetesResourceModel.getAllNamespaces().toTypedArray()
                 is Namespace ->
-                    KubernetesResourceModel.getResource(element.metadata.name, PodsProvider.KIND).toTypedArray()
+                    KubernetesResourceModel.getResources(element.metadata.name, PodsProvider.KIND).toTypedArray()
                 else ->
                     emptyArray()
             }
         } catch(e: RuntimeException) {
-            return arrayOf(ErrorNode(e))
+            return arrayOf(ErrorDescriptor(e))
         }
     }
 
@@ -60,53 +65,52 @@ class KubernetesTreeStructure : AbstractTreeStructure() {
         return false
     }
 
-    override fun createDescriptor(element: Any, parentDescriptor: NodeDescriptor<*>?): NodeDescriptor<*> {
+    override fun createDescriptor(element: Any, parent: NodeDescriptor<*>?): NodeDescriptor<*> {
         return when(element) {
-            is NamespacedKubernetesClient -> ClusterNode(element)
-            is Namespace -> NamespaceNode(element)
-            is HasMetadata -> HasMetadataNode(element)
-            is Exception -> ErrorNode(element)
-            else -> ResourceNode(element, parentDescriptor);
+            is NamespacedKubernetesClient -> ClusterDescriptor(element)
+            is Namespace -> NamespaceDescriptor(element, parent)
+            is HasMetadata -> HasMetadataDescriptor(element, parent)
+            is Exception -> ErrorDescriptor(element)
+            else -> ResourceDescriptor<Any>(element, parent);
         }
     }
 
-    class ClusterNode(element: NamespacedKubernetesClient): ResourceNode(element, null) {
+    class ClusterDescriptor(element: NamespacedKubernetesClient): ResourceDescriptor<NamespacedKubernetesClient>(element, null) {
         override fun update(presentation: PresentationData?) {
-            presentation?.presentableText = (element as NamespacedKubernetesClient).masterUrl.toString()
+            presentation?.presentableText = element.masterUrl.toString()
             presentation?.setIcon(IconLoader.getIcon("/icons/kubernetes-cluster.svg"))
         }
     }
 
-    class NamespaceNode(element: Namespace): ResourceNode(element, null) {
+    class NamespaceDescriptor(element: Namespace, parent: NodeDescriptor<*>?): ResourceDescriptor<Namespace>(element, null) {
         override fun update(presentation: PresentationData?) {
-            presentation?.presentableText = ((element as Namespace).metadata.name);
+            presentation?.presentableText = element.metadata.name;
             presentation?.setIcon(IconLoader.getIcon("/icons/project.png"))
         }
     }
 
-    class HasMetadataNode(element: HasMetadata): ResourceNode(element, null) {
+    class HasMetadataDescriptor(element: HasMetadata, parent: NodeDescriptor<*>?): ResourceDescriptor<HasMetadata>(element, parent) {
         override fun update(presentation: PresentationData?) {
-            presentation?.presentableText = (element as HasMetadata).metadata.name;
+            presentation?.presentableText = element.metadata.name;
             presentation?.setIcon(IconLoader.getIcon("/icons/project.png"))
         }
     }
 
-    class ErrorNode(element: java.lang.Exception): ResourceNode(element, null) {
-
+    class ErrorDescriptor(element: java.lang.Exception): ResourceDescriptor<java.lang.Exception>(element, null) {
         override fun update(presentation: PresentationData?) {
-            presentation?.presentableText = "Error: " + (element as java.lang.Exception).message;
+            presentation?.presentableText = "Error: " + element.message;
             presentation?.setIcon(AllIcons.General.BalloonError)
         }
     }
 
-    open class ResourceNode(element: Any, parentNode: NodeDescriptor<*>?): PresentableNodeDescriptor<Any>(null, parentNode) {
+    open class ResourceDescriptor<T>(element: T, parent: NodeDescriptor<*>?): PresentableNodeDescriptor<T>(null, parent) {
 
         private val element = element;
 
         override fun update(presentation: PresentationData?) {
             presentation?.presentableText = element.toString();
         }
-        override fun getElement(): Any {
+        override fun getElement(): T {
             return element;
         }
 

@@ -21,7 +21,7 @@ open class ResourceChangedObservableImpl: ResourceChangeObservable {
 
     interface ResourceChangeListener {
         fun removed(removed: List<Any>)
-        fun added(removed: List<Any>)
+        fun added(added: List<Any>)
         fun modified(modified: List<Any>)
     }
 

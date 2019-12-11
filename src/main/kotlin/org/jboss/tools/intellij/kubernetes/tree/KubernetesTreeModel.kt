@@ -10,9 +10,11 @@
  ******************************************************************************/
 package org.jboss.tools.intellij.kubernetes.tree
 
+import com.intellij.ide.util.treeView.AbstractTreeStructure
 import com.intellij.ide.util.treeView.NodeDescriptor
 import com.intellij.ui.tree.StructureTreeModel
 import io.fabric8.kubernetes.api.model.HasMetadata
+import io.fabric8.kubernetes.api.model.Namespace
 import io.fabric8.kubernetes.client.NamespacedKubernetesClient
 import org.jboss.tools.intellij.kubernetes.model.KubernetesResourceModel
 import org.jboss.tools.intellij.kubernetes.model.ResourceChangedObservableImpl
@@ -20,42 +22,66 @@ import javax.swing.tree.DefaultMutableTreeNode
 import javax.swing.tree.TreePath
 
 class KubernetesTreeModel: StructureTreeModel(true) {
+
+    private var treeStructure: AbstractTreeStructure? = null
+
     init {
         KubernetesResourceModel.addListener(object: ResourceChangedObservableImpl.ResourceChangeListener {
             override fun removed(removed: List<Any>) {
+                removed.forEach {
+                    invalidatePath { getTreePath(getParentElement(it)) }
+                }
             }
 
-            override fun added(removed: List<Any>) {
+            override fun added(added: List<Any>) {
+                added.forEach {
+                    invalidatePath { getTreePath(getParentElement(it)) }
+                }
             }
 
             override fun modified(modified: List<Any>) {
                 modified.forEach {
-                    invalidate(it)
-                };
+                    invalidatePath { getTreePath(it) }
+                }
             }
         })
     }
 
-    private fun invalidate(element: Any) {
+    override fun setStructure(structure: AbstractTreeStructure?) {
+        super.setStructure(structure)
+        this.treeStructure = structure
+    }
+
+    private fun invalidatePath(pathSupplier: () -> TreePath) {
         invoker.invokeLaterIfNeeded {
-            val path = getTreePath(element)
+            val path = pathSupplier()
             if (path.lastPathComponent == root) {
                 // invalidate root
-                invalidate({})
+                invalidateRoot()
             }
             invalidate(path, true)
         }
     }
 
-    private fun getTreePath(element: Any): TreePath {
-        return when (element) {
+    private fun invalidateRoot() {
+        invalidate(null)
+    }
+
+    private fun getParentElement(element: Any): Any? {
+        return treeStructure?.getParentElement(element)
+    }
+
+    private fun getTreePath(element: Any?): TreePath {
+        val path = when (element) {
             is NamespacedKubernetesClient
                 -> TreePath(root)
+            is Namespace,
             is HasMetadata
-                -> findTreePath(element, root as DefaultMutableTreeNode) ?: TreePath(root)
+                -> findTreePath(element as HasMetadata, root as? DefaultMutableTreeNode)
             else
-                -> TreePath(root)
+                -> null
         }
+        return path ?: TreePath(root)
     }
 
     private fun findTreePath(element: HasMetadata, start: DefaultMutableTreeNode?): TreePath? {
@@ -77,7 +103,7 @@ class KubernetesTreeModel: StructureTreeModel(true) {
         return null;
     }
 
-    private fun hasElement( element: Any?, node: DefaultMutableTreeNode): Boolean {
+    private fun hasElement(element: Any?, node: DefaultMutableTreeNode): Boolean {
         val descriptor = node.userObject as? NodeDescriptor<*>
         return descriptor?.element == element
     }

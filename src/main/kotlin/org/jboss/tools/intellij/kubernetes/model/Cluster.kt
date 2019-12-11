@@ -55,10 +55,4 @@ class Cluster(val client: DefaultKubernetesClient = DefaultKubernetesClient(Conf
     private fun loadAllNameSpaces(): Sequence<Namespace> {
         return  client.namespaces().list().items.asSequence()
     }
-
-    private fun getNamespace(name: String?): Namespace? {
-        return namespaceProviders[name]
-            ?.namespace
-    }
-
 }
