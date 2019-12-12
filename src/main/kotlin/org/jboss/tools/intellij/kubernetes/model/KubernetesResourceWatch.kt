@@ -10,6 +10,7 @@
  ******************************************************************************/
 package org.jboss.tools.intellij.kubernetes.model
 
+import com.intellij.openapi.diagnostic.logger
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.client.KubernetesClientException
 import io.fabric8.kubernetes.client.NamespacedKubernetesClient
@@ -20,7 +21,7 @@ import io.fabric8.kubernetes.client.dsl.Watchable
 class KubernetesResourceWatch(private val addOperation: (HasMetadata) -> Unit,
                               private val removeOperation: (HasMetadata) -> Unit) {
 
-    private var watches: MutableList<Watch> = mutableListOf()
+    private var watches: MutableList<Watch?> = mutableListOf()
 
     fun start(client: NamespacedKubernetesClient) {
         stop()
@@ -33,14 +34,19 @@ class KubernetesResourceWatch(private val addOperation: (HasMetadata) -> Unit,
         stopWatch(watches)
     }
 
-    private fun <T: HasMetadata> watch(watchSupplier: () -> Watchable<Watch, Watcher<T>>): Watch {
-        return watchSupplier().watch(ResourceWatcher(addOperation, removeOperation))
+    private fun <T: HasMetadata> watch(watchSupplier: () -> Watchable<Watch, Watcher<T>>): Watch? {
+        try{
+            return watchSupplier().watch(ResourceWatcher(addOperation, removeOperation))
+        } catch(e: RuntimeException) {
+            logger<KubernetesResourceWatch>().error(e)
+            return null
+        }
     }
 
 
-    private fun stopWatch(watches: MutableList<Watch>) {
+    private fun stopWatch(watches: MutableList<Watch?>) {
         watches.removeAll {
-            it.close()
+            it?.close()
             true
         }
     }
