@@ -24,15 +24,19 @@ import org.jboss.tools.intellij.kubernetes.model.PodsProvider
 
 class KubernetesTreeStructure : AbstractTreeStructure() {
     override fun getParentElement(element: Any?): Any? {
-        return when(element) {
-            rootElement ->
-                null
-            is Namespace ->
-                rootElement
-            is HasMetadata ->
-                KubernetesResourceModel.getNamespace(element.metadata.namespace)
-            else ->
-                rootElement
+        try {
+            return when (element) {
+                rootElement ->
+                    null
+                is Namespace ->
+                    rootElement
+                is HasMetadata ->
+                    KubernetesResourceModel.getNamespace(element.metadata.namespace)
+                else ->
+                    rootElement
+            }
+        } catch(e: java.lang.RuntimeException) {
+            return arrayOf(ErrorDescriptor(e))
         }
     }
 

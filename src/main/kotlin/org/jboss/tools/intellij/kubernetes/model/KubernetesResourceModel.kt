@@ -24,8 +24,16 @@ object KubernetesResourceModel {
 
     private fun createCluster(): Cluster {
         val cluster = Cluster()
-        watch.start(cluster.client)
+        startWatch(cluster)
         return cluster;
+    }
+
+    private fun startWatch(cluster: Cluster) {
+        try {
+            watch.start(cluster.client)
+        } catch (e: RuntimeException) {
+
+        }
     }
 
     fun addListener(listener: ResourceChangedObservableImpl.ResourceChangeListener) {
