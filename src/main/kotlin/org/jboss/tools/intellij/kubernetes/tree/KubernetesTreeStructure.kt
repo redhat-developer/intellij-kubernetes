@@ -23,6 +23,7 @@ import org.jboss.tools.intellij.kubernetes.model.KubernetesResourceModel
 import org.jboss.tools.intellij.kubernetes.model.PodsProvider
 
 class KubernetesTreeStructure : AbstractTreeStructure() {
+
     override fun getParentElement(element: Any?): Any? {
         try {
             return when (element) {
@@ -35,8 +36,8 @@ class KubernetesTreeStructure : AbstractTreeStructure() {
                 else ->
                     rootElement
             }
-        } catch(e: java.lang.RuntimeException) {
-            return arrayOf(ErrorDescriptor(e))
+        } catch(e: RuntimeException) {
+            return null
         }
     }
 
@@ -51,7 +52,7 @@ class KubernetesTreeStructure : AbstractTreeStructure() {
                     emptyArray()
             }
         } catch(e: RuntimeException) {
-            return arrayOf(ErrorDescriptor(e))
+            return arrayOf(e)
         }
     }
 
@@ -74,7 +75,7 @@ class KubernetesTreeStructure : AbstractTreeStructure() {
             is NamespacedKubernetesClient -> ClusterDescriptor(element)
             is Namespace -> NamespaceDescriptor(element, parent)
             is HasMetadata -> HasMetadataDescriptor(element, parent)
-            is Exception -> ErrorDescriptor(element)
+            is Exception -> ErrorDescriptor(element, parent)
             else -> ResourceDescriptor<Any>(element, parent);
         }
     }
@@ -86,7 +87,7 @@ class KubernetesTreeStructure : AbstractTreeStructure() {
         }
     }
 
-    class NamespaceDescriptor(element: Namespace, parent: NodeDescriptor<*>?): ResourceDescriptor<Namespace>(element, null) {
+    class NamespaceDescriptor(element: Namespace, parent: NodeDescriptor<*>?): ResourceDescriptor<Namespace>(element, parent) {
         override fun update(presentation: PresentationData?) {
             presentation?.presentableText = element.metadata.name;
             presentation?.setIcon(IconLoader.getIcon("/icons/project.png"))
@@ -100,7 +101,7 @@ class KubernetesTreeStructure : AbstractTreeStructure() {
         }
     }
 
-    class ErrorDescriptor(element: java.lang.Exception): ResourceDescriptor<java.lang.Exception>(element, null) {
+    class ErrorDescriptor(element: java.lang.Exception, parent: NodeDescriptor<*>?): ResourceDescriptor<java.lang.Exception>(element, parent) {
         override fun update(presentation: PresentationData?) {
             presentation?.presentableText = "Error: " + element.message;
             presentation?.setIcon(AllIcons.General.BalloonError)
@@ -114,6 +115,7 @@ class KubernetesTreeStructure : AbstractTreeStructure() {
         override fun update(presentation: PresentationData?) {
             presentation?.presentableText = element.toString();
         }
+
         override fun getElement(): T {
             return element;
         }
