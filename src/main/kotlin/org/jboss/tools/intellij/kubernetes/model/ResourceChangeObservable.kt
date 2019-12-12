@@ -12,23 +12,23 @@ package org.jboss.tools.intellij.kubernetes.model
 
 interface ResourceChangeObservable {
     fun addListener(listener: ResourceChangedObservableImpl.ResourceChangeListener)
-    fun fireRemoved(removed: List<Any>)
-    fun fireAdded(added: List<Any>)
-    fun fireModified(removed: List<Any>)
+    fun fireRemoved(removed: Any)
+    fun fireAdded(added: Any)
+    fun fireModified(removed: Any)
 }
 
 open class ResourceChangedObservableImpl: ResourceChangeObservable {
 
     interface ResourceChangeListener {
-        fun removed(removed: List<Any>)
-        fun added(added: List<Any>)
-        fun modified(modified: List<Any>)
+        fun removed(removed: Any)
+        fun added(added: Any)
+        fun modified(modified: Any)
     }
 
     open class ResourceChangeAdapter: ResourceChangeListener {
-        override fun removed(removed: List<Any>) = Unit
-        override fun added(removed: List<Any>) = Unit
-        override fun modified(modified: List<Any>) = Unit
+        override fun removed(removed: Any) = Unit
+        override fun added(added: Any) = Unit
+        override fun modified(modified: Any) = Unit
     }
 
     private var listeners = mutableListOf<ResourceChangeListener>()
@@ -37,15 +37,15 @@ open class ResourceChangedObservableImpl: ResourceChangeObservable {
         listeners.add(listener)
     }
 
-    override fun fireRemoved(removed: List<Any>) {
-        listeners.forEach{ listener -> listener.removed(removed)}
+    override fun fireRemoved(removed: Any) {
+        listeners.forEach { it.removed(removed) }
     }
 
-    override fun fireAdded(added: List<Any>) {
-        listeners.forEach{ listener -> listener.added(added)}
+    override fun fireAdded(added: Any) {
+        listeners.forEach { it.added(added) }
     }
 
-    override fun fireModified(removed: List<Any>) {
-        listeners.forEach { listener -> listener.modified(removed) }
+    override fun fireModified(removed: Any) {
+        listeners.forEach { it.modified(removed) }
     }
 }

@@ -24,22 +24,16 @@ class KubernetesTreeModel: StructureTreeModel(true) {
 
     init {
         KubernetesResourceModel.addListener(object: ResourceChangedObservableImpl.ResourceChangeListener {
-            override fun removed(removed: List<Any>) {
-                removed.forEach {
-                    invalidatePath { getTreePath(getParentElement(it)) }
-                }
+            override fun removed(removed: Any) {
+                invalidatePath { getTreePath(getParentElement(removed)) }
             }
 
-            override fun added(added: List<Any>) {
-                added.forEach {
-                    invalidatePath { getTreePath(getParentElement(it)) }
-                }
+            override fun added(added: Any) {
+                invalidatePath { getTreePath(getParentElement(added)) }
             }
 
-            override fun modified(modified: List<Any>) {
-                modified.forEach {
-                    invalidatePath { getTreePath(it) }
-                }
+            override fun modified(modified: Any) {
+                invalidatePath { getTreePath(modified) }
             }
         })
     }
