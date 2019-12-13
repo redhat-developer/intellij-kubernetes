@@ -12,20 +12,34 @@ package org.jboss.tools.intellij.kubernetes.model
 
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.Namespace
+import io.fabric8.kubernetes.client.ConfigBuilder
+import io.fabric8.kubernetes.client.DefaultKubernetesClient
 import io.fabric8.kubernetes.client.NamespacedKubernetesClient
 
-object KubernetesResourceModel {
+open class KubernetesResourceModel() {
+
+    companion object {
+        val instance: KubernetesResourceModel = KubernetesResourceModel()
+    }
 
     private val watch = KubernetesResourceWatch(
         { add(it) },
         { remove(it) })
-    private var cluster = createCluster()
+    private var cluster = createCluster(createClient())
     private val observable = ResourceChangedObservableImpl()
 
-    private fun createCluster(): Cluster {
-        val cluster = Cluster()
-        startWatch(cluster.client)
+    private fun createCluster(client: NamespacedKubernetesClient): Cluster {
+        val cluster = Cluster(client)
+        startWatch(client)
         return cluster;
+    }
+
+    public fun getClient(): NamespacedKubernetesClient {
+        return cluster.client
+    }
+
+    open protected fun createClient(): NamespacedKubernetesClient {
+        return DefaultKubernetesClient(ConfigBuilder().build())
     }
 
     private fun startWatch(client: NamespacedKubernetesClient) {
@@ -34,10 +48,6 @@ object KubernetesResourceModel {
 
     fun addListener(listener: ResourceChangedObservableImpl.ResourceChangeListener) {
         observable.addListener(listener);
-    }
-
-    fun getClient(): NamespacedKubernetesClient {
-        return cluster.client
     }
 
     fun getAllNamespaces(): List<Namespace> {
@@ -67,7 +77,7 @@ object KubernetesResourceModel {
     private fun refresh() {
         val oldClient = cluster.client
         oldClient.close()
-        cluster = createCluster()
+        cluster = createCluster(createClient())
         observable.fireModified(listOf(oldClient))
     }
 

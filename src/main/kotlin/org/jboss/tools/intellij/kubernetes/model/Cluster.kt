@@ -14,8 +14,9 @@ import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.Namespace
 import io.fabric8.kubernetes.client.ConfigBuilder
 import io.fabric8.kubernetes.client.DefaultKubernetesClient
+import io.fabric8.kubernetes.client.NamespacedKubernetesClient
 
-class Cluster(val client: DefaultKubernetesClient = DefaultKubernetesClient(ConfigBuilder().build())) {
+class Cluster(val client: NamespacedKubernetesClient) {
 
     private val namespaceProviders: MutableMap<String, NamespaceProvider> = mutableMapOf()
         get() {

@@ -31,7 +31,7 @@ class KubernetesToolWindowFactory: ToolWindowFactory {
         val model = StructureTreeModel(true);
         val structure = KubernetesTreeStructure()
         model.setStructure(structure)
-        StructureTreeAdapter(model, structure, KubernetesResourceModel)
+        StructureTreeAdapter(model, structure, KubernetesResourceModel.instance)
         val tree = Tree(AsyncTreeModel(model))
         tree.cellRenderer = NodeRenderer();
         val panel = ScrollPaneFactory.createScrollPane(tree)

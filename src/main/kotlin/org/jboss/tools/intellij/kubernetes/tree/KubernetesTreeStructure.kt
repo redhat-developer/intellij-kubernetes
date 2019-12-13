@@ -32,7 +32,7 @@ class KubernetesTreeStructure : AbstractTreeStructure() {
                 is Namespace ->
                     rootElement
                 is HasMetadata ->
-                    KubernetesResourceModel.getNamespace(element.metadata.namespace)
+                    KubernetesResourceModel.instance.getNamespace(element.metadata.namespace)
                 else ->
                     rootElement
             }
@@ -45,9 +45,9 @@ class KubernetesTreeStructure : AbstractTreeStructure() {
         try {
             return when(element) {
                 rootElement ->
-                    KubernetesResourceModel.getAllNamespaces().toTypedArray()
+                    KubernetesResourceModel.instance.getAllNamespaces().toTypedArray()
                 is Namespace ->
-                    KubernetesResourceModel.getResources(element.metadata.name, PodsProvider.KIND).toTypedArray()
+                    KubernetesResourceModel.instance.getResources(element.metadata.name, PodsProvider.KIND).toTypedArray()
                 else ->
                     emptyArray()
             }
@@ -58,7 +58,7 @@ class KubernetesTreeStructure : AbstractTreeStructure() {
 
     override fun commit() = Unit
 
-    override fun getRootElement() = KubernetesResourceModel.getClient()
+    override fun getRootElement() = KubernetesResourceModel.instance.getClient()
 
     override fun hasSomethingToCommit() = false
 

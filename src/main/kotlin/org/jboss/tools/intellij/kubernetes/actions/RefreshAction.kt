@@ -35,7 +35,7 @@ class RefreshAction: AnAction(Refresh) {
         val tree: Tree = getTree(event)
         val selectedNode = tree.selectionModel.selectionPath?.lastPathComponent
         val modelObject = getDescriptorElement(selectedNode)
-        KubernetesResourceModel.refresh(modelObject)
+        KubernetesResourceModel.instance.refresh(modelObject)
     }
 
     private fun getTree(event: AnActionEvent?): Tree {
