@@ -8,7 +8,8 @@ import org.jboss.tools.intellij.kubernetes.model.ResourceChangedObservableImpl
 import javax.swing.tree.DefaultMutableTreeNode
 import javax.swing.tree.TreePath
 
-class StructureTreeAdapter(val treeModel: StructureTreeModel, val structure: AbstractTreeStructure, model: KubernetesResourceModel)
+class StructureTreeAdapter(private val treeModel: StructureTreeModel, private val structure: AbstractTreeStructure,
+                           model: KubernetesResourceModel)
     : ResourceChangedObservableImpl.ResourceChangeListener {
 
     init {

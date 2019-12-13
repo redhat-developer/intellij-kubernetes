@@ -20,15 +20,9 @@ interface ResourceChangeObservable {
 open class ResourceChangedObservableImpl: ResourceChangeObservable {
 
     interface ResourceChangeListener {
-        fun removed(removed: Any)
-        fun added(added: Any)
-        fun modified(modified: Any)
-    }
-
-    open class ResourceChangeAdapter: ResourceChangeListener {
-        override fun removed(removed: Any) = Unit
-        override fun added(added: Any) = Unit
-        override fun modified(modified: Any) = Unit
+        fun removed(removed: Any) = Unit
+        fun added(added: Any) = Unit
+        fun modified(modified: Any) = Unit
     }
 
     private var listeners = mutableListOf<ResourceChangeListener>()

@@ -26,8 +26,9 @@ class KubernetesResourceWatch(private val addOperation: (HasMetadata) -> Unit,
     fun start(client: NamespacedKubernetesClient) {
         stop()
         watches.addAll(arrayOf(
-            watch{ client.namespaces() },
-            watch{ client.pods().inAnyNamespace() }))
+            watch { client.namespaces() },
+            watch { client.pods().inAnyNamespace() })
+        )
     }
 
     fun stop() {
@@ -42,7 +43,6 @@ class KubernetesResourceWatch(private val addOperation: (HasMetadata) -> Unit,
             return null
         }
     }
-
 
     private fun stopWatch(watches: MutableList<Watch?>) {
         watches.removeAll {
