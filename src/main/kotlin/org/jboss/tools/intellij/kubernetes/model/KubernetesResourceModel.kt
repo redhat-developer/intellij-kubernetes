@@ -29,11 +29,7 @@ object KubernetesResourceModel {
     }
 
     private fun startWatch(cluster: Cluster) {
-        try {
-            watch.start(cluster.client)
-        } catch (e: RuntimeException) {
-
-        }
+        watch.start(cluster.client)
     }
 
     fun addListener(listener: ResourceChangedObservableImpl.ResourceChangeListener) {
