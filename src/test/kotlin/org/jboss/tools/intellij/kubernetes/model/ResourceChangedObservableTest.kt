@@ -1,5 +1,3 @@
-package org.jboss.tools.intellij.kubernetes.model
-
 /*******************************************************************************
  * Copyright (c) 2019 Red Hat, Inc.
  * Distributed under license by Red Hat, Inc. All rights reserved.
@@ -10,6 +8,8 @@ package org.jboss.tools.intellij.kubernetes.model
  * Contributors:
  * Red Hat, Inc. - initial API and implementation
  ******************************************************************************/
+package org.jboss.tools.intellij.kubernetes.model
+
 import org.assertj.core.api.Assertions.assertThat
 import org.jboss.tools.intellij.kubernetes.model.ResourceChangedObservableImpl.ResourceChangeListener
 import org.junit.Before

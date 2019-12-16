@@ -28,7 +28,7 @@ class NamespaceProvider(private val client: NamespacedKubernetesClient, val name
         val provider = kindProviders[kind]
         var allResources: Collection<T> = emptyList()
         if (provider?.allResources is Collection<*>) {
-            allResources = provider.allResources as Collection<out T>
+            allResources = provider.allResources as Collection<T>
         }
         return allResources
     }

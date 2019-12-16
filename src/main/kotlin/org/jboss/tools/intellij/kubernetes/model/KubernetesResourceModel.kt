@@ -16,34 +16,32 @@ import io.fabric8.kubernetes.client.ConfigBuilder
 import io.fabric8.kubernetes.client.DefaultKubernetesClient
 import io.fabric8.kubernetes.client.NamespacedKubernetesClient
 
-open class KubernetesResourceModel() {
+object KubernetesResourceModel {
 
-    companion object {
-        val instance: KubernetesResourceModel = KubernetesResourceModel()
-    }
-
-    private val watch = KubernetesResourceWatch(
+    private val watch = createWatch(
         { add(it) },
-        { remove(it) })
+        { remove(it) }
+    )
+
     private var cluster = createCluster(createClient())
     private val observable = ResourceChangedObservableImpl()
 
-    private fun createCluster(client: NamespacedKubernetesClient): Cluster {
-        val cluster = Cluster(client)
-        startWatch(client)
-        return cluster;
-    }
-
-    public fun getClient(): NamespacedKubernetesClient {
+    fun getClient(): NamespacedKubernetesClient {
         return cluster.client
     }
 
-    open protected fun createClient(): NamespacedKubernetesClient {
-        return DefaultKubernetesClient(ConfigBuilder().build())
+    private fun createCluster(client: NamespacedKubernetesClient): Cluster {
+        val cluster = Cluster(client)
+        watch.start(client)
+        return cluster
     }
 
-    private fun startWatch(client: NamespacedKubernetesClient) {
-        watch.start(client)
+    private fun createWatch(onAdded: (HasMetadata) -> Unit, onRemoved: (HasMetadata) -> Unit): KubernetesResourceWatch {
+        return KubernetesResourceWatch(onAdded, onRemoved)
+    }
+
+    private fun createClient(): NamespacedKubernetesClient {
+        return DefaultKubernetesClient(ConfigBuilder().build())
     }
 
     fun addListener(listener: ResourceChangedObservableImpl.ResourceChangeListener) {
