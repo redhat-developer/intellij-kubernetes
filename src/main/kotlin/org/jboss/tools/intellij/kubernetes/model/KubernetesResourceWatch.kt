@@ -18,28 +18,40 @@ import io.fabric8.kubernetes.client.Watch
 import io.fabric8.kubernetes.client.Watcher
 import io.fabric8.kubernetes.client.dsl.Watchable
 
-class KubernetesResourceWatch(private val addOperation: (HasMetadata) -> Unit,
-                              private val removeOperation: (HasMetadata) -> Unit) {
+class KubernetesResourceWatch<W: Watchable<Watch, Watcher<in HasMetadata>>>(
+    private val addOperation: (HasMetadata) -> Unit,
+    private val removeOperation: (HasMetadata) -> Unit) {
 
     private var watches: MutableList<Watch?> = mutableListOf()
 
     fun start(client: NamespacedKubernetesClient) {
+        start(getWatchSuppliers(client))
+    }
+
+    fun <S: () -> W> start(watchSuppliers: List<S>) {
         stop()
-        watches.addAll(arrayOf(
-            watch { client.namespaces() },
-            watch { client.pods().inAnyNamespace() })
-        )
+        watches.addAll(watch(watchSuppliers))
     }
 
     fun stop() {
         stopWatch(watches)
     }
 
-    private fun <T: HasMetadata> watch(watchSupplier: () -> Watchable<Watch, Watcher<T>>): Watch? {
-        try{
+    private fun getWatchSuppliers(client: NamespacedKubernetesClient): List<() -> W> {
+        return listOf(
+            { client.namespaces() as W },
+            { client.pods().inAnyNamespace() as W })
+    }
+
+    private fun <S: () -> W> watch(watchSuppliers: Collection<S>): Collection<Watch?> {
+        return watchSuppliers.map { watch(it) }
+    }
+
+    private fun <S: () -> W> watch(watchSupplier: S): Watch? {
+        try {
             return watchSupplier().watch(ResourceWatcher(addOperation, removeOperation))
         } catch(e: RuntimeException) {
-            logger<KubernetesResourceWatch>().error(e)
+            logger<KubernetesResourceWatch<W>>().error(e)
             return null
         }
     }
@@ -51,10 +63,9 @@ class KubernetesResourceWatch(private val addOperation: (HasMetadata) -> Unit,
         }
     }
 
-    private class ResourceWatcher<T: HasMetadata>(private val addOperation: (T) -> Unit,
-                                                   private val removeOperation: (T) -> Unit)
-        : Watcher<T> {
-        override fun eventReceived(action: Watcher.Action?, resource: T) {
+    private class ResourceWatcher<R: HasMetadata>(private val addOperation: (R) -> Unit,
+                                                   private val removeOperation: (R) -> Unit) : Watcher<R> {
+        override fun eventReceived(action: Watcher.Action?, resource: R) {
             when (action) {
                 Watcher.Action.ADDED ->
                     addOperation(resource)

@@ -12,9 +12,8 @@ package org.jboss.tools.intellij.kubernetes.model
 
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.Namespace
-import io.fabric8.kubernetes.client.ConfigBuilder
-import io.fabric8.kubernetes.client.DefaultKubernetesClient
-import io.fabric8.kubernetes.client.NamespacedKubernetesClient
+import io.fabric8.kubernetes.client.*
+import io.fabric8.kubernetes.client.dsl.Watchable
 
 object KubernetesResourceModel {
 
@@ -36,8 +35,8 @@ object KubernetesResourceModel {
         return cluster
     }
 
-    private fun createWatch(onAdded: (HasMetadata) -> Unit, onRemoved: (HasMetadata) -> Unit): KubernetesResourceWatch {
-        return KubernetesResourceWatch(onAdded, onRemoved)
+    private fun createWatch(onAdded: (HasMetadata) -> Unit, onRemoved: (HasMetadata) -> Unit): KubernetesResourceWatch<*> {
+        return KubernetesResourceWatch<Watchable<Watch, Watcher<in HasMetadata>>>(onAdded, onRemoved)
     }
 
     private fun createClient(): NamespacedKubernetesClient {
