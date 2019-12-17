@@ -13,7 +13,6 @@ package org.jboss.tools.intellij.kubernetes.model
 import com.intellij.openapi.diagnostic.logger
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.client.KubernetesClientException
-import io.fabric8.kubernetes.client.NamespacedKubernetesClient
 import io.fabric8.kubernetes.client.Watch
 import io.fabric8.kubernetes.client.Watcher
 import io.fabric8.kubernetes.client.dsl.Watchable
@@ -24,11 +23,7 @@ class KubernetesResourceWatch<W: Watchable<Watch, Watcher<in HasMetadata>>>(
 
     private var watches: MutableList<Watch?> = mutableListOf()
 
-    fun start(client: NamespacedKubernetesClient) {
-        start(getWatchSuppliers(client))
-    }
-
-    fun <S: () -> W> start(watchSuppliers: List<S>) {
+    fun <S: () -> W> start(watchSuppliers: Collection<S?>) {
         stop()
         watches.addAll(watch(watchSuppliers))
     }
@@ -37,19 +32,13 @@ class KubernetesResourceWatch<W: Watchable<Watch, Watcher<in HasMetadata>>>(
         stopWatch(watches)
     }
 
-    private fun getWatchSuppliers(client: NamespacedKubernetesClient): List<() -> W> {
-        return listOf(
-            { client.namespaces() as W },
-            { client.pods().inAnyNamespace() as W })
-    }
-
-    private fun <S: () -> W> watch(watchSuppliers: Collection<S>): Collection<Watch?> {
+    private fun <S: () -> W> watch(watchSuppliers: Collection<S?>): Collection<Watch?> {
         return watchSuppliers.map { watch(it) }
     }
 
-    private fun <S: () -> W> watch(watchSupplier: S): Watch? {
+    private fun <S: () -> W> watch(watchSupplier: S?): Watch? {
         try {
-            return watchSupplier().watch(ResourceWatcher(addOperation, removeOperation))
+            return watchSupplier?.let { it() }?.watch(ResourceWatcher(addOperation, removeOperation))
         } catch(e: RuntimeException) {
             logger<KubernetesResourceWatch<W>>().error(e)
             return null

@@ -31,8 +31,14 @@ object KubernetesResourceModel {
 
     private fun createCluster(client: NamespacedKubernetesClient): Cluster {
         val cluster = Cluster(client)
-        watch.start(client)
+        watch.start(getWatchSuppliers(client))
         return cluster
+    }
+
+    private fun <S: Watchable<Watch, Watcher<in HasMetadata>>> getWatchSuppliers(client: NamespacedKubernetesClient): List<() -> S> {
+        return listOf(
+            { client.namespaces() as S },
+            { client.pods().inAnyNamespace() as S})
     }
 
     private fun createWatch(onAdded: (HasMetadata) -> Unit, onRemoved: (HasMetadata) -> Unit): KubernetesResourceWatch<*> {
