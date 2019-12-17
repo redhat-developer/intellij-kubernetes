@@ -17,35 +17,30 @@ import io.fabric8.kubernetes.client.Watch
 import io.fabric8.kubernetes.client.Watcher
 import io.fabric8.kubernetes.client.dsl.Watchable
 
-class KubernetesResourceWatch<W: Watchable<Watch, Watcher<in HasMetadata>>>(
+class KubernetesResourceWatch(
     private val addOperation: (HasMetadata) -> Unit,
     private val removeOperation: (HasMetadata) -> Unit) {
 
     private var watches: MutableList<Watch?> = mutableListOf()
 
-    fun <S: () -> W> start(watchSuppliers: Collection<S?>) {
-        stop()
-        watches.addAll(watch(watchSuppliers))
+    fun add(supplier: () -> Watchable<Watch, Watcher<in HasMetadata>>) {
+        watch(supplier)
     }
 
-    fun stop() {
-        stopWatch(watches)
+    fun clear() {
+        closeWatches(watches)
     }
 
-    private fun <S: () -> W> watch(watchSuppliers: Collection<S?>): Collection<Watch?> {
-        return watchSuppliers.map { watch(it) }
-    }
-
-    private fun <S: () -> W> watch(watchSupplier: S?): Watch? {
+    private fun watch(supplier: () -> Watchable<Watch, Watcher<in HasMetadata>>): Watch? {
         try {
-            return watchSupplier?.let { it() }?.watch(ResourceWatcher(addOperation, removeOperation))
+            return supplier().watch(ResourceWatcher(addOperation, removeOperation))
         } catch(e: RuntimeException) {
-            logger<KubernetesResourceWatch<W>>().error(e)
+            logger<KubernetesResourceWatch>().error(e)
             return null
         }
     }
 
-    private fun stopWatch(watches: MutableList<Watch?>) {
+    private fun closeWatches(watches: MutableList<Watch?>) {
         watches.removeAll {
             it?.close()
             true

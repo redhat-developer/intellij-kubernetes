@@ -15,8 +15,7 @@ import io.fabric8.kubernetes.client.Watch
 import io.fabric8.kubernetes.client.Watcher
 import io.fabric8.kubernetes.client.dsl.Watchable
 import io.mockk.mockk
-import io.mockk.verify
-import org.assertj.core.api.Assertions
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
 import org.junit.Test
 
@@ -26,13 +25,21 @@ class KubernetesResourceWatchTest {
     private val addOperation: (HasMetadata) -> Unit = { addOperationState.operation(it) }
     private val removeOperationState = OperationState()
     private val removeOperation: (HasMetadata) -> Unit = { removeOperationState.operation(it) }
-    private val watch: KubernetesResourceWatch<Watchable<Watch, Watcher<in HasMetadata>>> =
+    private val watch: KubernetesResourceWatch =
         KubernetesResourceWatch(addOperation = addOperation, removeOperation = removeOperation)
     private val watchable = WatchableFake()
 
     @Before
     fun before() {
-        watch.start(watchSuppliers = listOf { watchable })
+        watch.add { watchable }
+    }
+
+    @Test
+    fun `should call watchable#watch when supplier is added`() {
+        // given
+        // when watch supplier is added - in @Before
+        // then
+        assertThat(watchable.isWatchCalled()).isTrue()
     }
 
     @Test
@@ -42,8 +49,8 @@ class KubernetesResourceWatchTest {
         // when
         watchable.watcher?.eventReceived(Watcher.Action.ADDED, resource)
         // then
-        Assertions.assertThat(addOperationState.wasInvokedWithResource(resource)).isTrue()
-        Assertions.assertThat(removeOperationState.wasInvoked()).isFalse()
+        assertThat(addOperationState.wasInvokedWithResource(resource)).isTrue()
+        assertThat(removeOperationState.wasInvoked()).isFalse()
     }
 
     @Test
@@ -53,28 +60,28 @@ class KubernetesResourceWatchTest {
         // when
         watchable.watcher?.eventReceived(Watcher.Action.DELETED, resource)
         // then
-        Assertions.assertThat(removeOperationState.wasInvokedWithResource(resource)).isTrue()
-        Assertions.assertThat(addOperationState.wasInvoked()).isFalse()
+        assertThat(removeOperationState.wasInvokedWithResource(resource)).isTrue()
+        assertThat(addOperationState.wasInvoked()).isFalse()
     }
 
     @Test
-    fun `should not invoke anyOperation if watch notifies ERROR`() {
+    fun `should not invoke any operation if watch notifies action that is not ADD or REMOVE`() {
         // given
         val resource: HasMetadata = mockk(relaxed = true)
         // when
         watchable.watcher?.eventReceived(Watcher.Action.ERROR, resource)
         // then
-        Assertions.assertThat(removeOperationState.wasInvoked()).isFalse()
-        Assertions.assertThat(addOperationState.wasInvoked()).isFalse()
+        assertThat(removeOperationState.wasInvoked()).isFalse()
+        assertThat(addOperationState.wasInvoked()).isFalse()
     }
 
     @Test
-    fun `#start should close existing watches`() {
+    fun `#clear should close existing watches`() {
         // given
         // when starting 2nd time
-        watch.start(watchSuppliers = listOf { WatchableFake() })
+        watch.clear()
         // then
-        watchable.verifyClosed()
+        assertThat(watchable.watch.isClosed())
     }
 
     private class OperationState() {
@@ -95,8 +102,8 @@ class KubernetesResourceWatchTest {
 
     private class WatchableFake : Watchable<Watch, Watcher<in HasMetadata>> {
 
-        private val watch: Watch = mockk(relaxed = true)
         var watcher: Watcher<in HasMetadata>? = null
+        var watch: WatchFake = WatchFake()
 
         override fun watch(watcher: Watcher<in HasMetadata>?): Watch {
             this.watcher = watcher
@@ -108,8 +115,21 @@ class KubernetesResourceWatchTest {
             return watch
         }
 
-        fun verifyClosed() {
-            verify { watch.close() }
+        fun isWatchCalled(): Boolean {
+            return watcher != null
+        }
+    }
+
+    private class WatchFake: Watch {
+
+        private var closed: Boolean = false
+
+        override fun close() {
+            closed = true
+        }
+
+        fun isClosed(): Boolean {
+            return closed
         }
     }
 }
