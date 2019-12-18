@@ -12,8 +12,10 @@ package org.jboss.tools.intellij.kubernetes.model
 
 import io.fabric8.kubernetes.api.model.Namespace
 import io.fabric8.kubernetes.client.DefaultKubernetesClient
-import io.fabric8.kubernetes.client.NamespacedKubernetesClient
-import io.mockk.*
+import io.mockk.every
+import io.mockk.mockk
+import io.mockk.mockkConstructor
+import io.mockk.verify
 import org.junit.Test
 
 class KubernetesResourceModelTest {
@@ -22,51 +24,25 @@ class KubernetesResourceModelTest {
     fun `should call list namespaces on client`() {
         // given
         mockClient(emptyList())
-//        mockResourceModel(client)
         // when
         KubernetesResourceModel.getAllNamespaces()
         // then
-        verify { anyConstructed<DefaultKubernetesClient>().namespaces().list().items }
-    }
-
-    private fun mockResourceModel(client: NamespacedKubernetesClient) {
-/**
-        mockkObject(KubernetesResourceModel, recordPrivateCalls = true)
-        every { KubernetesResourceModel invokeNoArgs "createClient" } returns client
-        every { KubernetesResourceModel invoke
-                "createWatch" withArguments (listOf({ resource: HasMetadata -> Unit }, { resource: HasMetadata -> Unit }))
-            } returns mockk<KubernetesResourceWatch>() {
-            every { start(any()) } returns Unit
-        }
-*/
+        verify { anyConstructed<DefaultKubernetesClient>().namespaces() }
     }
 
     private fun mockClient(namespaces: List<Namespace>) {
         // client.namespaces().list().items.asSequence()
         mockkConstructor(DefaultKubernetesClient::class)
         every { anyConstructed<DefaultKubernetesClient>().namespaces() } returns
-                spyk {
+                mockk {
                     every { list() } returns
-                            spyk {
+                            mockk {
                                 every { items } returns
                                         namespaces
                             }
                     every { watch(any()) } returns
                             mockk()
                 }
-/**
-        mockkConstructor(NamespaceList::class)
-        every { anyConstructed<NamespaceList>().getItems() } returns namespaces
-        mockkConstructor(NamespaceOperationsImpl::class)
-        every { anyConstructed<NamespaceOperationsImpl>().list() } returns spyk()
-        every { anyConstructed<DefaultKubernetesClient>().namespaces() } returns
-                mockk() {
-                    every { list() } returns
-                            spyk()
-                    every { watch(any()) } returns
-                            spyk()
-                }
-*/
     }
 
     private fun mockNamespace(name: String): Namespace {
