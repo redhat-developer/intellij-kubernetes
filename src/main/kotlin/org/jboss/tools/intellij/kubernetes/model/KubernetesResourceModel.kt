@@ -10,8 +10,7 @@
  ******************************************************************************/
 package org.jboss.tools.intellij.kubernetes.model
 
-import io.fabric8.kubernetes.api.model.HasMetadata
-import io.fabric8.kubernetes.api.model.Namespace
+import io.fabric8.kubernetes.api.model.*
 import io.fabric8.kubernetes.client.NamespacedKubernetesClient
 
 interface IKubernetesResourceModel {
@@ -66,7 +65,7 @@ class KubernetesResourceModel(
         when(resource) {
             is NamespacedKubernetesClient -> refresh()
             is Namespace -> refresh(resource)
-            is HasMetadata -> refresh(resource)
+            is HasMetadata -> refresh(resource as Namespace)
         }
     }
 

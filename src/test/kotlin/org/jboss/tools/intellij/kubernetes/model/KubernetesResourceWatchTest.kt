@@ -10,12 +10,11 @@
  ******************************************************************************/
 package org.jboss.tools.intellij.kubernetes.model
 
-/*
+import com.nhaarman.mockitokotlin2.mock
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.client.Watch
 import io.fabric8.kubernetes.client.Watcher
 import io.fabric8.kubernetes.client.dsl.Watchable
-import io.mockk.mockk
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
 import org.junit.Test
@@ -46,7 +45,7 @@ class KubernetesResourceWatchTest {
     @Test
     fun `should invoke addOperation if watch notifies ADDED`() {
         // given
-        val resource: HasMetadata = mockk(relaxed = true)
+        val resource: HasMetadata = mock()
         // when
         watchable.watcher?.eventReceived(Watcher.Action.ADDED, resource)
         // then
@@ -57,7 +56,7 @@ class KubernetesResourceWatchTest {
     @Test
     fun `should invoke removeOperation if watch notifies REMOVED`() {
         // given
-        val resource: HasMetadata = mockk(relaxed = true)
+        val resource: HasMetadata = mock()
         // when
         watchable.watcher?.eventReceived(Watcher.Action.DELETED, resource)
         // then
@@ -68,7 +67,7 @@ class KubernetesResourceWatchTest {
     @Test
     fun `should not invoke any operation if watch notifies action that is not ADD or REMOVE`() {
         // given
-        val resource: HasMetadata = mockk(relaxed = true)
+        val resource: HasMetadata = mock()
         // when
         watchable.watcher?.eventReceived(Watcher.Action.ERROR, resource)
         // then
@@ -135,4 +134,3 @@ class KubernetesResourceWatchTest {
     }
 
 }
- */

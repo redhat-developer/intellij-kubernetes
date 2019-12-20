@@ -10,68 +10,65 @@
  ******************************************************************************/
 package org.jboss.tools.intellij.kubernetes.model
 
-import io.fabric8.kubernetes.api.model.DoneableNamespace
-import io.fabric8.kubernetes.api.model.Namespace
-import io.fabric8.kubernetes.api.model.NamespaceList
+import com.nhaarman.mockitokotlin2.*
+import io.fabric8.kubernetes.api.model.*
 import io.fabric8.kubernetes.client.NamespacedKubernetesClient
-import io.fabric8.kubernetes.client.dsl.NonNamespaceOperation
-import io.fabric8.kubernetes.client.dsl.Resource
-import io.mockk.every
-import io.mockk.mockk
-import io.mockk.unmockkAll
-import io.mockk.verify
-import org.junit.After
-import org.junit.Before
-import org.junit.Test
-
+import io.fabric8.kubernetes.client.dsl.*
+import org.assertj.core.api.Assertions.assertThat
+import org.junit.*
 typealias NamespaceListOperation = NonNamespaceOperation<Namespace, NamespaceList, DoneableNamespace, Resource<Namespace, DoneableNamespace>>
 
 class KubernetesResourceModelTest {
 
+    companion object Constants {
+        val NAMESPACE1 = mockNamespace("namespace1")
+        val NAMESPACE2 = mockNamespace("namespace2")
+        val NAMESPACE3 = mockNamespace("namespace3")
+
+        private fun mockNamespace(name: String): Namespace {
+            val metadata = mock<ObjectMeta> {
+                on { getName() } doReturn name
+            }
+            return mock {
+                on { getMetadata() } doReturn metadata
+            }
+        }
+    }
+
     private lateinit var client: NamespacedKubernetesClient
-    private lateinit var model: KubernetesResourceModel
+    private lateinit var model: IKubernetesResourceModel
 
     @Before
     fun before() {
-        val namespaceList = mockk<NamespaceList>(relaxed = true) {
-            every { items } returns emptyList()
-        }
-        val nonNamespaceOperation: NamespaceListOperation = mockk(relaxed = true) {
-            every { list() } returns namespaceList
-        }
-        client = mockk(relaxed = true) {
-            every { namespaces() } returns nonNamespaceOperation
-        }
-        /**
-        client = mockk(relaxed = true) {
-            every { namespaces() } returns
-                mockk {
-                    io.mockk.every { list() } returns
-                            io.mockk.mockk {
-                                io.mockk.every { items } returns
-                                        kotlin.collections.emptyList()
-                            }
+        client = mockClient(listOf(
+            NAMESPACE1,
+            NAMESPACE2,
+            NAMESPACE3))
+        model = KubernetesResourceModel {
+            val value = object : Cluster(it) {
+                override fun createClient(): NamespacedKubernetesClient {
+                    return this@KubernetesResourceModelTest.client
                 }
-        }
-        */
 
-        model = KubernetesResourceModel(
-            fun(resourceChange: ResourceChangeObservable): Cluster {
-                return object: Cluster(resourceChange) {
-                    override fun createClient(): NamespacedKubernetesClient {
-                        return this@KubernetesResourceModelTest.client
-                    }
-
-                    override fun getWatchableProviders(client: NamespacedKubernetesClient): List<() -> WatchableResource> {
-                        return return emptyList()
-                    }
+                override fun getWatchableProviders(client: NamespacedKubernetesClient): List<() -> WatchableResource> {
+                    return emptyList()
                 }
-            })
+            }
+            value
+        }
     }
 
-    @After
-    fun after() {
-        unmockkAll()
+    private fun mockClient(namespaces: List<Namespace>): NamespacedKubernetesClient {
+        val namespaceList = mock<NamespaceList> {
+            on { items } doReturn namespaces
+        }
+        val namespacesMock =
+            mock<NamespaceListOperation> {
+                on { list() } doReturn namespaceList
+            }
+        return mock<NamespacedKubernetesClient> {
+            on { namespaces() } doReturn namespacesMock
+        }
     }
 
     @Test
@@ -80,6 +77,58 @@ class KubernetesResourceModelTest {
         // when
         model.getAllNamespaces()
         // then
-        verify { client.namespaces().list().items }
+        verify(client.namespaces().list(), times(1)).items
     }
+
+    @Test
+    fun `should not call list namespaces on client but used cached entries on 2nd call`() {
+        // given
+        model.getAllNamespaces()
+        // when
+        model.getAllNamespaces()
+        // then
+        verify(client.namespaces().list(), times(1)).items
+    }
+
+    @Test
+    fun `should call list namespaces on client if refreshed before 2nd call`() {
+        // given
+        model.getAllNamespaces()
+        // when
+        model.refresh()
+        model.getAllNamespaces()
+        // then
+        verify(client.namespaces().list(), times(2)).items
+    }
+
+    @Test
+    fun `should return namespace by name`() {
+        // given
+        model.getAllNamespaces()
+        // when
+        val namespace = model.getNamespace(NAMESPACE2.metadata.name)
+        // then
+        assertThat(namespace).isEqualTo(NAMESPACE2)
+    }
+
+    @Test
+    fun `should return null if getting namespace by inexistent name`() {
+        // given
+        model.getAllNamespaces()
+        // when
+        val namespace = model.getNamespace("bogus")
+        // then
+        assertThat(namespace).isNull()
+    }
+
+    @Test
+    fun `should not load namespace(s) from client but use cached ones when getting namespace by name`() {
+        // given
+        model.getAllNamespaces()
+        // when
+        val namespace = model.getNamespace(NAMESPACE2.metadata.name)
+        // then
+        verify(client.namespaces().list(), times(1)).items
+    }
+
 }
