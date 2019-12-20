@@ -16,14 +16,19 @@ import io.fabric8.kubernetes.client.KubernetesClientException
 import io.fabric8.kubernetes.client.Watch
 import io.fabric8.kubernetes.client.Watcher
 import io.fabric8.kubernetes.client.dsl.Watchable
+typealias WatchableResource = Watchable<Watch, Watcher<in HasMetadata>>
+typealias WatchableResourceSupplier = () -> WatchableResource
 
-class KubernetesResourceWatch(
-    private val addOperation: (HasMetadata) -> Unit,
-    private val removeOperation: (HasMetadata) -> Unit) {
+open class KubernetesResourceWatch(private val addOperation: (HasMetadata) -> Unit,
+                              private val removeOperation: (HasMetadata) -> Unit) {
 
     private var watches: MutableList<Watch?> = mutableListOf()
 
-    fun add(supplier: () -> Watchable<Watch, Watcher<in HasMetadata>>) {
+    fun addAll(suppliers: List<WatchableResourceSupplier?>) {
+        suppliers.forEach { add(it) }
+    }
+
+    fun add(supplier: WatchableResourceSupplier?) {
         watch(supplier)
     }
 
@@ -31,9 +36,9 @@ class KubernetesResourceWatch(
         closeWatches(watches)
     }
 
-    private fun watch(supplier: () -> Watchable<Watch, Watcher<in HasMetadata>>): Watch? {
+    private fun watch(supplier: WatchableResourceSupplier?): Watch? {
         try {
-            return supplier().watch(ResourceWatcher(addOperation, removeOperation))
+            return supplier?.invoke()?.watch(ResourceWatcher(addOperation, removeOperation))
         } catch(e: RuntimeException) {
             logger<KubernetesResourceWatch>().error(e)
             return null

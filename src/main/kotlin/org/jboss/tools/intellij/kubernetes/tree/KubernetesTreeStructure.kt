@@ -15,14 +15,16 @@ import com.intellij.ide.projectView.PresentationData
 import com.intellij.ide.util.treeView.AbstractTreeStructure
 import com.intellij.ide.util.treeView.NodeDescriptor
 import com.intellij.ide.util.treeView.PresentableNodeDescriptor
+import com.intellij.openapi.components.ServiceManager
+import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.IconLoader
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.Namespace
 import io.fabric8.kubernetes.client.NamespacedKubernetesClient
-import org.jboss.tools.intellij.kubernetes.model.KubernetesResourceModel
+import org.jboss.tools.intellij.kubernetes.model.IKubernetesResourceModel
 import org.jboss.tools.intellij.kubernetes.model.PodsProvider
 
-class KubernetesTreeStructure : AbstractTreeStructure() {
+class KubernetesTreeStructure(private val project: Project) : AbstractTreeStructure() {
 
     override fun getParentElement(element: Any?): Any? {
         try {
@@ -32,7 +34,7 @@ class KubernetesTreeStructure : AbstractTreeStructure() {
                 is Namespace ->
                     rootElement
                 is HasMetadata ->
-                    KubernetesResourceModel.getNamespace(element.metadata.namespace)
+                    getResourceModel().getNamespace(element.metadata.namespace)
                 else ->
                     rootElement
             }
@@ -45,9 +47,9 @@ class KubernetesTreeStructure : AbstractTreeStructure() {
         try {
             return when(element) {
                 rootElement ->
-                    KubernetesResourceModel.getAllNamespaces().toTypedArray()
+                    getResourceModel().getAllNamespaces().toTypedArray()
                 is Namespace ->
-                    KubernetesResourceModel.getResources(element.metadata.name, PodsProvider.KIND).toTypedArray()
+                    getResourceModel().getResources(element.metadata.name, PodsProvider.KIND).toTypedArray()
                 else ->
                     emptyArray()
             }
@@ -58,7 +60,7 @@ class KubernetesTreeStructure : AbstractTreeStructure() {
 
     override fun commit() = Unit
 
-    override fun getRootElement() = KubernetesResourceModel.getClient()
+    override fun getRootElement() = getResourceModel().getClient()
 
     override fun hasSomethingToCommit() = false
 
@@ -120,5 +122,9 @@ class KubernetesTreeStructure : AbstractTreeStructure() {
             return element;
         }
 
+    }
+
+    private fun getResourceModel(): IKubernetesResourceModel {
+        return ServiceManager.getService(project, IKubernetesResourceModel::class.java)
     }
 }

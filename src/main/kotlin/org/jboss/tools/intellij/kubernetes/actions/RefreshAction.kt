@@ -25,8 +25,10 @@ import com.intellij.ide.util.treeView.NodeDescriptor
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.PlatformDataKeys
+import com.intellij.openapi.components.ServiceManager
+import com.intellij.openapi.project.Project
 import com.intellij.ui.treeStructure.Tree
-import org.jboss.tools.intellij.kubernetes.model.KubernetesResourceModel
+import org.jboss.tools.intellij.kubernetes.model.IKubernetesResourceModel
 import javax.swing.tree.DefaultMutableTreeNode
 
 class RefreshAction: AnAction(Refresh) {
@@ -35,11 +37,16 @@ class RefreshAction: AnAction(Refresh) {
         val tree: Tree = getTree(event)
         val selectedNode = tree.selectionModel.selectionPath?.lastPathComponent
         val modelObject = getDescriptorElement(selectedNode)
-        KubernetesResourceModel.refresh(modelObject)
+        val resourceModel = ServiceManager.getService(getProject(event), IKubernetesResourceModel::class.java)
+        resourceModel.refresh(modelObject)
     }
 
     private fun getTree(event: AnActionEvent?): Tree {
         return event?.getData(PlatformDataKeys.CONTEXT_COMPONENT) as Tree
+    }
+
+    private fun getProject(event: AnActionEvent?): Project {
+        return event?.getData(PlatformDataKeys.PROJECT) as Project
     }
 
     private fun getDescriptorElement(node: Any?): Any? {
@@ -48,5 +55,4 @@ class RefreshAction: AnAction(Refresh) {
         }
         return (node.userObject as NodeDescriptor<*>).element
     }
-
 }

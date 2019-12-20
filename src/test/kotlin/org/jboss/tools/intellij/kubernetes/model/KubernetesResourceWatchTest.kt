@@ -10,6 +10,7 @@
  ******************************************************************************/
 package org.jboss.tools.intellij.kubernetes.model
 
+/*
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.client.Watch
 import io.fabric8.kubernetes.client.Watcher
@@ -132,4 +133,6 @@ class KubernetesResourceWatchTest {
             return closed
         }
     }
+
 }
+ */

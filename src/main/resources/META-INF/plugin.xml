@@ -1,28 +1,33 @@
 <idea-plugin>
-  <id>org.jboss.tools.intellij.kubernetes</id>
-  <name>IntelliJ Kubernetes by Red Hat</name>
-  <version>0.0.1</version>
-  <vendor email="support@redhat.com" url="http://www.redhat.com">Red Hat</vendor>
+    <id>org.jboss.tools.intellij.kubernetes</id>
+    <name>IntelliJ Kubernetes by Red Hat</name>
+    <version>0.0.1</version>
+    <vendor email="support@redhat.com" url="http://www.redhat.com">Red Hat</vendor>
 
-  <idea-version since-build="181.3741.2"/>
+    <idea-version since-build="181.3741.2"/>
 
-  <depends>com.intellij.modules.lang</depends>
+    <depends>com.intellij.modules.lang</depends>
 
-  <extensions defaultExtensionNs="com.intellij">
-      <toolWindow id="Kubernetes"
-                  anchor="left"
-                  factoryClass="org.jboss.tools.intellij.kubernetes.KubernetesToolWindowFactory"
-                  icon="/META-INF/pluginIcon13x13.svg"/>
-  </extensions>
+    <extensions defaultExtensionNs="com.intellij">
+        <toolWindow id="Kubernetes"
+                    anchor="left"
+                    factoryClass="org.jboss.tools.intellij.kubernetes.KubernetesToolWindowFactory"
+                    icon="/META-INF/pluginIcon13x13.svg"/>
+    </extensions>
 
-  <actions>
-      <group id="org.jboss.tools.intellij.kubernetes.tree" popup="true">
-      <!-- Application Explorer -->
-          <!-- Application Explorer -->
-          <action class="org.jboss.tools.intellij.kubernetes.actions.RefreshAction"
-                  id="org.jboss.tools.intellij.kubernetes.actions.Refresh"
-                  text="Refresh" />
-      </group>
-  </actions>
+    <extensions defaultExtensionNs="com.intellij">
+        <projectService serviceInterface="org.jboss.tools.intellij.kubernetes.model.IKubernetesResourceModel"
+                        serviceImplementation="org.jboss.tools.intellij.kubernetes.model.KubernetesResourceModel" />
+    </extensions>
+
+    <actions>
+        <group id="org.jboss.tools.intellij.kubernetes.tree" popup="true">
+            <!-- Application Explorer -->
+            <!-- Application Explorer -->
+            <action class="org.jboss.tools.intellij.kubernetes.actions.RefreshAction"
+                    id="org.jboss.tools.intellij.kubernetes.actions.Refresh"
+                    text="Refresh"/>
+        </group>
+    </actions>
 
 </idea-plugin>

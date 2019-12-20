@@ -16,7 +16,7 @@ import io.fabric8.kubernetes.client.NamespacedKubernetesClient
 
 class NamespaceProvider(private val client: NamespacedKubernetesClient, val namespace: Namespace) {
 
-    private val kindProviders: MutableMap<Class<out HasMetadata>, ResourceKindProvider<out HasMetadata>> = mutableMapOf(
+    private val kindProviders: MutableMap<Class<out HasMetadata>, IResourceKindProvider<out HasMetadata>> = mutableMapOf(
         Pair(PodsProvider.KIND, PodsProvider(client, namespace))
     )
 

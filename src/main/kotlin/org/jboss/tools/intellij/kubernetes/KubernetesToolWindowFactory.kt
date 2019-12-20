@@ -12,6 +12,7 @@ package org.jboss.tools.intellij.kubernetes
 
 import com.intellij.ide.util.treeView.NodeRenderer
 import com.intellij.openapi.actionSystem.ActionPlaces
+import com.intellij.openapi.components.ServiceManager
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.wm.ToolWindow
 import com.intellij.openapi.wm.ToolWindowFactory
@@ -21,7 +22,7 @@ import com.intellij.ui.content.ContentFactory
 import com.intellij.ui.tree.AsyncTreeModel
 import com.intellij.ui.tree.StructureTreeModel
 import com.intellij.ui.treeStructure.Tree
-import org.jboss.tools.intellij.kubernetes.model.KubernetesResourceModel
+import org.jboss.tools.intellij.kubernetes.model.IKubernetesResourceModel
 import org.jboss.tools.intellij.kubernetes.tree.KubernetesTreeStructure
 import org.jboss.tools.intellij.kubernetes.tree.StructureTreeAdapter
 
@@ -29,9 +30,10 @@ class KubernetesToolWindowFactory: ToolWindowFactory {
 
     override fun createToolWindowContent(project: Project, toolWindow: ToolWindow) {
         val model = StructureTreeModel(true);
-        val structure = KubernetesTreeStructure()
+        val structure = KubernetesTreeStructure(project)
         model.setStructure(structure)
-        StructureTreeAdapter(model, structure, KubernetesResourceModel)
+        val resourceModel = ServiceManager.getService(project, IKubernetesResourceModel::class.java)
+        StructureTreeAdapter(model, structure, resourceModel)
         val tree = Tree(AsyncTreeModel(model))
         tree.cellRenderer = NodeRenderer();
         val panel = ScrollPaneFactory.createScrollPane(tree)

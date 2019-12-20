@@ -12,7 +12,7 @@ package org.jboss.tools.intellij.kubernetes.model
 
 import io.fabric8.kubernetes.api.model.HasMetadata
 
-interface ResourceKindProvider<T: HasMetadata> {
+interface IResourceKindProvider<T: HasMetadata> {
     val kind: Class<out T>
     val allResources: MutableSet<out HasMetadata>
     fun hasResource(resource: HasMetadata): Boolean

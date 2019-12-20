@@ -12,64 +12,57 @@ package org.jboss.tools.intellij.kubernetes.model
 
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.Namespace
-import io.fabric8.kubernetes.client.*
-import io.fabric8.kubernetes.client.dsl.Watchable
+import io.fabric8.kubernetes.client.NamespacedKubernetesClient
 
-object KubernetesResourceModel {
+interface IKubernetesResourceModel {
+    fun getClient(): NamespacedKubernetesClient
+    fun addListener(listener: ResourceChangedObservableImpl.ResourceChangeListener)
+    fun getAllNamespaces(): List<Namespace>
+    fun getNamespace(name: String): Namespace?
+    fun getAllResources(namespace: String): Collection<HasMetadata>
+    fun getResources(namespace: String, kind: Class<out HasMetadata>): Collection<HasMetadata>
+    fun refresh()
+    fun refresh(resource: Any?)
+}
 
-    private val watch = createWatch(
-        { add(it) },
-        { remove(it) }
-    )
+class KubernetesResourceModel(
+        private val clusterFactory: (ResourceChangeObservable) -> Cluster = { observable -> Cluster(observable) })
+    : IKubernetesResourceModel {
 
-    private var cluster = createCluster(createClient())
     private val observable = ResourceChangedObservableImpl()
+    private var cluster = createCluster(observable, clusterFactory)
 
-    fun getClient(): NamespacedKubernetesClient {
-        return cluster.client
-    }
-
-    private fun createCluster(client: NamespacedKubernetesClient): Cluster {
-        val cluster = Cluster(client)
-        getWatchSuppliers(client).forEach { watch.add(it)}
+    private fun createCluster(observable: ResourceChangeObservable, clusterFactory: (ResourceChangeObservable) -> Cluster): Cluster {
+        val cluster = clusterFactory(observable)
+        cluster.watch()
         return cluster
     }
 
-    private fun getWatchSuppliers(client: NamespacedKubernetesClient): List<() -> Watchable<Watch, Watcher<in HasMetadata>>> {
-        return listOf(
-            { client.namespaces() as Watchable<Watch, Watcher<in HasMetadata>> },
-            { client.pods().inAnyNamespace() as Watchable<Watch, Watcher<in HasMetadata>>})
+    override fun getClient(): NamespacedKubernetesClient {
+        return cluster.client
     }
 
-    private fun createWatch(onAdded: (HasMetadata) -> Unit, onRemoved: (HasMetadata) -> Unit): KubernetesResourceWatch {
-        return KubernetesResourceWatch(onAdded, onRemoved)
-    }
-
-    private fun createClient(): NamespacedKubernetesClient {
-        return DefaultKubernetesClient(ConfigBuilder().build())
-    }
-
-    fun addListener(listener: ResourceChangedObservableImpl.ResourceChangeListener) {
+    override fun addListener(listener: ResourceChangedObservableImpl.ResourceChangeListener) {
         observable.addListener(listener);
     }
 
-    fun getAllNamespaces(): List<Namespace> {
+    override fun getAllNamespaces(): List<Namespace> {
         return cluster.getAllNamespaces()
     }
 
-    fun getNamespace(name: String): Namespace? {
+    override fun getNamespace(name: String): Namespace? {
         return cluster.getNamespaceProvider(name)?.namespace
     }
 
-    fun getAllResources(namespace: String): Collection<HasMetadata> {
+    override fun getAllResources(namespace: String): Collection<HasMetadata> {
         return cluster.getNamespaceProvider(namespace)?.getAllResources() ?: emptyList()
     }
 
-    fun getResources(namespace: String, kind: Class<out HasMetadata>): Collection<HasMetadata> {
+    override fun getResources(namespace: String, kind: Class<out HasMetadata>): Collection<HasMetadata> {
         return cluster.getNamespaceProvider(namespace)?.getResources(kind) ?: emptyList()
     }
 
-    fun refresh(resource: Any?) {
+    override fun refresh(resource: Any?) {
         when(resource) {
             is NamespacedKubernetesClient -> refresh()
             is Namespace -> refresh(resource)
@@ -77,10 +70,10 @@ object KubernetesResourceModel {
         }
     }
 
-    private fun refresh() {
+    override fun refresh() {
         val oldClient = cluster.client
         oldClient.close()
-        cluster = createCluster(createClient())
+        cluster = clusterFactory(observable)
         observable.fireModified(listOf(oldClient))
     }
 
@@ -90,45 +83,5 @@ object KubernetesResourceModel {
             provider.clear()
             observable.fireModified(listOf(resource))
         }
-    }
-
-    fun add(resource: HasMetadata) {
-        val added = when(resource) {
-            is Namespace -> addNamespace(resource)
-            else -> addNamespaceChild(resource)
-        }
-        if (added) {
-            observable.fireAdded(listOf(resource))
-        }
-    }
-
-    private fun addNamespace(namespace: Namespace): Boolean {
-        return cluster.add(namespace)
-    }
-
-    private fun addNamespaceChild(resource: HasMetadata): Boolean {
-        val provider = cluster.getNamespaceProvider(resource)
-        return provider != null
-            && provider.add(resource)
-    }
-
-    fun remove(resource: HasMetadata) {
-        val removed = when (resource) {
-            is Namespace -> removeNamespace(resource)
-            else -> removeNamespaceChild(resource)
-        }
-        if (removed) {
-            observable.fireRemoved(listOf(resource))
-        }
-    }
-
-    private fun removeNamespace(namespace: Namespace): Boolean {
-        return cluster.remove(namespace)
-    }
-
-    private fun removeNamespaceChild(resource: HasMetadata): Boolean {
-        val provider = cluster.getNamespaceProvider(resource)
-        return provider != null
-            && provider.remove(resource)
     }
 }

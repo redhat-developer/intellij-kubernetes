@@ -16,7 +16,7 @@ import io.fabric8.kubernetes.api.model.Pod
 import io.fabric8.kubernetes.client.NamespacedKubernetesClient
 
 class PodsProvider(private val client: NamespacedKubernetesClient, private val namespace: Namespace)
-    : ResourceKindProvider<HasMetadata> {
+    : IResourceKindProvider<HasMetadata> {
 
     companion object {
         val KIND = Pod::class.java;

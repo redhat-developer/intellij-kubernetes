@@ -16,17 +16,23 @@ import io.fabric8.kubernetes.client.ConfigBuilder
 import io.fabric8.kubernetes.client.DefaultKubernetesClient
 import io.fabric8.kubernetes.client.NamespacedKubernetesClient
 
-class Cluster(val client: NamespacedKubernetesClient) {
+open class Cluster(private val resourceChange: ResourceChangeObservable) {
+
+    val client = createClient()
 
     private val namespaceProviders: MutableMap<String, NamespaceProvider> = mutableMapOf()
         get() {
             if (field.isEmpty()) {
-                val namespaceProviders = loadAllNameSpaces()
+                val namespaceProviders = loadAllNamespaces()
                     .map { Pair(it.metadata.name, NamespaceProvider(client, it)) }
                 field.putAll(namespaceProviders)
             }
             return field
         }
+
+    fun watch() {
+        createResourceWatch(getWatchableProviders(client))
+    }
 
     fun getAllNamespaces(): List<Namespace> {
         return namespaceProviders.entries.map { it.value.namespace }
@@ -40,20 +46,71 @@ class Cluster(val client: NamespacedKubernetesClient) {
         return getNamespaceProvider(namespace.metadata.name)
     }
 
-    fun getNamespaceProvider(resource: HasMetadata): NamespaceProvider? {
+    private fun getNamespaceProvider(resource: HasMetadata): NamespaceProvider? {
         return getNamespaceProvider(resource.metadata.namespace)
     }
 
-    fun add(namespace: Namespace): Boolean {
+    private fun loadAllNamespaces(): Sequence<Namespace> {
+        return  client.namespaces().list().items.asSequence()
+    }
+
+    private fun add(resource: HasMetadata) {
+        val added = when(resource) {
+            is Namespace -> addNamespace(resource)
+            else -> addNamespaceChild(resource)
+        }
+        if (added) {
+            resourceChange.fireAdded(listOf(resource))
+        }
+    }
+
+    private fun addNamespace(namespace: Namespace): Boolean {
         val provider = NamespaceProvider(client, namespace)
         return namespaceProviders.putIfAbsent(namespace.metadata.name, provider) == null
     }
 
-    fun remove(namespace: Namespace): Boolean {
+    private fun addNamespaceChild(resource: HasMetadata): Boolean {
+        val provider = getNamespaceProvider(resource)
+        return provider != null
+                && provider.add(resource)
+    }
+
+    private fun remove(resource: HasMetadata) {
+        val removed = when (resource) {
+            is Namespace -> removeNamespace(resource)
+            else -> removeNamespaceChild(resource)
+        }
+        if (removed) {
+            resourceChange.fireRemoved(listOf(resource))
+        }
+    }
+
+    private fun removeNamespace(namespace: Namespace): Boolean {
         return namespaceProviders.remove(namespace.metadata.name) != null
     }
 
-    private fun loadAllNameSpaces(): Sequence<Namespace> {
-        return  client.namespaces().list().items.asSequence()
+    private fun removeNamespaceChild(resource: HasMetadata): Boolean {
+        val provider = getNamespaceProvider(resource)
+        return provider != null
+                && provider.remove(resource)
     }
+
+    protected open fun createClient(): NamespacedKubernetesClient {
+        return DefaultKubernetesClient(ConfigBuilder().build())
+    }
+
+    protected open fun createResourceWatch(watchableProviders: List<WatchableResourceSupplier?>): KubernetesResourceWatch {
+        val watch = KubernetesResourceWatch(
+            addOperation = { add(it) },
+            removeOperation = { remove(it) })
+        watch.addAll(watchableProviders)
+        return watch
+    }
+
+    protected open fun getWatchableProviders(client: NamespacedKubernetesClient): List<() -> WatchableResource> {
+        return listOf(
+            { client.namespaces() as WatchableResource },
+            { client.pods().inAnyNamespace() as WatchableResource })
+    }
+
 }
