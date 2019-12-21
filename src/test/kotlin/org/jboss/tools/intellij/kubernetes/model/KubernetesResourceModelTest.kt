@@ -95,7 +95,7 @@ class KubernetesResourceModelTest {
         // given
         model.getAllNamespaces()
         // when
-        model.refresh()
+        model.clear()
         model.getAllNamespaces()
         // then
         verify(client.namespaces().list(), times(2)).items

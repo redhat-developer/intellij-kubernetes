@@ -38,7 +38,7 @@ class RefreshAction: AnAction(Refresh) {
         val selectedNode = tree.selectionModel.selectionPath?.lastPathComponent
         val modelObject = getDescriptorElement(selectedNode)
         val resourceModel = ServiceManager.getService(getProject(event), IKubernetesResourceModel::class.java)
-        resourceModel.refresh(modelObject)
+        resourceModel.clear(modelObject)
     }
 
     private fun getTree(event: AnActionEvent?): Tree {

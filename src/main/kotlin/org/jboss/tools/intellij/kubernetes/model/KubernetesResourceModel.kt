@@ -20,8 +20,8 @@ interface IKubernetesResourceModel {
     fun getNamespace(name: String): Namespace?
     fun getAllResources(namespace: String): Collection<HasMetadata>
     fun getResources(namespace: String, kind: Class<out HasMetadata>): Collection<HasMetadata>
-    fun refresh()
-    fun refresh(resource: Any?)
+    fun clear()
+    fun clear(resource: Any?)
 }
 
 class KubernetesResourceModel(
@@ -61,22 +61,22 @@ class KubernetesResourceModel(
         return cluster.getNamespaceProvider(namespace)?.getResources(kind) ?: emptyList()
     }
 
-    override fun refresh(resource: Any?) {
+    override fun clear(resource: Any?) {
         when(resource) {
-            is NamespacedKubernetesClient -> refresh()
-            is Namespace -> refresh(resource)
-            is HasMetadata -> refresh(resource as Namespace)
+            is NamespacedKubernetesClient -> clear()
+            is Namespace -> clear(resource)
+            is HasMetadata -> clear(resource as Namespace)
         }
     }
 
-    override fun refresh() {
+    override fun clear() {
         val oldClient = cluster.client
         oldClient.close()
         cluster = clusterFactory(observable)
         observable.fireModified(listOf(oldClient))
     }
 
-    private fun refresh(resource: Namespace) {
+    private fun clear(resource: Namespace) {
         val provider = cluster.getNamespaceProvider(resource)
         if (provider != null) {
             provider.clear()
