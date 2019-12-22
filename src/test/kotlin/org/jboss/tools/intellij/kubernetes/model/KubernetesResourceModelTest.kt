@@ -10,125 +10,59 @@
  ******************************************************************************/
 package org.jboss.tools.intellij.kubernetes.model
 
-import com.nhaarman.mockitokotlin2.*
-import io.fabric8.kubernetes.api.model.*
+import com.nhaarman.mockitokotlin2.any
+import com.nhaarman.mockitokotlin2.doAnswer
+import com.nhaarman.mockitokotlin2.mock
+import com.nhaarman.mockitokotlin2.times
+import com.nhaarman.mockitokotlin2.verify
+import com.nhaarman.mockitokotlin2.whenever
+import io.fabric8.kubernetes.api.model.DoneableNamespace
+import io.fabric8.kubernetes.api.model.Namespace
+import io.fabric8.kubernetes.api.model.NamespaceList
 import io.fabric8.kubernetes.client.NamespacedKubernetesClient
-import io.fabric8.kubernetes.client.dsl.*
-import org.assertj.core.api.Assertions.assertThat
-import org.junit.*
+import io.fabric8.kubernetes.client.dsl.NonNamespaceOperation
+import io.fabric8.kubernetes.client.dsl.Resource
+import org.junit.Before
+import org.junit.Test
+import org.mockito.Mockito.spy
+import org.mockito.stubbing.Answer
+
 typealias NamespaceListOperation = NonNamespaceOperation<Namespace, NamespaceList, DoneableNamespace, Resource<Namespace, DoneableNamespace>>
 
 class KubernetesResourceModelTest {
 
-    companion object Constants {
-        val NAMESPACE1 = mockNamespace("namespace1")
-        val NAMESPACE2 = mockNamespace("namespace2")
-        val NAMESPACE3 = mockNamespace("namespace3")
-
-        private fun mockNamespace(name: String): Namespace {
-            val metadata = mock<ObjectMeta> {
-                on { getName() } doReturn name
-            }
-            return mock {
-                on { getMetadata() } doReturn metadata
-            }
-        }
-    }
-
     private lateinit var client: NamespacedKubernetesClient
+    private lateinit var resourceChange: IResourceChangeObservable
+    private lateinit var clusterMock: Cluster
+    private lateinit var clusterFactory: (IResourceChangeObservable) -> Cluster
     private lateinit var model: IKubernetesResourceModel
 
     @Before
     fun before() {
-        client = mockClient(listOf(
-            NAMESPACE1,
-            NAMESPACE2,
-            NAMESPACE3))
-        model = KubernetesResourceModel {
-            val value = object : Cluster(it) {
-                override fun createClient(): NamespacedKubernetesClient {
-                    return this@KubernetesResourceModelTest.client
-                }
+        client = mock()
+        resourceChange = mock()
 
-                override fun getWatchableProviders(client: NamespacedKubernetesClient): List<() -> WatchableResource> {
-                    return emptyList()
-                }
-            }
-            value
-        }
-    }
-
-    private fun mockClient(namespaces: List<Namespace>): NamespacedKubernetesClient {
-        val namespaceList = mock<NamespaceList> {
-            on { items } doReturn namespaces
-        }
-        val namespacesMock =
-            mock<NamespaceListOperation> {
-                on { list() } doReturn namespaceList
-            }
-        return mock<NamespacedKubernetesClient> {
-            on { namespaces() } doReturn namespacesMock
-        }
+        clusterMock = spy(Cluster(resourceChange))
+        whenever { clusterMock.watch() }.doAnswer(Answer<Void?> { null })
+        clusterFactory = { clusterMock }
+        model = KubernetesResourceModel(resourceChange, clusterFactory)
     }
 
     @Test
-    fun `should call list namespaces on client`() {
+    fun `clear should create new cluster`() {
         // given
-        // when
-        model.getAllNamespaces()
-        // then
-        verify(client.namespaces().list(), times(1)).items
-    }
-
-    @Test
-    fun `should not call list namespaces on client but used cached entries on 2nd call`() {
-        // given
-        model.getAllNamespaces()
-        // when
-        model.getAllNamespaces()
-        // then
-        verify(client.namespaces().list(), times(1)).items
-    }
-
-    @Test
-    fun `should call list namespaces on client if refreshed before 2nd call`() {
-        // given
-        model.getAllNamespaces()
         // when
         model.clear()
-        model.getAllNamespaces()
         // then
-        verify(client.namespaces().list(), times(2)).items
+        verify(clusterFactory, times(1)).invoke(any<IResourceChangeObservable>())
     }
 
     @Test
-    fun `should return namespace by name`() {
+    fun `clear should notify client change`() {
         // given
-        model.getAllNamespaces()
         // when
-        val namespace = model.getNamespace(NAMESPACE2.metadata.name)
+        model.clear()
         // then
-        assertThat(namespace).isEqualTo(NAMESPACE2)
+        verify(resourceChange, times(1)).fireModified(client)
     }
-
-    @Test
-    fun `should return null if getting namespace by inexistent name`() {
-        // given
-        model.getAllNamespaces()
-        // when
-        val namespace = model.getNamespace("bogus")
-        // then
-        assertThat(namespace).isNull()
-    }
-
-    @Test
-    fun `should not load namespace(s) from client but use cached ones when getting namespace by name`() {
-        // given
-        model.getAllNamespaces()
-        // when
-        val namespace = model.getNamespace(NAMESPACE2.metadata.name)
-        // then
-        verify(client.namespaces().list(), times(1)).items
-    }
-
 }

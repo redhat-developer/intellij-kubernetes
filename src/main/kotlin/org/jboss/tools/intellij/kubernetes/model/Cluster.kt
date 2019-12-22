@@ -10,11 +10,13 @@
  ******************************************************************************/
 package org.jboss.tools.intellij.kubernetes.model
 
-import io.fabric8.kubernetes.api.model.*
-import io.fabric8.kubernetes.client.*
+import io.fabric8.kubernetes.api.model.HasMetadata
+import io.fabric8.kubernetes.api.model.Namespace
 import io.fabric8.kubernetes.client.ConfigBuilder
+import io.fabric8.kubernetes.client.DefaultKubernetesClient
+import io.fabric8.kubernetes.client.NamespacedKubernetesClient
 
-open class Cluster(private val resourceChange: ResourceChangeObservable) {
+open class Cluster(private val resourceChange: IResourceChangeObservable) {
 
     val client = createClient()
 
@@ -32,8 +34,20 @@ open class Cluster(private val resourceChange: ResourceChangeObservable) {
         createResourceWatch(getWatchableProviders(client))
     }
 
+    fun close() {
+        client.close()
+    }
+
+    fun clear() {
+        namespaceProviders.clear()
+    }
+
     fun getAllNamespaces(): List<Namespace> {
         return namespaceProviders.entries.map { it.value.namespace }
+    }
+
+    internal fun getNamespace(name: String): Namespace? {
+        return getNamespaceProvider(name)?.namespace
     }
 
     internal fun getNamespaceProvider(name: String): NamespaceProvider? {
@@ -44,7 +58,7 @@ open class Cluster(private val resourceChange: ResourceChangeObservable) {
         return getNamespaceProvider(namespace.metadata.name)
     }
 
-    internal fun getNamespaceProvider(resource: HasMetadata): NamespaceProvider? {
+    private fun getNamespaceProvider(resource: HasMetadata): NamespaceProvider? {
         return getNamespaceProvider(resource.metadata.namespace)
     }
 

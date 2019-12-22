@@ -10,14 +10,14 @@
  ******************************************************************************/
 package org.jboss.tools.intellij.kubernetes.model
 
-interface ResourceChangeObservable {
-    fun addListener(listener: ResourceChangedObservableImpl.ResourceChangeListener)
+interface IResourceChangeObservable {
+    fun addListener(listener: ResourceChangeObservable.ResourceChangeListener)
     fun fireRemoved(removed: Any)
     fun fireAdded(added: Any)
     fun fireModified(removed: Any)
 }
 
-open class ResourceChangedObservableImpl: ResourceChangeObservable {
+open class ResourceChangeObservable: IResourceChangeObservable {
 
     interface ResourceChangeListener {
         fun removed(removed: Any) = Unit

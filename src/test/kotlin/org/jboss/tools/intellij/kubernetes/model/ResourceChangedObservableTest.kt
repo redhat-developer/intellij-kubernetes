@@ -11,13 +11,13 @@
 package org.jboss.tools.intellij.kubernetes.model
 
 import org.assertj.core.api.Assertions.assertThat
-import org.jboss.tools.intellij.kubernetes.model.ResourceChangedObservableImpl.ResourceChangeListener
+import org.jboss.tools.intellij.kubernetes.model.ResourceChangeObservable.ResourceChangeListener
 import org.junit.Before
 import org.junit.Test
 
 class ResourceChangedObservableTest {
 
-    private val observable = ResourceChangedObservableImpl()
+    private val observable = ResourceChangeObservable()
     private val resource = Any()
     private val listener = object: ResourceChangeListener {
 

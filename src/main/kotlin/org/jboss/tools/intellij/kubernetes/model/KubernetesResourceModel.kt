@@ -10,12 +10,13 @@
  ******************************************************************************/
 package org.jboss.tools.intellij.kubernetes.model
 
-import io.fabric8.kubernetes.api.model.*
+import io.fabric8.kubernetes.api.model.HasMetadata
+import io.fabric8.kubernetes.api.model.Namespace
 import io.fabric8.kubernetes.client.NamespacedKubernetesClient
 
 interface IKubernetesResourceModel {
     fun getClient(): NamespacedKubernetesClient
-    fun addListener(listener: ResourceChangedObservableImpl.ResourceChangeListener)
+    fun addListener(listener: ResourceChangeObservable.ResourceChangeListener)
     fun getAllNamespaces(): List<Namespace>
     fun getNamespace(name: String): Namespace?
     fun getAllResources(namespace: String): Collection<HasMetadata>
@@ -25,13 +26,13 @@ interface IKubernetesResourceModel {
 }
 
 class KubernetesResourceModel(
-        private val clusterFactory: (ResourceChangeObservable) -> Cluster = { observable -> Cluster(observable) })
+    private val observable: IResourceChangeObservable = ResourceChangeObservable(),
+    private val clusterFactory: (IResourceChangeObservable) -> Cluster = { Cluster(it) })
     : IKubernetesResourceModel {
 
-    private val observable = ResourceChangedObservableImpl()
     private var cluster = createCluster(observable, clusterFactory)
 
-    private fun createCluster(observable: ResourceChangeObservable, clusterFactory: (ResourceChangeObservable) -> Cluster): Cluster {
+    private fun createCluster(observable: IResourceChangeObservable, clusterFactory: (IResourceChangeObservable) -> Cluster): Cluster {
         val cluster = clusterFactory(observable)
         cluster.watch()
         return cluster
@@ -41,7 +42,7 @@ class KubernetesResourceModel(
         return cluster.client
     }
 
-    override fun addListener(listener: ResourceChangedObservableImpl.ResourceChangeListener) {
+    override fun addListener(listener: ResourceChangeObservable.ResourceChangeListener) {
         observable.addListener(listener);
     }
 
@@ -50,7 +51,7 @@ class KubernetesResourceModel(
     }
 
     override fun getNamespace(name: String): Namespace? {
-        return cluster.getNamespaceProvider(name)?.namespace
+        return cluster.getNamespace(name)
     }
 
     override fun getAllResources(namespace: String): Collection<HasMetadata> {
@@ -71,16 +72,16 @@ class KubernetesResourceModel(
 
     override fun clear() {
         val oldClient = cluster.client
-        oldClient.close()
+        cluster.close()
         cluster = clusterFactory(observable)
-        observable.fireModified(listOf(oldClient))
+        observable.fireModified(oldClient)
     }
 
     private fun clear(resource: Namespace) {
         val provider = cluster.getNamespaceProvider(resource)
         if (provider != null) {
             provider.clear()
-            observable.fireModified(listOf(resource))
+            observable.fireModified(resource)
         }
     }
 }
