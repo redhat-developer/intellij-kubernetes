@@ -32,7 +32,7 @@ class KubernetesResourceModel(
 
     private var cluster = createCluster(observable, clusterFactory)
 
-    private fun createCluster(observable: IResourceChangeObservable, clusterFactory: (IResourceChangeObservable) -> Cluster): Cluster {
+    private fun createCluster(observable: IResourceChangeObservable, clusterFactory: (IResourceChangeObservable) -> ICluster): ICluster {
         val cluster = clusterFactory(observable)
         cluster.watch()
         return cluster

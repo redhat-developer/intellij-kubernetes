@@ -11,8 +11,10 @@
 package org.jboss.tools.intellij.kubernetes.model
 
 import com.nhaarman.mockitokotlin2.any
-import com.nhaarman.mockitokotlin2.doAnswer
+import com.nhaarman.mockitokotlin2.doNothing
+import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.mock
+import com.nhaarman.mockitokotlin2.reset
 import com.nhaarman.mockitokotlin2.times
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.whenever
@@ -24,8 +26,6 @@ import io.fabric8.kubernetes.client.dsl.NonNamespaceOperation
 import io.fabric8.kubernetes.client.dsl.Resource
 import org.junit.Before
 import org.junit.Test
-import org.mockito.Mockito.spy
-import org.mockito.stubbing.Answer
 
 typealias NamespaceListOperation = NonNamespaceOperation<Namespace, NamespaceList, DoneableNamespace, Resource<Namespace, DoneableNamespace>>
 
@@ -33,7 +33,7 @@ class KubernetesResourceModelTest {
 
     private lateinit var client: NamespacedKubernetesClient
     private lateinit var resourceChange: IResourceChangeObservable
-    private lateinit var clusterMock: Cluster
+    private lateinit var clusterMock: ICluster
     private lateinit var clusterFactory: (IResourceChangeObservable) -> Cluster
     private lateinit var model: IKubernetesResourceModel
 
@@ -42,19 +42,36 @@ class KubernetesResourceModelTest {
         client = mock()
         resourceChange = mock()
 
-        clusterMock = spy(Cluster(resourceChange))
-        whenever { clusterMock.watch() }.doAnswer(Answer<Void?> { null })
-        clusterFactory = { clusterMock }
+        clusterMock = mockCluster(client)
+        clusterFactory = mockClusterFactory(clusterMock)
         model = KubernetesResourceModel(resourceChange, clusterFactory)
+    }
+
+    private fun mockClusterFactory(cluster: ICluster): (IResourceChangeObservable) -> Cluster {
+        val clusterFactory: (IResourceChangeObservable) -> Cluster = mock()
+        doReturn(cluster)
+            .whenever(clusterFactory).invoke(any())
+        return clusterFactory
+    }
+
+    private fun mockCluster(client: NamespacedKubernetesClient): ICluster {
+        val clusterMock: ICluster = mock()
+        doNothing()
+            .whenever(clusterMock).watch()
+        doReturn(client)
+            .whenever(clusterMock).client
+        return clusterMock
     }
 
     @Test
     fun `clear should create new cluster`() {
         // given
+        // reset cluster creation upon model instantiation
+        reset(clusterFactory)
         // when
         model.clear()
         // then
-        verify(clusterFactory, times(1)).invoke(any<IResourceChangeObservable>())
+        verify(clusterFactory, times(1)).invoke(any())
     }
 
     @Test
@@ -64,5 +81,13 @@ class KubernetesResourceModelTest {
         model.clear()
         // then
         verify(resourceChange, times(1)).fireModified(client)
+    }
+
+    open class TestableCluster(resourceChange: ResourceChangeObservable): Cluster(resourceChange) {
+
+        public override fun createClient(): NamespacedKubernetesClient {
+            return super.createClient()
+        }
+
     }
 }

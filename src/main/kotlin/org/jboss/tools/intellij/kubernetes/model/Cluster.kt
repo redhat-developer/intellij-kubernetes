@@ -16,9 +16,21 @@ import io.fabric8.kubernetes.client.ConfigBuilder
 import io.fabric8.kubernetes.client.DefaultKubernetesClient
 import io.fabric8.kubernetes.client.NamespacedKubernetesClient
 
-open class Cluster(private val resourceChange: IResourceChangeObservable) {
+interface ICluster {
+    val client: NamespacedKubernetesClient
+    fun watch()
+    fun close()
+    fun clear()
+    fun getAllNamespaces(): List<Namespace>
+    fun getNamespace(name: String): Namespace?
+    fun getNamespaceProvider(name: String): NamespaceProvider?
+    fun getNamespaceProvider(resource: HasMetadata): NamespaceProvider?
+    fun add(resource: HasMetadata)
+}
 
-    val client = createClient()
+open class Cluster(private val resourceChange: IResourceChangeObservable) : ICluster {
+
+    override val client = createClient()
 
     private val namespaceProviders: MutableMap<String, NamespaceProvider> = mutableMapOf()
         get() {
@@ -30,27 +42,27 @@ open class Cluster(private val resourceChange: IResourceChangeObservable) {
             return field
         }
 
-    fun watch() {
+    override fun watch() {
         createResourceWatch(getWatchableProviders(client))
     }
 
-    fun close() {
+    override fun close() {
         client.close()
     }
 
-    fun clear() {
+    override fun clear() {
         namespaceProviders.clear()
     }
 
-    fun getAllNamespaces(): List<Namespace> {
+    override fun getAllNamespaces(): List<Namespace> {
         return namespaceProviders.entries.map { it.value.namespace }
     }
 
-    internal fun getNamespace(name: String): Namespace? {
+    override fun getNamespace(name: String): Namespace? {
         return getNamespaceProvider(name)?.namespace
     }
 
-    internal fun getNamespaceProvider(name: String): NamespaceProvider? {
+    override fun getNamespaceProvider(name: String): NamespaceProvider? {
         return namespaceProviders[name]
     }
 
@@ -58,7 +70,7 @@ open class Cluster(private val resourceChange: IResourceChangeObservable) {
         return getNamespaceProvider(namespace.metadata.name)
     }
 
-    private fun getNamespaceProvider(resource: HasMetadata): NamespaceProvider? {
+    override fun getNamespaceProvider(resource: HasMetadata): NamespaceProvider? {
         return getNamespaceProvider(resource.metadata.namespace)
     }
 
@@ -66,7 +78,7 @@ open class Cluster(private val resourceChange: IResourceChangeObservable) {
         return  client.namespaces().list().items.asSequence()
     }
 
-    fun add(resource: HasMetadata) {
+    override fun add(resource: HasMetadata) {
         val added = when(resource) {
             is Namespace -> addNamespace(resource)
             else -> addNamespaceChild(resource)
@@ -120,6 +132,9 @@ open class Cluster(private val resourceChange: IResourceChangeObservable) {
     }
 
     protected open fun getWatchableProviders(client: NamespacedKubernetesClient): List<() -> WatchableResource> {
+        if (client == null) {
+            return emptyList()
+        }
         return listOf(
             { client.namespaces() as WatchableResource },
             { client.pods().inAnyNamespace() as WatchableResource })
