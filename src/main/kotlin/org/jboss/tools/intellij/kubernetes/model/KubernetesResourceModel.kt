@@ -19,7 +19,6 @@ interface IKubernetesResourceModel {
     fun addListener(listener: ResourceChangeObservable.ResourceChangeListener)
     fun getAllNamespaces(): List<Namespace>
     fun getNamespace(name: String): Namespace?
-    fun getAllResources(namespace: String): Collection<HasMetadata>
     fun getResources(namespace: String, kind: Class<out HasMetadata>): Collection<HasMetadata>
     fun clear()
     fun clear(resource: Any?)
@@ -27,12 +26,15 @@ interface IKubernetesResourceModel {
 
 class KubernetesResourceModel(
     private val observable: IResourceChangeObservable = ResourceChangeObservable(),
-    private val clusterFactory: (IResourceChangeObservable) -> Cluster = { Cluster(it) })
-    : IKubernetesResourceModel {
+    private val clusterFactory: (IResourceChangeObservable) -> ICluster = { Cluster(it) }
+) : IKubernetesResourceModel {
 
     private var cluster = createCluster(observable, clusterFactory)
 
-    private fun createCluster(observable: IResourceChangeObservable, clusterFactory: (IResourceChangeObservable) -> ICluster): ICluster {
+    private fun createCluster(
+        observable: IResourceChangeObservable,
+        clusterFactory: (IResourceChangeObservable) -> ICluster
+    ): ICluster {
         val cluster = clusterFactory(observable)
         cluster.watch()
         return cluster
@@ -54,10 +56,6 @@ class KubernetesResourceModel(
         return cluster.getNamespace(name)
     }
 
-    override fun getAllResources(namespace: String): Collection<HasMetadata> {
-        return cluster.getNamespaceProvider(namespace)?.getAllResources() ?: emptyList()
-    }
-
     override fun getResources(namespace: String, kind: Class<out HasMetadata>): Collection<HasMetadata> {
         return cluster.getNamespaceProvider(namespace)?.getResources(kind) ?: emptyList()
     }
@@ -65,8 +63,7 @@ class KubernetesResourceModel(
     override fun clear(resource: Any?) {
         when(resource) {
             is NamespacedKubernetesClient -> clear()
-            is Namespace -> clear(resource)
-            is HasMetadata -> clear(resource as Namespace)
+            is HasMetadata -> clear(resource)
         }
     }
 
@@ -77,7 +74,7 @@ class KubernetesResourceModel(
         observable.fireModified(oldClient)
     }
 
-    private fun clear(resource: Namespace) {
+    private fun clear(resource: HasMetadata) {
         val provider = cluster.getNamespaceProvider(resource)
         if (provider != null) {
             provider.clear()

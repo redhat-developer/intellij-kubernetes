@@ -25,6 +25,7 @@ interface ICluster {
     fun getNamespace(name: String): Namespace?
     fun getNamespaceProvider(name: String): NamespaceProvider?
     fun getNamespaceProvider(resource: HasMetadata): NamespaceProvider?
+    fun getNamespaceProvider(namespace: Namespace): NamespaceProvider?
     fun add(resource: HasMetadata)
 }
 
@@ -66,12 +67,15 @@ open class Cluster(private val resourceChange: IResourceChangeObservable) : IClu
         return namespaceProviders[name]
     }
 
-    internal fun getNamespaceProvider(namespace: Namespace): NamespaceProvider? {
+    override fun getNamespaceProvider(namespace: Namespace): NamespaceProvider? {
         return getNamespaceProvider(namespace.metadata.name)
     }
 
     override fun getNamespaceProvider(resource: HasMetadata): NamespaceProvider? {
-        return getNamespaceProvider(resource.metadata.namespace)
+        return when(resource) {
+            is Namespace -> getNamespaceProvider(resource)
+            else -> getNamespaceProvider(resource.metadata.namespace)
+        }
     }
 
     private fun loadAllNamespaces(): Sequence<Namespace> {
@@ -139,5 +143,4 @@ open class Cluster(private val resourceChange: IResourceChangeObservable) : IClu
             { client.namespaces() as WatchableResource },
             { client.pods().inAnyNamespace() as WatchableResource })
     }
-
 }
