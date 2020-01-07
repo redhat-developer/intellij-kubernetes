@@ -17,11 +17,13 @@ import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.whenever
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.Namespace
+import io.fabric8.kubernetes.api.model.NamespaceList
 import io.fabric8.kubernetes.api.model.ObjectMeta
 import io.fabric8.kubernetes.client.NamespacedKubernetesClient
 import org.jboss.tools.intellij.kubernetes.model.ICluster
 import org.jboss.tools.intellij.kubernetes.model.IResourceChangeObservable
 import org.jboss.tools.intellij.kubernetes.model.IResourceKindProvider
+import org.jboss.tools.intellij.kubernetes.model.NamespaceListOperation
 import org.jboss.tools.intellij.kubernetes.model.NamespaceProvider
 
 object Mocks {
@@ -29,6 +31,19 @@ object Mocks {
     val NAMESPACE1 = namespace("namespace1")
     val NAMESPACE2 = namespace("namespace2")
     val NAMESPACE3 = namespace("namespace3")
+
+    fun client(namespaces: List<Namespace>): NamespacedKubernetesClient {
+        val namespaceList = mock<NamespaceList> {
+            on { items } doReturn namespaces
+        }
+        val namespacesMock =
+            mock<NamespaceListOperation> {
+                on { list() } doReturn namespaceList
+            }
+        return mock<NamespacedKubernetesClient> {
+            on { namespaces() } doReturn namespacesMock
+        }
+    }
 
     fun namespace(name: String): Namespace {
         val metadata = mock<ObjectMeta> {

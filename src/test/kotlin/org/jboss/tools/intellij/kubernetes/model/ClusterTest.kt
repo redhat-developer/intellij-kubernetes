@@ -10,17 +10,15 @@
  ******************************************************************************/
 package org.jboss.tools.intellij.kubernetes.model
 
-import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.times
 import com.nhaarman.mockitokotlin2.verify
-import io.fabric8.kubernetes.api.model.Namespace
-import io.fabric8.kubernetes.api.model.NamespaceList
 import io.fabric8.kubernetes.client.NamespacedKubernetesClient
 import org.assertj.core.api.Assertions.assertThat
 import org.jboss.tools.intellij.kubernetes.model.mocks.Mocks.NAMESPACE1
 import org.jboss.tools.intellij.kubernetes.model.mocks.Mocks.NAMESPACE2
 import org.jboss.tools.intellij.kubernetes.model.mocks.Mocks.NAMESPACE3
+import org.jboss.tools.intellij.kubernetes.model.mocks.Mocks.client
 import org.junit.Before
 import org.junit.Test
 
@@ -31,7 +29,7 @@ class ClusterTest {
 
     @Before
     fun before() {
-        client = mockClient(listOf(
+        client = client(listOf(
             NAMESPACE1,
             NAMESPACE2,
             NAMESPACE3))
@@ -104,18 +102,5 @@ class ClusterTest {
         val namespace = cluster.getNamespace(NAMESPACE2.metadata.name)
         // then
         verify(client.namespaces().list(), times(1)).items
-    }
-
-    private fun mockClient(namespaces: List<Namespace>): NamespacedKubernetesClient {
-        val namespaceList = mock<NamespaceList> {
-            on { items } doReturn namespaces
-        }
-        val namespacesMock =
-            mock<NamespaceListOperation> {
-                on { list() } doReturn namespaceList
-            }
-        return mock<NamespacedKubernetesClient> {
-            on { namespaces() } doReturn namespacesMock
-        }
     }
 }
