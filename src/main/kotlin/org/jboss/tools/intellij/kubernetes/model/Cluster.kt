@@ -136,9 +136,6 @@ open class Cluster(private val resourceChange: IResourceChangeObservable) : IClu
     }
 
     protected open fun getWatchableProviders(client: NamespacedKubernetesClient): List<() -> WatchableResource> {
-        if (client == null) {
-            return emptyList()
-        }
         return listOf(
             { client.namespaces() as WatchableResource },
             { client.pods().inAnyNamespace() as WatchableResource })

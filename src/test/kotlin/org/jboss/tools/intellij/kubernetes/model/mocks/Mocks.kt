@@ -62,7 +62,10 @@ object Mocks {
         return mock()
     }
 
-    fun <T: HasMetadata> resourceKindProvider(): IResourceKindProvider<T> {
-        return mock()
+    fun <T: HasMetadata> resourceKindProvider(kind: Class<T>): IResourceKindProvider<T> {
+        return mock() {
+            doReturn(kind)
+                .whenever(mock).kind
+        }
     }
 }

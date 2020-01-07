@@ -14,26 +14,17 @@ import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.Namespace
 import io.fabric8.kubernetes.client.NamespacedKubernetesClient
 
-class NamespaceProvider(private val client: NamespacedKubernetesClient, val namespace: Namespace) {
-
-    private val kindProviders: MutableMap<Class<out HasMetadata>, IResourceKindProvider<out HasMetadata>> = mutableMapOf(
-        Pair(PodsProvider.KIND, PodsProvider(client, namespace))
-    )
-
-    fun getAllResources(): Collection<HasMetadata>? {
-        return kindProviders.values.flatMap { it.allResources }
-    }
+class NamespaceProvider(
+    client: NamespacedKubernetesClient,
+    val namespace: Namespace,
+    private val kindProviders: Map<Class<out HasMetadata>, IResourceKindProvider<out HasMetadata>> =
+        mapOf(Pair(PodsProvider.KIND, PodsProvider(client, namespace)))) {
 
     fun <T: HasMetadata> getResources(kind: Class<T>): Collection<T> {
-        val provider = kindProviders[kind]
-        var allResources: Collection<T> = emptyList()
-        if (provider?.allResources is Collection<*>) {
-            allResources = provider.allResources as Collection<T>
-        }
-        return allResources
+        return kindProviders[kind]?.allResources as Collection<T>
     }
 
-    fun clear(kind: Class<HasMetadata>) {
+    fun <T: HasMetadata> clear(kind: Class<T>) {
         kindProviders[kind]?.clear()
     }
 
