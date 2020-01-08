@@ -21,7 +21,8 @@ class NamespaceProvider(
         mapOf(Pair(PodsProvider.KIND, PodsProvider(client, namespace)))) {
 
     fun <T: HasMetadata> getResources(kind: Class<T>): Collection<T> {
-        return kindProviders[kind]?.allResources as Collection<T>
+        val allResources = kindProviders[kind]?.getAllResources()
+        return allResources as? Collection<T> ?: emptyList()
     }
 
     fun <T: HasMetadata> clear(kind: Class<T>) {

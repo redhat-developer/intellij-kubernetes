@@ -19,7 +19,7 @@ import io.fabric8.kubernetes.api.model.ReplicationController
 import io.fabric8.kubernetes.client.NamespacedKubernetesClient
 import io.fabric8.openshift.api.model.DeploymentConfig
 import org.assertj.core.api.Assertions.assertThat
-import org.jboss.tools.intellij.kubernetes.model.mocks.Mocks.NAMESPACE1
+import org.jboss.tools.intellij.kubernetes.model.mocks.ClientMocks.NAMESPACE1
 import org.jboss.tools.intellij.kubernetes.model.mocks.Mocks.resourceKindProvider
 import org.junit.Test
 
@@ -43,7 +43,7 @@ class NamespaceProviderTest {
         // when
         namespaceProvider.getResources(rcKindProvider.kind)
         // then
-        verify(rcKindProvider).allResources
+        verify(rcKindProvider).getAllResources()
     }
 
     @Test

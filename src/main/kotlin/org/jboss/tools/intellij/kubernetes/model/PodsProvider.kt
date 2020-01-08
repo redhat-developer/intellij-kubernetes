@@ -16,7 +16,7 @@ import io.fabric8.kubernetes.api.model.Pod
 import io.fabric8.kubernetes.client.NamespacedKubernetesClient
 
 class PodsProvider(private val client: NamespacedKubernetesClient, private val namespace: Namespace)
-    : IResourceKindProvider<HasMetadata> {
+    : IResourceKindProvider<Pod> {
 
     companion object {
         val KIND = Pod::class.java;
@@ -24,7 +24,7 @@ class PodsProvider(private val client: NamespacedKubernetesClient, private val n
 
     override val kind = KIND
 
-    override val allResources: MutableSet<Pod> = mutableSetOf()
+    private val allResources: MutableSet<Pod> = mutableSetOf()
         get() {
             if (field.isEmpty()) {
                 val pods = getAllPods()
@@ -33,25 +33,17 @@ class PodsProvider(private val client: NamespacedKubernetesClient, private val n
             return field
         }
 
-    override fun hasResource(resource: HasMetadata): Boolean {
-        return allResources.contains(resource)
+    override fun getAllResources(): Collection<Pod> {
+        return allResources.toList()
     }
 
-    override fun clear(resource: HasMetadata) {
-        if (resource !is Pod) {
-            return
-        }
-        allResources.remove(resource)
-        allResources.add(getPod(resource.metadata.name))
+    override fun hasResource(resource: HasMetadata): Boolean {
+        return allResources.contains(resource)
     }
 
     override fun clear() {
         allResources.clear()
     }
-
-    private fun getAllPods() = client.pods().inNamespace(namespace.metadata.name).list().items
-
-    private fun getPod(name: String) = client.pods().inNamespace(namespace.metadata.name).withName(name).get()
 
     override fun add(resource: HasMetadata): Boolean {
         if (resource !is Pod) {
@@ -65,6 +57,10 @@ class PodsProvider(private val client: NamespacedKubernetesClient, private val n
             return false
         }
         return allResources.removeIf { resource.metadata.name == it.metadata.name }
+    }
+
+    private fun getAllPods(): List<Pod> {
+        return client.inNamespace(namespace.metadata.name).pods().list().items
     }
 
 }

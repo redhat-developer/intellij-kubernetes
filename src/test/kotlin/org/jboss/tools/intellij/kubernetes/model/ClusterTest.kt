@@ -15,10 +15,10 @@ import com.nhaarman.mockitokotlin2.times
 import com.nhaarman.mockitokotlin2.verify
 import io.fabric8.kubernetes.client.NamespacedKubernetesClient
 import org.assertj.core.api.Assertions.assertThat
-import org.jboss.tools.intellij.kubernetes.model.mocks.Mocks.NAMESPACE1
-import org.jboss.tools.intellij.kubernetes.model.mocks.Mocks.NAMESPACE2
-import org.jboss.tools.intellij.kubernetes.model.mocks.Mocks.NAMESPACE3
-import org.jboss.tools.intellij.kubernetes.model.mocks.Mocks.client
+import org.jboss.tools.intellij.kubernetes.model.mocks.ClientMocks.NAMESPACE1
+import org.jboss.tools.intellij.kubernetes.model.mocks.ClientMocks.NAMESPACE2
+import org.jboss.tools.intellij.kubernetes.model.mocks.ClientMocks.NAMESPACE3
+import org.jboss.tools.intellij.kubernetes.model.mocks.ClientMocks.client
 import org.junit.Before
 import org.junit.Test
 
@@ -29,10 +29,7 @@ class ClusterTest {
 
     @Before
     fun before() {
-        client = client(listOf(
-            NAMESPACE1,
-            NAMESPACE2,
-            NAMESPACE3))
+        client = client(NAMESPACE1, NAMESPACE2, NAMESPACE3)
         cluster = object : Cluster(mock()) {
                 override fun createClient(): NamespacedKubernetesClient {
                     return this@ClusterTest.client

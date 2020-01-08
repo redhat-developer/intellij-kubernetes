@@ -14,9 +14,8 @@ import io.fabric8.kubernetes.api.model.HasMetadata
 
 interface IResourceKindProvider<T: HasMetadata> {
     val kind: Class<out T>
-    val allResources: MutableSet<out HasMetadata>
+    fun getAllResources(): Collection<T>
     fun hasResource(resource: HasMetadata): Boolean
-    fun clear(resource: HasMetadata)
     fun clear()
     fun add(resource: HasMetadata): Boolean
     fun remove(resource: HasMetadata): Boolean
