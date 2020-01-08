@@ -70,7 +70,7 @@ class KubernetesResourceModel(
     override fun clear() {
         val oldClient = cluster.client
         cluster.close()
-        cluster = clusterFactory(observable)
+        cluster = createCluster(observable, clusterFactory)
         observable.fireModified(oldClient)
     }
 

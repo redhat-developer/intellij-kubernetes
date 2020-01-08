@@ -11,10 +11,10 @@
 package org.jboss.tools.intellij.kubernetes.model
 
 import com.nhaarman.mockitokotlin2.any
+import com.nhaarman.mockitokotlin2.clearInvocations
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.never
-import com.nhaarman.mockitokotlin2.reset
 import com.nhaarman.mockitokotlin2.times
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.whenever
@@ -92,8 +92,8 @@ class KubernetesResourceModelTest {
     @Test
     fun `clear should create new cluster`() {
         // given
-        // reset cluster factory invocation - to create the new cluster - that happens when model is instantiated
-        reset(clusterFactory)
+        // reset cluster factory invocation done when model is instantiated
+        clearInvocations(clusterFactory)
         // when
         model.clear()
         // then
@@ -107,6 +107,17 @@ class KubernetesResourceModelTest {
         model.clear()
         // then
         verify(cluster, times(1)).close()
+    }
+
+    @Test
+    fun `clear should watch new cluster`() {
+        // given
+        // reset watch invocation done when model is instantiated
+        clearInvocations(cluster)
+        // when
+        model.clear()
+        // then
+        verify(cluster, times(1)).watch()
     }
 
     @Test

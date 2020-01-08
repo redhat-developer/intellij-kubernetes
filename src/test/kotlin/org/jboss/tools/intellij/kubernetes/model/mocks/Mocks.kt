@@ -56,7 +56,8 @@ object Mocks {
 
     fun clusterFactory(cluster: ICluster): (IResourceChangeObservable) -> ICluster {
         return mock() {
-            on { invoke(any()) } doReturn cluster
+            doReturn(cluster)
+                .whenever(mock).invoke(any())
         }
     }
 
