@@ -28,32 +28,20 @@ import io.fabric8.kubernetes.client.dsl.Resource
 import org.jboss.tools.intellij.kubernetes.model.mocks.ClientMocks.NAMESPACE1
 import org.jboss.tools.intellij.kubernetes.model.mocks.ClientMocks.NAMESPACE2
 import org.jboss.tools.intellij.kubernetes.model.mocks.ClientMocks.NAMESPACE3
-import org.jboss.tools.intellij.kubernetes.model.mocks.Mocks.cluster
-import org.jboss.tools.intellij.kubernetes.model.mocks.Mocks.clusterFactory
+import org.jboss.tools.intellij.kubernetes.model.mocks.Mocks
 import org.jboss.tools.intellij.kubernetes.model.mocks.Mocks.namespaceProvider
-import org.junit.Before
 import org.junit.Test
 
 typealias NamespaceListOperation = NonNamespaceOperation<Namespace, NamespaceList, DoneableNamespace, Resource<Namespace, DoneableNamespace>>
 
 class KubernetesResourceModelTest {
 
-    private lateinit var client: NamespacedKubernetesClient
-    private lateinit var resourceChange: IResourceChangeObservable
-    private lateinit var cluster: ICluster
-    private lateinit var clusterFactory: (IResourceChangeObservable) -> ICluster
-    private lateinit var provider: NamespaceProvider
-    private lateinit var model: IKubernetesResourceModel
-
-    @Before
-    fun before() {
-        client = mock()
-        provider = namespaceProvider()
-        cluster = cluster(client, provider)
-        resourceChange = mock()
-        clusterFactory = clusterFactory(cluster)
-        model = KubernetesResourceModel(resourceChange, clusterFactory)
-    }
+    private var client: NamespacedKubernetesClient = mock()
+    private var resourceChange: IResourceChangeObservable = mock()
+    private var provider: NamespaceProvider = namespaceProvider()
+    private var cluster: ICluster = Mocks.cluster(client, provider)
+    private var clusterFactory: (IResourceChangeObservable) -> ICluster = Mocks.clusterFactory(cluster)
+    private var model: IKubernetesResourceModel = KubernetesResourceModel(resourceChange, clusterFactory)
 
     @Test
     fun `getAllNamespaces should return all namespaces in cluster`() {

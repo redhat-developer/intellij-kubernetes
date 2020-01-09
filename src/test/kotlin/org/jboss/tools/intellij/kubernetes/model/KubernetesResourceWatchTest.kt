@@ -76,7 +76,7 @@ class KubernetesResourceWatchTest {
     }
 
     @Test
-    fun `#clear should close existing watches`() {
+    fun `clear() should close existing watches`() {
         // given
         // when starting 2nd time
         watch.clear()
