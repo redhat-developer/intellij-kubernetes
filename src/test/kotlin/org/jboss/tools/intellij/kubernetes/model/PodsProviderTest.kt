@@ -48,7 +48,7 @@ class PodsProviderTest {
     }
 
     @Test
-    fun `allResources is only loading once`() {
+    fun `allResources is only loading once, returned cached on every further call`() {
         // given
         provider.getAllResources()
         // when
@@ -58,11 +58,11 @@ class PodsProviderTest {
     }
 
     @Test
-    fun `allResources is loading again if clear() is called`() {
+    fun `allResources should reload if invalidate() is called`() {
         // given
         provider.getAllResources()
         verify(client.inNamespace(anyString()).pods().list(), times(1)).items
-        provider.clear()
+        provider.invalidate()
         // when
         provider.getAllResources()
         // then
@@ -70,7 +70,7 @@ class PodsProviderTest {
     }
 
     @Test
-    fun `hasResource() loads resources`() {
+    fun `hasResource() loads resources if they're not present yet`() {
         // given
         verify(client.inNamespace(anyString()).pods().list(), never()).items
         // when

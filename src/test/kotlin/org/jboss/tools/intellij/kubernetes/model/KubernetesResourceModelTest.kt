@@ -78,71 +78,71 @@ class KubernetesResourceModelTest {
     }
 
     @Test
-    fun `clear should create new cluster`() {
+    fun `#invalidate() should create new cluster`() {
         // given
         // reset cluster factory invocation done when model is instantiated
         clearInvocations(clusterFactory)
         // when
-        model.clear()
+        model.invalidate()
         // then
         verify(clusterFactory, times(1)).invoke(any())
     }
 
     @Test
-    fun `clear should close existing cluster`() {
+    fun `#invalidate() should close existing cluster`() {
         // given
         // when
-        model.clear()
+        model.invalidate()
         // then
         verify(cluster, times(1)).close()
     }
 
     @Test
-    fun `clear should watch new cluster`() {
+    fun `#invalidate() should watch new cluster`() {
         // given
         // reset watch invocation done when model is instantiated
         clearInvocations(cluster)
         // when
-        model.clear()
+        model.invalidate()
         // then
         verify(cluster, times(1)).watch()
     }
 
     @Test
-    fun `clear should notify client change`() {
+    fun `#invalidate() should notify client change`() {
         // given
         // when
-        model.clear()
+        model.invalidate()
         // then
         verify(resourceChange, times(1)).fireModified(client)
     }
 
     @Test
-    fun `clear resource should clear namespace provider`() {
+    fun `#invalidate(resource) should call NamespaceProvider#invalidate()`() {
         // given
         // when
-        model.clear(mock<HasMetadata>())
+        model.invalidate(mock<HasMetadata>())
         // then
-        verify(provider, times(1)).clear()
+        verify(provider, times(1)).invalidate()
     }
 
     @Test
-    fun `clear inexistent resource should not clear namespace provider`() {
+    fun `#invalidate(resource) for inexistent resource should not call NamespaceProvider#invalidate()`() {
         // given no namespace provider returned
         doReturn(null)
             .whenever(cluster).getNamespaceProvider(any<HasMetadata>())
         // when
-        model.clear(mock<HasMetadata>())
+        model.invalidate(mock<HasMetadata>())
         // then
-        verify(provider, never()).clear()
+        verify(provider, never()).invalidate()
     }
 
     @Test
-    fun `clear resource should fire namespace provider change`() {
+    fun `#invalidate() resource should fire namespace provider change`() {
         // given
         // when
         val resource = mock<HasMetadata>()
-        model.clear(resource)
+        model.invalidate(resource)
         // then
         verify(resourceChange, times(1)).fireModified(resource)
     }

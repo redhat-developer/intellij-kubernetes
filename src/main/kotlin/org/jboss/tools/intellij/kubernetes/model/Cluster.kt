@@ -20,7 +20,7 @@ interface ICluster {
     val client: NamespacedKubernetesClient
     fun watch()
     fun close()
-    fun clear()
+    fun invalidate()
     fun getAllNamespaces(): List<Namespace>
     fun getNamespace(name: String): Namespace?
     fun getNamespaceProvider(name: String): NamespaceProvider?
@@ -51,7 +51,7 @@ open class Cluster(private val resourceChange: IResourceChangeObservable) : IClu
         client.close()
     }
 
-    override fun clear() {
+    override fun invalidate() {
         namespaceProviders.clear()
     }
 

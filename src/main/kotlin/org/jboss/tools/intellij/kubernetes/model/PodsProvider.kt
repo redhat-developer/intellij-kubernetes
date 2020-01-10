@@ -41,7 +41,7 @@ class PodsProvider(private val client: NamespacedKubernetesClient, private val n
         return allResources.contains(resource)
     }
 
-    override fun clear() {
+    override fun invalidate() {
         allResources.clear()
     }
 

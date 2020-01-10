@@ -25,12 +25,12 @@ class NamespaceProvider(
         return allResources as? Collection<T> ?: emptyList()
     }
 
-    fun <T: HasMetadata> clear(kind: Class<T>) {
-        kindProviders[kind]?.clear()
+    fun <T: HasMetadata> invalidate(kind: Class<T>) {
+        kindProviders[kind]?.invalidate()
     }
 
-    fun clear() {
-        kindProviders.forEach{ it.value.clear() }
+    fun invalidate() {
+        kindProviders.forEach{ it.value.invalidate() }
     }
 
     fun add(resource: HasMetadata): Boolean {

@@ -16,7 +16,7 @@ interface IResourceKindProvider<T: HasMetadata> {
     val kind: Class<out T>
     fun getAllResources(): Collection<T>
     fun hasResource(resource: HasMetadata): Boolean
-    fun clear()
+    fun invalidate()
     fun add(resource: HasMetadata): Boolean
     fun remove(resource: HasMetadata): Boolean
 }

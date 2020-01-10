@@ -61,11 +61,11 @@ class ClusterTest {
     }
 
     @Test
-    fun `should call list namespaces on client if cleared after 1st & before 2nd call`() {
+    fun `should call client#namespaces()#list() if cluster is invalidated`() {
         // given
         cluster.getAllNamespaces()
         // when
-        cluster.clear()
+        cluster.invalidate()
         cluster.getAllNamespaces()
         // then
         verify(client.namespaces().list(), times(2)).items

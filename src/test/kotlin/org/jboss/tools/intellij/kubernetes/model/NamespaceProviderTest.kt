@@ -87,35 +87,35 @@ class NamespaceProviderTest {
     }
 
     @Test
-    fun `clear() clears all kind providers`() {
+    fun `invalidate() should call IResourceKindProvider#invalidate on all kind providers`() {
         // given
         // when
-        namespaceProvider.clear()
+        namespaceProvider.invalidate()
         // then
-        verify(rcKindProvider).clear()
-        verify(podKindProvider).clear()
+        verify(rcKindProvider).invalidate()
+        verify(podKindProvider).invalidate()
     }
 
     @Test
-    fun `clear(resource) clears the kind provider for resource`() {
+    fun `invalidate(resource) invalidates the kind provider for resource`() {
         // given
         val rc = mock<ReplicationController>()
         // when
-        namespaceProvider.clear(rc::class.java)
+        namespaceProvider.invalidate(rc::class.java)
         // then
-        verify(rcKindProvider).clear()
-        verify(podKindProvider, never()).clear()
+        verify(rcKindProvider).invalidate()
+        verify(podKindProvider, never()).invalidate()
     }
 
     @Test
-    fun `clear(resource) of unknown resource kind wont clear`() {
+    fun `invalidate(resource) of unknown resource kind wont invalidate any kind provider`() {
         // given
         val dc = mock<DeploymentConfig>()
         // when
-        namespaceProvider.clear(dc::class.java)
+        namespaceProvider.invalidate(dc::class.java)
         // then
-        verify(rcKindProvider, never()).clear()
-        verify(podKindProvider, never()).clear()
+        verify(rcKindProvider, never()).invalidate()
+        verify(podKindProvider, never()).invalidate()
     }
 
 }
