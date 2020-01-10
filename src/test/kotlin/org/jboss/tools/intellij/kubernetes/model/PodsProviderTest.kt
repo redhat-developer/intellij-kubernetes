@@ -74,7 +74,7 @@ class PodsProviderTest {
         // given
         verify(client.inNamespace(anyString()).pods().list(), never()).items
         // when
-        val hasResource = provider.hasResource(POD2)
+        provider.hasResource(POD2)
         // then
         verify(client.inNamespace(anyString()).pods().list(), times(1)).items
     }

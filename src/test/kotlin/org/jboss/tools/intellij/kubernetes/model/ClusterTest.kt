@@ -96,7 +96,7 @@ class ClusterTest {
         // given
         cluster.getAllNamespaces()
         // when
-        val namespace = cluster.getNamespace(NAMESPACE2.metadata.name)
+        cluster.getNamespace(NAMESPACE2.metadata.name)
         // then
         verify(client.namespaces().list(), times(1)).items
     }

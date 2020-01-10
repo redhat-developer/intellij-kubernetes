@@ -61,7 +61,7 @@ class NamespaceProviderTest {
         // given
         val rc = mock<ReplicationController>()
         // when
-        val added = namespaceProvider.add(rc)
+        namespaceProvider.add(rc)
         // then
         verify(rcKindProvider).add(rc)
     }

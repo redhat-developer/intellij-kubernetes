@@ -70,11 +70,10 @@ object ClientMocks {
         return podList
     }
 
-    fun items(podList: PodList, vararg pods: Pod ): List<Pod> {
-        val pods = listOf(*pods)
+    fun items(podList: PodList, vararg pods: Pod ) {
+        val returnedPods = listOf(*pods)
         whenever(podList.items)
-            .doReturn(pods)
-        return pods
+            .doReturn(returnedPods)
     }
 
     fun withName(mixedOp: MixedOperation<Pod, PodList, DoneablePod, PodResource<Pod, DoneablePod>>, pod: Pod) {

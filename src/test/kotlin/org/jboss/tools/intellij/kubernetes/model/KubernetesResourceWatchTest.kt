@@ -35,11 +35,23 @@ class KubernetesResourceWatchTest {
     }
 
     @Test
-    fun `should call watchable#watch when supplier is added`() {
+    fun `should call watchable#watch() when supplier is added`() {
         // given
         // when watch supplier is added - in @Before
         // then
         assertThat(watchable.isWatchCalled()).isTrue()
+    }
+
+    @Test
+    fun `should call watchable#watch() on each supplier added via addAll`() {
+        // given
+        val watchable1 = WatchableFake()
+        val watchable2 = WatchableFake()
+        // when
+        watch.addAll(listOf( { watchable1 }, { watchable2 }))
+        // then
+        assertThat(watchable1.isWatchCalled()).isTrue()
+        assertThat(watchable2.isWatchCalled()).isTrue()
     }
 
     @Test
