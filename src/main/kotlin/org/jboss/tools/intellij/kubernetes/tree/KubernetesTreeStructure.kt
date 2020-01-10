@@ -78,7 +78,7 @@ class KubernetesTreeStructure(private val project: Project) : AbstractTreeStruct
             is Namespace -> NamespaceDescriptor(element, parent)
             is HasMetadata -> HasMetadataDescriptor(element, parent)
             is Exception -> ErrorDescriptor(element, parent)
-            else -> ResourceDescriptor<Any>(element, parent);
+            else -> ResourceDescriptor(element, parent);
         }
     }
 
