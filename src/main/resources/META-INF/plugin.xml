@@ -1,10 +1,7 @@
 <idea-plugin>
     <id>org.jboss.tools.intellij.kubernetes</id>
     <name>IntelliJ Kubernetes by Red Hat</name>
-    <version>0.0.1</version>
     <vendor email="support@redhat.com" url="http://www.redhat.com">Red Hat</vendor>
-
-    <idea-version since-build="181.3741.2"/>
 
     <depends>com.intellij.modules.lang</depends>
 

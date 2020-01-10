@@ -18,8 +18,10 @@ import org.jboss.tools.intellij.kubernetes.model.ResourceChangeObservable
 import javax.swing.tree.DefaultMutableTreeNode
 import javax.swing.tree.TreePath
 
-class StructureTreeAdapter(private val treeModel: StructureTreeModel, private val structure: AbstractTreeStructure,
-                           model: IKubernetesResourceModel)
+class StructureTreeAdapter<Structure: AbstractTreeStructure>(
+    private val treeModel: StructureTreeModel<Structure>,
+    private val structure: AbstractTreeStructure,
+    model: IKubernetesResourceModel)
     : ResourceChangeObservable.ResourceChangeListener {
 
     init {
@@ -39,7 +41,7 @@ class StructureTreeAdapter(private val treeModel: StructureTreeModel, private va
     }
 
     private fun invalidatePath(pathSupplier: () -> TreePath) {
-        treeModel.invoker.invokeLaterIfNeeded {
+        treeModel.invoker.runOrInvokeLater {
             val path = pathSupplier()
             if (path.lastPathComponent == treeModel.root) {
                 invalidateRoot()
@@ -49,7 +51,7 @@ class StructureTreeAdapter(private val treeModel: StructureTreeModel, private va
     }
 
     private fun invalidateRoot() {
-        treeModel.invalidate(null)
+        treeModel.invalidate()
     }
 
     private fun getParentElement(element: Any): Any? {

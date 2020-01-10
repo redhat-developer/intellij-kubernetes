@@ -26,7 +26,7 @@ import org.jboss.tools.intellij.kubernetes.model.PodsProvider
 
 class KubernetesTreeStructure(private val project: Project) : AbstractTreeStructure() {
 
-    override fun getParentElement(element: Any?): Any? {
+    override fun getParentElement(element: Any): Any? {
         try {
             return when (element) {
                 rootElement ->
@@ -64,11 +64,11 @@ class KubernetesTreeStructure(private val project: Project) : AbstractTreeStruct
 
     override fun hasSomethingToCommit() = false
 
-    override fun isToBuildChildrenInBackground(element: Any?): Boolean {
+    override fun isToBuildChildrenInBackground(element: Any): Boolean {
         return true
     }
 
-    override fun isAlwaysLeaf(element: Any?): Boolean {
+    override fun isAlwaysLeaf(element: Any): Boolean {
         return false
     }
 
@@ -83,30 +83,30 @@ class KubernetesTreeStructure(private val project: Project) : AbstractTreeStruct
     }
 
     class ClusterDescriptor(element: NamespacedKubernetesClient): ResourceDescriptor<NamespacedKubernetesClient>(element, null) {
-        override fun update(presentation: PresentationData?) {
-            presentation?.presentableText = element.masterUrl.toString()
-            presentation?.setIcon(IconLoader.getIcon("/icons/kubernetes-cluster.svg"))
+        override fun update(presentation: PresentationData) {
+            presentation.presentableText = element.masterUrl.toString()
+            presentation.setIcon(IconLoader.getIcon("/icons/kubernetes-cluster.svg"))
         }
     }
 
     class NamespaceDescriptor(element: Namespace, parent: NodeDescriptor<*>?): ResourceDescriptor<Namespace>(element, parent) {
-        override fun update(presentation: PresentationData?) {
-            presentation?.presentableText = element.metadata.name;
-            presentation?.setIcon(IconLoader.getIcon("/icons/project.png"))
+        override fun update(presentation: PresentationData) {
+            presentation.presentableText = element.metadata.name;
+            presentation.setIcon(IconLoader.getIcon("/icons/project.png"))
         }
     }
 
     class HasMetadataDescriptor(element: HasMetadata, parent: NodeDescriptor<*>?): ResourceDescriptor<HasMetadata>(element, parent) {
-        override fun update(presentation: PresentationData?) {
-            presentation?.presentableText = element.metadata.name;
-            presentation?.setIcon(IconLoader.getIcon("/icons/project.png"))
+        override fun update(presentation: PresentationData) {
+            presentation.presentableText = element.metadata.name;
+            presentation.setIcon(IconLoader.getIcon("/icons/project.png"))
         }
     }
 
     class ErrorDescriptor(element: java.lang.Exception, parent: NodeDescriptor<*>?): ResourceDescriptor<java.lang.Exception>(element, parent) {
-        override fun update(presentation: PresentationData?) {
-            presentation?.presentableText = "Error: " + element.message;
-            presentation?.setIcon(AllIcons.General.BalloonError)
+        override fun update(presentation: PresentationData) {
+            presentation.presentableText = "Error: " + element.message;
+            presentation.setIcon(AllIcons.General.BalloonError)
         }
     }
 
@@ -114,8 +114,8 @@ class KubernetesTreeStructure(private val project: Project) : AbstractTreeStruct
 
         private val element = element;
 
-        override fun update(presentation: PresentationData?) {
-            presentation?.presentableText = element.toString();
+        override fun update(presentation: PresentationData) {
+            presentation.presentableText = element.toString();
         }
 
         override fun getElement(): T {

@@ -33,7 +33,7 @@ import javax.swing.tree.DefaultMutableTreeNode
 
 class RefreshAction: AnAction(Refresh) {
 
-    override fun actionPerformed(event: AnActionEvent?) {
+    override fun actionPerformed(event: AnActionEvent) {
         val tree: Tree = getTree(event)
         val selectedNode = tree.selectionModel.selectionPath?.lastPathComponent
         val modelObject = getDescriptorElement(selectedNode)
@@ -41,12 +41,12 @@ class RefreshAction: AnAction(Refresh) {
         resourceModel.invalidate(modelObject)
     }
 
-    private fun getTree(event: AnActionEvent?): Tree {
-        return event?.getData(PlatformDataKeys.CONTEXT_COMPONENT) as Tree
+    private fun getTree(event: AnActionEvent): Tree {
+        return event.getData(PlatformDataKeys.CONTEXT_COMPONENT) as Tree
     }
 
-    private fun getProject(event: AnActionEvent?): Project {
-        return event?.getData(PlatformDataKeys.PROJECT) as Project
+    private fun getProject(event: AnActionEvent): Project {
+        return event.getData(PlatformDataKeys.PROJECT) as Project
     }
 
     private fun getDescriptorElement(node: Any?): Any? {

@@ -43,8 +43,12 @@ intellij {
     pluginName 'org.jboss.tools.intellij.kubernetes'
 }
 
-group 'org.jboss.tools.intellij'
-version projectVersion
+patchPluginXml {
+    sinceBuild sinceIdeaBuild
+    group 'org.jboss.tools.intellij'
+    version projectVersion
+    pluginDescription description
+}
 
 publishPlugin {
     token    jetBrainsToken
