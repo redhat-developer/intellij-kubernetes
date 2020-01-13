@@ -81,7 +81,7 @@ class NamespaceProviderTest {
         // given
         val rc = mock<ReplicationController>()
         // when
-        val removed = namespaceProvider.remove(rc)
+        namespaceProvider.remove(rc)
         // then
         verify(rcKindProvider).remove(rc)
     }
