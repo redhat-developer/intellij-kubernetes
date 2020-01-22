@@ -24,15 +24,9 @@ import io.fabric8.kubernetes.api.model.Pod
 import io.fabric8.kubernetes.client.NamespacedKubernetesClient
 import org.jboss.tools.intellij.kubernetes.model.IKubernetesResourceModel
 import org.jboss.tools.intellij.kubernetes.model.PodsProvider
+import javax.swing.Icon
 
 class KubernetesTreeStructure(private val project: Project) : AbstractTreeStructure() {
-
-    enum class Categories(val label: String) {
-        NAMESPACES("Namespaces"),
-        NODES("Nodes"),
-        WORKLOADS("Workloads"),
-        PODS("Pods")
-    }
 
     override fun getRootElement() = getResourceModel().getClient()
 
@@ -95,86 +89,8 @@ class KubernetesTreeStructure(private val project: Project) : AbstractTreeStruct
             Categories.NODES -> CategoryDescriptor(Categories.NODES, parent)
             Categories.WORKLOADS -> CategoryDescriptor(Categories.WORKLOADS, parent)
             Categories.PODS -> CategoryDescriptor(Categories.PODS, parent)
-            else -> ResourceDescriptor(element, parent);
+            else -> Descriptor(element, parent);
         }
-    }
-
-    class ClusterDescriptor(element: NamespacedKubernetesClient): ResourceDescriptor<NamespacedKubernetesClient>(element, null) {
-        override fun update(presentation: PresentationData) {
-            presentation.presentableText = element.masterUrl.toString()
-            presentation.setIcon(IconLoader.getIcon("/icons/kubernetes-cluster.svg"))
-        }
-    }
-
-    class NamespaceDescriptor(element: Namespace, parent: NodeDescriptor<*>?)
-        : ResourceDescriptor<Namespace>(element, parent) {
-        override fun update(presentation: PresentationData) {
-            presentation.presentableText = element.metadata.name;
-            presentation.setIcon(IconLoader.getIcon("/icons/project.png"))
-        }
-    }
-
-    class PodDescriptor(element: HasMetadata, parent: NodeDescriptor<*>?)
-        : ResourceDescriptor<HasMetadata>(element, parent) {
-        override fun update(presentation: PresentationData) {
-            presentation.presentableText = element.metadata.name;
-            presentation.setIcon(IconLoader.getIcon("/icons/project.png"))
-        }
-    }
-
-    class HasMetadataDescriptor(element: HasMetadata, parent: NodeDescriptor<*>?)
-        : ResourceDescriptor<HasMetadata>(element, parent) {
-        override fun update(presentation: PresentationData) {
-            presentation.presentableText = element.metadata.name;
-            presentation.setIcon(IconLoader.getIcon("/icons/project.png"))
-        }
-    }
-
-    abstract class ResourceCategoryDescriptor<T: HasMetadata>(private val label: String, element: Class<T>, parent: NodeDescriptor<*>?)
-        : ResourceDescriptor<Class<T>>(element, parent) {
-
-        override fun update(presentation: PresentationData) {
-            presentation.presentableText = label;
-        }
-    }
-
-    class CategoryDescriptor(private val category: Categories, parent: NodeDescriptor<*>?)
-        : PresentableNodeDescriptor<Categories>(null, parent) {
-
-        override fun update(presentation: PresentationData) {
-            presentation.presentableText = category.label;
-        }
-
-        override fun getElement(): Categories {
-            return category
-        }
-    }
-
-    class ErrorDescriptor(private var element: java.lang.Exception, parent: NodeDescriptor<*>?)
-        : PresentableNodeDescriptor<java.lang.Exception>(null, parent) {
-
-        override fun update(presentation: PresentationData) {
-            presentation.presentableText = "Error: " + element.message;
-            presentation.setIcon(AllIcons.General.BalloonError)
-        }
-
-        override fun getElement(): java.lang.Exception {
-            return element
-        }
-    }
-
-    open class ResourceDescriptor<T>(element: T, parent: NodeDescriptor<*>?): PresentableNodeDescriptor<T>(null, parent) {
-
-        private val element = element;
-
-        override fun update(presentation: PresentationData) {
-            presentation.presentableText = element.toString();
-        }
-
-        override fun getElement(): T {
-            return element;
-        }
-
     }
 
     private fun getResourceModel(): IKubernetesResourceModel {
@@ -186,4 +102,76 @@ class KubernetesTreeStructure(private val project: Project) : AbstractTreeStruct
     override fun hasSomethingToCommit() = false
 
     override fun isToBuildChildrenInBackground(element: Any) = true
+
+
+    enum class Categories(val label: String) {
+        NAMESPACES("Namespaces"),
+        NODES("Nodes"),
+        WORKLOADS("Workloads"),
+        PODS("Pods")
+    }
+
+    companion object Descriptors {
+
+        private class ClusterDescriptor(element: NamespacedKubernetesClient) : Descriptor<NamespacedKubernetesClient>(
+            element, null,
+            { element.masterUrl.toString() },
+            IconLoader.getIcon("/icons/kubernetes-cluster.svg")
+        ) {
+        }
+
+        private class NamespaceDescriptor(element: Namespace, model: IKubernetesResourceModel, parent: NodeDescriptor<*>?) : Descriptor<Namespace>(
+            element, parent,
+            {
+                var label = it.metadata.name
+                if (it == model.getCurrentNamespace()) {
+                    label = "* $label"
+                }
+                label
+            },
+            IconLoader.getIcon("/icons/project.png")
+        ) {
+        }
+
+        private class PodDescriptor(element: HasMetadata, parent: NodeDescriptor<*>?) : Descriptor<HasMetadata>(
+            element, parent,
+            { it.metadata.name },
+            IconLoader.getIcon("/icons/project.png")
+        ) {
+        }
+
+        private class CategoryDescriptor(category: Categories, parent: NodeDescriptor<*>?) : Descriptor<Categories>(
+            category, parent,
+            { it.label }) {
+        }
+
+        private class ErrorDescriptor(exception: java.lang.Exception, parent: NodeDescriptor<*>?) :
+            Descriptor<java.lang.Exception>(
+                exception, parent,
+                { "Error: " + it.message },
+                AllIcons.General.BalloonError
+            ) {
+        }
+
+        private open class Descriptor<T>(
+            element: T,
+            parent: NodeDescriptor<*>?,
+            private val labelProvider: (T) -> String = { it?.toString() ?: "" },
+            private val nodeIcon: Icon? = null
+        ) : PresentableNodeDescriptor<T>(null, parent) {
+
+            private val element = element;
+
+            override fun update(presentation: PresentationData) {
+                presentation.presentableText = labelProvider.invoke(element)
+                if (nodeIcon != null) {
+                    presentation.setIcon(nodeIcon)
+                }
+            }
+
+            override fun getElement(): T {
+                return element;
+            }
+        }
+    }
 }
