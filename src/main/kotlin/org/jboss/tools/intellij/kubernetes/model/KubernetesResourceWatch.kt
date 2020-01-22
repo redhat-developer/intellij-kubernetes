@@ -19,8 +19,14 @@ import io.fabric8.kubernetes.client.dsl.Watchable
 typealias WatchableResource = Watchable<Watch, Watcher<in HasMetadata>>
 typealias WatchableResourceSupplier = () -> WatchableResource
 
-open class KubernetesResourceWatch(private val addOperation: (HasMetadata) -> Unit,
-                              private val removeOperation: (HasMetadata) -> Unit) {
+/**
+ * A watch that listens for changes on the kubernetes cluster and operates actions on a model accordingly.
+ * The model is only visible to this watcher by operations that the former provides (addOperation, removeOperation).
+ */
+open class KubernetesResourceWatch(
+    private val addOperation: (HasMetadata) -> Unit,
+    private val removeOperation: (HasMetadata) -> Unit
+) {
 
     private var watches: MutableList<Watch?> = mutableListOf()
 

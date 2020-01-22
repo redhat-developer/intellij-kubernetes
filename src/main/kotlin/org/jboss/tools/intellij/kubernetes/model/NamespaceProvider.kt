@@ -17,6 +17,7 @@ import io.fabric8.kubernetes.client.NamespacedKubernetesClient
 class NamespaceProvider(
     client: NamespacedKubernetesClient,
     val namespace: Namespace,
+
     private val kindProviders: Map<Class<out HasMetadata>, IResourceKindProvider<out HasMetadata>> =
         mapOf(Pair(PodsProvider.KIND, PodsProvider(client, namespace)))) {
 
@@ -33,7 +34,7 @@ class NamespaceProvider(
         kindProviders.forEach{ it.value.invalidate() }
     }
 
-    fun add(resource: HasMetadata): Boolean {
+    fun <T: HasMetadata> add(resource: T): Boolean {
         val provider = kindProviders[resource::class.java]
         var added = false
         if (provider != null) {
@@ -42,9 +43,9 @@ class NamespaceProvider(
         return added
     }
 
-    fun remove(resource: HasMetadata): Boolean {
+    fun <T: HasMetadata> remove(resource: T): Boolean {
         var removed = false
-        val provider = kindProviders[resource::class.java]
+        val provider: IResourceKindProvider<out HasMetadata>? = kindProviders[resource::class.java]
         if (provider != null) {
             removed = provider.remove(resource);
         }
