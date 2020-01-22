@@ -24,7 +24,7 @@ interface ICluster {
     fun getAllNamespaces(): List<Namespace>
     fun getCurrentNamespace(): Namespace?
     fun getNamespace(name: String): Namespace?
-    fun getNamespaceProvider(name: String): NamespaceProvider?
+    fun getNamespaceProvider(name: String?): NamespaceProvider?
     fun getNamespaceProvider(resource: HasMetadata): NamespaceProvider?
     fun getNamespaceProvider(namespace: Namespace): NamespaceProvider?
 }
@@ -74,7 +74,7 @@ open class Cluster(private val resourceChange: IResourceChangeObservable) : IClu
         return getNamespaceProvider(name)?.namespace
     }
 
-    override fun getNamespaceProvider(name: String): NamespaceProvider? {
+    override fun getNamespaceProvider(name: String?): NamespaceProvider? {
         return namespaceProviders[name]
     }
 

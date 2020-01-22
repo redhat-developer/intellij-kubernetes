@@ -51,7 +51,10 @@ class KubernetesTreeStructure(private val project: Project) : AbstractTreeStruct
                 Categories.WORKLOADS ->
                     arrayOf(Categories.PODS)
                 Categories.PODS -> {
-                    getResourceModel().getResources(PodsProvider.KIND).toTypedArray()
+                    getResourceModel().getResources(
+                        getResourceModel().getCurrentNamespace()?.metadata?.name,
+                        PodsProvider.KIND)
+                        .toTypedArray()
                 }
                 else ->
                     emptyArray()

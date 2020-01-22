@@ -10,9 +10,11 @@
  ******************************************************************************/
 package org.jboss.tools.intellij.kubernetes.model
 
+import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.times
 import com.nhaarman.mockitokotlin2.verify
+import com.nhaarman.mockitokotlin2.whenever
 import io.fabric8.kubernetes.client.NamespacedKubernetesClient
 import org.assertj.core.api.Assertions.assertThat
 import org.jboss.tools.intellij.kubernetes.model.mocks.ClientMocks.NAMESPACE1
@@ -26,10 +28,11 @@ class ClusterTest {
 
     private lateinit var cluster: Cluster
     private lateinit var client: NamespacedKubernetesClient
+    private val allNamespaces = arrayOf(NAMESPACE1, NAMESPACE2, NAMESPACE3)
 
     @Before
     fun before() {
-        client = client(NAMESPACE1, NAMESPACE2, NAMESPACE3)
+        client = client(NAMESPACE2.metadata.name, allNamespaces)
         cluster = object : Cluster(mock()) {
                 override fun createClient(): NamespacedKubernetesClient {
                     return this@ClusterTest.client
@@ -100,4 +103,25 @@ class ClusterTest {
         // then
         verify(client.namespaces().list(), times(1)).items
     }
+
+    @Test
+    fun `should query namespace from (configured) context when #getCurrentNamespace`() {
+        // given
+        // when
+        cluster.getCurrentNamespace()
+        // then
+        verify(client, times(1)).namespace
+    }
+
+    @Test
+    fun `should return 1st namespace in list of all namespaces if there's no (configured) context namespace`() {
+        // given client has no current namespace
+        doReturn(null)
+            .whenever(client).namespace
+        // when
+        val currentNamespace = cluster.getCurrentNamespace()
+        // then returns 1st namespace in list of all namespaces
+        assertThat(currentNamespace).isEqualTo(allNamespaces[0])
+    }
+
 }

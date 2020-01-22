@@ -20,8 +20,7 @@ interface IKubernetesResourceModel {
     fun getCurrentNamespace(): Namespace?
     fun getAllNamespaces(): List<Namespace>
     fun getNamespace(name: String): Namespace?
-    fun getResources(namespace: String, kind: Class<out HasMetadata>): Collection<HasMetadata>
-    fun getResources(kind: Class<out HasMetadata>): Collection<HasMetadata>
+    fun getResources(namespace: String?, kind: Class<out HasMetadata>): Collection<HasMetadata>
     fun invalidate()
     fun invalidate(resource: Any?)
 }
@@ -62,12 +61,7 @@ class KubernetesResourceModel(
         return cluster.getNamespace(name)
     }
 
-    override fun getResources(kind: Class<out HasMetadata>): Collection<HasMetadata> {
-        val currentNamespace = cluster.getCurrentNamespace() ?: return emptyList()
-        return getResources(currentNamespace.metadata.name, kind)
-    }
-
-    override fun getResources(namespace: String, kind: Class<out HasMetadata>): Collection<HasMetadata> {
+    override fun getResources(namespace: String?, kind: Class<out HasMetadata>): Collection<HasMetadata> {
         return cluster.getNamespaceProvider(namespace)?.getResources(kind) ?: emptyList()
     }
 

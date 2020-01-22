@@ -36,7 +36,7 @@ object ClientMocks {
     val POD2 = resource<Pod>("pod2")
     val POD3 = resource<Pod>("pod3")
 
-    fun client(vararg namespaces: Namespace): NamespacedKubernetesClient {
+    fun client(currentNamespace: String?, namespaces: Array<Namespace>): NamespacedKubernetesClient {
         val namespaceList = mock<NamespaceList> {
             on { items } doReturn namespaces.asList()
         }
@@ -46,6 +46,7 @@ object ClientMocks {
             }
         return mock<NamespacedKubernetesClient> {
             on { namespaces() } doReturn namespacesMock
+            on { namespace } doReturn currentNamespace
         }
     }
 
