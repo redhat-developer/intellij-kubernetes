@@ -26,6 +26,11 @@ import org.jboss.tools.intellij.kubernetes.model.IKubernetesResourceModel
 import org.jboss.tools.intellij.kubernetes.model.PodsProvider
 import javax.swing.Icon
 
+/**
+ * A factory that creates nodes (PresentableNodeDescriptor) for a (tree-) model.
+ *
+ * @see PresentableNodeDescriptor
+ */
 class KubernetesTreeStructure(private val project: Project) : AbstractTreeStructure() {
 
     override fun getRootElement() = getResourceModel().getClient()
@@ -82,7 +87,7 @@ class KubernetesTreeStructure(private val project: Project) : AbstractTreeStruct
     override fun createDescriptor(element: Any, parent: NodeDescriptor<*>?): NodeDescriptor<*> {
         return when(element) {
             is NamespacedKubernetesClient -> ClusterDescriptor(element)
-            is Namespace -> NamespaceDescriptor(element, parent)
+            is Namespace -> NamespaceDescriptor(element, getResourceModel(), parent)
             is Pod -> PodDescriptor(element, parent)
             is Exception -> ErrorDescriptor(element, parent)
             Categories.NAMESPACES -> CategoryDescriptor(Categories.NAMESPACES, parent)
