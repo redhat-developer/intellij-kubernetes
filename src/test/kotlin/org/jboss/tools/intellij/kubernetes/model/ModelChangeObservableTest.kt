@@ -10,20 +10,27 @@
  ******************************************************************************/
 package org.jboss.tools.intellij.kubernetes.model
 
+import com.nhaarman.mockitokotlin2.mock
+import io.fabric8.kubernetes.api.model.Namespace
 import org.assertj.core.api.Assertions.assertThat
-import org.jboss.tools.intellij.kubernetes.model.ResourceChangeObservable.ResourceChangeListener
+import org.jboss.tools.intellij.kubernetes.model.ModelChangeObservable.IResourceChangeListener
 import org.junit.Before
 import org.junit.Test
 
-class ResourceChangedObservableTest {
+class ModelChangeObservableTest {
 
-    private val observable = ResourceChangeObservable()
-    private val resource = Any()
-    private val listener = object: ResourceChangeListener {
+    private val observable = ModelChangeObservable()
+    private val resource = mock<Namespace>()
+    private val listener = object: IResourceChangeListener {
 
-        var removedResources = mutableListOf<Any>()
-        var addedResources = mutableListOf<Any>()
-        var modifiedResources = mutableListOf<Any>()
+        var currentNamespace: Namespace? = null
+        val removedResources = mutableListOf<Any>()
+        val addedResources = mutableListOf<Any>()
+        val modifiedResources = mutableListOf<Any>()
+
+        override fun currentNamespace(namespace: Namespace?) {
+            currentNamespace = namespace
+        }
 
         override fun removed(removed: Any) {
             removedResources.add(removed)
@@ -52,6 +59,7 @@ class ResourceChangedObservableTest {
         assertThat(listener.removedResources.take(1)).containsExactly(resource)
         assertThat(listener.addedResources).isEmpty()
         assertThat(listener.modifiedResources).isEmpty()
+        assertThat(listener.currentNamespace).isNull()
     }
 
     @Test
@@ -63,6 +71,7 @@ class ResourceChangedObservableTest {
         assertThat(listener.removedResources).isEmpty()
         assertThat(listener.addedResources.take(1)).containsExactly(resource)
         assertThat(listener.modifiedResources).isEmpty()
+        assertThat(listener.currentNamespace).isNull()
     }
 
     @Test
@@ -74,5 +83,19 @@ class ResourceChangedObservableTest {
         assertThat(listener.removedResources).isEmpty()
         assertThat(listener.addedResources).isEmpty()
         assertThat(listener.modifiedResources.take(1)).containsExactly(resource)
+        assertThat(listener.currentNamespace).isNull()
     }
+
+    @Test
+    fun `#fireCurrentNamespace should notify current namespace`() {
+        // given
+        // when
+        observable.fireCurrentNamespace(resource)
+        // then
+        assertThat(listener.removedResources).isEmpty()
+        assertThat(listener.addedResources).isEmpty()
+        assertThat(listener.modifiedResources).isEmpty()
+        assertThat(listener.currentNamespace).isEqualTo(resource)
+    }
+
 }

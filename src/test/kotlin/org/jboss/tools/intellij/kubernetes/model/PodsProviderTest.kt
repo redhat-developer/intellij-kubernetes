@@ -49,7 +49,7 @@ class PodsProviderTest {
     }
 
     @Test
-    fun `allResources is only loading once, returned cached on every further call`() {
+    fun `#getAllResources() returns cached pods, won't load a 2nd time`() {
         // given
         provider.getAllResources()
         // when
@@ -59,7 +59,7 @@ class PodsProviderTest {
     }
 
     @Test
-    fun `allResources should reload if invalidate() is called`() {
+    fun `#getAllResources() wont return cached but load pods if #invalidate() is called`() {
         // given
         provider.getAllResources()
         verify(client.inNamespace(anyString()).pods().list(), times(1)).items
@@ -71,7 +71,7 @@ class PodsProviderTest {
     }
 
     @Test
-    fun `hasResource() loads resources if they're not present yet`() {
+    fun `#hasResource(resource) loads pods if they're not present yet`() {
         // given
         verify(client.inNamespace(anyString()).pods().list(), never()).items
         // when
@@ -81,7 +81,7 @@ class PodsProviderTest {
     }
 
     @Test
-    fun `hasResource() returns true if queried with contained resource`() {
+    fun `#hasResource(resource) returns true if queried with contained resource`() {
         // given
         // when
         val hasResource = provider.hasResource(POD2)
@@ -90,7 +90,7 @@ class PodsProviderTest {
     }
 
     @Test
-    fun `hasResource() returns false if queried with non-contained resource`() {
+    fun `#hasResource(resource) returns false if queried with non-contained resource`() {
         // given
         // when
         val hasResource = provider.hasResource(mock<ReplicationController>())
@@ -99,7 +99,7 @@ class PodsProviderTest {
     }
 
     @Test
-    fun `add(pod) adds the given pod`() {
+    fun `#add(pod) adds the given pod`() {
         // given
         val pod = resource<Pod>("papa-smurf")
         assertThat(provider.getAllResources()).doesNotContain(pod)
@@ -110,7 +110,7 @@ class PodsProviderTest {
     }
 
     @Test
-    fun `add(pod) returns true if pod was added`() {
+    fun `#add(pod) returns true if pod was added`() {
         // given
         val pod = resource<Pod>("papa-smurf")
         // when
@@ -120,7 +120,7 @@ class PodsProviderTest {
     }
 
     @Test
-    fun `add(pod) does not add if pod is already contained`() {
+    fun `#add(pod) does not add if pod is already contained`() {
         // given
         val pod = provider.getAllResources().elementAt(0)
         assertThat(provider.getAllResources()).contains(pod)
@@ -133,7 +133,7 @@ class PodsProviderTest {
     }
 
     @Test
-    fun `add(pod) returns false if pod was not added`() {
+    fun `#add(pod) returns false if pod was not added`() {
         // given
         val pod = provider.getAllResources().elementAt(0)
         // when
@@ -143,7 +143,7 @@ class PodsProviderTest {
     }
 
     @Test
-    fun `remove(pod) removes the given pod`() {
+    fun `#remove(pod) removes the given pod`() {
         // given
         val pod = provider.getAllResources().elementAt(0)
         // when
@@ -153,7 +153,7 @@ class PodsProviderTest {
     }
 
     @Test
-    fun `remove(pod) returns true if pod was removed`() {
+    fun `#remove(pod) returns true if pod was removed`() {
         // given
         val pod = provider.getAllResources().elementAt(0)
         // when
@@ -163,7 +163,7 @@ class PodsProviderTest {
     }
 
     @Test
-    fun `remove(pod) does not remove if pod is not contained`() {
+    fun `#remove(pod) does not remove if pod is not contained`() {
         // given
         val pod = resource<Pod>("papa-smurf")
         assertThat(provider.getAllResources()).doesNotContain(pod)
@@ -176,7 +176,7 @@ class PodsProviderTest {
     }
 
     @Test
-    fun `remove(pod) returns false if pod was not removed`() {
+    fun `#remove(pod) returns false if pod was not removed`() {
         // given
         val pod = resource<Pod>("papa-smurf")
         // when
