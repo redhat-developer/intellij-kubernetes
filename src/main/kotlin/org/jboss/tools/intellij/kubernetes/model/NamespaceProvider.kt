@@ -15,7 +15,7 @@ import io.fabric8.kubernetes.api.model.Namespace
 import io.fabric8.kubernetes.client.NamespacedKubernetesClient
 
 class NamespaceProvider(
-    client: NamespacedKubernetesClient,
+    private val client: NamespacedKubernetesClient,
     val namespace: Namespace,
 
     private val kindProviders: Map<Class<out HasMetadata>, IResourceKindProvider<out HasMetadata>> =
@@ -50,5 +50,9 @@ class NamespaceProvider(
             removed = provider.remove(resource);
         }
         return removed
+    }
+
+    fun getWatchableResources(): List<WatchableResourceSupplier> {
+        return listOf { client.inNamespace(namespace.metadata.name).pods() as WatchableResource }
     }
 }
