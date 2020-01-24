@@ -44,7 +44,8 @@ open class Cluster(private val resourceChange: IResourceChangeObservable) : IClu
         }
 
     override fun watch() {
-        createResourceWatch(getWatchableProviders(client))
+        val watchables = getWatchableResources() ?: return
+        createResourceWatch(watchables)
     }
 
     override fun close() {
@@ -146,9 +147,9 @@ open class Cluster(private val resourceChange: IResourceChangeObservable) : IClu
         return watch
     }
 
-    protected open fun getWatchableProviders(client: NamespacedKubernetesClient): List<() -> WatchableResource> {
-        return listOf(
-            { client.namespaces() as WatchableResource },
-            { client.pods().inAnyNamespace() as WatchableResource })
+    protected open fun getWatchableResources(): List<WatchableResourceSupplier>? {
+        val provider = namespaceProviders[getCurrentNamespace()?.metadata?.name] ?: return null
+        return provider.getWatchableResources()
     }
+
 }

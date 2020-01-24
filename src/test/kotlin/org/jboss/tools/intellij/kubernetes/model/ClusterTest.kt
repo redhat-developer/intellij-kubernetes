@@ -38,7 +38,7 @@ class ClusterTest {
                     return this@ClusterTest.client
                 }
 
-                override fun getWatchableProviders(client: NamespacedKubernetesClient): List<() -> WatchableResource> {
+                override fun getWatchableResources(): List<WatchableResourceSupplier>? {
                     return emptyList()
                 }
             }
