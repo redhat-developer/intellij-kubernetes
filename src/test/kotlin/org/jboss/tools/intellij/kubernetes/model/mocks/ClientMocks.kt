@@ -20,6 +20,7 @@ import io.fabric8.kubernetes.api.model.NamespaceList
 import io.fabric8.kubernetes.api.model.ObjectMeta
 import io.fabric8.kubernetes.api.model.Pod
 import io.fabric8.kubernetes.api.model.PodList
+import io.fabric8.kubernetes.client.Config
 import io.fabric8.kubernetes.client.NamespacedKubernetesClient
 import io.fabric8.kubernetes.client.dsl.MixedOperation
 import io.fabric8.kubernetes.client.dsl.PodResource
@@ -40,13 +41,15 @@ object ClientMocks {
         val namespaceList = mock<NamespaceList> {
             on { items } doReturn namespaces.asList()
         }
-        val namespacesMock =
-            mock<NamespaceListOperation> {
+        val namespacesMock = mock<NamespaceListOperation> {
                 on { list() } doReturn namespaceList
             }
+        val config = mock<Config>()
+
         return mock<NamespacedKubernetesClient> {
             on { namespaces() } doReturn namespacesMock
             on { namespace } doReturn currentNamespace
+            on { configuration } doReturn config
         }
     }
 

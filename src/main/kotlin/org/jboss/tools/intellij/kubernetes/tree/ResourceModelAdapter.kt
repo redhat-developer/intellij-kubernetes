@@ -14,7 +14,7 @@ import com.intellij.ide.util.treeView.AbstractTreeStructure
 import com.intellij.ide.util.treeView.NodeDescriptor
 import com.intellij.ui.tree.StructureTreeModel
 import org.jboss.tools.intellij.kubernetes.model.IKubernetesResourceModel
-import org.jboss.tools.intellij.kubernetes.model.ResourceChangeObservable
+import org.jboss.tools.intellij.kubernetes.model.ModelChangeObservable
 import javax.swing.tree.DefaultMutableTreeNode
 import javax.swing.tree.TreePath
 
@@ -25,11 +25,11 @@ import javax.swing.tree.TreePath
  * @see IKubernetesResourceModel
  * @see StructureTreeModel
  */
-class StructureTreeAdapter<Structure: AbstractTreeStructure>(
+class ResourceModelAdapter<Structure: AbstractTreeStructure>(
     private val treeModel: StructureTreeModel<Structure>,
     private val structure: AbstractTreeStructure,
     model: IKubernetesResourceModel)
-    : ResourceChangeObservable.ResourceChangeListener {
+    : ModelChangeObservable.IResourceChangeListener {
 
     init {
         model.addListener(this)

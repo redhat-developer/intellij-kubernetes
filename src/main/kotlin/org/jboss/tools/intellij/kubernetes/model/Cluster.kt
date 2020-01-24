@@ -18,10 +18,11 @@ import io.fabric8.kubernetes.client.NamespacedKubernetesClient
 
 interface ICluster {
     val client: NamespacedKubernetesClient
-    fun watch()
+    fun startWatch()
     fun close()
     fun invalidate()
     fun getAllNamespaces(): List<Namespace>
+    fun setCurrentNamespace(name: String)
     fun getCurrentNamespace(): Namespace?
     fun getNamespace(name: String): Namespace?
     fun getNamespaceProvider(name: String?): NamespaceProvider?
@@ -29,7 +30,7 @@ interface ICluster {
     fun getNamespaceProvider(namespace: Namespace): NamespaceProvider?
 }
 
-open class Cluster(private val resourceChange: IResourceChangeObservable) : ICluster {
+open class Cluster(private val modelChange: IModelChangeObservable) : ICluster {
 
     override val client = createClient()
 
@@ -37,15 +38,24 @@ open class Cluster(private val resourceChange: IResourceChangeObservable) : IClu
         get() {
             if (field.isEmpty()) {
                 val namespaceProviders = loadAllNamespaces()
-                    .map { Pair(it.metadata.name, NamespaceProvider(client, it)) }
+                    .map { Pair(it.metadata.name, createNamespaceProvider(it)) }
                 field.putAll(namespaceProviders)
             }
             return field
         }
 
-    override fun watch() {
+    protected open var watch: KubernetesResourceWatch = KubernetesResourceWatch(
+        addOperation = { add(it) },
+        removeOperation = { remove(it) })
+
+    override fun startWatch() {
         val watchables = getWatchableResources() ?: return
-        createResourceWatch(watchables)
+        watch.addAll(watchables)
+    }
+
+    private fun stopWatch() {
+        val watchables = getWatchableResources() ?: return
+        watch.removeAll(watchables)
     }
 
     override fun close() {
@@ -58,6 +68,17 @@ open class Cluster(private val resourceChange: IResourceChangeObservable) : IClu
 
     override fun getAllNamespaces(): List<Namespace> {
         return namespaceProviders.entries.map { it.value.namespace }
+    }
+
+    override fun setCurrentNamespace(name: String) {
+        stopWatch()
+        client.configuration.namespace = name
+        val currentNamespace = getCurrentNamespace()
+        if (currentNamespace != null) {
+            getNamespaceProvider(currentNamespace)?.invalidate()
+        }
+        modelChange.fireCurrentNamespace(getNamespace(name))
+        startWatch()
     }
 
     override fun getCurrentNamespace(): Namespace? {
@@ -80,14 +101,15 @@ open class Cluster(private val resourceChange: IResourceChangeObservable) : IClu
     }
 
     override fun getNamespaceProvider(namespace: Namespace): NamespaceProvider? {
-        return getNamespaceProvider(namespace.metadata.name)
+        return getNamespaceProvider(namespace.metadata?.name)
     }
 
     override fun getNamespaceProvider(resource: HasMetadata): NamespaceProvider? {
-        return when(resource) {
-            is Namespace -> getNamespaceProvider(resource)
-            else -> getNamespaceProvider(resource.metadata.namespace)
+        val name = when(resource) {
+            is Namespace -> resource.metadata.name
+            else -> resource.metadata.namespace
         }
+        return getNamespaceProvider(name)
     }
 
     private fun loadAllNamespaces(): Sequence<Namespace> {
@@ -100,12 +122,12 @@ open class Cluster(private val resourceChange: IResourceChangeObservable) : IClu
             else -> addNamespaceChild(resource)
         }
         if (added) {
-            resourceChange.fireAdded(listOf(resource))
+            modelChange.fireAdded(listOf(resource))
         }
     }
 
     private fun addNamespace(namespace: Namespace): Boolean {
-        val provider = NamespaceProvider(client, namespace)
+        val provider = createNamespaceProvider(namespace)
         return namespaceProviders.putIfAbsent(namespace.metadata.name, provider) == null
     }
 
@@ -121,7 +143,7 @@ open class Cluster(private val resourceChange: IResourceChangeObservable) : IClu
             else -> removeNamespaceChild(resource)
         }
         if (removed) {
-            resourceChange.fireRemoved(listOf(resource))
+            modelChange.fireRemoved(listOf(resource))
         }
     }
 
@@ -135,21 +157,15 @@ open class Cluster(private val resourceChange: IResourceChangeObservable) : IClu
                 && provider.remove(resource)
     }
 
+    protected open fun createNamespaceProvider(namespace: Namespace) = NamespaceProvider(client, namespace)
+
     protected open fun createClient(): NamespacedKubernetesClient {
         return DefaultKubernetesClient(ConfigBuilder().build())
     }
 
-    protected open fun createResourceWatch(watchableProviders: List<WatchableResourceSupplier?>): KubernetesResourceWatch {
-        val watch = KubernetesResourceWatch(
-            addOperation = { add(it) },
-            removeOperation = { remove(it) })
-        watch.addAll(watchableProviders)
-        return watch
-    }
-
     protected open fun getWatchableResources(): List<WatchableResourceSupplier>? {
-        val provider = namespaceProviders[getCurrentNamespace()?.metadata?.name] ?: return null
-        return provider.getWatchableResources()
+        val currentNamespace = getCurrentNamespace() ?: return null
+        return getNamespaceProvider(currentNamespace)?.getWatchableResources() ?: return null
     }
 
 }

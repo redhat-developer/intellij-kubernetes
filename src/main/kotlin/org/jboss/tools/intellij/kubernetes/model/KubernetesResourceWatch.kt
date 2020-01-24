@@ -28,38 +28,59 @@ open class KubernetesResourceWatch(
     private val removeOperation: (HasMetadata) -> Unit
 ) {
 
-    private var watches: MutableList<Watch?> = mutableListOf()
+    private var watches: MutableMap<WatchableResource, Watch?> = mutableMapOf()
 
     fun addAll(suppliers: List<WatchableResourceSupplier?>) {
         suppliers.forEach { add(it) }
     }
 
     fun add(supplier: WatchableResourceSupplier?) {
-        watch(supplier)
+        val watchable = supplier?.invoke() ?: return
+        val watch = watch(watchable) ?: return
+        watches[watchable] = watch
+    }
+
+    fun remove(supplier: WatchableResourceSupplier?) {
+        val watchable = supplier?.invoke() ?: return
+        watches[watchable]?.close()
+        watches.remove(watchable)
+    }
+
+    fun removeAll(suppliers: List<WatchableResourceSupplier?>) {
+        suppliers.forEach { remove(it) }
     }
 
     fun clear() {
-        closeWatches(watches)
+        closeAll()
     }
 
-    private fun watch(supplier: WatchableResourceSupplier?): Watch? {
+    fun getAllWatched(): List<WatchableResource> {
+        return watches.keys.toList()
+    }
+
+    private fun watch(watchable: WatchableResource): Watch? {
         try {
-            return supplier?.invoke()?.watch(ResourceWatcher(addOperation, removeOperation))
+            return watchable.watch(ResourceWatcher(addOperation, removeOperation))
         } catch(e: RuntimeException) {
             logger<KubernetesResourceWatch>().error(e)
             return null
         }
     }
 
-    private fun closeWatches(watches: MutableList<Watch?>) {
-        watches.removeAll {
+    private fun closeAll() {
+        watches.values.forEach {
             it?.close()
-            true
         }
     }
 
-    private class ResourceWatcher<R: HasMetadata>(private val addOperation: (R) -> Unit,
-                                                   private val removeOperation: (R) -> Unit) : Watcher<R> {
+    private fun close(watchable: Watchable<*,*>) {
+        watches.remove(watchable)
+    }
+
+    private class ResourceWatcher<R : HasMetadata>(
+        private val addOperation: (R) -> Unit,
+        private val removeOperation: (R) -> Unit
+    ) : Watcher<R> {
         override fun eventReceived(action: Watcher.Action?, resource: R) {
             when (action) {
                 Watcher.Action.ADDED ->

@@ -10,11 +10,14 @@
  ******************************************************************************/
 package org.jboss.tools.intellij.kubernetes.model
 
+import com.nhaarman.mockitokotlin2.argumentCaptor
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.mock
+import com.nhaarman.mockitokotlin2.spy
 import com.nhaarman.mockitokotlin2.times
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.whenever
+import io.fabric8.kubernetes.api.model.Namespace
 import io.fabric8.kubernetes.client.NamespacedKubernetesClient
 import org.assertj.core.api.Assertions.assertThat
 import org.jboss.tools.intellij.kubernetes.model.mocks.ClientMocks.NAMESPACE1
@@ -26,26 +29,29 @@ import org.junit.Test
 
 class ClusterTest {
 
-    private lateinit var cluster: Cluster
-    private lateinit var client: NamespacedKubernetesClient
     private val allNamespaces = arrayOf(NAMESPACE1, NAMESPACE2, NAMESPACE3)
+    private val client: NamespacedKubernetesClient = client(NAMESPACE2.metadata.name, allNamespaces)
+    private val watchable1: WatchableResource = mock()
+    private val watchable2: WatchableResource = mock()
+    private val observable: ModelChangeObservable = mock()
+    private lateinit var cluster: TestableCluster
 
     @Before
     fun before() {
-        client = client(NAMESPACE2.metadata.name, allNamespaces)
-        cluster = object : Cluster(mock()) {
-                override fun createClient(): NamespacedKubernetesClient {
-                    return this@ClusterTest.client
-                }
+        cluster = createCluster()
+    }
 
-                override fun getWatchableResources(): List<WatchableResourceSupplier>? {
-                    return emptyList()
-                }
-            }
-        }
+    private fun createCluster(): TestableCluster {
+        val cluster = spy<TestableCluster>(TestableCluster(observable))
+        doReturn(
+            listOf { watchable1 }, // returned on 1st call
+            listOf { watchable2 }) // returned on 2nd call
+            .whenever(cluster).getWatchableResources()
+        return cluster
+    }
 
     @Test
-    fun `should call list namespaces on client`() {
+    fun `#getAllNamespaces should get namespaces from client`() {
         // given
         // when
         cluster.getAllNamespaces()
@@ -54,7 +60,7 @@ class ClusterTest {
     }
 
     @Test
-    fun `should not call list namespaces on client but used cached entries on 2nd call`() {
+    fun `2nd #getAllNamespaces should not get namespaces from client but used cached entries`() {
         // given
         cluster.getAllNamespaces()
         // when
@@ -64,7 +70,7 @@ class ClusterTest {
     }
 
     @Test
-    fun `should call client#namespaces()#list() if cluster is invalidated`() {
+    fun `#invalidate should call client#namespaces()#list()`() {
         // given
         cluster.getAllNamespaces()
         // when
@@ -75,7 +81,7 @@ class ClusterTest {
     }
 
     @Test
-    fun `should return namespace by name`() {
+    fun `#getNamespace(name) should return namespace`() {
         // given
         cluster.getAllNamespaces()
         // when
@@ -85,7 +91,7 @@ class ClusterTest {
     }
 
     @Test
-    fun `should return null if getting namespace by inexistent name`() {
+    fun `#getNamespace(name) should return null if inexistent name`() {
         // given
         cluster.getAllNamespaces()
         // when
@@ -95,7 +101,7 @@ class ClusterTest {
     }
 
     @Test
-    fun `should not load namespace(s) from client but use cached ones when getting namespace by name`() {
+    fun `#getNamespace(name) should not load namespace(s) from client but use cached ones`() {
         // given
         cluster.getAllNamespaces()
         // when
@@ -105,7 +111,7 @@ class ClusterTest {
     }
 
     @Test
-    fun `should query namespace from (configured) context when #getCurrentNamespace`() {
+    fun `#getCurrentNamespace should query namespace from (configured) context`() {
         // given
         // when
         cluster.getCurrentNamespace()
@@ -114,14 +120,76 @@ class ClusterTest {
     }
 
     @Test
-    fun `should return 1st namespace in list of all namespaces if there's no (configured) context namespace`() {
+    fun `#getCurrentNamespace should return 1st namespace in list of all namespaces if there's no (configured) context namespace`() {
         // given client has no current namespace
-        doReturn(null)
-            .whenever(client).namespace
+        whenever(client.namespace)
+            .doReturn(null)
         // when
         val currentNamespace = cluster.getCurrentNamespace()
         // then returns 1st namespace in list of all namespaces
         assertThat(currentNamespace).isEqualTo(allNamespaces[0])
     }
 
+    @Test
+    fun `#setCurrentNamespace should remove watched resources for current namespace`() {
+        // given
+        // when
+        cluster.setCurrentNamespace(NAMESPACE1.metadata.name)
+        // then
+        val captor = argumentCaptor<List<WatchableResourceSupplier?>>()
+        verify(cluster.watch, times(1)).removeAll(captor.capture())
+        val suppliers = captor.firstValue
+        assertThat(suppliers.first()?.invoke()).isEqualTo(watchable1)
+    }
+
+    @Test
+    fun `#setCurrentNamespace should add new watched resources for new current namespace`() {
+        // given
+        // when
+        cluster.setCurrentNamespace(NAMESPACE1.metadata.name)
+        // then
+        val captor = argumentCaptor<List<WatchableResourceSupplier?>>()
+        verify(cluster.watch, times(1)).addAll(captor.capture())
+        val suppliers = captor.firstValue
+        assertThat(suppliers.first()?.invoke()).isEqualTo(watchable2)
+    }
+
+    @Test
+    fun `#setCurrentNamespace should invalidate (new) current namespace provider`() {
+        // given
+        // when
+        cluster.setCurrentNamespace(NAMESPACE1.metadata.name)
+        // then
+        val provider = cluster.getNamespaceProvider(cluster.getCurrentNamespace())
+        verify(provider, times(1))!!.invalidate()
+    }
+
+    @Test
+    fun `#setCurrentNamespace should fire change in current namespace`() {
+        // given
+        // when
+        cluster.setCurrentNamespace(NAMESPACE1.metadata.name)
+        // then
+        verify(observable, times(1)).fireCurrentNamespace(NAMESPACE1)
+    }
+
+    inner class TestableCluster(observable: ModelChangeObservable): Cluster(observable) {
+
+        public override var watch = mock<KubernetesResourceWatch>()
+
+        override fun createClient(): NamespacedKubernetesClient {
+            // cannot be mocked, is called in constructor
+            return this@ClusterTest.client
+        }
+
+        public override fun createNamespaceProvider(namespace: Namespace): NamespaceProvider {
+            return mock {
+                on { mock.namespace } doReturn namespace
+            }
+        }
+
+        public override fun getWatchableResources(): List<WatchableResourceSupplier>? {
+            TODO("override with mocking")
+        }
+    }
 }

@@ -16,7 +16,8 @@ import io.fabric8.kubernetes.client.NamespacedKubernetesClient
 
 interface IKubernetesResourceModel {
     fun getClient(): NamespacedKubernetesClient
-    fun addListener(listener: ResourceChangeObservable.ResourceChangeListener)
+    fun addListener(listener: ModelChangeObservable.IResourceChangeListener)
+    fun setCurrentNamespace(name: String)
     fun getCurrentNamespace(): Namespace?
     fun getAllNamespaces(): List<Namespace>
     fun getNamespace(name: String): Namespace?
@@ -26,18 +27,18 @@ interface IKubernetesResourceModel {
 }
 
 class KubernetesResourceModel(
-    private val observable: IResourceChangeObservable = ResourceChangeObservable(),
-    private val clusterFactory: (IResourceChangeObservable) -> ICluster = { Cluster(it) }
+    private val observable: IModelChangeObservable = ModelChangeObservable(),
+    private val clusterFactory: (IModelChangeObservable) -> ICluster = { Cluster(it) }
 ) : IKubernetesResourceModel {
 
     private var cluster = createCluster(observable, clusterFactory)
 
     private fun createCluster(
-        observable: IResourceChangeObservable,
-        clusterFactory: (IResourceChangeObservable) -> ICluster
+        observable: IModelChangeObservable,
+        clusterFactory: (IModelChangeObservable) -> ICluster
     ): ICluster {
         val cluster = clusterFactory(observable)
-        cluster.watch()
+        cluster.startWatch()
         return cluster
     }
 
@@ -45,12 +46,16 @@ class KubernetesResourceModel(
         return cluster.client
     }
 
-    override fun addListener(listener: ResourceChangeObservable.ResourceChangeListener) {
+    override fun addListener(listener: ModelChangeObservable.IResourceChangeListener) {
         observable.addListener(listener);
     }
 
     override fun getAllNamespaces(): List<Namespace> {
         return cluster.getAllNamespaces()
+    }
+
+    override fun setCurrentNamespace(name: String) {
+        cluster.setCurrentNamespace(name)
     }
 
     override fun getCurrentNamespace(): Namespace? {

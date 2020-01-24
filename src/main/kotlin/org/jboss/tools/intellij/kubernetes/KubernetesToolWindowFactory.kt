@@ -24,7 +24,7 @@ import com.intellij.ui.tree.StructureTreeModel
 import com.intellij.ui.treeStructure.Tree
 import org.jboss.tools.intellij.kubernetes.model.IKubernetesResourceModel
 import org.jboss.tools.intellij.kubernetes.tree.KubernetesTreeStructure
-import org.jboss.tools.intellij.kubernetes.tree.StructureTreeAdapter
+import org.jboss.tools.intellij.kubernetes.tree.ResourceModelAdapter
 
 class KubernetesToolWindowFactory: ToolWindowFactory {
 
@@ -32,7 +32,7 @@ class KubernetesToolWindowFactory: ToolWindowFactory {
         val structure = KubernetesTreeStructure(project)
         val model = StructureTreeModel(structure);
         val resourceModel = ServiceManager.getService(project, IKubernetesResourceModel::class.java)
-        StructureTreeAdapter<KubernetesTreeStructure>(model, structure, resourceModel)
+        ResourceModelAdapter<KubernetesTreeStructure>(model, structure, resourceModel)
         val tree = Tree(AsyncTreeModel(model))
         tree.cellRenderer = NodeRenderer();
         val panel = ScrollPaneFactory.createScrollPane(tree)
