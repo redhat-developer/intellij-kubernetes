@@ -31,7 +31,7 @@ class NamespaceProvider(
     }
 
     fun invalidate() {
-        kindProviders.forEach{ it.value.invalidate() }
+        kindProviders.forEach { it.value.invalidate() }
     }
 
     fun <T: HasMetadata> add(resource: T): Boolean {

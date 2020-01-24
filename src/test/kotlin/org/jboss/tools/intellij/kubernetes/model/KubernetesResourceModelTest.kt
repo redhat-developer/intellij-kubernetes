@@ -37,11 +37,11 @@ typealias NamespaceListOperation = NonNamespaceOperation<Namespace, NamespaceLis
 class KubernetesResourceModelTest {
 
     private var client: NamespacedKubernetesClient = mock()
-    private var resourceChange: IResourceChangeObservable = mock()
+    private var modelChange: IModelChangeObservable = mock()
     private var provider: NamespaceProvider = namespaceProvider()
     private var cluster: ICluster = Mocks.cluster(client, provider)
-    private var clusterFactory: (IResourceChangeObservable) -> ICluster = Mocks.clusterFactory(cluster)
-    private var model: IKubernetesResourceModel = KubernetesResourceModel(resourceChange, clusterFactory)
+    private var clusterFactory: (IModelChangeObservable) -> ICluster = Mocks.clusterFactory(cluster)
+    private var model: IKubernetesResourceModel = KubernetesResourceModel(modelChange, clusterFactory)
 
     @Test
     fun `getAllNamespaces should return all namespaces in cluster`() {
@@ -105,7 +105,7 @@ class KubernetesResourceModelTest {
         // when
         model.invalidate()
         // then
-        verify(cluster, times(1)).watch()
+        verify(cluster, times(1)).startWatch()
     }
 
     @Test
@@ -114,7 +114,7 @@ class KubernetesResourceModelTest {
         // when
         model.invalidate()
         // then
-        verify(resourceChange, times(1)).fireModified(client)
+        verify(modelChange, times(1)).fireModified(client)
     }
 
     @Test
@@ -144,6 +144,6 @@ class KubernetesResourceModelTest {
         val resource = mock<HasMetadata>()
         model.invalidate(resource)
         // then
-        verify(resourceChange, times(1)).fireModified(resource)
+        verify(modelChange, times(1)).fireModified(resource)
     }
 }

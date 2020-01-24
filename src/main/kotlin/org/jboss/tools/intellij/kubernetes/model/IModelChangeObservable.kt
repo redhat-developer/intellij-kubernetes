@@ -10,24 +10,28 @@
  ******************************************************************************/
 package org.jboss.tools.intellij.kubernetes.model
 
-interface IResourceChangeObservable {
-    fun addListener(listener: ResourceChangeObservable.ResourceChangeListener)
+import io.fabric8.kubernetes.api.model.Namespace
+
+interface IModelChangeObservable {
+    fun addListener(listener: ModelChangeObservable.IResourceChangeListener)
+    fun fireCurrentNamespace(namespace: Namespace?)
     fun fireRemoved(removed: Any)
     fun fireAdded(added: Any)
     fun fireModified(removed: Any)
 }
 
-open class ResourceChangeObservable: IResourceChangeObservable {
+open class ModelChangeObservable: IModelChangeObservable {
 
-    interface ResourceChangeListener {
+    interface IResourceChangeListener {
+        fun currentNamespace(namespace: Namespace?) = Unit
         fun removed(removed: Any) = Unit
         fun added(added: Any) = Unit
         fun modified(modified: Any) = Unit
     }
 
-    private var listeners = mutableListOf<ResourceChangeListener>()
+    private var listeners = mutableListOf<IResourceChangeListener>()
 
-    override fun addListener(listener: ResourceChangeListener) {
+    override fun addListener(listener: IResourceChangeListener) {
         listeners.add(listener)
     }
 
@@ -41,5 +45,9 @@ open class ResourceChangeObservable: IResourceChangeObservable {
 
     override fun fireModified(removed: Any) {
         listeners.forEach { it.modified(removed) }
+    }
+
+    override fun fireCurrentNamespace(namespace: Namespace?) {
+        listeners.forEach { it.currentNamespace(namespace) }
     }
 }

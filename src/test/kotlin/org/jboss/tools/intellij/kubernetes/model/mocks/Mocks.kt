@@ -18,13 +18,13 @@ import com.nhaarman.mockitokotlin2.whenever
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.client.NamespacedKubernetesClient
 import org.jboss.tools.intellij.kubernetes.model.ICluster
-import org.jboss.tools.intellij.kubernetes.model.IResourceChangeObservable
+import org.jboss.tools.intellij.kubernetes.model.IModelChangeObservable
 import org.jboss.tools.intellij.kubernetes.model.IResourceKindProvider
 import org.jboss.tools.intellij.kubernetes.model.NamespaceProvider
 
 object Mocks {
 
-    fun clusterFactory(cluster: ICluster): (IResourceChangeObservable) -> ICluster {
+    fun clusterFactory(cluster: ICluster): (IModelChangeObservable) -> ICluster {
         return mock() {
             doReturn(cluster)
                 .whenever(mock).invoke(any())
@@ -34,7 +34,7 @@ object Mocks {
     fun cluster(client: NamespacedKubernetesClient, provider: NamespaceProvider): ICluster {
         return mock() {
             doNothing()
-                .whenever(mock).watch()
+                .whenever(mock).startWatch()
             doReturn(client)
                 .whenever(mock).client
             doReturn(provider)

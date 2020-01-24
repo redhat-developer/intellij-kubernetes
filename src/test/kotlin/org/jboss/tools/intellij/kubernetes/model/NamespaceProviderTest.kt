@@ -38,7 +38,7 @@ class NamespaceProviderTest {
     )
 
     @Test
-    fun `getResources(kind) calls kindProvider#allResources`() {
+    fun `#getResources(kind) calls kindProvider#allResources`() {
         // given
         // when
         namespaceProvider.getResources(rcKindProvider.kind)
@@ -47,7 +47,7 @@ class NamespaceProviderTest {
     }
 
     @Test
-    fun `add(resource) with unknown resource kind wont add`() {
+    fun `#add(resource) with unknown resource kind wont add`() {
         // given
         val dc = mock<DeploymentConfig>()
         // when
@@ -57,7 +57,7 @@ class NamespaceProviderTest {
     }
 
     @Test
-    fun `add(resource) adds rc to rc kind provider`() {
+    fun `#add(resource) adds rc to rc kind provider`() {
         // given
         val rc = mock<ReplicationController>()
         // when
@@ -67,7 +67,7 @@ class NamespaceProviderTest {
     }
 
     @Test
-    fun `remove(resource) with unknown resource kind wont remove`() {
+    fun `#remove(resource) with unknown resource kind wont remove`() {
         // given
         val dc = mock<DeploymentConfig>()
         // when
@@ -77,7 +77,7 @@ class NamespaceProviderTest {
     }
 
     @Test
-    fun `remove(resource) removes rc from rc kind provider`() {
+    fun `#remove(resource) removes rc from rc kind provider`() {
         // given
         val rc = mock<ReplicationController>()
         // when
@@ -87,7 +87,7 @@ class NamespaceProviderTest {
     }
 
     @Test
-    fun `invalidate() should call IResourceKindProvider#invalidate on all kind providers`() {
+    fun `#invalidate() should call IResourceKindProvider#invalidate on all kind providers`() {
         // given
         // when
         namespaceProvider.invalidate()
@@ -97,7 +97,7 @@ class NamespaceProviderTest {
     }
 
     @Test
-    fun `invalidate(resource) invalidates the kind provider for resource`() {
+    fun `#invalidate(resource) invalidates the kind provider for resource`() {
         // given
         val rc = mock<ReplicationController>()
         // when
@@ -108,7 +108,7 @@ class NamespaceProviderTest {
     }
 
     @Test
-    fun `invalidate(resource) of unknown resource kind wont invalidate any kind provider`() {
+    fun `#invalidate(resource) of unknown resource kind wont invalidate any kind provider`() {
         // given
         val dc = mock<DeploymentConfig>()
         // when

@@ -25,8 +25,9 @@ class KubernetesResourceWatchTest {
     private val addOperation: (HasMetadata) -> Unit = { addOperationState.operation(it) }
     private val removeOperationState = OperationState()
     private val removeOperation: (HasMetadata) -> Unit = { removeOperationState.operation(it) }
-    private val watch: KubernetesResourceWatch =
-        KubernetesResourceWatch(addOperation = addOperation, removeOperation = removeOperation)
+    private val watch: KubernetesResourceWatch = KubernetesResourceWatch(
+        addOperation = addOperation,
+        removeOperation = removeOperation)
     private val watchable = WatchableFake()
 
     @Before
@@ -35,7 +36,7 @@ class KubernetesResourceWatchTest {
     }
 
     @Test
-    fun `should call watchable#watch() when supplier is added`() {
+    fun `#add() should call watchable#watch() on supplied watchable`() {
         // given
         // when watch supplier is added - in @Before
         // then
@@ -43,7 +44,28 @@ class KubernetesResourceWatchTest {
     }
 
     @Test
-    fun `should call watchable#watch() on each supplier added via addAll`() {
+    fun `#add() should add watch`() {
+        // given
+        val toAdd = WatchableFake()
+        assertThat(watch.getAllWatched()).doesNotContain(toAdd)
+        // when
+        watch.add { toAdd }
+        // then
+        assertThat(watch.getAllWatched()).contains(toAdd)
+    }
+
+    @Test
+    fun `#add() should not add if supplier is null`() {
+        // given
+        val sizeBeforeAdd = watch.getAllWatched().size
+        // when
+        watch.add(null)
+        // then
+        assertThat(watch.getAllWatched().size).isEqualTo(sizeBeforeAdd)
+    }
+
+    @Test
+    fun `#addAll() should call watchable#watch() on each supplied watchable`() {
         // given
         val watchable1 = WatchableFake()
         val watchable2 = WatchableFake()
@@ -55,7 +77,39 @@ class KubernetesResourceWatchTest {
     }
 
     @Test
-    fun `should invoke addOperation if watch notifies ADDED`() {
+    fun `#remove() should close removed watch`() {
+        // given
+        // when starting 2nd time
+        watch.remove { watchable }
+        // then
+        assertThat(watchable.watch.isClosed()).isTrue()
+    }
+
+    @Test
+    fun `#remove() should not close remaining watches`() {
+        // given
+        val notRemoved = WatchableFake()
+        watch.add{ notRemoved }
+        // when starting 2nd time
+        watch.remove { watchable }
+        // then
+        assertThat(notRemoved.watch.isClosed()).isFalse()
+    }
+
+    @Test
+    fun `#remove() should remove watch`() {
+        // given
+        val toRemove = WatchableFake()
+        watch.add{ toRemove }
+        assertThat(watch.getAllWatched()).contains(toRemove)
+        // when starting 2nd time
+        watch.remove { toRemove }
+        // then
+        assertThat(watch.getAllWatched()).doesNotContain(toRemove)
+    }
+
+    @Test
+    fun `#addOperation should get called if watch notifies ADDED`() {
         // given
         val resource: HasMetadata = mock()
         // when
@@ -66,7 +120,7 @@ class KubernetesResourceWatchTest {
     }
 
     @Test
-    fun `should invoke removeOperation if watch notifies REMOVED`() {
+    fun `#removeOperation should get invoked if watch notifies REMOVED`() {
         // given
         val resource: HasMetadata = mock()
         // when
@@ -88,7 +142,7 @@ class KubernetesResourceWatchTest {
     }
 
     @Test
-    fun `clear() should close existing watches`() {
+    fun `#clear() should close existing watches`() {
         // given
         // when starting 2nd time
         watch.clear()
