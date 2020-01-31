@@ -22,11 +22,11 @@ interface ICluster {
     fun close()
     fun invalidate()
     fun getAllNamespaces(): List<Namespace>
+    fun getCurrentNamespace(): Namespace?
     fun getNamespace(name: String): Namespace?
-    fun getNamespaceProvider(name: String): NamespaceProvider?
+    fun getNamespaceProvider(name: String?): NamespaceProvider?
     fun getNamespaceProvider(resource: HasMetadata): NamespaceProvider?
     fun getNamespaceProvider(namespace: Namespace): NamespaceProvider?
-    fun add(resource: HasMetadata)
 }
 
 open class Cluster(private val resourceChange: IResourceChangeObservable) : ICluster {
@@ -59,11 +59,22 @@ open class Cluster(private val resourceChange: IResourceChangeObservable) : IClu
         return namespaceProviders.entries.map { it.value.namespace }
     }
 
+    override fun getCurrentNamespace(): Namespace? {
+        var currentNamespaceName: String? = client.namespace
+        if (currentNamespaceName == null) {
+            currentNamespaceName = getAllNamespaces().firstOrNull()?.metadata?.name
+            if (currentNamespaceName == null) {
+                return null
+            }
+        }
+        return getNamespace(currentNamespaceName)
+    }
+
     override fun getNamespace(name: String): Namespace? {
         return getNamespaceProvider(name)?.namespace
     }
 
-    override fun getNamespaceProvider(name: String): NamespaceProvider? {
+    override fun getNamespaceProvider(name: String?): NamespaceProvider? {
         return namespaceProviders[name]
     }
 
@@ -82,7 +93,7 @@ open class Cluster(private val resourceChange: IResourceChangeObservable) : IClu
         return  client.namespaces().list().items.asSequence()
     }
 
-    override fun add(resource: HasMetadata) {
+    private fun add(resource: HasMetadata) {
         val added = when(resource) {
             is Namespace -> addNamespace(resource)
             else -> addNamespaceChild(resource)

@@ -18,6 +18,13 @@ import org.jboss.tools.intellij.kubernetes.model.ResourceChangeObservable
 import javax.swing.tree.DefaultMutableTreeNode
 import javax.swing.tree.TreePath
 
+/**
+ * An adapter that listens to events of the IKubernetesResourceModel and operates these changes on the
+ * StructureTreeModel (to which the swing tree listens and updates accordingly)
+ *
+ * @see IKubernetesResourceModel
+ * @see StructureTreeModel
+ */
 class StructureTreeAdapter<Structure: AbstractTreeStructure>(
     private val treeModel: StructureTreeModel<Structure>,
     private val structure: AbstractTreeStructure,

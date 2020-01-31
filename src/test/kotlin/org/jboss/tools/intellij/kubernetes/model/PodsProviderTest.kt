@@ -37,7 +37,8 @@ import org.mockito.ArgumentMatchers.anyString
 
 class PodsProviderTest {
 
-    private val client = client(NAMESPACE1, NAMESPACE2, NAMESPACE3)
+    private val client =
+        client(NAMESPACE2.metadata.name, arrayOf(NAMESPACE1, NAMESPACE2, NAMESPACE3))
     private val provider = PodsProvider(client, NAMESPACE1)
 
     @Before

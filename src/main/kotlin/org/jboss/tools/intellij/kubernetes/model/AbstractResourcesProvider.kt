@@ -1,0 +1,60 @@
+/*******************************************************************************
+ * Copyright (c) 2020 Red Hat, Inc.
+ * Distributed under license by Red Hat, Inc. All rights reserved.
+ * This program is made available under the terms of the
+ * Eclipse Public License v2.0 which accompanies this distribution,
+ * and is available at http://www.eclipse.org/legal/epl-v20.html
+ *
+ * Contributors:
+ * Red Hat, Inc. - initial API and implementation
+ ******************************************************************************/
+package org.jboss.tools.intellij.kubernetes.model
+
+import io.fabric8.kubernetes.api.model.HasMetadata
+import io.fabric8.kubernetes.api.model.Namespace
+import io.fabric8.kubernetes.client.NamespacedKubernetesClient
+
+abstract class AbstractResourcesProvider<R: HasMetadata>(
+    private val client: NamespacedKubernetesClient,
+    private val namespace: Namespace?)
+    : IResourceKindProvider<R> {
+
+    private val allResources: MutableSet<R> = mutableSetOf()
+        get() {
+            if (field.isEmpty()) {
+                val resources = loadAllResources()
+                field.addAll(resources)
+            }
+            return field
+        }
+
+    override fun getAllResources(): Collection<R> {
+        return allResources.toList()
+    }
+
+    override fun hasResource(resource: HasMetadata): Boolean {
+        return allResources.contains(resource)
+    }
+
+    override fun invalidate() {
+        allResources.clear()
+    }
+
+    override fun add(resource: HasMetadata): Boolean {
+        if (!kind.isAssignableFrom(resource::class.java)) {
+            return false
+        }
+        return allResources.add(resource as R)
+
+    }
+
+    override fun remove(resource: HasMetadata): Boolean {
+        if (!kind.isAssignableFrom(resource::class.java)) {
+            return false
+        }
+        return allResources.removeIf { resource.metadata.name == it.metadata.name }
+    }
+
+    protected abstract fun loadAllResources(): List<R>
+
+}

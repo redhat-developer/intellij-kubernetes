@@ -17,9 +17,10 @@ import io.fabric8.kubernetes.client.NamespacedKubernetesClient
 interface IKubernetesResourceModel {
     fun getClient(): NamespacedKubernetesClient
     fun addListener(listener: ResourceChangeObservable.ResourceChangeListener)
+    fun getCurrentNamespace(): Namespace?
     fun getAllNamespaces(): List<Namespace>
     fun getNamespace(name: String): Namespace?
-    fun getResources(namespace: String, kind: Class<out HasMetadata>): Collection<HasMetadata>
+    fun getResources(namespace: String?, kind: Class<out HasMetadata>): Collection<HasMetadata>
     fun invalidate()
     fun invalidate(resource: Any?)
 }
@@ -52,11 +53,15 @@ class KubernetesResourceModel(
         return cluster.getAllNamespaces()
     }
 
+    override fun getCurrentNamespace(): Namespace? {
+        return cluster.getCurrentNamespace()
+    }
+
     override fun getNamespace(name: String): Namespace? {
         return cluster.getNamespace(name)
     }
 
-    override fun getResources(namespace: String, kind: Class<out HasMetadata>): Collection<HasMetadata> {
+    override fun getResources(namespace: String?, kind: Class<out HasMetadata>): Collection<HasMetadata> {
         return cluster.getNamespaceProvider(namespace)?.getResources(kind) ?: emptyList()
     }
 
