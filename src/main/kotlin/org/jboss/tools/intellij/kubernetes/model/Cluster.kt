@@ -116,14 +116,15 @@ open class Cluster(private val modelChange: IModelChangeObservable) : ICluster {
         return  client.namespaces().list().items.asSequence()
     }
 
-    private fun add(resource: HasMetadata) {
+    fun add(resource: HasMetadata): Boolean {
         val added = when(resource) {
             is Namespace -> addNamespace(resource)
             else -> addNamespaceChild(resource)
         }
         if (added) {
-            modelChange.fireAdded(listOf(resource))
+            modelChange.fireAdded(resource)
         }
+        return added
     }
 
     private fun addNamespace(namespace: Namespace): Boolean {
@@ -137,14 +138,15 @@ open class Cluster(private val modelChange: IModelChangeObservable) : ICluster {
                 && provider.add(resource)
     }
 
-    private fun remove(resource: HasMetadata) {
+    fun remove(resource: HasMetadata): Boolean {
         val removed = when (resource) {
             is Namespace -> removeNamespace(resource)
             else -> removeNamespaceChild(resource)
         }
         if (removed) {
-            modelChange.fireRemoved(listOf(resource))
+            modelChange.fireRemoved(resource)
         }
+        return removed
     }
 
     private fun removeNamespace(namespace: Namespace): Boolean {
