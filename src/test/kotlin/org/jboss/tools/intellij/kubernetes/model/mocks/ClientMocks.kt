@@ -44,7 +44,9 @@ object ClientMocks {
         val namespacesMock = mock<NamespaceListOperation> {
                 on { list() } doReturn namespaceList
             }
-        val config = mock<Config>()
+        val config = mock<Config>() {
+            on { namespace } doReturn currentNamespace
+        }
 
         return mock<NamespacedKubernetesClient> {
             on { namespaces() } doReturn namespacesMock
@@ -88,9 +90,12 @@ object ClientMocks {
             .doReturn(podResource)
     }
 
-    inline fun <reified T: HasMetadata> resource(name: String): T {
+    inline fun <reified T: HasMetadata> resource(name: String, namespace: String? = null): T {
         val metadata = mock<ObjectMeta> {
             on { getName() } doReturn name
+            if (namespace != null) {
+                on { getNamespace() } doReturn namespace
+            }
         }
         return mock {
             on { getMetadata() } doReturn metadata
