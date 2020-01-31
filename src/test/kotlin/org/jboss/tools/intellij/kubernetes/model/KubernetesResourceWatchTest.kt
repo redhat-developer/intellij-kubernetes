@@ -14,7 +14,6 @@ import com.nhaarman.mockitokotlin2.mock
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.client.Watch
 import io.fabric8.kubernetes.client.Watcher
-import io.fabric8.kubernetes.client.dsl.Watchable
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
 import org.junit.Test
@@ -28,11 +27,13 @@ class KubernetesResourceWatchTest {
     private val watch: KubernetesResourceWatch = KubernetesResourceWatch(
         addOperation = addOperation,
         removeOperation = removeOperation)
-    private val watchable = WatchableFake()
+    private val watchable1 = WatchableFake()
+    private val watchable2 = WatchableFake()
 
     @Before
     fun before() {
-        watch.add { watchable }
+        watch.add { watchable1 }
+        watch.add { watchable2 }
     }
 
     @Test
@@ -40,28 +41,28 @@ class KubernetesResourceWatchTest {
         // given
         // when watch supplier is added - in @Before
         // then
-        assertThat(watchable.isWatchCalled()).isTrue()
+        assertThat(watchable1.isWatchCalled()).isTrue()
     }
 
     @Test
     fun `#add() should add watch`() {
         // given
         val toAdd = WatchableFake()
-        assertThat(watch.getAllWatched()).doesNotContain(toAdd)
+        assertThat(watch.getAll()).doesNotContain(toAdd)
         // when
         watch.add { toAdd }
         // then
-        assertThat(watch.getAllWatched()).contains(toAdd)
+        assertThat(watch.getAll()).contains(toAdd)
     }
 
     @Test
     fun `#add() should not add if supplier is null`() {
         // given
-        val sizeBeforeAdd = watch.getAllWatched().size
+        val sizeBeforeAdd = watch.getAll().size
         // when
         watch.add(null)
         // then
-        assertThat(watch.getAllWatched().size).isEqualTo(sizeBeforeAdd)
+        assertThat(watch.getAll().size).isEqualTo(sizeBeforeAdd)
     }
 
     @Test
@@ -80,9 +81,9 @@ class KubernetesResourceWatchTest {
     fun `#remove() should close removed watch`() {
         // given
         // when starting 2nd time
-        watch.remove { watchable }
+        watch.remove { watchable1 }
         // then
-        assertThat(watchable.watch.isClosed()).isTrue()
+        assertThat(watchable1.watch.isClosed()).isTrue()
     }
 
     @Test
@@ -91,7 +92,7 @@ class KubernetesResourceWatchTest {
         val notRemoved = WatchableFake()
         watch.add{ notRemoved }
         // when starting 2nd time
-        watch.remove { watchable }
+        watch.remove { watchable1 }
         // then
         assertThat(notRemoved.watch.isClosed()).isFalse()
     }
@@ -101,11 +102,11 @@ class KubernetesResourceWatchTest {
         // given
         val toRemove = WatchableFake()
         watch.add{ toRemove }
-        assertThat(watch.getAllWatched()).contains(toRemove)
+        assertThat(watch.getAll()).contains(toRemove)
         // when starting 2nd time
         watch.remove { toRemove }
         // then
-        assertThat(watch.getAllWatched()).doesNotContain(toRemove)
+        assertThat(watch.getAll()).doesNotContain(toRemove)
     }
 
     @Test
@@ -113,7 +114,7 @@ class KubernetesResourceWatchTest {
         // given
         val resource: HasMetadata = mock()
         // when
-        watchable.watcher?.eventReceived(Watcher.Action.ADDED, resource)
+        watchable1.watcher?.eventReceived(Watcher.Action.ADDED, resource)
         // then
         assertThat(addOperationState.wasInvokedWithResource(resource)).isTrue()
         assertThat(removeOperationState.wasInvoked()).isFalse()
@@ -124,7 +125,7 @@ class KubernetesResourceWatchTest {
         // given
         val resource: HasMetadata = mock()
         // when
-        watchable.watcher?.eventReceived(Watcher.Action.DELETED, resource)
+        watchable1.watcher?.eventReceived(Watcher.Action.DELETED, resource)
         // then
         assertThat(removeOperationState.wasInvokedWithResource(resource)).isTrue()
         assertThat(addOperationState.wasInvoked()).isFalse()
@@ -135,7 +136,7 @@ class KubernetesResourceWatchTest {
         // given
         val resource: HasMetadata = mock()
         // when
-        watchable.watcher?.eventReceived(Watcher.Action.ERROR, resource)
+        watchable1.watcher?.eventReceived(Watcher.Action.ERROR, resource)
         // then
         assertThat(removeOperationState.wasInvoked()).isFalse()
         assertThat(addOperationState.wasInvoked()).isFalse()
@@ -147,7 +148,8 @@ class KubernetesResourceWatchTest {
         // when starting 2nd time
         watch.clear()
         // then
-        assertThat(watchable.watch.isClosed())
+        assertThat(watchable1.watch.isClosed())
+        assertThat(watchable2.watch.isClosed())
     }
 
     private class OperationState() {
@@ -166,7 +168,7 @@ class KubernetesResourceWatchTest {
         }
     }
 
-    private class WatchableFake : Watchable<Watch, Watcher<in HasMetadata>> {
+    private class WatchableFake : WatchableResource {
 
         var watcher: Watcher<in HasMetadata>? = null
         var watch: WatchFake = WatchFake()

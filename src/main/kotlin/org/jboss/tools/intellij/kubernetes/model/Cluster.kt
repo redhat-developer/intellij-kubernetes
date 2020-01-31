@@ -22,7 +22,7 @@ interface ICluster {
     fun close()
     fun invalidate()
     fun getAllNamespaces(): List<Namespace>
-    fun setCurrentNamespace(name: String)
+    fun setCurrentNamespace(namespace: Namespace)
     fun getCurrentNamespace(): Namespace?
     fun getNamespace(name: String): Namespace?
     fun getNamespaceProvider(name: String?): NamespaceProvider?
@@ -49,13 +49,16 @@ open class Cluster(private val modelChange: IModelChangeObservable) : ICluster {
         removeOperation = { remove(it) })
 
     override fun startWatch() {
-        val watchables = getWatchableResources() ?: return
-        watch.addAll(watchables)
+        val namespace = getCurrentNamespace() ?: return
+        startWatch(namespace)
     }
 
-    private fun stopWatch() {
-        val watchables = getWatchableResources() ?: return
-        watch.removeAll(watchables)
+    private fun startWatch(namespace: Namespace) {
+        watch.addAll(getWatchableResources(namespace))
+    }
+
+    private fun stopWatch(namespace: Namespace) {
+        watch.removeAll(getWatchableResources(namespace))
     }
 
     override fun close() {
@@ -70,19 +73,23 @@ open class Cluster(private val modelChange: IModelChangeObservable) : ICluster {
         return namespaceProviders.entries.map { it.value.namespace }
     }
 
-    override fun setCurrentNamespace(name: String) {
-        stopWatch()
-        client.configuration.namespace = name
+    override fun setCurrentNamespace(namespace: Namespace) {
         val currentNamespace = getCurrentNamespace()
+        if (namespace == currentNamespace) {
+            return
+        }
+
         if (currentNamespace != null) {
             getNamespaceProvider(currentNamespace)?.invalidate()
+            stopWatch(currentNamespace)
         }
-        modelChange.fireCurrentNamespace(getNamespace(name))
-        startWatch()
+        client.configuration.namespace = namespace.metadata?.name
+        startWatch(namespace)
+        modelChange.fireCurrentNamespace(namespace)
     }
 
     override fun getCurrentNamespace(): Namespace? {
-        var currentNamespaceName: String? = client.namespace
+        var currentNamespaceName: String? = client.configuration.namespace
         if (currentNamespaceName == null) {
             currentNamespaceName = getAllNamespaces().firstOrNull()?.metadata?.name
             if (currentNamespaceName == null) {
@@ -122,7 +129,7 @@ open class Cluster(private val modelChange: IModelChangeObservable) : ICluster {
             else -> addNamespaceChild(resource)
         }
         if (added) {
-            modelChange.fireAdded(listOf(resource))
+            modelChange.fireAdded(resource)
         }
     }
 
@@ -143,7 +150,7 @@ open class Cluster(private val modelChange: IModelChangeObservable) : ICluster {
             else -> removeNamespaceChild(resource)
         }
         if (removed) {
-            modelChange.fireRemoved(listOf(resource))
+            modelChange.fireRemoved(resource)
         }
     }
 
@@ -163,9 +170,8 @@ open class Cluster(private val modelChange: IModelChangeObservable) : ICluster {
         return DefaultKubernetesClient(ConfigBuilder().build())
     }
 
-    protected open fun getWatchableResources(): List<WatchableResourceSupplier>? {
-        val currentNamespace = getCurrentNamespace() ?: return null
-        return getNamespaceProvider(currentNamespace)?.getWatchableResources() ?: return null
+    protected open fun getWatchableResources(namespace: Namespace): List<WatchableResourceSupplier> {
+        return getNamespaceProvider(namespace)?.getWatchableResources() ?: return emptyList()
     }
 
 }
