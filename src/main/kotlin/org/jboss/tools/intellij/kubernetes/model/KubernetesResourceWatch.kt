@@ -41,6 +41,10 @@ open class KubernetesResourceWatch(
         watches[watchable] = watch
     }
 
+    fun getAll(): List<WatchableResource> {
+        return watches.keys.toList()
+    }
+
     fun remove(supplier: WatchableResourceSupplier?) {
         val watchable = supplier?.invoke() ?: return
         watches[watchable]?.close()
@@ -51,14 +55,6 @@ open class KubernetesResourceWatch(
         suppliers.forEach { remove(it) }
     }
 
-    fun clear() {
-        closeAll()
-    }
-
-    fun getAll(): List<WatchableResource> {
-        return watches.keys.toList()
-    }
-
     private fun watch(watchable: WatchableResource): Watch? {
         return try {
             watchable.watch(ResourceWatcher(addOperation, removeOperation))
@@ -66,6 +62,10 @@ open class KubernetesResourceWatch(
             logger<KubernetesResourceWatch>().error(e)
             null
         }
+    }
+
+    fun clear() {
+        closeAll()
     }
 
     private fun closeAll() {
@@ -107,7 +107,5 @@ open class KubernetesResourceWatch(
 
         override fun onClose(cause: KubernetesClientException?) {
         }
-
     }
-
 }

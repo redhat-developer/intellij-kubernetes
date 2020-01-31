@@ -209,6 +209,163 @@ class ClusterTest {
         assertThat(provider!!.namespace).isEqualTo(NAMESPACE2)
     }
 
+    @Test
+    fun `#add(namespace) should add if namespace is not contained yet`() {
+        // given
+        // when
+        val added = cluster.add(resource<Namespace>("namespace"))
+        // then
+        assertThat(added).isTrue()
+    }
+
+    @Test
+    fun `#add(namespace) should not add if already exists`() {
+        // given
+        // when
+        val added = cluster.add(NAMESPACE2)
+        // then
+        assertThat(added).isFalse()
+    }
+
+    @Test
+    fun `#add(namespace) should create new namespace provider`() {
+        // given
+        val name = "namespace"
+        val namespace = resource<Namespace>(name)
+        assertThat(cluster.getNamespaceProvider(name)).isNull()
+        // when
+        cluster.add(namespace)
+        // then
+        assertThat(cluster.getNamespaceProvider(name)).isNotNull
+    }
+
+    @Test
+    fun `#add(namespace) should fire namespace added`() {
+        // given
+        // when
+        val namespace = resource<Namespace>("namespace")
+        cluster.add(namespace)
+        // then
+        verify(observable).fireAdded(namespace)
+    }
+
+    @Test
+    fun `#add(pod) should add pod to namespace provider`() {
+        // given
+        val provider = cluster.getNamespaceProvider(NAMESPACE2.metadata.name)
+        val pod = resource<Pod>("pod", NAMESPACE2.metadata.name)
+        // when
+        cluster.add(pod)
+        // then
+        verify(provider)!!.add(pod)
+    }
+
+    @Test
+    fun `#add(pod) should return true if pod was added to namespace provider`() {
+        // given
+        val pod = resource<Pod>("pod", NAMESPACE2.metadata.name)
+        val provider = cluster.getNamespaceProvider(NAMESPACE2.metadata.name)
+        doReturn(true).whenever(provider)!!.add(pod)
+        // when
+        val added = cluster.add(pod)
+        // then
+        assertThat(added).isTrue()
+    }
+
+    @Test
+    fun `#add(pod) should return false if pod is contained in unknown namespace`() {
+        // given
+        val pod = resource<Pod>("pod", "unknown namespace")
+        assertThat(cluster.getNamespaceProvider(pod.metadata.namespace)).isNull()
+        // when
+        val added = cluster.add(pod)
+        // then
+        assertThat(added).isFalse()
+    }
+
+    @Test
+    fun `#remove(namespace) should remove if is contained`() {
+        // given
+        // when
+        val removed = cluster.remove(NAMESPACE2)
+        // then
+        assertThat(removed).isTrue()
+    }
+
+    @Test
+    fun `#remove(namespace) should not remove if namespace is not contained yet`() {
+        // given
+        // when
+        val removed = cluster.remove(resource<Namespace>("namespace"))
+        // then
+        assertThat(removed).isFalse()
+    }
+
+    @Test
+    fun `#remove(namespace) should remove existing namespace provider`() {
+        // given
+        val name = NAMESPACE2.metadata.name
+        val namespace = resource<Namespace>(name)
+        assertThat(cluster.getNamespaceProvider(name)).isNotNull
+        // when
+        cluster.remove(namespace)
+        // then
+        assertThat(cluster.getNamespaceProvider(name)).isNull()
+    }
+
+    @Test
+    fun `#remove(namespace) should fire namespace removed`() {
+        // given
+        // when
+        cluster.remove(NAMESPACE2)
+        // then
+        verify(observable).fireRemoved(NAMESPACE2)
+    }
+
+    @Test
+    fun `#remove(pod) should remove pod from namespace provider`() {
+        // given
+        val provider = cluster.getNamespaceProvider(NAMESPACE2.metadata.name)
+        val pod = resource<Pod>("pod", NAMESPACE2.metadata.name)
+        // when
+        cluster.remove(pod)
+        // then
+        verify(provider)!!.remove(pod)
+    }
+
+    @Test
+    fun `#remove(pod) should return true if pod was removed from namespace provider`() {
+        // given
+        val pod = resource<Pod>("pod", NAMESPACE2.metadata.name)
+        val provider = cluster.getNamespaceProvider(NAMESPACE2.metadata.name)
+        doReturn(true).whenever(provider)!!.remove(pod)
+        // when
+        val removed = cluster.remove(pod)
+        // then
+        assertThat(removed).isTrue()
+    }
+
+    @Test
+    fun `#remove(pod) should return false if pod is contained in unknown namespace`() {
+        // given
+        val pod = resource<Pod>("pod", "unknown namespace")
+        assertThat(cluster.getNamespaceProvider(pod.metadata.namespace)).isNull()
+        // when
+        val removed = cluster.remove(pod)
+        // then
+        assertThat(removed).isFalse()
+    }
+
+    @Test
+    fun `#close should close client`() {
+        // given
+        // when
+        cluster.close()
+        // then
+        verify(client).close()
+    }
+
+
     inner class TestableCluster(observable: ModelChangeObservable): Cluster(observable) {
 
         public override var watch = mock<KubernetesResourceWatch>()
