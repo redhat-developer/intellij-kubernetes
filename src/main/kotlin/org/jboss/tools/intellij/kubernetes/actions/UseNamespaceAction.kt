@@ -13,13 +13,15 @@ package org.jboss.tools.intellij.kubernetes.actions
 import com.intellij.icons.AllIcons.Actions.Refresh
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
-import com.intellij.ui.treeStructure.Tree
+import io.fabric8.kubernetes.api.model.Namespace
 
-class RefreshAction: AnAction(Refresh) {
+class UseNamespaceAction: AnAction(Refresh) {
 
     override fun actionPerformed(event: AnActionEvent) {
-        val tree: Tree = event.getTree()
-        val modelObject = tree.getSelectedNode()
-        getResourceModel(event.project)?.invalidate(modelObject)
+        val selectedNode = event.getTree().getSelectedNode()
+        val modelObject = selectedNode?.getDescriptorElement()
+        if (modelObject is Namespace) {
+            getResourceModel(event.project)?.setCurrentNamespace(modelObject)
+        }
     }
 }

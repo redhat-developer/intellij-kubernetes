@@ -20,10 +20,16 @@
     <actions>
         <group id="org.jboss.tools.intellij.kubernetes.tree" popup="true">
             <!-- Application Explorer -->
-            <!-- Application Explorer -->
+            <action class="org.jboss.tools.intellij.kubernetes.actions.UseNamespaceAction"
+                    id="org.jboss.tools.intellij.kubernetes.actions.UseNamespaceAction"
+                    text="Use Namespace"
+                    icon="AllIcons.Nodes.EmptyNode"/>
             <action class="org.jboss.tools.intellij.kubernetes.actions.RefreshAction"
                     id="org.jboss.tools.intellij.kubernetes.actions.Refresh"
-                    text="Refresh"/>
+                    text="Refresh"
+                    icon="AllIcons.Actions.Refresh"/>
+                    <!-- icon via class: has to be in 'icons' package and name ending with *Icons -->
+                    <!-- https://www.jetbrains.org/intellij/sdk/docs/reference_guide/work_with_icons_and_images.html -->
         </group>
     </actions>
 
