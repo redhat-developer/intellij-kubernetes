@@ -39,8 +39,8 @@ class ClusterTest {
 
     private val allNamespaces = arrayOf(NAMESPACE1, NAMESPACE2, NAMESPACE3)
     private val client: NamespacedKubernetesClient = client(NAMESPACE2.metadata.name, allNamespaces)
-    private val watchable1: WatchableResource = mock()
-    private val watchable2: WatchableResource = mock()
+    private val watchable1: Watchable<Watch, Watcher<in HasMetadata>> = mock()
+    private val watchable2: Watchable<Watch, Watcher<in HasMetadata>> = mock()
     private val observable: ModelChangeObservable = mock()
     private lateinit var cluster: TestableCluster
 
