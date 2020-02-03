@@ -44,7 +44,7 @@ class KubernetesTreeStructure(private val project: Project) : AbstractTreeStruct
                         Categories.NODES,
                         Categories.WORKLOADS)
                 Categories.NAMESPACES ->
-                    getResourceModel().getAllNamespaces().toTypedArray()
+                    getResourceModel().getAllNamespaces().sortedBy { it.metadata.name }.toTypedArray()
                 Categories.NODES ->
                     emptyArray()
                 Categories.WORKLOADS ->
@@ -52,7 +52,7 @@ class KubernetesTreeStructure(private val project: Project) : AbstractTreeStruct
                 Categories.PODS -> {
                     getResourceModel().getResources(
                         getResourceModel().getCurrentNamespace()?.metadata?.name,
-                        PodsProvider.KIND)
+                        PodsProvider.KIND).sortedBy { it.metadata.name }
                         .toTypedArray()
                 }
                 else ->
