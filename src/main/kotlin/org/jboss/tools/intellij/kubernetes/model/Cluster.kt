@@ -10,11 +10,14 @@
  ******************************************************************************/
 package org.jboss.tools.intellij.kubernetes.model
 
+import com.intellij.openapi.diagnostic.logger
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.Namespace
 import io.fabric8.kubernetes.client.ConfigBuilder
 import io.fabric8.kubernetes.client.DefaultKubernetesClient
+import io.fabric8.kubernetes.client.KubernetesClientException
 import io.fabric8.kubernetes.client.NamespacedKubernetesClient
+
 
 interface ICluster {
     val client: NamespacedKubernetesClient
@@ -24,7 +27,7 @@ interface ICluster {
     fun getAllNamespaces(): List<Namespace>
     fun setCurrentNamespace(namespace: Namespace)
     fun getCurrentNamespace(): Namespace?
-    fun getNamespace(name: String): Namespace?
+    fun getNamespace(name: String?): Namespace?
     fun getNamespaceProvider(name: String?): NamespaceProvider?
     fun getNamespaceProvider(resource: HasMetadata): NamespaceProvider?
     fun getNamespaceProvider(namespace: Namespace): NamespaceProvider?
@@ -49,8 +52,12 @@ open class Cluster(private val modelChange: IModelChangeObservable) : ICluster {
         removeOperation = { remove(it) })
 
     override fun startWatch() {
-        val namespace = getCurrentNamespace() ?: return
-        startWatch(namespace)
+        try {
+            val namespace = getCurrentNamespace() ?: return
+            startWatch(namespace)
+        } catch (e: KubernetesClientException) {
+            logger<KubernetesResourceWatch>().warn("Could not start watching resources on server ${client.masterUrl}", e)
+        }
     }
 
     private fun startWatch(namespace: Namespace) {
@@ -91,15 +98,20 @@ open class Cluster(private val modelChange: IModelChangeObservable) : ICluster {
     override fun getCurrentNamespace(): Namespace? {
         var currentNamespaceName: String? = client.configuration.namespace
         if (currentNamespaceName == null) {
-            currentNamespaceName = getAllNamespaces().firstOrNull()?.metadata?.name
-            if (currentNamespaceName == null) {
-                return null
-            }
+            currentNamespaceName = getFirstNamespace()
         }
         return getNamespace(currentNamespaceName)
     }
 
-    override fun getNamespace(name: String): Namespace? {
+    private fun getFirstNamespace(): String? {
+        return getAllNamespaces().firstOrNull()?.metadata?.name
+    }
+
+    override fun getNamespace(name: String?): Namespace? {
+        if (name == null) {
+            return  null
+        }
+
         return getNamespaceProvider(name)?.namespace
     }
 
@@ -120,7 +132,7 @@ open class Cluster(private val modelChange: IModelChangeObservable) : ICluster {
     }
 
     private fun loadAllNamespaces(): Sequence<Namespace> {
-        return  client.namespaces().list().items.asSequence()
+        return client.namespaces().list().items.asSequence()
     }
 
     fun add(resource: HasMetadata): Boolean {

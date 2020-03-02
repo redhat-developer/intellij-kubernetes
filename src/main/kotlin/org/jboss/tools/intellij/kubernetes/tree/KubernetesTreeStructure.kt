@@ -16,6 +16,7 @@ import com.intellij.ide.util.treeView.AbstractTreeStructure
 import com.intellij.ide.util.treeView.NodeDescriptor
 import com.intellij.ide.util.treeView.PresentableNodeDescriptor
 import com.intellij.openapi.components.ServiceManager
+import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.IconLoader
 import io.fabric8.kubernetes.api.model.HasMetadata
@@ -23,7 +24,9 @@ import io.fabric8.kubernetes.api.model.Namespace
 import io.fabric8.kubernetes.api.model.Pod
 import io.fabric8.kubernetes.client.NamespacedKubernetesClient
 import org.jboss.tools.intellij.kubernetes.model.IKubernetesResourceModel
+import org.jboss.tools.intellij.kubernetes.model.KubernetesResourceException
 import org.jboss.tools.intellij.kubernetes.model.PodsProvider
+import java.net.URL
 import javax.swing.Icon
 
 /**
@@ -37,28 +40,31 @@ class KubernetesTreeStructure(private val project: Project) : AbstractTreeStruct
 
     override fun getChildElements(element: Any): Array<Any> {
         try {
-            return when(element) {
+            return when (element) {
                 rootElement ->
                     arrayOf(
                         Categories.NAMESPACES,
                         Categories.NODES,
-                        Categories.WORKLOADS)
+                        Categories.WORKLOADS
+                    )
                 Categories.NAMESPACES ->
-                    getResourceModel().getAllNamespaces().sortedBy { it.metadata.name }.toTypedArray()
+                    getResourceModel()
+                        .getAllNamespaces()
+                        .sortedBy { it.metadata.name }
+                        .toTypedArray()
                 Categories.NODES ->
                     emptyArray()
                 Categories.WORKLOADS ->
                     arrayOf(Categories.PODS)
-                Categories.PODS -> {
-                    getResourceModel().getResources(
-                        getResourceModel().getCurrentNamespace()?.metadata?.name,
-                        PodsProvider.KIND).sortedBy { it.metadata.name }
+                Categories.PODS ->
+                    getResourceModel()
+                        .getResources(PodsProvider.KIND)
+                        .sortedBy { it.metadata.name }
                         .toTypedArray()
-                }
                 else ->
                     emptyArray()
             }
-        } catch(e: RuntimeException) {
+        } catch(e: KubernetesResourceException) {
             return arrayOf(e)
         }
     }
@@ -75,7 +81,7 @@ class KubernetesTreeStructure(private val project: Project) : AbstractTreeStruct
                 else ->
                     rootElement
             }
-        } catch(e: RuntimeException) {
+        } catch(e: KubernetesResourceException) {
             return null
         }
     }
@@ -108,6 +114,18 @@ class KubernetesTreeStructure(private val project: Project) : AbstractTreeStruct
 
     override fun isToBuildChildrenInBackground(element: Any) = true
 
+    private fun getServerUrl(): URL {
+        return getResourceModel().getClient().masterUrl
+    }
+
+    private inline fun runSafely(errorMessage: String, childrenProvider: () -> Array<Any>): Array<Any> {
+        try {
+            return childrenProvider.invoke()
+        } catch(e: Exception) {
+            logger<KubernetesTreeStructure>().warn(errorMessage, e)
+            return arrayOf(e)
+        }
+    }
 
     enum class Categories(val label: String) {
         NAMESPACES("Namespaces"),

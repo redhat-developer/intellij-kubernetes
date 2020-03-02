@@ -16,6 +16,8 @@ import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.whenever
 import io.fabric8.kubernetes.api.model.HasMetadata
+import io.fabric8.kubernetes.api.model.Namespace
+import io.fabric8.kubernetes.api.model.ObjectMeta
 import io.fabric8.kubernetes.client.NamespacedKubernetesClient
 import org.jboss.tools.intellij.kubernetes.model.ICluster
 import org.jboss.tools.intellij.kubernetes.model.IModelChangeObservable
@@ -31,12 +33,14 @@ object Mocks {
         }
     }
 
-    fun cluster(client: NamespacedKubernetesClient, provider: NamespaceProvider): ICluster {
+    fun cluster(client: NamespacedKubernetesClient, provider: NamespaceProvider, namespace: Namespace): ICluster {
         return mock() {
             doNothing()
                 .whenever(mock).startWatch()
             doReturn(client)
                 .whenever(mock).client
+            doReturn(namespace)
+                .whenever(mock).getCurrentNamespace()
             doReturn(provider)
                 .whenever(mock).getNamespaceProvider(any<HasMetadata>())
             doReturn(provider)
@@ -46,6 +50,21 @@ object Mocks {
 
     fun namespaceProvider(): NamespaceProvider{
         return mock()
+    }
+
+    fun namespace(name: String): Namespace {
+        val namespace = mock<Namespace>()
+        val metadata = metadata(name)
+        doReturn(metadata)
+            .whenever(namespace).metadata
+        return namespace
+    }
+
+    private fun metadata(name: String): ObjectMeta {
+        val metadata = mock<ObjectMeta>()
+        doReturn(name)
+            .whenever(metadata).name
+        return metadata
     }
 
     fun <T: HasMetadata> resourceKindProvider(kind: Class<T>): IResourceKindProvider<T> {

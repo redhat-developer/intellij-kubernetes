@@ -12,6 +12,7 @@ package org.jboss.tools.intellij.kubernetes.model
 
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.Namespace
+import io.fabric8.kubernetes.client.KubernetesClientException
 import io.fabric8.kubernetes.client.NamespacedKubernetesClient
 
 interface IKubernetesResourceModel {
@@ -21,7 +22,11 @@ interface IKubernetesResourceModel {
     fun getCurrentNamespace(): Namespace?
     fun getAllNamespaces(): List<Namespace>
     fun getNamespace(name: String): Namespace?
-    fun getResources(namespace: String?, kind: Class<out HasMetadata>): Collection<HasMetadata>
+    /**
+     * Returns all resources for the current cluster and current namespace.
+     * Returns an empty collection if none are present.
+     */
+    fun getResources(kind: Class<out HasMetadata>): Collection<HasMetadata>
     fun invalidate()
     fun invalidate(resource: Any?)
 }
@@ -51,7 +56,11 @@ class KubernetesResourceModel(
     }
 
     override fun getAllNamespaces(): List<Namespace> {
-        return cluster.getAllNamespaces()
+        try {
+            return cluster.getAllNamespaces()
+        } catch (e: KubernetesClientException) {
+            throw KubernetesResourceException("Could not get all namespaces for server ${cluster.client.masterUrl}", e)
+        }
     }
 
     override fun setCurrentNamespace(namespace: Namespace) {
@@ -59,15 +68,25 @@ class KubernetesResourceModel(
     }
 
     override fun getCurrentNamespace(): Namespace? {
-        return cluster.getCurrentNamespace()
+        try {
+            return cluster.getCurrentNamespace()
+        } catch (e: KubernetesClientException) {
+            throw KubernetesResourceException("Could not get current namespace for server ${cluster.client.masterUrl}",
+                e)
+        }
     }
 
-    override fun getNamespace(name: String): Namespace? {
+        override fun getNamespace(name: String): Namespace? {
         return cluster.getNamespace(name)
     }
 
-    override fun getResources(namespace: String?, kind: Class<out HasMetadata>): Collection<HasMetadata> {
-        return cluster.getNamespaceProvider(namespace)?.getResources(kind) ?: emptyList()
+    override fun getResources(kind: Class<out HasMetadata>): Collection<HasMetadata> {
+        try {
+            val namespace = cluster.getCurrentNamespace()
+            return cluster.getNamespaceProvider(namespace?.metadata?.name)?.getResources(kind) ?: emptyList()
+        } catch (e: KubernetesClientException) {
+            throw KubernetesResourceException("Could not get ${kind.simpleName}s for server ${cluster.client.masterUrl}", e)
+        }
     }
 
     override fun invalidate(resource: Any?) {
