@@ -37,8 +37,12 @@ open class KubernetesResourceWatch(
 
     fun add(supplier: WatchableResourceSupplier?) {
         val watchable = supplier?.invoke() ?: return
-        val watch = watch(watchable) ?: return
-        watches[watchable] = watch
+        try {
+            val watch = watch(watchable) ?: return
+            watches[watchable] = watch
+        } catch(e: KubernetesClientException){
+            throw KubernetesResourceException("Could not watch $watchable", e)
+        }
     }
 
     fun getAll(): List<WatchableResource> {
@@ -56,12 +60,7 @@ open class KubernetesResourceWatch(
     }
 
     private fun watch(watchable: WatchableResource): Watch? {
-        return try {
-            watchable.watch(ResourceWatcher(addOperation, removeOperation))
-        } catch (e: KubernetesClientException) {
-            logger<KubernetesResourceWatch>().error(e)
-            null
-        }
+        return watchable.watch(ResourceWatcher(addOperation, removeOperation))
     }
 
     fun clear() {

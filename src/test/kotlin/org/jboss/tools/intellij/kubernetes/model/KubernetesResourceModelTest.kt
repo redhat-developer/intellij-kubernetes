@@ -29,6 +29,7 @@ import org.jboss.tools.intellij.kubernetes.model.mocks.ClientMocks.NAMESPACE1
 import org.jboss.tools.intellij.kubernetes.model.mocks.ClientMocks.NAMESPACE2
 import org.jboss.tools.intellij.kubernetes.model.mocks.ClientMocks.NAMESPACE3
 import org.jboss.tools.intellij.kubernetes.model.mocks.Mocks
+import org.jboss.tools.intellij.kubernetes.model.mocks.Mocks.namespace
 import org.jboss.tools.intellij.kubernetes.model.mocks.Mocks.namespaceProvider
 import org.junit.Test
 
@@ -36,15 +37,16 @@ typealias NamespaceListOperation = NonNamespaceOperation<Namespace, NamespaceLis
 
 class KubernetesResourceModelTest {
 
-    private var client: NamespacedKubernetesClient = mock()
-    private var modelChange: IModelChangeObservable = mock()
-    private var provider: NamespaceProvider = namespaceProvider()
-    private var cluster: ICluster = Mocks.cluster(client, provider)
-    private var clusterFactory: (IModelChangeObservable) -> ICluster = Mocks.clusterFactory(cluster)
-    private var model: IKubernetesResourceModel = KubernetesResourceModel(modelChange, clusterFactory)
+    private val client: NamespacedKubernetesClient = mock()
+    private val modelChange: IModelChangeObservable = mock()
+    private val provider: NamespaceProvider = namespaceProvider()
+    private val namespace: Namespace = namespace("papa smurf")
+    private val cluster: ICluster = Mocks.cluster(client, provider, namespace)
+    private val clusterFactory: (IModelChangeObservable) -> ICluster = Mocks.clusterFactory(cluster)
+    private val model: IKubernetesResourceModel = KubernetesResourceModel(modelChange, clusterFactory)
 
     @Test
-    fun `getAllNamespaces should return all namespaces in cluster`() {
+    fun `#getAllNamespaces should return all namespaces in cluster`() {
         // given
         val namespaces = listOf(NAMESPACE1, NAMESPACE2, NAMESPACE3)
         doReturn(namespaces)
@@ -56,7 +58,7 @@ class KubernetesResourceModelTest {
     }
 
     @Test
-    fun `getNamespace(name) should return namespace from cluster`() {
+    fun `#getNamespace(name) should return namespace from cluster`() {
         // given
         val name = NAMESPACE2.metadata.name
         doReturn(NAMESPACE2)
@@ -68,11 +70,11 @@ class KubernetesResourceModelTest {
     }
 
     @Test
-    fun `getResources(name) should return all resources of a kind in the given namespace`() {
+    fun `#getResources(kind) should return all resources of a kind in the given namespace`() {
         // given
         // when
         val kind = HasMetadata::class.java
-        model.getResources("anyNamespace", kind)
+        model.getResources(kind)
         // then
         verify(provider, times(1)).getResources(kind)
     }
