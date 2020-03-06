@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2019 Red Hat, Inc.
+ * Copyright (c) 2020 Red Hat, Inc.
  * Distributed under license by Red Hat, Inc. All rights reserved.
  * This program is made available under the terms of the
  * Eclipse Public License v2.0 which accompanies this distribution,
@@ -14,21 +14,22 @@ import com.nhaarman.mockitokotlin2.mock
 import io.fabric8.kubernetes.api.model.Namespace
 import org.assertj.core.api.Assertions.assertThat
 import org.jboss.tools.intellij.kubernetes.model.ModelChangeObservable.IResourceChangeListener
+import org.jboss.tools.intellij.kubernetes.model.mocks.Mocks.resource
 import org.junit.Before
 import org.junit.Test
 
 class ModelChangeObservableTest {
 
     private val observable = ModelChangeObservable()
-    private val resource = mock<Namespace>()
+    private val resource = resource<Namespace>("smurfette namespace")
     private val listener = object: IResourceChangeListener {
 
-        var currentNamespace: Namespace? = null
+        var currentNamespace: String? = null
         val removedResources = mutableListOf<Any>()
         val addedResources = mutableListOf<Any>()
         val modifiedResources = mutableListOf<Any>()
 
-        override fun currentNamespace(namespace: Namespace?) {
+        override fun currentNamespace(namespace: String?) {
             currentNamespace = namespace
         }
 
@@ -90,12 +91,12 @@ class ModelChangeObservableTest {
     fun `#fireCurrentNamespace should notify current namespace`() {
         // given
         // when
-        observable.fireCurrentNamespace(resource)
+        observable.fireCurrentNamespace(resource.metadata.name)
         // then
         assertThat(listener.removedResources).isEmpty()
         assertThat(listener.addedResources).isEmpty()
         assertThat(listener.modifiedResources).isEmpty()
-        assertThat(listener.currentNamespace).isEqualTo(resource)
+        assertThat(listener.currentNamespace).isEqualTo(resource.metadata.name)
     }
 
 }

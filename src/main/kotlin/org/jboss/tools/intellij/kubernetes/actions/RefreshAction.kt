@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2019 Red Hat, Inc.
+ * Copyright (c) 2020 Red Hat, Inc.
  * Distributed under license by Red Hat, Inc. All rights reserved.
  * This program is made available under the terms of the
  * Eclipse Public License v2.0 which accompanies this distribution,
@@ -19,7 +19,7 @@ class RefreshAction: AnAction(Refresh) {
 
     override fun actionPerformed(event: AnActionEvent) {
         val tree: Tree = event.getTree()
-        val modelObject = tree.getSelectedNode()
-        getResourceModel(event.project)?.invalidate(modelObject)
+        val element = tree.getSelectedNode()?.getDescriptorElement() ?: return
+        getResourceModel(event.project)?.invalidate(element)
     }
 }

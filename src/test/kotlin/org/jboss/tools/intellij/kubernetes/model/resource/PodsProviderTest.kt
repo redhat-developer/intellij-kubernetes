@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2019 Red Hat, Inc.
+ * Copyright (c) 2020 Red Hat, Inc.
  * Distributed under license by Red Hat, Inc. All rights reserved.
  * This program is made available under the terms of the
  * Eclipse Public License v2.0 which accompanies this distribution,
@@ -8,14 +8,13 @@
  * Contributors:
  * Red Hat, Inc. - initial API and implementation
  ******************************************************************************/
-package org.jboss.tools.intellij.kubernetes.model
+package org.jboss.tools.intellij.kubernetes.model.resource
 
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.never
 import com.nhaarman.mockitokotlin2.times
 import com.nhaarman.mockitokotlin2.verify
 import io.fabric8.kubernetes.api.model.Pod
-import io.fabric8.kubernetes.api.model.ReplicationController
 import org.assertj.core.api.Assertions
 import org.assertj.core.api.Assertions.assertThat
 import org.jboss.tools.intellij.kubernetes.model.mocks.ClientMocks.NAMESPACE1
@@ -29,8 +28,8 @@ import org.jboss.tools.intellij.kubernetes.model.mocks.ClientMocks.inNamespace
 import org.jboss.tools.intellij.kubernetes.model.mocks.ClientMocks.items
 import org.jboss.tools.intellij.kubernetes.model.mocks.ClientMocks.list
 import org.jboss.tools.intellij.kubernetes.model.mocks.ClientMocks.pods
-import org.jboss.tools.intellij.kubernetes.model.mocks.ClientMocks.resource
 import org.jboss.tools.intellij.kubernetes.model.mocks.ClientMocks.withName
+import org.jboss.tools.intellij.kubernetes.model.mocks.Mocks.resource
 import org.junit.Before
 import org.junit.Test
 import org.mockito.ArgumentMatchers.anyString
@@ -39,13 +38,12 @@ class PodsProviderTest {
 
     private val client =
         client(NAMESPACE2.metadata.name, arrayOf(NAMESPACE1, NAMESPACE2, NAMESPACE3))
-    private val provider = PodsProvider(client, NAMESPACE1)
+    private val provider =
+        PodsProvider(client, NAMESPACE1.metadata.name)
 
     @Before
     fun before() {
-        val pods = pods(inNamespace(client))
-        items(list(pods), POD1, POD2, POD3)
-        withName(pods, POD2)
+        items(list(inNamespace(pods(client))), POD1, POD2, POD3)
     }
 
     @Test
@@ -55,29 +53,29 @@ class PodsProviderTest {
         // when
         provider.getAllResources()
         // then
-        verify(client.inNamespace(anyString()).pods().list(), times(1)).items
+        verify(client.pods().inNamespace(anyString()).list(), times(1)).items
     }
 
     @Test
     fun `#getAllResources() wont return cached but load pods if #invalidate() is called`() {
         // given
         provider.getAllResources()
-        verify(client.inNamespace(anyString()).pods().list(), times(1)).items
+        verify(client.pods().inNamespace(anyString()).list(), times(1)).items
         provider.invalidate()
         // when
         provider.getAllResources()
         // then
-        verify(client.inNamespace(anyString()).pods().list(), times(2)).items
+        verify(client.pods().inNamespace(anyString()).list(), times(2)).items
     }
 
     @Test
     fun `#hasResource(resource) loads pods if they're not present yet`() {
         // given
-        verify(client.inNamespace(anyString()).pods().list(), never()).items
+        verify(client.pods().inNamespace(anyString()).list(), never()).items
         // when
         provider.hasResource(POD2)
         // then
-        verify(client.inNamespace(anyString()).pods().list(), times(1)).items
+        verify(client.pods().inNamespace(anyString()).list(), times(1)).items
     }
 
     @Test
@@ -93,13 +91,13 @@ class PodsProviderTest {
     fun `#hasResource(resource) returns false if queried with non-contained resource`() {
         // given
         // when
-        val hasResource = provider.hasResource(mock<ReplicationController>())
+        val hasResource = provider.hasResource(mock<Pod>())
         // then
         Assertions.assertThat(hasResource).isFalse()
     }
 
     @Test
-    fun `#add(pod) adds the given pod`() {
+    fun `#add(pod) adds pod if not contained yet`() {
         // given
         val pod = resource<Pod>("papa-smurf")
         assertThat(provider.getAllResources()).doesNotContain(pod)
@@ -110,6 +108,18 @@ class PodsProviderTest {
     }
 
     @Test
+    fun `#add(pod) does not add if pod is already contained`() {
+        // given
+        val pod = provider.getAllResources().elementAt(0)
+        // when
+        val size = provider.getAllResources().size
+        provider.add(pod)
+        // then
+        assertThat(provider.getAllResources()).contains(pod)
+        assertThat(provider.getAllResources().size).isEqualTo(size)
+    }
+
+    @Test
     fun `#add(pod) returns true if pod was added`() {
         // given
         val pod = resource<Pod>("papa-smurf")
@@ -117,19 +127,6 @@ class PodsProviderTest {
         val added = provider.add(pod)
         // then
         assertThat(added).isTrue()
-    }
-
-    @Test
-    fun `#add(pod) does not add if pod is already contained`() {
-        // given
-        val pod = provider.getAllResources().elementAt(0)
-        assertThat(provider.getAllResources()).contains(pod)
-        // when
-        val size = provider.getAllResources().size
-        provider.add(pod)
-        // then
-        assertThat(provider.getAllResources()).contains(pod)
-        assertThat(provider.getAllResources().size).isEqualTo(size)
     }
 
     @Test
@@ -184,5 +181,4 @@ class PodsProviderTest {
         // then
         assertThat(removed).isFalse()
     }
-
 }
