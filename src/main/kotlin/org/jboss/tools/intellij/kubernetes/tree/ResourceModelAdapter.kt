@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2019 Red Hat, Inc.
+ * Copyright (c) 2020 Red Hat, Inc.
  * Distributed under license by Red Hat, Inc. All rights reserved.
  * This program is made available under the terms of the
  * Eclipse Public License v2.0 which accompanies this distribution,
@@ -13,8 +13,8 @@ package org.jboss.tools.intellij.kubernetes.tree
 import com.intellij.ide.util.treeView.AbstractTreeStructure
 import com.intellij.ide.util.treeView.NodeDescriptor
 import com.intellij.ui.tree.StructureTreeModel
-import io.fabric8.kubernetes.api.model.Namespace
-import org.jboss.tools.intellij.kubernetes.model.IKubernetesResourceModel
+import io.fabric8.kubernetes.api.model.HasMetadata
+import org.jboss.tools.intellij.kubernetes.model.IResourceModel
 import org.jboss.tools.intellij.kubernetes.model.ModelChangeObservable
 import javax.swing.tree.DefaultMutableTreeNode
 import javax.swing.tree.TreePath
@@ -23,20 +23,20 @@ import javax.swing.tree.TreePath
  * An adapter that listens to events of the IKubernetesResourceModel and operates these changes on the
  * StructureTreeModel (to which the swing tree listens and updates accordingly)
  *
- * @see IKubernetesResourceModel
+ * @see IResourceModel
  * @see StructureTreeModel
  */
 class ResourceModelAdapter<Structure: AbstractTreeStructure>(
     private val treeModel: StructureTreeModel<Structure>,
     private val structure: AbstractTreeStructure,
-    model: IKubernetesResourceModel)
+    model: IResourceModel)
     : ModelChangeObservable.IResourceChangeListener {
 
     init {
         model.addListener(this)
     }
 
-    override fun currentNamespace(namespace: Namespace?) {
+    override fun currentNamespace(namespace: String?) {
         invalidateRoot()
     }
 

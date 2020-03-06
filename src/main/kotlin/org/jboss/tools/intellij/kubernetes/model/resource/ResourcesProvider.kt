@@ -8,31 +8,23 @@
  * Contributors:
  * Red Hat, Inc. - initial API and implementation
  ******************************************************************************/
-package org.jboss.tools.intellij.kubernetes.model
+package org.jboss.tools.intellij.kubernetes.model.resource
 
 import io.fabric8.kubernetes.api.model.HasMetadata
-import io.fabric8.kubernetes.api.model.Namespace
-import io.fabric8.kubernetes.client.NamespacedKubernetesClient
+import io.fabric8.kubernetes.client.KubernetesClient
 
-abstract class AbstractResourcesProvider<R: HasMetadata>(
-    private val client: NamespacedKubernetesClient,
-    private val namespace: Namespace?)
-    : IResourceKindProvider<R> {
+abstract class ResourcesProvider<R : HasMetadata, C : KubernetesClient>(
+    protected val client: C
+) : IResourcesProvider<R> {
 
-    private val allResources: MutableSet<R> = mutableSetOf()
-        get() {
-            if (field.isEmpty()) {
-                val resources = loadAllResources()
-                field.addAll(resources)
-            }
-            return field
-        }
+    protected abstract val allResources: MutableSet<R>
 
     override fun getAllResources(): Collection<R> {
-        return allResources.toList()
+        return allResources
     }
 
-    override fun hasResource(resource: HasMetadata): Boolean {
+
+    override fun hasResource(resource: R): Boolean {
         return allResources.contains(resource)
     }
 
@@ -40,21 +32,21 @@ abstract class AbstractResourcesProvider<R: HasMetadata>(
         allResources.clear()
     }
 
+    override fun invalidate(resource: HasMetadata) {
+        allResources.remove(resource)
+    }
+
     override fun add(resource: HasMetadata): Boolean {
         if (!kind.isAssignableFrom(resource::class.java)) {
             return false
         }
         return allResources.add(resource as R)
-
     }
 
     override fun remove(resource: HasMetadata): Boolean {
         if (!kind.isAssignableFrom(resource::class.java)) {
             return false
         }
-        return allResources.removeIf { resource.metadata.name == it.metadata.name }
+        return allResources.remove(resource)
     }
-
-    protected abstract fun loadAllResources(): List<R>
-
 }

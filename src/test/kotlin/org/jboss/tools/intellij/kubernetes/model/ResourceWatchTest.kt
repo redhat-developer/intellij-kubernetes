@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2019 Red Hat, Inc.
+ * Copyright (c) 2020 Red Hat, Inc.
  * Distributed under license by Red Hat, Inc. All rights reserved.
  * This program is made available under the terms of the
  * Eclipse Public License v2.0 which accompanies this distribution,
@@ -18,13 +18,13 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
 import org.junit.Test
 
-class KubernetesResourceWatchTest {
+class ResourceWatchTest {
 
     private val addOperationState = OperationState()
     private val addOperation: (HasMetadata) -> Unit = { addOperationState.operation(it) }
     private val removeOperationState = OperationState()
     private val removeOperation: (HasMetadata) -> Unit = { removeOperationState.operation(it) }
-    private val watch: KubernetesResourceWatch = KubernetesResourceWatch(
+    private val watch: ResourceWatch = ResourceWatch(
         addOperation = addOperation,
         removeOperation = removeOperation)
     private val watchable1 = WatchableFake()

@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2019 Red Hat, Inc.
+ * Copyright (c) 2020 Red Hat, Inc.
  * Distributed under license by Red Hat, Inc. All rights reserved.
  * This program is made available under the terms of the
  * Eclipse Public License v2.0 which accompanies this distribution,
@@ -24,7 +24,7 @@ typealias WatchableResourceSupplier = () -> WatchableResource
  * A watch that listens for changes on the kubernetes cluster and operates actions on a model accordingly.
  * The model is only visible to this watcher by operations that the former provides (addOperation, removeOperation).
  */
-open class KubernetesResourceWatch(
+open class ResourceWatch(
     private val addOperation: (HasMetadata) -> Unit,
     private val removeOperation: (HasMetadata) -> Unit
 ) {
@@ -40,8 +40,8 @@ open class KubernetesResourceWatch(
         try {
             val watch = watch(watchable) ?: return
             watches[watchable] = watch
-        } catch(e: KubernetesClientException){
-            throw KubernetesResourceException("Could not watch $watchable", e)
+        } catch(e: Exception){
+            throw ResourceException("Could not watch $watchable", e)
         }
     }
 
@@ -69,7 +69,7 @@ open class KubernetesResourceWatch(
 
     private fun closeAll() {
         val closed = watches.entries.filter {
-                val watch = it?.value
+                val watch = it.value
                 if (watch == null) {
                     false
                 } else {
@@ -84,7 +84,7 @@ open class KubernetesResourceWatch(
             watch.close()
             true
         } catch (e: KubernetesClientException) {
-            logger<KubernetesResourceWatch>().error(e)
+            logger<ResourceWatch>().error(e)
             false
         }
     }

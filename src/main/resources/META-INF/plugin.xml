@@ -13,8 +13,8 @@
     </extensions>
 
     <extensions defaultExtensionNs="com.intellij">
-        <projectService serviceInterface="org.jboss.tools.intellij.kubernetes.model.IKubernetesResourceModel"
-                        serviceImplementation="org.jboss.tools.intellij.kubernetes.model.KubernetesResourceModel" />
+        <projectService serviceInterface="org.jboss.tools.intellij.kubernetes.model.IResourceModel"
+                        serviceImplementation="org.jboss.tools.intellij.kubernetes.model.ResourceModel" />
     </extensions>
 
     <actions>

@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2019 Red Hat, Inc.
+ * Copyright (c) 2020 Red Hat, Inc.
  * Distributed under license by Red Hat, Inc. All rights reserved.
  * This program is made available under the terms of the
  * Eclipse Public License v2.0 which accompanies this distribution,
@@ -17,7 +17,7 @@ import com.intellij.openapi.actionSystem.PlatformDataKeys
 import com.intellij.openapi.components.ServiceManager
 import com.intellij.openapi.project.Project
 import com.intellij.ui.treeStructure.Tree
-import org.jboss.tools.intellij.kubernetes.model.IKubernetesResourceModel
+import org.jboss.tools.intellij.kubernetes.model.IResourceModel
 import javax.swing.JTree
 import javax.swing.tree.DefaultMutableTreeNode
 
@@ -27,14 +27,14 @@ fun AnActionEvent.getTree(): Tree {
 }
 
 fun AnActionEvent.getSelectedNode(): DefaultMutableTreeNode? {
-    return getTree()?.getSelectedNode()
+    return getTree().getSelectedNode()
 }
 
-fun AnAction.getResourceModel(project: Project?): IKubernetesResourceModel? {
+fun AnAction.getResourceModel(project: Project?): IResourceModel? {
     if (project == null) {
         return null
     }
-    return ServiceManager.getService(project, IKubernetesResourceModel::class.java)
+    return ServiceManager.getService(project, IResourceModel::class.java)
 }
 
 fun JTree.getSelectedNode(): DefaultMutableTreeNode? {

@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2019 Red Hat, Inc.
+ * Copyright (c) 2020 Red Hat, Inc.
  * Distributed under license by Red Hat, Inc. All rights reserved.
  * This program is made available under the terms of the
  * Eclipse Public License v2.0 which accompanies this distribution,
@@ -14,17 +14,18 @@ import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.whenever
 import io.fabric8.kubernetes.api.model.DoneablePod
-import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.Namespace
 import io.fabric8.kubernetes.api.model.NamespaceList
-import io.fabric8.kubernetes.api.model.ObjectMeta
 import io.fabric8.kubernetes.api.model.Pod
 import io.fabric8.kubernetes.api.model.PodList
 import io.fabric8.kubernetes.client.Config
 import io.fabric8.kubernetes.client.NamespacedKubernetesClient
 import io.fabric8.kubernetes.client.dsl.MixedOperation
+import io.fabric8.kubernetes.client.dsl.Namespaceable
+import io.fabric8.kubernetes.client.dsl.NonNamespaceOperation
 import io.fabric8.kubernetes.client.dsl.PodResource
 import org.jboss.tools.intellij.kubernetes.model.NamespaceListOperation
+import org.jboss.tools.intellij.kubernetes.model.mocks.Mocks.resource
 import org.mockito.ArgumentMatchers
 
 object ClientMocks {
@@ -38,12 +39,7 @@ object ClientMocks {
     val POD3 = resource<Pod>("pod3")
 
     fun client(currentNamespace: String?, namespaces: Array<Namespace>): NamespacedKubernetesClient {
-        val namespaceList = mock<NamespaceList> {
-            on { items } doReturn namespaces.asList()
-        }
-        val namespacesMock = mock<NamespaceListOperation> {
-                on { list() } doReturn namespaceList
-            }
+        val namespacesMock = namespaceListOperation(namespaces)
         val config = mock<Config>() {
             on { namespace } doReturn currentNamespace
         }
@@ -55,6 +51,15 @@ object ClientMocks {
         }
     }
 
+    private fun namespaceListOperation(namespaces: Array<Namespace>): NamespaceListOperation {
+        val namespaceList = mock<NamespaceList> {
+            on { items } doReturn namespaces.asList()
+        }
+        return mock {
+            on { list() } doReturn namespaceList
+        }
+    }
+
     fun inNamespace(client: NamespacedKubernetesClient): NamespacedKubernetesClient {
         val namespaceClient = mock<NamespacedKubernetesClient>()
         whenever(client.inNamespace(ArgumentMatchers.anyString()))
@@ -62,11 +67,30 @@ object ClientMocks {
         return namespaceClient
     }
 
-    fun pods(client: NamespacedKubernetesClient): MixedOperation<Pod, PodList, DoneablePod, PodResource<Pod, DoneablePod>> {
+    fun inNamespace(mixedOp: MixedOperation<Pod, PodList, DoneablePod, PodResource<Pod, DoneablePod>>)
+            : NonNamespaceOperation<Pod, PodList, DoneablePod, PodResource<Pod, DoneablePod>> {
+        val nonNamespaceOperation: NonNamespaceOperation<Pod, PodList, DoneablePod, PodResource<Pod, DoneablePod>>
+                = mock()
+        whenever(mixedOp.inNamespace(ArgumentMatchers.anyString()))
+            .doReturn(nonNamespaceOperation)
+        return nonNamespaceOperation
+    }
+
+    fun pods(client: NamespacedKubernetesClient)
+            : MixedOperation<Pod, PodList, DoneablePod, PodResource<Pod, DoneablePod>> {
         val podsOp = mock<MixedOperation<Pod, PodList, DoneablePod, PodResource<Pod, DoneablePod>>>()
         whenever(client.pods())
             .doReturn(podsOp)
         return podsOp
+    }
+
+    fun list(nonNamespaceOperation: NonNamespaceOperation<Pod, PodList, DoneablePod, PodResource<Pod, DoneablePod>>)
+            : PodList {
+        val podList = mock<PodList>()
+        whenever(nonNamespaceOperation.list())
+            .doReturn(podList)
+        return podList
+
     }
 
     fun list(mixedOp: MixedOperation<Pod, PodList, DoneablePod, PodResource<Pod, DoneablePod>>): PodList {
@@ -89,17 +113,4 @@ object ClientMocks {
         whenever(mixedOp.withName(pod.metadata.name))
             .doReturn(podResource)
     }
-
-    inline fun <reified T: HasMetadata> resource(name: String, namespace: String? = null): T {
-        val metadata = mock<ObjectMeta> {
-            on { getName() } doReturn name
-            if (namespace != null) {
-                on { getNamespace() } doReturn namespace
-            }
-        }
-        return mock {
-            on { getMetadata() } doReturn metadata
-        }
-    }
-
 }

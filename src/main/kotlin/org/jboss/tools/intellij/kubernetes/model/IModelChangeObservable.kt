@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2019 Red Hat, Inc.
+ * Copyright (c) 2020 Red Hat, Inc.
  * Distributed under license by Red Hat, Inc. All rights reserved.
  * This program is made available under the terms of the
  * Eclipse Public License v2.0 which accompanies this distribution,
@@ -10,11 +10,11 @@
  ******************************************************************************/
 package org.jboss.tools.intellij.kubernetes.model
 
-import io.fabric8.kubernetes.api.model.Namespace
+import io.fabric8.kubernetes.api.model.HasMetadata
 
 interface IModelChangeObservable {
     fun addListener(listener: ModelChangeObservable.IResourceChangeListener)
-    fun fireCurrentNamespace(namespace: Namespace?)
+    fun fireCurrentNamespace(namespace: String?)
     fun fireRemoved(removed: Any)
     fun fireAdded(added: Any)
     fun fireModified(removed: Any)
@@ -23,7 +23,7 @@ interface IModelChangeObservable {
 open class ModelChangeObservable: IModelChangeObservable {
 
     interface IResourceChangeListener {
-        fun currentNamespace(namespace: Namespace?) = Unit
+        fun currentNamespace(namespace: String?) = Unit
         fun removed(removed: Any) = Unit
         fun added(added: Any) = Unit
         fun modified(modified: Any) = Unit
@@ -47,7 +47,7 @@ open class ModelChangeObservable: IModelChangeObservable {
         listeners.forEach { it.modified(removed) }
     }
 
-    override fun fireCurrentNamespace(namespace: Namespace?) {
+    override fun fireCurrentNamespace(namespace: String?) {
         listeners.forEach { it.currentNamespace(namespace) }
     }
 }
