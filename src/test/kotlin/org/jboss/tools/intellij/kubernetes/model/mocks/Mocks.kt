@@ -21,22 +21,22 @@ import io.fabric8.kubernetes.api.model.ObjectMeta
 import io.fabric8.kubernetes.client.KubernetesClient
 import io.fabric8.kubernetes.client.NamespacedKubernetesClient
 import org.jboss.tools.intellij.kubernetes.model.IModelChangeObservable
+import org.jboss.tools.intellij.kubernetes.model.IResourceModel
 import org.jboss.tools.intellij.kubernetes.model.cluster.ICluster
 import org.jboss.tools.intellij.kubernetes.model.resource.INamespacedResourcesProvider
 import org.jboss.tools.intellij.kubernetes.model.resource.INonNamespacedResourcesProvider
-import org.jboss.tools.intellij.kubernetes.model.resource.IResourcesProvider
 
 object Mocks {
 
     fun clusterFactory(cluster: ICluster<HasMetadata, KubernetesClient>): (IModelChangeObservable) -> ICluster<HasMetadata, KubernetesClient> {
-        return mock() {
+        return mock {
             doReturn(cluster)
                 .whenever(mock).invoke(any())
         }
     }
 
     fun cluster(client: NamespacedKubernetesClient, currentNamespace: Namespace): ICluster<HasMetadata, KubernetesClient> {
-        return mock() {
+        return mock {
             doNothing()
                 .whenever(mock).startWatch()
             doReturn(client)
@@ -47,18 +47,14 @@ object Mocks {
     }
 
     fun <T: HasMetadata> namespacedResourceProvider(resources: Collection<T>, namespace: Namespace): INamespacedResourcesProvider<T> {
-        return mock() {
-            doReturn(resources)
-                .whenever(mock).getAllResources()
-            doReturn(namespace.metadata.name)
-                .whenever(mock).namespace
+        return mock {
+            on { getAllResources(namespace.metadata.name) } doReturn resources
         }
     }
 
     fun <T: HasMetadata> nonNamespacedResourceProvider(resources: Collection<T>): INonNamespacedResourcesProvider<T> {
-        return mock() {
-            doReturn(resources)
-                .whenever(mock).getAllResources()
+        return mock {
+            on { getAllResources() } doReturn(resources)
         }
     }
 
@@ -74,4 +70,9 @@ object Mocks {
         }
     }
 
+    fun resourceModel(client: KubernetesClient): IResourceModel {
+        return mock<IResourceModel> {
+            on { getClient() } doReturn client
+        }
+    }
 }

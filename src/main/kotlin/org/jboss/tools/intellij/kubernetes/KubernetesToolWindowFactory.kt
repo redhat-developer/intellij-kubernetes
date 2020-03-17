@@ -29,16 +29,15 @@ import org.jboss.tools.intellij.kubernetes.tree.ResourceModelAdapter
 class KubernetesToolWindowFactory: ToolWindowFactory {
 
     override fun createToolWindowContent(project: Project, toolWindow: ToolWindow) {
-        val structure = TreeStructure(project)
-        val model = StructureTreeModelFactory.create(structure, project);
         val resourceModel = ServiceManager.getService(project, IResourceModel::class.java)
+        val structure = TreeStructure(resourceModel)
+        val model = StructureTreeModel(structure)
         ResourceModelAdapter(model, structure, resourceModel)
         val tree = Tree(AsyncTreeModel(model))
-        tree.cellRenderer = NodeRenderer();
+        tree.cellRenderer = NodeRenderer()
         val panel = ScrollPaneFactory.createScrollPane(tree)
         PopupHandler.installPopupHandler(tree, "org.jboss.tools.intellij.kubernetes.tree", ActionPlaces.UNKNOWN)
         val contentFactory = ContentFactory.SERVICE.getInstance()
         toolWindow.contentManager.addContent(contentFactory.createContent(panel, "", false))
     }
 }
-

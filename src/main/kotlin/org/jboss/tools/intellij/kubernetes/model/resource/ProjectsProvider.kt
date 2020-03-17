@@ -10,11 +10,13 @@
  ******************************************************************************/
 package org.jboss.tools.intellij.kubernetes.model.resource
 
+import io.fabric8.kubernetes.api.model.Pod
+import io.fabric8.kubernetes.client.Watch
+import io.fabric8.kubernetes.client.Watcher
+import io.fabric8.kubernetes.client.dsl.Watchable
 import io.fabric8.openshift.api.model.Project
 import io.fabric8.openshift.client.NamespacedOpenShiftClient
 import io.fabric8.openshift.client.OpenShiftClient
-import org.jboss.tools.intellij.kubernetes.model.WatchableResource
-import org.jboss.tools.intellij.kubernetes.model.WatchableResourceSupplier
 
 class ProjectsProvider(client: NamespacedOpenShiftClient)
     : NonNamespacedResourcesProvider<Project, OpenShiftClient>(client) {
@@ -29,7 +31,7 @@ class ProjectsProvider(client: NamespacedOpenShiftClient)
         return client.projects().list().items
     }
 
-    override fun getWatchableResource(): WatchableResourceSupplier? {
-        return { client.projects() as WatchableResource }
+    override fun getWatchableResource(): () -> Watchable<Watch, Watcher<Project>>? {
+        return { client.projects() as Watchable<Watch, Watcher<Project>>}
     }
 }

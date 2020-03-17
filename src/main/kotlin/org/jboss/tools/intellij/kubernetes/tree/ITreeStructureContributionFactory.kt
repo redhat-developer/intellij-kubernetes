@@ -8,15 +8,10 @@
  * Contributors:
  * Red Hat, Inc. - initial API and implementation
  ******************************************************************************/
-package org.jboss.tools.intellij.kubernetes.model.resource
+package org.jboss.tools.intellij.kubernetes.tree
 
-import io.fabric8.kubernetes.api.model.HasMetadata
-import io.fabric8.kubernetes.client.Watch
-import io.fabric8.kubernetes.client.Watcher
-import io.fabric8.kubernetes.client.dsl.Watchable
+import org.jboss.tools.intellij.kubernetes.model.IResourceModel;
 
-interface INonNamespacedResourcesProvider<T: HasMetadata>: IResourcesProvider<T> {
-
-    fun getAllResources(): Collection<T>
-    fun getWatchableResource(): () -> Watchable<Watch, Watcher<T>>?
+interface ITreeStructureContributionFactory {
+    fun create(model:IResourceModel): ITreeStructureContribution
 }

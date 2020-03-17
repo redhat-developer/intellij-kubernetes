@@ -8,20 +8,25 @@
  * Contributors:
  * Red Hat, Inc. - initial API and implementation
  ******************************************************************************/
-package org.jboss.tools.intellij.kubernetes.model.resource
+package org.jboss.tools.intellij.kubernetes.tree
 
 import io.fabric8.kubernetes.api.model.HasMetadata
-import io.fabric8.kubernetes.client.KubernetesClient
+import org.jboss.tools.intellij.kubernetes.model.IResourceModel
 
-abstract class NonNamespacedResourcesProvider<R : HasMetadata, C : KubernetesClient>(client: C) :
-    AbstractResourcesProvider<R, C>(client), INonNamespacedResourcesProvider<R> {
+abstract class AbstractTreeStructureContribution(override val model: IResourceModel): ITreeStructureContribution {
 
-    override fun getAllResources(): Collection<R> {
-        if (allResources.isEmpty()) {
-            allResources.addAll(loadAllResources())
-        }
-        return allResources
+    protected fun getRootElement(): Any {
+        return model.getClient()!!
     }
 
-    protected abstract fun loadAllResources(): List<R>
+    protected fun getResources(kind: Class<out HasMetadata>?): List<Any> {
+        if (kind == null) {
+            return mutableListOf()
+        }
+        return model
+            .getResources(kind)
+            .sortedBy { it.metadata.name }
+            .toMutableList()
+    }
+
 }

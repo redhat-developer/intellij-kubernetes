@@ -30,7 +30,6 @@ import io.fabric8.kubernetes.client.dsl.Watchable
 import org.assertj.core.api.Assertions.assertThat
 import org.jboss.tools.intellij.kubernetes.model.ResourceWatch
 import org.jboss.tools.intellij.kubernetes.model.ModelChangeObservable
-import org.jboss.tools.intellij.kubernetes.model.WatchableResourceSupplier
 import org.jboss.tools.intellij.kubernetes.model.mocks.ClientMocks.NAMESPACE1
 import org.jboss.tools.intellij.kubernetes.model.mocks.ClientMocks.NAMESPACE2
 import org.jboss.tools.intellij.kubernetes.model.mocks.ClientMocks.NAMESPACE3
@@ -52,8 +51,8 @@ class KubernetesClusterTest {
     private val watchable1: Watchable<Watch, Watcher<in HasMetadata>> = mock()
     private val watchable2: Watchable<Watch, Watcher<in HasMetadata>> = mock()
     private val observable: ModelChangeObservable = mock()
-    private val namespacesProvider: INonNamespacedResourcesProvider<Namespace> = nonNamespacedResourceProvider(allNamespaces.toList())
-    private val podsProvider: INamespacedResourcesProvider<Pod> = namespacedResourceProvider(emptyList(), currentNamespace)
+    private val namespacesProvider: INonNamespacedResourcesProvider<Namespace> = nonNamespacedResourceProvider(allNamespaces.toSet())
+    private val podsProvider: INamespacedResourcesProvider<Pod> = namespacedResourceProvider(listOf(), currentNamespace)
     private lateinit var cluster: TestableKubernetesCluster
 
     @Before
@@ -62,10 +61,10 @@ class KubernetesClusterTest {
     }
 
     private fun createCluster(): TestableKubernetesCluster {
-        val resourceProviders: Map<Class<out HasMetadata>, IResourcesProvider<out HasMetadata>> =
+        val resourceProviders: Map<String, IResourcesProvider<out HasMetadata>> =
             mutableMapOf(
-                Pair(Namespace::class.java, namespacesProvider),
-                Pair(Pod::class.java, podsProvider))
+                Pair(Namespace::class.java.name, namespacesProvider),
+                Pair(Pod::class.java.name, podsProvider))
         val cluster = spy(TestableKubernetesCluster(observable, this@KubernetesClusterTest.client, resourceProviders))
         doReturn(
             listOf { watchable1 }, // returned on 1st call
@@ -89,7 +88,7 @@ class KubernetesClusterTest {
         // when
         cluster.setCurrentNamespace(NAMESPACE1.metadata.name)
         // then
-        val captor = argumentCaptor<List<WatchableResourceSupplier>>()
+        val captor = argumentCaptor<List<() -> Watchable<Watch, Watcher<HasMetadata>>>>()
         verify(cluster.watch).removeAll(captor.capture())
         val suppliers = captor.firstValue
         assertThat(suppliers.first().invoke()).isEqualTo(watchable1)
@@ -101,30 +100,40 @@ class KubernetesClusterTest {
         // when
         cluster.setCurrentNamespace(NAMESPACE1.metadata.name)
         // then
-        val captor = argumentCaptor<List<WatchableResourceSupplier>>()
+        val captor = argumentCaptor<List<() -> Watchable<Watch, Watcher<HasMetadata>>>>()
         verify(cluster.watch).addAll(captor.capture())
         val suppliers = captor.firstValue
         assertThat(suppliers.first().invoke()).isEqualTo(watchable2)
     }
 
     @Test
-    fun `#setCurrentNamespace should set (new) namespace to all namespaced resource providers`() {
+    fun `#setCurrentNamespace should invalidate namespaced resource providers`() {
         // given
         val namespace = NAMESPACE1.metadata.name
         // when
         cluster.setCurrentNamespace(namespace)
         // then
-        verify(podsProvider).namespace = namespace
+        verify(podsProvider).invalidate()
     }
 
     @Test
-    fun `#setCurrentNamespace should not set (same) namespace to all namespaced resource providers if it didn't change`() {
+    fun `#setCurrentNamespace should not invalidate nonnamespaced resource providers`() {
+        // given
+        val namespace = NAMESPACE1.metadata.name
+        // when
+        cluster.setCurrentNamespace(namespace)
+        // then
+        verify(namespacesProvider, never()).invalidate()
+    }
+
+    @Test
+    fun `#setCurrentNamespace should not invalidate namespaced resource providers if it didn't change`() {
         // given
         val namespace = currentNamespace.metadata.name
         // when
         cluster.setCurrentNamespace(namespace)
         // then
-        verify(podsProvider, never()).namespace = namespace
+        verify(podsProvider, never()).invalidate()
     }
 
     @Test
@@ -284,12 +293,12 @@ class KubernetesClusterTest {
     inner class TestableKubernetesCluster(
         observable: ModelChangeObservable,
         client: NamespacedKubernetesClient,
-        override val resourceProviders: Map<Class<out HasMetadata>, IResourcesProvider<out HasMetadata>>
+        override val resourceProviders: Map<String, IResourcesProvider<out HasMetadata>>
     ) : KubernetesCluster(observable, client) {
 
         public override var watch = mock<ResourceWatch>()
 
-        public override fun getWatchableResources(namespace: String): List<WatchableResourceSupplier?> {
+        public override fun getWatchableResources(namespace: String): List<() -> Watchable<Watch, Watcher<HasMetadata>>?> {
             TODO("override with mocking")
         }
 

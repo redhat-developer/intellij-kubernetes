@@ -15,19 +15,16 @@ import org.jboss.tools.intellij.kubernetes.model.mocks.ClientMocks.NAMESPACE1
 import org.jboss.tools.intellij.kubernetes.model.mocks.ClientMocks.NAMESPACE2
 import org.jboss.tools.intellij.kubernetes.model.mocks.ClientMocks.NAMESPACE3
 import org.jboss.tools.intellij.kubernetes.model.mocks.ClientMocks.client
-import org.junit.Before
 import org.junit.Test
-import org.mockito.ArgumentMatchers.anyString
 
 class NamespacesProviderTest {
 
-    private val client =
-        client(NAMESPACE2.metadata.name, arrayOf(NAMESPACE1, NAMESPACE2, NAMESPACE3))
-    private val provider =
-        NamespacesProvider(client)
+    private val currentNamespace = NAMESPACE2.metadata.name
+    private val client = client(currentNamespace, arrayOf(NAMESPACE1, NAMESPACE2, NAMESPACE3))
+    private val provider = NamespacesProvider(client)
 
     @Test
-    fun `#getAllResources() should retrieve all namespaces`() {
+    fun `#getAllResources should retrieve all namespaces`() {
         // given
         // when
         provider.getAllResources()

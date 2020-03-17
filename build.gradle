@@ -1,6 +1,7 @@
 plugins {
     id "org.jetbrains.intellij"
     id "org.jetbrains.kotlin.jvm"
+    id "idea"
 }
 
 dependencies {
@@ -8,11 +9,12 @@ dependencies {
             "com.redhat.devtools.intellij:intellij-common:0.0.1-SNAPSHOT",
             "org.jetbrains.kotlin:kotlin-gradle-plugin",
             "org.jetbrains.kotlin:kotlin-stdlib-jdk8",
-            "io.fabric8:kubernetes-client:4.6.4",
-            "io.fabric8:openshift-client:4.6.4"
+            "io.fabric8:kubernetes-client:4.10.1",
+            "io.fabric8:kubernetes-model:4.10.1",
+            "io.fabric8:kubernetes-model-common:4.10.1",
+            "io.fabric8:openshift-client:4.10.1"
     )
     testImplementation(
-            "org.junit.jupiter:junit-jupiter:5.5.2",
             "org.assertj:assertj-core:3.14.0",
             "org.mockito:mockito-inline:3.2.4",
             "com.nhaarman.mockitokotlin2:mockito-kotlin:2.2.0",
@@ -35,13 +37,20 @@ configurations {
         }
     }
 
+    compileTestKotlin {
+        kotlinOptions {
+            jvmTarget = "1.8"
+        }
+    }
+
     integrationTestImplementation.extendsFrom testImplementation
     integrationTestRuntimeOnly.extendsFrom testRuntimeOnly
 }
 
 intellij {
-    version ideaVersion
+    version ideaVersion //for a full list of IntelliJ IDEA releases please see https://www.jetbrains.com/intellij-repository/releases
     pluginName 'org.jboss.tools.intellij.kubernetes'
+    updateSinceUntilBuild false
 }
 
 patchPluginXml {
