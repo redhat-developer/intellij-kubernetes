@@ -11,26 +11,9 @@
 package org.jboss.tools.intellij.kubernetes.model.resource
 
 import io.fabric8.kubernetes.api.model.HasMetadata
-import io.fabric8.kubernetes.api.model.Pod
 import io.fabric8.kubernetes.client.KubernetesClient
-import io.fabric8.kubernetes.client.Watch
-import io.fabric8.kubernetes.client.Watcher
-import io.fabric8.kubernetes.client.dsl.Watchable
 
-open class PodsProvider(client: KubernetesClient)
-    : NamespacedResourcesProvider<Pod, KubernetesClient>(client) {
+interface IResourcesProviderFactory<N: HasMetadata, C: KubernetesClient, P: IResourcesProvider<N>> {
 
-    companion object {
-        val KIND = Pod::class.java;
-    }
-
-    override val kind = KIND
-
-    override fun loadAllResources(namespace: String): List<Pod> {
-        return client.pods().inNamespace(namespace).list().items
-    }
-
-    override fun getWatchableResource(namespace: String): () -> Watchable<Watch, Watcher<Pod>>? {
-        return { client.pods().inNamespace(namespace) }
-    }
+    fun create(client: C): P
 }

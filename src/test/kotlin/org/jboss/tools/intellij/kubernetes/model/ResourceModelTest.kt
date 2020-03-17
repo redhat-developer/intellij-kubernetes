@@ -27,9 +27,6 @@ import io.fabric8.kubernetes.client.NamespacedKubernetesClient
 import io.fabric8.kubernetes.client.dsl.NonNamespaceOperation
 import io.fabric8.kubernetes.client.dsl.Resource
 import org.jboss.tools.intellij.kubernetes.model.cluster.ICluster
-import org.jboss.tools.intellij.kubernetes.model.mocks.ClientMocks.NAMESPACE1
-import org.jboss.tools.intellij.kubernetes.model.mocks.ClientMocks.NAMESPACE2
-import org.jboss.tools.intellij.kubernetes.model.mocks.ClientMocks.NAMESPACE3
 import org.jboss.tools.intellij.kubernetes.model.mocks.Mocks
 import org.jboss.tools.intellij.kubernetes.model.mocks.Mocks.resource
 import org.jboss.tools.intellij.kubernetes.model.mocks.Mocks.cluster

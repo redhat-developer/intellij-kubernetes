@@ -14,6 +14,7 @@ import com.nhaarman.mockitokotlin2.mock
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.client.Watch
 import io.fabric8.kubernetes.client.Watcher
+import io.fabric8.kubernetes.client.dsl.Watchable
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
 import org.junit.Test
@@ -60,7 +61,7 @@ class ResourceWatchTest {
         // given
         val sizeBeforeAdd = watch.getAll().size
         // when
-        watch.add(null)
+        watch.add { -> null }
         // then
         assertThat(watch.getAll().size).isEqualTo(sizeBeforeAdd)
     }
@@ -168,17 +169,17 @@ class ResourceWatchTest {
         }
     }
 
-    private class WatchableFake : WatchableResource {
+    private class WatchableFake : Watchable<Watch, Watcher<HasMetadata>> {
 
         var watcher: Watcher<in HasMetadata>? = null
         var watch: WatchFake = WatchFake()
 
-        override fun watch(watcher: Watcher<in HasMetadata>?): Watch {
+        override fun watch(watcher: Watcher<HasMetadata>?): Watch {
             this.watcher = watcher
             return watch
         }
 
-        override fun watch(resourceVersion: String?, watcher: Watcher<in HasMetadata>?): Watch {
+        override fun watch(resourceVersion: String?, watcher: Watcher<HasMetadata>?): Watch {
             this.watcher = watcher
             return watch
         }

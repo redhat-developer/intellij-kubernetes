@@ -14,25 +14,21 @@ import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.client.KubernetesClient
 
 abstract class NamespacedResourcesProvider<R : HasMetadata, C : KubernetesClient>(
-    client: C,
-    namespace: String?
-) : ResourcesProvider<R, C>(client), INamespacedResourcesProvider<R> {
+    client: C
+) : AbstractResourcesProvider<R, C>(client), INamespacedResourcesProvider<R> {
 
-    override var namespace: String? = namespace
-        set(namespace) {
+    protected var namespace: String? = null
+
+    override fun getAllResources(namespace: String): Collection<R> {
+        if (namespace != this.namespace) {
+            this.namespace = namespace
             invalidate()
-            field = namespace
         }
-
-    override val allResources: MutableSet<R> = LinkedHashSet()
-        get() {
-            if (field.isEmpty()) {
-                if (namespace != null) {
-                    field.addAll(loadAllResources(namespace!!))
-                }
-            }
-            return field
+        if (allResources.isEmpty()) {
+            allResources.addAll(loadAllResources(namespace))
         }
+        return allResources
+    }
 
     protected abstract fun loadAllResources(namespace: String): List<R>
 }
