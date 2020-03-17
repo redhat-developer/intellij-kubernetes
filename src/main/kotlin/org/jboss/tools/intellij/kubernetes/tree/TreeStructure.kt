@@ -15,18 +15,11 @@ import com.intellij.ide.projectView.PresentationData
 import com.intellij.ide.util.treeView.AbstractTreeStructure
 import com.intellij.ide.util.treeView.NodeDescriptor
 import com.intellij.ide.util.treeView.PresentableNodeDescriptor
-import com.intellij.openapi.components.ServiceManager
-import com.intellij.openapi.util.IconLoader
+import com.intellij.openapi.diagnostic.logger
+import com.intellij.openapi.extensions.ExtensionPointName
 import io.fabric8.kubernetes.api.model.HasMetadata
-import io.fabric8.kubernetes.api.model.Namespace
-import io.fabric8.kubernetes.api.model.Pod
-import io.fabric8.kubernetes.client.NamespacedKubernetesClient
-import io.fabric8.openshift.api.model.Project
-import io.fabric8.openshift.client.NamespacedOpenShiftClient
-import io.fabric8.openshift.client.OpenShiftClient
 import org.jboss.tools.intellij.kubernetes.model.IResourceModel
-import org.jboss.tools.intellij.kubernetes.model.ResourceException
-import java.net.URL
+import java.util.*
 import javax.swing.Icon
 
 /**
@@ -34,79 +27,51 @@ import javax.swing.Icon
  *
  * @see PresentableNodeDescriptor
  */
-class TreeStructure(private val project: com.intellij.openapi.project.Project) : AbstractTreeStructure() {
+open class TreeStructure(private val model: IResourceModel,
+                         private val extensionPoint: ExtensionPointName<ITreeStructureContributionFactory> =
+                                 ExtensionPointName.create("org.jboss.tools.intellij.kubernetes.structureContribution"))
+    : AbstractTreeStructure() {
+
+    private val contributions by lazy {
+        listOf(
+            *getTreeStructureDefaults(model).toTypedArray(),
+            *getTreeStructureExtensions(model).toTypedArray()
+        )
+    }
 
     override fun getRootElement(): Any {
-        return getResourceModel().getClient()!!
+        return model.getClient()!!
     }
 
     override fun getChildElements(element: Any): Array<Any> {
-        try {
-            return when (element) {
-                rootElement ->
-                    if (rootElement is OpenShiftClient) {
-                        arrayOf<Any>(
-                            Categories.NAMESPACES,
-                            Categories.NODES,
-                            Categories.WORKLOADS,
-                            Categories.PROJECTS)
-                    } else {
-                        arrayOf<Any>(
-                            Categories.NAMESPACES,
-                            Categories.NODES,
-                            Categories.WORKLOADS)
-                    }
-                Categories.NODES ->
-                    emptyArray()
-                Categories.WORKLOADS ->
-                    arrayOf(Categories.PODS)
-                Categories.NAMESPACES,
-                Categories.PROJECTS,
-                Categories.PODS ->
-                    getResources((element as Categories).kind)
-                else ->
-                    emptyArray()
-            }
-        } catch(e: ResourceException) {
-            return arrayOf(e)
-        }
+        return getValidContributions()
+                .flatMap { getChildElements(element, it) }
+                .toTypedArray()
     }
 
-    private fun getResources(kind: Class<out HasMetadata>?): Array<Any> {
-        if (kind == null) {
-            return emptyArray()
+    private fun getChildElements(element: Any, contribution: ITreeStructureContribution): Collection<Any> {
+        try {
+            return contribution.getChildElements(element)
+        } catch (e:  java.lang.Exception) {
+            logger<TreeStructure>().warn(e)
+            return listOf(e)
         }
-        return getResourceModel()
-            .getResources(kind)
-            .sortedBy { it.metadata.name }
-            .toTypedArray()
     }
 
     override fun getParentElement(element: Any): Any? {
-        try {
-            return when (element) {
-                rootElement ->
-                    null
-                is Namespace ->
-                    Categories.NAMESPACES
-                is Project ->
-                    Categories.PROJECTS
-                is Pod ->
-                    Categories.PODS
-                is HasMetadata ->
-                    Categories.getByKind(getResourceModel().getKind(element))
-                Categories.NAMESPACES,
-                Categories.PROJECTS,
-                Categories.NODES,
-                Categories.WORKLOADS ->
-                    rootElement
-                Categories.PODS ->
-                    Categories.WORKLOADS
-                else ->
-                    rootElement
-            }
-        } catch(e: ResourceException) {
-            return null
+            val parent: Optional<Any?> = getValidContributions().stream()
+                    .map { getParentElement(element, it) }
+                    .filter { it != null }
+                    .findAny()
+            return parent.orElse(rootElement)
+    }
+
+    private fun getParentElement(element: Any, contribution: ITreeStructureContribution): Any? {
+        return try {
+            contribution.getParentElement(element)
+        } catch (e: java.lang.Exception) {
+            logger<TreeStructure>().warn("Could not get parent for element $element", e)
+            null
         }
     }
 
@@ -115,20 +80,31 @@ class TreeStructure(private val project: com.intellij.openapi.project.Project) :
     }
 
     override fun createDescriptor(element: Any, parent: NodeDescriptor<*>?): NodeDescriptor<*> {
-        return when(element) {
-            is NamespacedKubernetesClient -> KubernetesClusterDescriptor(element)
-            is NamespacedOpenShiftClient -> OpenShiftClusterDescriptor(element)
-            is Namespace -> NamespaceDescriptor(element, getResourceModel(), parent)
-            is Project -> ProjectDescriptor(element, getResourceModel(), parent)
-            is Pod -> PodDescriptor(element, parent)
-            is Exception -> ErrorDescriptor(element, parent)
-            is Categories -> CategoryDescriptor(element, parent)
-            else -> Descriptor(element, parent);
-        }
+        val descriptor: NodeDescriptor<*>? =
+            when(element) {
+                is Exception -> ErrorDescriptor(element, parent)
+                is Folder -> FolderDescriptor(element, parent)
+                else -> getValidContributions()
+                    .map { it.createDescriptor(element, parent) }
+                    .find { it != null }
+            }
+        return descriptor ?: Descriptor(element, parent)
     }
 
-    private fun getResourceModel(): IResourceModel {
-        return ServiceManager.getService(project, IResourceModel::class.java)
+    private fun getValidContributions(): Collection<ITreeStructureContribution> {
+        return contributions
+            .filter { it.canContribute() }
+    }
+
+    private fun getTreeStructureExtensions(model: IResourceModel): List<ITreeStructureContribution> {
+        return extensionPoint.extensionList
+                .map { it.create(model) }
+    }
+
+    protected open fun getTreeStructureDefaults(model: IResourceModel): List<ITreeStructureContribution> {
+        return listOf(
+                OpenShiftStructure(model),
+                KubernetesStructure(model))
     }
 
     override fun commit() = Unit
@@ -137,105 +113,37 @@ class TreeStructure(private val project: com.intellij.openapi.project.Project) :
 
     override fun isToBuildChildrenInBackground(element: Any) = true
 
-    private fun getServerUrl(): URL? {
-        return getResourceModel().getClient()?.masterUrl
-    }
+    private class FolderDescriptor(category: Folder, parent: NodeDescriptor<*>?) : Descriptor<Folder>(
+        category, parent,
+        { it.label })
 
-    enum class Categories(val label: String, val kind: Class<out HasMetadata>?) {
-        NAMESPACES("Namespaces", Namespace::class.java),
-        NODES("Nodes", null),
-        WORKLOADS("Workloads", null),
-        PODS("Pods", Pod::class.java),
-        PROJECTS("Projects", Project::class.java);
+    private class ErrorDescriptor(exception: java.lang.Exception, parent: NodeDescriptor<*>?) : Descriptor<java.lang.Exception>(
+        exception,
+        parent,
+        { "Error: " + it.message },
+        AllIcons.General.BalloonError
+    )
 
-        companion object {
-            @JvmStatic
-            fun getByKind(kind: Class<out HasMetadata>?): Categories? {
-                if (kind == null) {
-                    return null
-                }
-                return values().find { it.kind == kind }
+    open class Descriptor<T>(
+        element: T,
+        parent: NodeDescriptor<*>?,
+        private val labelProvider: (T) -> String = { it?.toString() ?: "" },
+        private val nodeIcon: Icon? = null
+    ) : PresentableNodeDescriptor<T>(null, parent) {
+
+        private val element = element;
+
+        override fun update(presentation: PresentationData) {
+            presentation.presentableText = labelProvider.invoke(element)
+            if (nodeIcon != null) {
+                presentation.setIcon(nodeIcon)
             }
         }
-    }
 
-    companion object Descriptors {
-
-        private class KubernetesClusterDescriptor(element: NamespacedKubernetesClient) : Descriptor<NamespacedKubernetesClient>(
-            element, null,
-            { element.masterUrl.toString() },
-            IconLoader.getIcon("/icons/kubernetes-cluster.svg")
-        )
-
-        private class OpenShiftClusterDescriptor(element: NamespacedOpenShiftClient) : Descriptor<NamespacedOpenShiftClient>(
-            element, null,
-            { element.masterUrl.toString() },
-            IconLoader.getIcon("/icons/openshift-cluster.svg")
-        )
-
-        private class NamespaceDescriptor(element: Namespace, model: IResourceModel, parent: NodeDescriptor<*>?) : Descriptor<Namespace>(
-            element,
-            parent,
-            {
-                var label = it.metadata.name
-                if (label == model.getCurrentNamespace()) {
-                    label = "* $label"
-                }
-                label
-            },
-            IconLoader.getIcon("/icons/project.png")
-        )
-
-        private class ProjectDescriptor(element: Project, model: IResourceModel, parent: NodeDescriptor<*>?) : Descriptor<Project>(
-            element,
-            parent,
-            {
-                var label = it.metadata.name
-                if (label == model.getCurrentNamespace()) {
-                    label = "* $label"
-                }
-                label
-            },
-            IconLoader.getIcon("/icons/project.png")
-        )
-
-        private class PodDescriptor(element: HasMetadata, parent: NodeDescriptor<*>?) : Descriptor<HasMetadata>(
-            element,
-            parent,
-            { it.metadata.name },
-            IconLoader.getIcon("/icons/project.png")
-        )
-
-        private class CategoryDescriptor(category: Categories, parent: NodeDescriptor<*>?) : Descriptor<Categories>(
-            category, parent,
-            { it.label })
-
-        private class ErrorDescriptor(exception: java.lang.Exception, parent: NodeDescriptor<*>?) : Descriptor<java.lang.Exception>(
-            exception,
-            parent,
-            { "Error: " + it.message },
-            AllIcons.General.BalloonError
-        )
-
-        private open class Descriptor<T>(
-            element: T,
-            parent: NodeDescriptor<*>?,
-            private val labelProvider: (T) -> String = { it?.toString() ?: "" },
-            private val nodeIcon: Icon? = null
-        ) : PresentableNodeDescriptor<T>(null, parent) {
-
-            private val element = element;
-
-            override fun update(presentation: PresentationData) {
-                presentation.presentableText = labelProvider.invoke(element)
-                if (nodeIcon != null) {
-                    presentation.setIcon(nodeIcon)
-                }
-            }
-
-            override fun getElement(): T {
-                return element;
-            }
+        override fun getElement(): T {
+            return element;
         }
-    }
+}
+
+    data class Folder(val label: String, val kind: Class<out HasMetadata>?)
 }

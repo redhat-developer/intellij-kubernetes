@@ -10,7 +10,6 @@
  ******************************************************************************/
 package org.jboss.tools.intellij.kubernetes.model
 
-import com.nhaarman.mockitokotlin2.mock
 import io.fabric8.kubernetes.api.model.Namespace
 import org.assertj.core.api.Assertions.assertThat
 import org.jboss.tools.intellij.kubernetes.model.ModelChangeObservable.IResourceChangeListener

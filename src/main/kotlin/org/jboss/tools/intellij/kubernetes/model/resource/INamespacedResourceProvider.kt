@@ -11,11 +11,13 @@
 package org.jboss.tools.intellij.kubernetes.model.resource
 
 import io.fabric8.kubernetes.api.model.HasMetadata
-import org.jboss.tools.intellij.kubernetes.model.WatchableResourceSupplier
+import io.fabric8.kubernetes.client.Watch
+import io.fabric8.kubernetes.client.Watcher
+import io.fabric8.kubernetes.client.dsl.Watchable
 
 interface INamespacedResourcesProvider<T: HasMetadata>: IResourcesProvider<T> {
 
-    var namespace: String?
+    fun getAllResources(namespace: String): Collection<T>
+    fun getWatchableResource(namespace: String): () -> Watchable<Watch, Watcher<T>>?
 
-    fun getWatchableResource(namespace: String): WatchableResourceSupplier?
 }

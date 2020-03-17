@@ -18,12 +18,13 @@ import org.jboss.tools.intellij.kubernetes.model.cluster.ICluster
 
 interface IResourceModel {
     fun getClient(): KubernetesClient?
-    fun addListener(listener: ModelChangeObservable.IResourceChangeListener)
+    fun isOpenShift(): Boolean
     fun setCurrentNamespace(namespace: String)
     fun getCurrentNamespace(): String?
     fun <R: HasMetadata> getResources(kind: Class<R>): Collection<R>
     fun getKind(resource: HasMetadata): Class<out HasMetadata>
     fun invalidate(element: Any?)
+    fun addListener(listener: ModelChangeObservable.IResourceChangeListener)
 }
 
 class ResourceModel(
@@ -47,6 +48,10 @@ class ResourceModel(
         val cluster = clusterFactory(observable)
         cluster.startWatch()
         return cluster
+    }
+
+    override fun isOpenShift(): Boolean {
+        return cluster?.isOpenShift() ?: return false
     }
 
     override fun getClient(): KubernetesClient? {
@@ -74,6 +79,9 @@ class ResourceModel(
         try {
             return cluster?.getResources(kind) ?: return emptyList()
         } catch (e: KubernetesClientException) {
+            if (isNotFound(e)) {
+                return emptyList()
+            }
             throw ResourceException("Could not get ${kind.simpleName}s for server ${cluster?.client?.masterUrl}", e)
         }
     }
@@ -99,4 +107,9 @@ class ResourceModel(
         cluster?.invalidate(resource)
         observable.fireModified(resource)
     }
+
+    private fun isNotFound(e: KubernetesClientException): Boolean {
+        return e.code == 404
+    }
+
 }

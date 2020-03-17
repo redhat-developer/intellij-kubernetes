@@ -17,6 +17,14 @@
                         serviceImplementation="org.jboss.tools.intellij.kubernetes.model.ResourceModel" />
     </extensions>
 
+    <extensionPoints>
+        <extensionPoint name="resourceProvider" interface="org.jboss.tools.intellij.kubernetes.model.resource.IResourcesProviderFactory"/>
+    </extensionPoints>
+
+    <extensionPoints>
+        <extensionPoint name="structureContribution" interface="org.jboss.tools.intellij.kubernetes.tree.ITreeStructureContributionFactory"/>
+    </extensionPoints>
+
     <actions>
         <group id="org.jboss.tools.intellij.kubernetes.tree" popup="true">
             <!-- Application Explorer -->

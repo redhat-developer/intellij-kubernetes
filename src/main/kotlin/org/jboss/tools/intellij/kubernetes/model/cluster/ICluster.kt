@@ -15,10 +15,10 @@ import io.fabric8.kubernetes.client.KubernetesClient
 
 interface ICluster<N: HasMetadata, C: KubernetesClient> {
     val client: C
+    fun isOpenShift(): Boolean
     fun setCurrentNamespace(namespace: String)
     fun getCurrentNamespace(): String?
     fun <T: HasMetadata> getResources(kind: Class<T>): Collection<T>
-    fun getNamespaces(): Collection<N>
     fun add(resource: HasMetadata): Boolean
     fun remove(resource: HasMetadata): Boolean
     fun invalidate()

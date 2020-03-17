@@ -24,17 +24,17 @@ open class OpenShiftCluster(
     client: NamespacedOpenShiftClient
 ) : AbstractCluster<Project, NamespacedOpenShiftClient>(modelChange, client) {
 
-    override val resourceProviders: Map<Class<out HasMetadata>, IResourcesProvider<out HasMetadata>> =
-        mapOf(
-            Pair(NamespacesProvider.KIND,
-                NamespacesProvider(client)),
-            Pair(PodsProvider.KIND,
-                PodsProvider(client, namespace)),
-            Pair(ProjectsProvider.KIND,
-                ProjectsProvider(client))
-        )
+	override fun getInternalResourceProviders(client: NamespacedOpenShiftClient): List<IResourcesProvider<out HasMetadata>> {
+		return listOf(
+				NamespacesProvider(client),
+				PodsProvider(client),
+				ProjectsProvider(client)
+		)
+	}
 
-    override fun getNamespaces(): Collection<Project> {
-        return getResources(ProjectsProvider.KIND)
-    }
+	override fun getNamespaces(): Collection<Project> {
+		return getResources(ProjectsProvider.KIND)
+	}
+
+	override fun isOpenShift() = true
 }

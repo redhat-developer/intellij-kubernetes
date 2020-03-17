@@ -13,20 +13,11 @@ package org.jboss.tools.intellij.kubernetes.model.resource
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.client.KubernetesClient
 
-abstract class ResourcesProvider<R : HasMetadata, C : KubernetesClient>(
+abstract class AbstractResourcesProvider<R : HasMetadata, C : KubernetesClient>(
     protected val client: C
 ) : IResourcesProvider<R> {
 
-    protected abstract val allResources: MutableSet<R>
-
-    override fun getAllResources(): Collection<R> {
-        return allResources
-    }
-
-
-    override fun hasResource(resource: R): Boolean {
-        return allResources.contains(resource)
-    }
+    protected val allResources = mutableSetOf<R>()
 
     override fun invalidate() {
         allResources.clear()
