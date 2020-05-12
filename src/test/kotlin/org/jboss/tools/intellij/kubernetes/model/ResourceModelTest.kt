@@ -12,11 +12,8 @@ package org.jboss.tools.intellij.kubernetes.model
 
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.clearInvocations
-import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.mock
-import com.nhaarman.mockitokotlin2.times
 import com.nhaarman.mockitokotlin2.verify
-import com.nhaarman.mockitokotlin2.whenever
 import io.fabric8.kubernetes.api.model.DoneableNamespace
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.Namespace
@@ -26,21 +23,21 @@ import io.fabric8.kubernetes.client.KubernetesClient
 import io.fabric8.kubernetes.client.NamespacedKubernetesClient
 import io.fabric8.kubernetes.client.dsl.NonNamespaceOperation
 import io.fabric8.kubernetes.client.dsl.Resource
-import org.jboss.tools.intellij.kubernetes.model.cluster.ICluster
-import org.jboss.tools.intellij.kubernetes.model.mocks.Mocks
+import org.jboss.tools.intellij.kubernetes.model.cluster.IActiveCluster
+import org.jboss.tools.intellij.kubernetes.model.mocks.Mocks.clusterFactory
 import org.jboss.tools.intellij.kubernetes.model.mocks.Mocks.resource
 import org.jboss.tools.intellij.kubernetes.model.mocks.Mocks.cluster
 import org.junit.Test
 
 typealias NamespaceListOperation = NonNamespaceOperation<Namespace, NamespaceList, DoneableNamespace, Resource<Namespace, DoneableNamespace>>
 
-class KubernetesResourceModelTest {
+class ResourceModelTest {
 
     private val client: NamespacedKubernetesClient = mock()
     private val modelChange: IModelChangeObservable = mock()
     private val namespace: Namespace = resource("papa smurf")
-    private val cluster: ICluster<HasMetadata, KubernetesClient> = cluster(client, namespace)
-    private val clusterFactory: (IModelChangeObservable) -> ICluster<HasMetadata, KubernetesClient> = Mocks.clusterFactory(cluster)
+    private val cluster: IActiveCluster<HasMetadata, KubernetesClient> = cluster(client, namespace)
+    private val clusterFactory: (IModelChangeObservable) -> IActiveCluster<HasMetadata, KubernetesClient> = clusterFactory(cluster)
     private val model: IResourceModel = ResourceModel(modelChange, clusterFactory)
 
     @Test
@@ -67,52 +64,71 @@ class KubernetesResourceModelTest {
         // when
         model.getCurrentNamespace()
         // then
-
         verify(cluster).getCurrentNamespace()
     }
 
     @Test
-    fun `#invalidate(client) should create new cluster`() {
+    fun `#invalidate(model) should create new cluster`() {
         // given
         createCluster() // access cluster field, cause creation of cluster
         clearInvocations(clusterFactory)
         // when
-        model.invalidate(model.getClient())
+        model.invalidate(model)
         // then
         verify(clusterFactory).invoke(any())
     }
 
     @Test
-    fun `#invalidate(client) should close existing cluster`() {
+    fun `#invalidate(model) should close existing cluster`() {
         // given
         // when
-        model.invalidate(model.getClient())
+        model.invalidate(model)
         // then
         verify(cluster).close()
     }
 
     @Test
-    fun `#invalidate(client) should watch new cluster`() {
+    fun `#invalidate(model) should watch new cluster`() {
         // given
         createCluster() // access cluster field, cause creation of cluster
         clearInvocations(cluster)
         // when
-        model.invalidate(model.getClient())
+        model.invalidate(model)
         // then
         verify(cluster).startWatch()
     }
 
     @Test
-    fun `#invalidate(client) should notify client change`() {
+    fun `#invalidate(model) should notify client change`() {
         // given
         // when
-        model.invalidate(model.getClient())
+        model.invalidate(model)
         // then
-        verify(modelChange).fireModified(client)
+        verify(modelChange).fireModified(model)
     }
 
     @Test
-    fun `#invalidate(resource) should call ICluster#invalidate()`() {
+    fun `#invalidate(class) should call ICluster#invalidate(class)`() {
+        // given
+        createCluster()
+        clearInvocations(cluster)
+        // when
+        model.invalidate(Pod::class.java)
+        // then
+        verify(cluster).invalidate(Pod::class.java)
+    }
+
+    @Test
+    fun `#invalidate(class) should fire class change`() {
+        // given
+        // when
+        model.invalidate(Pod::class.java)
+        // then
+        verify(modelChange).fireModified(Pod::class.java)
+    }
+
+    @Test
+    fun `#invalidate(resource) should call ICluster#invalidate(resource)`() {
         // given
         createCluster()
         clearInvocations(cluster)
@@ -124,7 +140,7 @@ class KubernetesResourceModelTest {
     }
 
     @Test
-    fun `#invalidate() resource should fire namespace provider change`() {
+    fun `#invalidate(resource) should fire resource change`() {
         // given
         // when
         val resource = mock<HasMetadata>()

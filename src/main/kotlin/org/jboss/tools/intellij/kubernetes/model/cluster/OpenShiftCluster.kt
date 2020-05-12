@@ -22,7 +22,7 @@ import org.jboss.tools.intellij.kubernetes.model.resource.ProjectsProvider
 open class OpenShiftCluster(
     modelChange: IModelChangeObservable,
     client: NamespacedOpenShiftClient
-) : AbstractCluster<Project, NamespacedOpenShiftClient>(modelChange, client) {
+) : ActiveCluster<Project, NamespacedOpenShiftClient>(modelChange, client) {
 
 	override fun getInternalResourceProviders(client: NamespacedOpenShiftClient): List<IResourcesProvider<out HasMetadata>> {
 		return listOf(

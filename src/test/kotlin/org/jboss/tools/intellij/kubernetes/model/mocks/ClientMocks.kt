@@ -27,6 +27,7 @@ import io.fabric8.kubernetes.client.dsl.PodResource
 import org.jboss.tools.intellij.kubernetes.model.NamespaceListOperation
 import org.jboss.tools.intellij.kubernetes.model.mocks.Mocks.resource
 import org.mockito.ArgumentMatchers
+import java.net.URL
 
 object ClientMocks {
 
@@ -38,16 +39,18 @@ object ClientMocks {
     val POD2 = resource<Pod>("pod2")
     val POD3 = resource<Pod>("pod3")
 
-    fun client(currentNamespace: String?, namespaces: Array<Namespace>): NamespacedKubernetesClient {
+    fun client(currentNamespace: String?, namespaces: Array<Namespace>, masterUrl: URL = URL("http://localhost"))
+            : NamespacedKubernetesClient {
         val namespacesMock = namespaceListOperation(namespaces)
         val config = mock<Config>() {
             on { namespace } doReturn currentNamespace
         }
 
-        return mock<NamespacedKubernetesClient> {
+        return mock {
             on { namespaces() } doReturn namespacesMock
             on { namespace } doReturn currentNamespace
             on { configuration } doReturn config
+            on { getMasterUrl() } doReturn masterUrl
         }
     }
 
