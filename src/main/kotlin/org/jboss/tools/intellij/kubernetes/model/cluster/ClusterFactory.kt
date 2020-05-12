@@ -21,7 +21,7 @@ import java.lang.RuntimeException
 
 class ClusterFactory {
 
-    fun create(observable: IModelChangeObservable): ICluster<out HasMetadata, out KubernetesClient> {
+    fun create(observable: IModelChangeObservable): IActiveCluster<out HasMetadata, out KubernetesClient> {
         val k8Client = DefaultKubernetesClient()
         try {
             val osClient = k8Client.adapt(NamespacedOpenShiftClient::class.java)

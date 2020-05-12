@@ -19,9 +19,9 @@ import org.jboss.tools.intellij.kubernetes.model.resource.NamespacesProvider
 import org.jboss.tools.intellij.kubernetes.model.resource.PodsProvider
 
 open class KubernetesCluster(
-    modelChange: IModelChangeObservable,
-    client: NamespacedKubernetesClient
-) : AbstractCluster<Namespace, NamespacedKubernetesClient>(modelChange, client) {
+		modelChange: IModelChangeObservable,
+		client: NamespacedKubernetesClient
+) : ActiveCluster<Namespace, NamespacedKubernetesClient>(modelChange, client) {
 
 	override fun getInternalResourceProviders(client: NamespacedKubernetesClient): List<IResourcesProvider<out HasMetadata>> {
 		return listOf<IResourcesProvider<out HasMetadata>>(

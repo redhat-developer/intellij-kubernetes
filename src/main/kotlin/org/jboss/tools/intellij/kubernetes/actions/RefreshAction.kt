@@ -14,12 +14,23 @@ import com.intellij.icons.AllIcons.Actions.Refresh
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.ui.treeStructure.Tree
+import org.jboss.tools.intellij.kubernetes.model.IResourceModel
+import org.jboss.tools.intellij.kubernetes.tree.TreeStructure
 
 class RefreshAction: AnAction(Refresh) {
 
     override fun actionPerformed(event: AnActionEvent) {
         val tree: Tree = event.getTree()
-        val element = tree.getSelectedNode()?.getDescriptorElement() ?: return
-        getResourceModel(event.project)?.invalidate(element)
+        val element = tree.getSelectedNode()?.getDescriptor()?.element ?: return
+        val model = getResourceModel(getEventProject(event)) ?: return
+        invalidate(element, model)
+    }
+
+    private fun invalidate(element: Any, model: IResourceModel) {
+        if (element is TreeStructure.Folder) {
+            model.invalidate(element.kind)
+        } else {
+            model.invalidate(element)
+        }
     }
 }

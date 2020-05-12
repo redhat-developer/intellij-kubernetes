@@ -106,7 +106,11 @@ class ResourceModelAdapter<Structure: AbstractTreeStructure>(
     }
 
     private fun hasElement(element: Any?, node: DefaultMutableTreeNode): Boolean {
-        val descriptor = node.userObject as? NodeDescriptor<*>
-        return descriptor?.element == element
+        val descriptor = node.userObject as? NodeDescriptor<*> ?: return false
+        return if (descriptor is TreeStructure.Descriptor) {
+            descriptor.isMatching(element)
+        } else {
+            descriptor.element == element
+        }
     }
 }

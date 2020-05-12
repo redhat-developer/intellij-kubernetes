@@ -20,9 +20,9 @@ class UseNamespaceAction: AnAction(Refresh) {
 
     override fun actionPerformed(event: AnActionEvent) {
         val selectedNode = event.getTree().getSelectedNode()
-        val modelObject = selectedNode?.getDescriptorElement()
-        if (modelObject is HasMetadata) {
-            getResourceModel(event.project)?.setCurrentNamespace(modelObject.metadata.name)
+        val element = selectedNode?.getDescriptor()?.element
+        if (element is Namespace) {
+            getResourceModel(event.project)?.setCurrentNamespace(element.metadata.name)
         }
     }
 }

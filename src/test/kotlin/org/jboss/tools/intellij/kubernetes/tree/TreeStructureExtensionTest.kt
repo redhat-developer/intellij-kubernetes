@@ -34,15 +34,6 @@ class TreeStructureExtensionTest {
 	private val structure: TreeStructure = TestableTreeStructure(model, extensionPoint)
 
 	@Test
-	fun `#getRootElement should return model root`() {
-		// given
-		// when
-		structure.rootElement
-		// then
-		verify(model).getClient()
-	}
-
-	@Test
 	fun `#getChildElements should only return children of extensions that can contribute`() {
 		// given
 		val nonContributing = structureContribution(false)
@@ -171,7 +162,8 @@ class TreeStructureExtensionTest {
 						.toList())
 	}
 
-	class TestableTreeStructure(model: IResourceModel, extensionPoint: ExtensionPointName<ITreeStructureContributionFactory>): TreeStructure(model, extensionPoint) {
+	class TestableTreeStructure(model: IResourceModel, extensionPoint: ExtensionPointName<ITreeStructureContributionFactory>)
+		: TreeStructure(model, extensionPoint) {
 
 		public override fun getTreeStructureDefaults(model: IResourceModel): List<ITreeStructureContribution> {
 			return emptyList()

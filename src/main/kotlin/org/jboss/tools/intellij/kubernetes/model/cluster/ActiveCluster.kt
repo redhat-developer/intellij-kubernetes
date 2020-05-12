@@ -26,10 +26,10 @@ import org.jboss.tools.intellij.kubernetes.model.resource.INonNamespacedResource
 import org.jboss.tools.intellij.kubernetes.model.resource.IResourcesProvider
 import org.jboss.tools.intellij.kubernetes.model.resource.IResourcesProviderFactory
 
-abstract class AbstractCluster<N: HasMetadata, C: KubernetesClient>(
+abstract class ActiveCluster<N: HasMetadata, C: KubernetesClient>(
     private val modelChange: IModelChangeObservable,
     override val client: C
-) : ICluster<N, C> {
+) : Cluster(client.masterUrl.toString()), IActiveCluster<N, C> {
 
     private val extensionName : ExtensionPointName<IResourcesProviderFactory<HasMetadata, C, IResourcesProvider<HasMetadata>>> =
         ExtensionPointName.create("org.jboss.tools.intellij.kubernetes.resourceProvider")
@@ -74,7 +74,7 @@ abstract class AbstractCluster<N: HasMetadata, C: KubernetesClient>(
             try {
                 name = getNamespaces().firstOrNull()?.metadata?.name
             } catch (e: KubernetesClientException) {
-                logger<AbstractCluster<N, C>>().warn("Could not determine current namespace: loading all namespaces failed.", e)
+                logger<ActiveCluster<N, C>>().warn("Could not determine current namespace: loading all namespaces failed.", e)
             }
         }
         return name
@@ -131,6 +131,10 @@ abstract class AbstractCluster<N: HasMetadata, C: KubernetesClient>(
         resourceProviders.values.forEach { it.invalidate() }
     }
 
+    override fun invalidate(kind: Class<out HasMetadata>) {
+        resourceProviders[kind.name]?.invalidate()
+    }
+
     override fun invalidate(resource: HasMetadata) {
         resourceProviders[resource::class.java.name]?.invalidate(resource)
     }
@@ -144,7 +148,7 @@ abstract class AbstractCluster<N: HasMetadata, C: KubernetesClient>(
         try {
             watch.addAll(getWatchableResources(namespace))
         } catch (e: ResourceException) {
-            logger<AbstractCluster<N, C>>().warn("Could not start watching resources on server ${client.masterUrl}", e)
+            logger<ActiveCluster<N, C>>().warn("Could not start watching resources on server ${client.masterUrl}", e)
         }
     }
 
