@@ -13,10 +13,16 @@ package org.jboss.tools.intellij.kubernetes.model
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.client.KubernetesClient
 import io.fabric8.kubernetes.client.KubernetesClientException
+import org.jboss.tools.intellij.kubernetes.model.cluster.ActiveCluster
 import org.jboss.tools.intellij.kubernetes.model.cluster.ClusterFactory
+import org.jboss.tools.intellij.kubernetes.model.cluster.IActiveCluster
 import org.jboss.tools.intellij.kubernetes.model.cluster.ICluster
+import org.jboss.tools.intellij.kubernetes.model.cluster.Cluster
+import org.jboss.tools.intellij.kubernetes.model.util.KubeConfigClusters
 
 interface IResourceModel {
+    val allClusters: List<ICluster>
+    val currentCluster: IActiveCluster<out HasMetadata, out KubernetesClient>?
     fun getClient(): KubernetesClient?
     fun isOpenShift(): Boolean
     fun setCurrentNamespace(namespace: String)
@@ -29,33 +35,51 @@ interface IResourceModel {
 
 class ResourceModel(
     private val observable: IModelChangeObservable = ModelChangeObservable(),
-    private val clusterFactory: (IModelChangeObservable) -> ICluster<out HasMetadata, out KubernetesClient> =
+    private val clusterFactory: (IModelChangeObservable) -> IActiveCluster<out HasMetadata, out KubernetesClient> =
         ClusterFactory()::create
 ) : IResourceModel {
 
-    private var cluster: ICluster<out HasMetadata, out KubernetesClient>? = null
+    private val config = KubeConfigClusters()
+    override var currentCluster: IActiveCluster<out HasMetadata, out KubernetesClient>? = null
         get() {
             if (field == null) {
-                field = createCluster(observable, clusterFactory)
+                field = createCurrentCluster()
             }
             return field
         }
+    private val _allClusters: MutableList<ICluster> = mutableListOf()
+    override val allClusters: List<ICluster>
+        get() {
+            if (_allClusters.isEmpty()) {
+                val clusters = config.clusters.map {
+                    if (config.isCurrent(it)) {
+                        createCurrentCluster()
+                    } else {
+                        Cluster(it.cluster.server)
+                    }
+                }
+                _allClusters.addAll(clusters)
+            }
+            return _allClusters
+        }
 
-    private fun createCluster(
-        observable: IModelChangeObservable,
-        clusterFactory: (IModelChangeObservable) -> ICluster<out HasMetadata, out KubernetesClient>
-    ): ICluster<out HasMetadata, out KubernetesClient> {
+    private fun createCurrentCluster(): IActiveCluster<out HasMetadata, out KubernetesClient> {
         val cluster = clusterFactory(observable)
         cluster.startWatch()
+        this.currentCluster = cluster
         return cluster
     }
 
+    private fun closeCurrentCluster() {
+        currentCluster?.close()
+    }
+
     override fun isOpenShift(): Boolean {
-        return cluster?.isOpenShift() ?: return false
+        return currentCluster?.isOpenShift() ?: return false
     }
 
     override fun getClient(): KubernetesClient? {
-        return cluster?.client
+        return currentCluster?.client
     }
 
     override fun addListener(listener: ModelChangeObservable.IResourceChangeListener) {
@@ -63,26 +87,26 @@ class ResourceModel(
     }
 
     override fun setCurrentNamespace(namespace: String) {
-        cluster?.setCurrentNamespace(namespace)
+        currentCluster?.setCurrentNamespace(namespace)
     }
 
     override fun getCurrentNamespace(): String? {
         try {
-            return cluster?.getCurrentNamespace() ?: return null
+            return currentCluster?.getCurrentNamespace() ?: return null
         } catch (e: KubernetesClientException) {
             throw ResourceException(
-                "Could not get current namespace for server ${cluster?.client?.masterUrl}", e)
+                "Could not get current namespace for server ${currentCluster?.client?.masterUrl}", e)
         }
     }
 
     override fun <R: HasMetadata> getResources(kind: Class<R>): Collection<R> {
         try {
-            return cluster?.getResources(kind) ?: return emptyList()
+            return currentCluster?.getResources(kind) ?: return emptyList()
         } catch (e: KubernetesClientException) {
             if (isNotFound(e)) {
                 return emptyList()
             }
-            throw ResourceException("Could not get ${kind.simpleName}s for server ${cluster?.client?.masterUrl}", e)
+            throw ResourceException("Could not get ${kind.simpleName}s for server ${currentCluster?.client?.masterUrl}", e)
         }
     }
 
@@ -92,19 +116,34 @@ class ResourceModel(
 
     override fun invalidate(element: Any?) {
         when(element) {
-            is KubernetesClient -> invalidate(element)
+            is ResourceModel -> invalidate()
+            is ActiveCluster<*, *> -> invalidate(element)
+            is Class<*> -> invalidate(element)
             is HasMetadata -> invalidate(element)
         }
     }
 
-    private fun invalidate(client: KubernetesClient) {
-        cluster?.close()
-        cluster = createCluster(observable, clusterFactory)
-        observable.fireModified(client)
+    private fun invalidate() {
+        closeCurrentCluster()
+        createCurrentCluster()
+        _allClusters.clear()
+        observable.fireModified(this)
+    }
+
+    private fun invalidate(cluster: ActiveCluster<*,*>) {
+        closeCurrentCluster()
+        createCurrentCluster()
+        observable.fireModified(cluster)
+    }
+
+    private fun invalidate(kind: Class<*>) {
+        val hasMetadataClass = kind as? Class<HasMetadata> ?: return
+        currentCluster?.invalidate(hasMetadataClass) ?: return
+        observable.fireModified(hasMetadataClass)
     }
 
     private fun invalidate(resource: HasMetadata) {
-        cluster?.invalidate(resource)
+        currentCluster?.invalidate(resource) ?: return
         observable.fireModified(resource)
     }
 

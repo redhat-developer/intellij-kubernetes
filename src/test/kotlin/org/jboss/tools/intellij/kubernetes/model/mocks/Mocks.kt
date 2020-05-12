@@ -22,20 +22,20 @@ import io.fabric8.kubernetes.client.KubernetesClient
 import io.fabric8.kubernetes.client.NamespacedKubernetesClient
 import org.jboss.tools.intellij.kubernetes.model.IModelChangeObservable
 import org.jboss.tools.intellij.kubernetes.model.IResourceModel
-import org.jboss.tools.intellij.kubernetes.model.cluster.ICluster
+import org.jboss.tools.intellij.kubernetes.model.cluster.IActiveCluster
 import org.jboss.tools.intellij.kubernetes.model.resource.INamespacedResourcesProvider
 import org.jboss.tools.intellij.kubernetes.model.resource.INonNamespacedResourcesProvider
 
 object Mocks {
 
-    fun clusterFactory(cluster: ICluster<HasMetadata, KubernetesClient>): (IModelChangeObservable) -> ICluster<HasMetadata, KubernetesClient> {
+    fun clusterFactory(cluster: IActiveCluster<HasMetadata, KubernetesClient>): (IModelChangeObservable) -> IActiveCluster<HasMetadata, KubernetesClient> {
         return mock {
             doReturn(cluster)
                 .whenever(mock).invoke(any())
         }
     }
 
-    fun cluster(client: NamespacedKubernetesClient, currentNamespace: Namespace): ICluster<HasMetadata, KubernetesClient> {
+    fun cluster(client: NamespacedKubernetesClient, currentNamespace: Namespace): IActiveCluster<HasMetadata, KubernetesClient> {
         return mock {
             doNothing()
                 .whenever(mock).startWatch()

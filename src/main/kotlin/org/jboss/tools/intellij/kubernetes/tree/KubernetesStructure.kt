@@ -15,9 +15,9 @@ import com.intellij.openapi.util.IconLoader
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.Namespace
 import io.fabric8.kubernetes.api.model.Pod
-import io.fabric8.kubernetes.client.NamespacedKubernetesClient
 import org.jboss.tools.intellij.kubernetes.model.IResourceModel
 import org.jboss.tools.intellij.kubernetes.model.ResourceException
+import org.jboss.tools.intellij.kubernetes.model.cluster.KubernetesCluster
 
 class KubernetesStructure(model: IResourceModel): AbstractTreeStructureContribution(model) {
 
@@ -54,7 +54,7 @@ class KubernetesStructure(model: IResourceModel): AbstractTreeStructureContribut
         try {
             return when (element) {
                 getRootElement() ->
-                    null
+                    model
                 is Namespace ->
                     NAMESPACES
                 is Pod ->
@@ -75,16 +75,16 @@ class KubernetesStructure(model: IResourceModel): AbstractTreeStructureContribut
 
     override fun createDescriptor(element: Any, parent: NodeDescriptor<*>?): NodeDescriptor<*>? {
         return when(element) {
-            is NamespacedKubernetesClient -> KubernetesClusterDescriptor(element)
+            is KubernetesCluster -> KubernetesClusterDescriptor(element)
             is Namespace -> NamespaceDescriptor(element, model, parent)
             is Pod -> PodDescriptor(element, parent)
             else -> null
         }
     }
 
-    private class KubernetesClusterDescriptor(element: NamespacedKubernetesClient) : TreeStructure.Descriptor<NamespacedKubernetesClient>(
+    private class KubernetesClusterDescriptor(element: KubernetesCluster) : TreeStructure.Descriptor<KubernetesCluster>(
         element, null,
-        { element.masterUrl.toString() },
+        { element.client.masterUrl.toString() },
         IconLoader.getIcon("/icons/kubernetes-cluster.svg")
     )
 

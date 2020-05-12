@@ -10,8 +10,6 @@
  ******************************************************************************/
 package org.jboss.tools.intellij.kubernetes.model
 
-import io.fabric8.kubernetes.api.model.HasMetadata
-
 interface IModelChangeObservable {
     fun addListener(listener: ModelChangeObservable.IResourceChangeListener)
     fun fireCurrentNamespace(namespace: String?)
@@ -43,8 +41,8 @@ open class ModelChangeObservable: IModelChangeObservable {
         listeners.forEach { it.added(added) }
     }
 
-    override fun fireModified(removed: Any) {
-        listeners.forEach { it.modified(removed) }
+    override fun fireModified(modified: Any) {
+        listeners.forEach { it.modified(modified) }
     }
 
     override fun fireCurrentNamespace(namespace: String?) {

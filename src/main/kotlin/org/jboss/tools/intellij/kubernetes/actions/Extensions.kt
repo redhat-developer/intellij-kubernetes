@@ -18,6 +18,7 @@ import com.intellij.openapi.components.ServiceManager
 import com.intellij.openapi.project.Project
 import com.intellij.ui.treeStructure.Tree
 import org.jboss.tools.intellij.kubernetes.model.IResourceModel
+import org.jboss.tools.intellij.kubernetes.tree.TreeStructure
 import javax.swing.JTree
 import javax.swing.tree.DefaultMutableTreeNode
 
@@ -41,6 +42,6 @@ fun JTree.getSelectedNode(): DefaultMutableTreeNode? {
     return this.selectionModel.selectionPath?.lastPathComponent as DefaultMutableTreeNode
 }
 
-fun DefaultMutableTreeNode.getDescriptorElement(): Any? {
-    return (this.userObject as NodeDescriptor<*>).element
+fun DefaultMutableTreeNode.getDescriptor(): TreeStructure.Descriptor<*>? {
+    return this.userObject as? TreeStructure.Descriptor<*>
 }

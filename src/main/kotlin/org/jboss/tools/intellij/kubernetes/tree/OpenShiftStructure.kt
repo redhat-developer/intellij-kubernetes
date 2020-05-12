@@ -16,6 +16,7 @@ import io.fabric8.openshift.api.model.Project
 import io.fabric8.openshift.client.NamespacedOpenShiftClient
 import org.jboss.tools.intellij.kubernetes.model.IResourceModel
 import org.jboss.tools.intellij.kubernetes.model.ResourceException
+import org.jboss.tools.intellij.kubernetes.model.cluster.OpenShiftCluster
 import org.jboss.tools.intellij.kubernetes.model.resource.ProjectsProvider
 
 class OpenShiftStructure(model: IResourceModel): AbstractTreeStructureContribution(model) {
@@ -41,6 +42,8 @@ class OpenShiftStructure(model: IResourceModel): AbstractTreeStructureContributi
     override fun getParentElement(element: Any): Any? {
         try {
             return when (element) {
+                getRootElement() ->
+                    model
                 is Project ->
                     PROJECTS
                 PROJECTS ->
@@ -55,15 +58,15 @@ class OpenShiftStructure(model: IResourceModel): AbstractTreeStructureContributi
 
     override fun createDescriptor(element: Any, parent: NodeDescriptor<*>?): NodeDescriptor<*>? {
         return when(element) {
-            is NamespacedOpenShiftClient -> OpenShiftClusterDescriptor(element)
+            is OpenShiftCluster -> OpenShiftClusterDescriptor(element)
             is Project -> ProjectDescriptor(element, model, parent)
             else -> null
         }
     }
 
-    private class OpenShiftClusterDescriptor(element: NamespacedOpenShiftClient) : TreeStructure.Descriptor<NamespacedOpenShiftClient>(
+    private class OpenShiftClusterDescriptor(element: OpenShiftCluster) : TreeStructure.Descriptor<OpenShiftCluster>(
         element, null,
-        { element.masterUrl.toString() },
+        { element.client.masterUrl.toString() },
         IconLoader.getIcon("/icons/openshift-cluster.svg")
     )
 

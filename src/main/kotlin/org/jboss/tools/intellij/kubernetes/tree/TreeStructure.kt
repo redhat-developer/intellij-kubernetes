@@ -15,11 +15,14 @@ import com.intellij.ide.projectView.PresentationData
 import com.intellij.ide.util.treeView.AbstractTreeStructure
 import com.intellij.ide.util.treeView.NodeDescriptor
 import com.intellij.ide.util.treeView.PresentableNodeDescriptor
+import com.intellij.openapi.components.ServiceManager
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.extensions.ExtensionPointName
+import com.intellij.openapi.util.IconLoader
 import io.fabric8.kubernetes.api.model.HasMetadata
 import org.jboss.tools.intellij.kubernetes.model.IResourceModel
-import java.util.*
+import org.jboss.tools.intellij.kubernetes.model.cluster.ICluster
+import java.util.Optional
 import javax.swing.Icon
 
 /**
@@ -40,13 +43,16 @@ open class TreeStructure(private val model: IResourceModel,
     }
 
     override fun getRootElement(): Any {
-        return model.getClient()!!
+        return model
     }
 
     override fun getChildElements(element: Any): Array<Any> {
-        return getValidContributions()
-                .flatMap { getChildElements(element, it) }
-                .toTypedArray()
+        return when (element) {
+            rootElement -> model.allClusters.toTypedArray()
+            else -> getValidContributions()
+                    .flatMap { getChildElements(element, it) }
+                    .toTypedArray()
+        }
     }
 
     private fun getChildElements(element: Any, contribution: ITreeStructureContribution): Collection<Any> {
@@ -81,14 +87,18 @@ open class TreeStructure(private val model: IResourceModel,
 
     override fun createDescriptor(element: Any, parent: NodeDescriptor<*>?): NodeDescriptor<*> {
         val descriptor: NodeDescriptor<*>? =
-            when(element) {
+                getValidContributions()
+                        .map { it.createDescriptor(element, parent) }
+                        .find { it != null }
+        if (descriptor != null) {
+            return descriptor
+        }
+        return when(element) {
+                is ICluster -> ClusterDescriptor(element, parent)
                 is Exception -> ErrorDescriptor(element, parent)
                 is Folder -> FolderDescriptor(element, parent)
-                else -> getValidContributions()
-                    .map { it.createDescriptor(element, parent) }
-                    .find { it != null }
+                else -> Descriptor(element, parent)
             }
-        return descriptor ?: Descriptor(element, parent)
     }
 
     private fun getValidContributions(): Collection<ITreeStructureContribution> {
@@ -113,9 +123,23 @@ open class TreeStructure(private val model: IResourceModel,
 
     override fun isToBuildChildrenInBackground(element: Any) = true
 
+    private class ClusterDescriptor(cluster: ICluster, parent: NodeDescriptor<*>?) : Descriptor<ICluster>(
+            cluster,
+            parent,
+            { it.url },
+            IconLoader.getIcon("/icons/kubernetes-cluster.svg")
+    )
+
     private class FolderDescriptor(category: Folder, parent: NodeDescriptor<*>?) : Descriptor<Folder>(
         category, parent,
-        { it.label })
+        { it.label }
+
+    ) {
+        override fun isMatching(element: Any?): Boolean {
+            // change in resource cathegory is notified as change of resource kind
+            return this.element.kind == element
+        }
+    }
 
     private class ErrorDescriptor(exception: java.lang.Exception, parent: NodeDescriptor<*>?) : Descriptor<java.lang.Exception>(
         exception,
@@ -140,10 +164,22 @@ open class TreeStructure(private val model: IResourceModel,
             }
         }
 
+        open fun isMatching(element: Any?): Boolean {
+            return this.element == element
+        }
+
         override fun getElement(): T {
             return element;
         }
-}
+
+        open fun invalidate() {
+            getResourceModel().invalidate(element)
+        }
+
+        protected fun getResourceModel(): IResourceModel {
+            return ServiceManager.getService(myProject, IResourceModel::class.java)
+        }
+    }
 
     data class Folder(val label: String, val kind: Class<out HasMetadata>?)
 }

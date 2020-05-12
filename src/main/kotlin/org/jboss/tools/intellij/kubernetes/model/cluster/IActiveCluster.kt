@@ -13,7 +13,7 @@ package org.jboss.tools.intellij.kubernetes.model.cluster
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.client.KubernetesClient
 
-interface ICluster<N: HasMetadata, C: KubernetesClient> {
+interface IActiveCluster<N: HasMetadata, C: KubernetesClient>: ICluster {
     val client: C
     fun isOpenShift(): Boolean
     fun setCurrentNamespace(namespace: String)
@@ -22,6 +22,7 @@ interface ICluster<N: HasMetadata, C: KubernetesClient> {
     fun add(resource: HasMetadata): Boolean
     fun remove(resource: HasMetadata): Boolean
     fun invalidate()
+    fun invalidate(kind: Class<out HasMetadata>)
     fun invalidate(resource: HasMetadata)
     fun startWatch()
     fun close()
