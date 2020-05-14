@@ -47,15 +47,6 @@ class KubernetesResourceModelTest {
     private val model: IResourceModel = ResourceModel(modelChange, clusterFactory)
 
     @Test
-    fun `#getAllNamespaces should return all namespaces in cluster`() {
-        // given
-        // when
-        model.getAllNamespaces()
-        // then
-        verify(cluster).getNamespaces()
-    }
-
-    @Test
     fun `#getResources(kind) should call cluster#getResources(kind)`() {
         // given
         // when
