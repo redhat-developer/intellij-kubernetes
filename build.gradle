@@ -5,6 +5,7 @@ plugins {
 
 dependencies {
     implementation(
+            "com.redhat.devtools.intellij:intellij-common:0.0.1-SNAPSHOT",
             "org.jetbrains.kotlin:kotlin-gradle-plugin",
             "org.jetbrains.kotlin:kotlin-stdlib-jdk8",
             "io.fabric8:kubernetes-client:4.6.4",
@@ -56,5 +57,9 @@ publishPlugin {
 }
 
 repositories {
+    mavenLocal()
     mavenCentral()
+    maven {
+        url 'https://repository.jboss.org'
+    }
 }

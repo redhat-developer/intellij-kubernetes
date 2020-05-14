@@ -10,7 +10,6 @@
  ******************************************************************************/
 package org.jboss.tools.intellij.kubernetes
 
-import com.intellij.ide.util.treeView.AbstractTreeStructure
 import com.intellij.ide.util.treeView.NodeRenderer
 import com.intellij.openapi.actionSystem.ActionPlaces
 import com.intellij.openapi.components.ServiceManager
@@ -21,12 +20,11 @@ import com.intellij.ui.PopupHandler
 import com.intellij.ui.ScrollPaneFactory
 import com.intellij.ui.content.ContentFactory
 import com.intellij.ui.tree.AsyncTreeModel
-import com.intellij.ui.tree.StructureTreeModel
 import com.intellij.ui.treeStructure.Tree
+import com.redhat.devtools.intellij.common.tree.StructureTreeModelFactory
 import org.jboss.tools.intellij.kubernetes.model.IResourceModel
 import org.jboss.tools.intellij.kubernetes.tree.TreeStructure
 import org.jboss.tools.intellij.kubernetes.tree.ResourceModelAdapter
-import org.jboss.tools.intellij.kubernetes.tree.StructureTreeModelFactory
 
 class KubernetesToolWindowFactory: ToolWindowFactory {
 
