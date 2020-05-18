@@ -27,6 +27,7 @@ import org.jboss.tools.intellij.kubernetes.model.mocks.ClientMocks.inNamespace
 import org.jboss.tools.intellij.kubernetes.model.mocks.ClientMocks.items
 import org.jboss.tools.intellij.kubernetes.model.mocks.ClientMocks.list
 import org.jboss.tools.intellij.kubernetes.model.mocks.ClientMocks.pods
+import org.jboss.tools.intellij.kubernetes.model.mocks.Mocks
 import org.jboss.tools.intellij.kubernetes.model.mocks.Mocks.resource
 import org.junit.Before
 import org.junit.Test
@@ -117,6 +118,17 @@ class PodsProviderTest {
         provider.remove(pod)
         // then
         assertThat(provider.getAllResources(currentNamespace)).doesNotContain(pod)
+    }
+
+    @Test
+    fun `#remove(pod) removes the given pod if it isn't the same instance but matches in name and namespace`() {
+        // given
+        val pod1 = provider.getAllResources(currentNamespace).elementAt(0)
+        val pod2 = resource<Pod>(pod1.metadata.name, pod1.metadata.namespace)
+        // when
+        provider.remove(pod2)
+        // then
+        assertThat(provider.getAllResources(currentNamespace)).doesNotContain(pod1)
     }
 
     @Test
