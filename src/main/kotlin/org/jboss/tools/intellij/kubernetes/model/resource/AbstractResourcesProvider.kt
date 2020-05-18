@@ -12,6 +12,7 @@ package org.jboss.tools.intellij.kubernetes.model.resource
 
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.client.KubernetesClient
+import org.jboss.tools.intellij.kubernetes.model.util.areEqual
 
 abstract class AbstractResourcesProvider<R : HasMetadata, C : KubernetesClient>(
     protected val client: C
@@ -38,6 +39,8 @@ abstract class AbstractResourcesProvider<R : HasMetadata, C : KubernetesClient>(
         if (!kind.isAssignableFrom(resource::class.java)) {
             return false
         }
-        return allResources.remove(resource)
+        // do not remove by instance equality bcs instance to be removed can be different
+        // ex. when removal is triggered by resource watch
+        return allResources.removeIf { areEqual(it, resource) }
     }
 }
