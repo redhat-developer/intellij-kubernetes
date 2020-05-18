@@ -16,6 +16,7 @@ import io.fabric8.kubernetes.client.KubernetesClientException
 import io.fabric8.kubernetes.client.Watch
 import io.fabric8.kubernetes.client.Watcher
 import io.fabric8.kubernetes.client.dsl.Watchable
+import java.lang.RuntimeException
 
 /**
  * A watch that listens for changes on the kubernetes cluster and operates actions on a model accordingly.
@@ -25,43 +26,50 @@ open class ResourceWatch(
     private val addOperation: (HasMetadata) -> Unit,
     private val removeOperation: (HasMetadata) -> Unit
 ) {
-
     private var watches: MutableMap<Watchable<Watch, Watcher<HasMetadata>>, Watch?> = mutableMapOf()
 
-    fun addAll(suppliers: List<() -> Watchable<Watch, Watcher<HasMetadata>>?>) {
-        suppliers.forEach { add(it) }
+    fun watchAll(suppliers: List<() -> Watchable<Watch, Watcher<HasMetadata>>?>) {
+        suppliers.forEach {
+            try {
+                doWatch(it)
+            } catch (e: Exception) {
+                logger<ResourceWatch>().warn("Could not watch $it", e)
+            }
+        }
     }
 
-    fun add(supplier: () -> Watchable<Watch, Watcher<HasMetadata>>?) {
+    fun watch(supplier: () -> Watchable<Watch, Watcher<HasMetadata>>?) {
         try {
-            val watchable = supplier.invoke() ?: return
-            val watch = watch(watchable) ?: return
-            watches[watchable] = watch
+            doWatch(supplier)
         } catch(e: Exception){
             throw ResourceException("Could not watch resource.", e)
         }
+    }
+
+    private fun doWatch(supplier: () -> Watchable<Watch, Watcher<HasMetadata>>?) {
+        val watchable = supplier.invoke() ?: return
+        val watch = watchable.watch(ResourceWatcher(addOperation, removeOperation)) ?: return
+        watches[watchable] = watch
     }
 
     fun getAll(): List<Watchable<Watch, Watcher<HasMetadata>>> {
         return watches.keys.toList()
     }
 
-    fun remove(supplier: () -> Watchable<Watch, Watcher<HasMetadata>>?) {
+    fun ignoreAll(suppliers: List<() -> Watchable<Watch, Watcher<HasMetadata>>?>) {
+        suppliers.forEach {
+            ignore(it)
+        }
+    }
+
+    fun ignore(supplier: () -> Watchable<Watch, Watcher<HasMetadata>>?) {
         try {
             val watchable = supplier.invoke() ?: return
             watches[watchable]?.close()
             watches.remove(watchable)
         } catch(e: Exception){
-            logger<ResourceWatch>().info("Could not stop watching resources", e)
+            logger<ResourceWatch>().warn("Could not stop watching resource $supplier", e)
         }
-    }
-
-    fun removeAll(suppliers: List<() -> Watchable<Watch, Watcher<HasMetadata>>?>) {
-        suppliers.forEach { remove(it) }
-    }
-
-    private fun watch(watchable: Watchable<Watch, Watcher<HasMetadata>>): Watch? {
-        return (watchable).watch(ResourceWatcher(addOperation, removeOperation))
     }
 
     fun clear() {
@@ -98,7 +106,6 @@ open class ResourceWatch(
             when (action) {
                 Watcher.Action.ADDED ->
                     addOperation(resource)
-
                 Watcher.Action.DELETED ->
                     removeOperation(resource)
                 else -> Unit

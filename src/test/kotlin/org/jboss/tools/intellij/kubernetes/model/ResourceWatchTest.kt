@@ -10,7 +10,12 @@
  ******************************************************************************/
 package org.jboss.tools.intellij.kubernetes.model
 
+import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.mock
+import com.nhaarman.mockitokotlin2.spy
+import com.nhaarman.mockitokotlin2.times
+import com.nhaarman.mockitokotlin2.verify
+import com.nhaarman.mockitokotlin2.whenever
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.client.Watch
 import io.fabric8.kubernetes.client.Watcher
@@ -33,12 +38,12 @@ class ResourceWatchTest {
 
     @Before
     fun before() {
-        watch.add { watchable1 }
-        watch.add { watchable2 }
+        watch.watch { watchable1 }
+        watch.watch { watchable2 }
     }
 
     @Test
-    fun `#add() should call watchable#watch() on supplied watchable`() {
+    fun `#watch() should call watchable#watch() on supplied watchable`() {
         // given
         // when watch supplier is added - in @Before
         // then
@@ -46,68 +51,94 @@ class ResourceWatchTest {
     }
 
     @Test
-    fun `#add() should add watch`() {
+    fun `#watch() should add watch`() {
         // given
         val toAdd = WatchableFake()
         assertThat(watch.getAll()).doesNotContain(toAdd)
         // when
-        watch.add { toAdd }
+        watch.watch { toAdd }
         // then
         assertThat(watch.getAll()).contains(toAdd)
     }
 
     @Test
-    fun `#add() should not add if supplier is null`() {
+    fun `#watch() should not add if supplier is null`() {
         // given
         val sizeBeforeAdd = watch.getAll().size
         // when
-        watch.add { -> null }
+        watch.watch { -> null }
         // then
         assertThat(watch.getAll().size).isEqualTo(sizeBeforeAdd)
     }
 
     @Test
-    fun `#addAll() should call watchable#watch() on each supplied watchable`() {
+    fun `#watchAll() should call watchable#watch() on each supplied watchable`() {
         // given
         val watchable1 = WatchableFake()
         val watchable2 = WatchableFake()
         // when
-        watch.addAll(listOf( { watchable1 }, { watchable2 }))
+        watch.watchAll(listOf( { watchable1 }, { watchable2 }))
         // then
         assertThat(watchable1.isWatchCalled()).isTrue()
         assertThat(watchable2.isWatchCalled()).isTrue()
     }
 
     @Test
-    fun `#remove() should close removed watch`() {
+    fun `#watchAll() should continue watching if previous watchable throws`() {
+        // given watchable1 throws
+        val watchable1 = spy(WatchableFake())
+        whenever(watchable1.watch(any())).thenThrow(RuntimeException::class.java)
+        val watchable2 = WatchableFake()
+        // when
+        watch.watchAll(listOf( { watchable1 }, { watchable2 }))
+        // then watchable2 is still watched
+        assertThat(watchable2.isWatchCalled()).isTrue()
+    }
+
+    @Test
+    fun `#ignore() should close removed watch`() {
         // given
         // when starting 2nd time
-        watch.remove { watchable1 }
+        watch.ignore { watchable1 }
         // then
         assertThat(watchable1.watch.isClosed()).isTrue()
     }
 
     @Test
-    fun `#remove() should not close remaining watches`() {
+    fun `#ignore() should not close remaining watches`() {
         // given
         val notRemoved = WatchableFake()
-        watch.add{ notRemoved }
+        watch.watch{ notRemoved }
         // when starting 2nd time
-        watch.remove { watchable1 }
+        watch.ignore { watchable1 }
         // then
         assertThat(notRemoved.watch.isClosed()).isFalse()
     }
 
     @Test
-    fun `#remove() should remove watch`() {
+    fun `#ignore() should remove watch`() {
         // given
         val toRemove = WatchableFake()
-        watch.add{ toRemove }
+        watch.watch{ toRemove }
         assertThat(watch.getAll()).contains(toRemove)
         // when starting 2nd time
-        watch.remove { toRemove }
+        watch.ignore { toRemove }
         // then
         assertThat(watch.getAll()).doesNotContain(toRemove)
+    }
+
+    @Test
+    fun `#ignoreAll() should continue ignoring if previous watchable throws`() {
+        // given watchable1 throws
+        val watch1 = spy(WatchFake())
+        whenever(watch1.close()).thenThrow(RuntimeException::class.java)
+        val watchable1 = WatchableFake(watch1)
+        val watchable2 = WatchableFake()
+        watch.watchAll(listOf( { watchable1 }, { watchable2 }))
+        // when
+        watch.ignoreAll(listOf( { watchable1 }, { watchable2 }))
+        // then watchable2 is still watched
+        verify(watch1).close()
     }
 
     @Test
@@ -169,10 +200,9 @@ class ResourceWatchTest {
         }
     }
 
-    private class WatchableFake : Watchable<Watch, Watcher<HasMetadata>> {
+    private class WatchableFake(var watch: WatchFake = WatchFake()) : Watchable<Watch, Watcher<HasMetadata>> {
 
         var watcher: Watcher<in HasMetadata>? = null
-        var watch: WatchFake = WatchFake()
 
         override fun watch(watcher: Watcher<HasMetadata>?): Watch {
             this.watcher = watcher

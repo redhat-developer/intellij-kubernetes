@@ -11,6 +11,7 @@
 package org.jboss.tools.intellij.kubernetes.model
 
 import io.fabric8.kubernetes.api.model.HasMetadata
+import io.fabric8.kubernetes.api.model.NamedCluster
 import io.fabric8.kubernetes.client.KubernetesClient
 import io.fabric8.kubernetes.client.KubernetesClientException
 import org.jboss.tools.intellij.kubernetes.model.cluster.ActiveCluster
@@ -24,7 +25,6 @@ interface IResourceModel {
     val allClusters: List<ICluster>
     val currentCluster: IActiveCluster<out HasMetadata, out KubernetesClient>?
     fun getClient(): KubernetesClient?
-    fun isOpenShift(): Boolean
     fun setCurrentNamespace(namespace: String)
     fun getCurrentNamespace(): String?
     fun <R: HasMetadata> getResources(kind: Class<R>): Collection<R>
@@ -40,27 +40,30 @@ class ResourceModel(
 ) : IResourceModel {
 
     private val config = KubeConfigClusters()
+
+    private val _allClusters: MutableList<ICluster> = mutableListOf()
+    override val allClusters: List<ICluster>
+        get() {
+            if (_allClusters.isEmpty()) {
+                _allClusters.addAll(config.clusters.mapNotNull { createCluster(it) })
+            }
+            return _allClusters
+        }
+
+    private fun createCluster(it: NamedCluster): ICluster? {
+        return if (config.isCurrent(it)) {
+                currentCluster
+            } else {
+                Cluster(it.cluster.server)
+            }
+    }
+
     override var currentCluster: IActiveCluster<out HasMetadata, out KubernetesClient>? = null
         get() {
             if (field == null) {
                 field = createCurrentCluster()
             }
             return field
-        }
-    private val _allClusters: MutableList<ICluster> = mutableListOf()
-    override val allClusters: List<ICluster>
-        get() {
-            if (_allClusters.isEmpty()) {
-                val clusters = config.clusters.map {
-                    if (config.isCurrent(it)) {
-                        createCurrentCluster()
-                    } else {
-                        Cluster(it.cluster.server)
-                    }
-                }
-                _allClusters.addAll(clusters)
-            }
-            return _allClusters
         }
 
     private fun createCurrentCluster(): IActiveCluster<out HasMetadata, out KubernetesClient> {
@@ -72,10 +75,7 @@ class ResourceModel(
 
     private fun closeCurrentCluster() {
         currentCluster?.close()
-    }
-
-    override fun isOpenShift(): Boolean {
-        return currentCluster?.isOpenShift() ?: return false
+        currentCluster == null
     }
 
     override fun getClient(): KubernetesClient? {

@@ -89,7 +89,7 @@ class KubernetesClusterTest {
         cluster.setCurrentNamespace(NAMESPACE1.metadata.name)
         // then
         val captor = argumentCaptor<List<() -> Watchable<Watch, Watcher<HasMetadata>>>>()
-        verify(cluster.watch).removeAll(captor.capture())
+        verify(cluster.watch).ignoreAll(captor.capture())
         val suppliers = captor.firstValue
         assertThat(suppliers.first().invoke()).isEqualTo(watchable1)
     }
@@ -101,7 +101,7 @@ class KubernetesClusterTest {
         cluster.setCurrentNamespace(NAMESPACE1.metadata.name)
         // then
         val captor = argumentCaptor<List<() -> Watchable<Watch, Watcher<HasMetadata>>>>()
-        verify(cluster.watch).addAll(captor.capture())
+        verify(cluster.watch).watchAll(captor.capture())
         val suppliers = captor.firstValue
         assertThat(suppliers.first().invoke()).isEqualTo(watchable2)
     }
@@ -251,6 +251,18 @@ class KubernetesClusterTest {
     }
 
     @Test
+    fun `#add(pod) should not fire if provider did not add pod`() {
+        // given
+        val pod = resource<Pod>("gargamel")
+        doReturn(false)
+                .whenever(podsProvider).add(pod)
+        // when
+        cluster.add(pod)
+        // then
+        verify(observable, never()).fireAdded(pod)
+    }
+
+    @Test
     fun `#remove(pod) should remove pod from pods provider`() {
         // given
         val pod = resource<Pod>("pod", NAMESPACE2.metadata.name)
@@ -258,6 +270,30 @@ class KubernetesClusterTest {
         cluster.remove(pod)
         // then
         verify(podsProvider).remove(pod)
+    }
+
+    @Test
+    fun `#remove(pod) should fire if provider removed pod`() {
+        // given
+        val pod = resource<Pod>("gargamel")
+        doReturn(true)
+                .whenever(podsProvider).remove(pod)
+        // when
+        cluster.remove(pod)
+        // then
+        verify(observable).fireRemoved(pod)
+    }
+
+    @Test
+    fun `#remove(pod) should not fire if provider did not remove pod`() {
+        // given
+        val pod = resource<Pod>("gargamel")
+        doReturn(false)
+                .whenever(podsProvider).remove(pod)
+        // when
+        cluster.remove(pod)
+        // then
+        verify(observable, never()).fireRemoved(pod)
     }
 
     @Test

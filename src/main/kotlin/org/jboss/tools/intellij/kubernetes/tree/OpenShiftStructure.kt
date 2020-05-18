@@ -26,7 +26,7 @@ class OpenShiftStructure(model: IResourceModel): AbstractTreeStructureContributi
     }
 
     override fun canContribute(): Boolean {
-        return model.isOpenShift()
+        return model.currentCluster?.isOpenShift() ?: false
     }
 
     override fun getChildElements(element: Any): Collection<Any> {
