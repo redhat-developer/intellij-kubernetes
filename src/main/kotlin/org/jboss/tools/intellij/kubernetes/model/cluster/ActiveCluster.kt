@@ -109,7 +109,7 @@ abstract class ActiveCluster<N: HasMetadata, C: KubernetesClient>(
         val provider = resourceProviders[resource::class.java.name] ?: return false
         val removed = provider.remove(resource)
         if (removed) {
-            modelChange.fireAdded(resource)
+            modelChange.fireRemoved(resource)
         }
         return removed
     }
@@ -146,14 +146,14 @@ abstract class ActiveCluster<N: HasMetadata, C: KubernetesClient>(
 
     private fun startWatch(namespace: String) {
         try {
-            watch.addAll(getWatchableResources(namespace))
+            watch.watchAll(getWatchableResources(namespace))
         } catch (e: ResourceException) {
             logger<ActiveCluster<N, C>>().warn("Could not start watching resources on server ${client.masterUrl}", e)
         }
     }
 
     private fun stopWatch(namespace: String) {
-        watch.removeAll(getWatchableResources(namespace))
+        watch.ignoreAll(getWatchableResources(namespace))
     }
 
     override fun close() {
