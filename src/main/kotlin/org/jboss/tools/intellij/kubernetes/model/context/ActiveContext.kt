@@ -8,11 +8,12 @@
  * Contributors:
  * Red Hat, Inc. - initial API and implementation
  ******************************************************************************/
-package org.jboss.tools.intellij.kubernetes.model.cluster
+package org.jboss.tools.intellij.kubernetes.model.context
 
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.extensions.ExtensionPointName
 import io.fabric8.kubernetes.api.model.HasMetadata
+import io.fabric8.kubernetes.api.model.NamedContext
 import io.fabric8.kubernetes.client.KubernetesClient
 import io.fabric8.kubernetes.client.KubernetesClientException
 import io.fabric8.kubernetes.client.Watch
@@ -26,10 +27,11 @@ import org.jboss.tools.intellij.kubernetes.model.resource.INonNamespacedResource
 import org.jboss.tools.intellij.kubernetes.model.resource.IResourcesProvider
 import org.jboss.tools.intellij.kubernetes.model.resource.IResourcesProviderFactory
 
-abstract class ActiveCluster<N: HasMetadata, C: KubernetesClient>(
+abstract class ActiveContext<N: HasMetadata, C: KubernetesClient>(
     private val modelChange: IModelChangeObservable,
-    override val client: C
-) : Cluster(client.masterUrl.toString()), IActiveCluster<N, C> {
+    override val client: C,
+    context: NamedContext?
+) : Context(context), IActiveContext<N, C> {
 
     private val extensionName : ExtensionPointName<IResourcesProviderFactory<HasMetadata, C, IResourcesProvider<HasMetadata>>> =
         ExtensionPointName.create("org.jboss.tools.intellij.kubernetes.resourceProvider")
@@ -74,7 +76,7 @@ abstract class ActiveCluster<N: HasMetadata, C: KubernetesClient>(
             try {
                 name = getNamespaces().firstOrNull()?.metadata?.name
             } catch (e: KubernetesClientException) {
-                logger<ActiveCluster<N, C>>().warn("Could not determine current namespace: loading all namespaces failed.", e)
+                logger<ActiveContext<N, C>>().warn("Could not determine current namespace: loading all namespaces failed.", e)
             }
         }
         return name
@@ -84,7 +86,11 @@ abstract class ActiveCluster<N: HasMetadata, C: KubernetesClient>(
 
     override fun <T: HasMetadata> getResources(kind: Class<T>): Collection<T> {
         val provider = resourceProviders[kind.name] ?: return emptyList()
-        val resources = when(provider) {
+        return getResources(provider) as Collection<T>
+    }
+
+    private fun <T: HasMetadata> getResources(provider: IResourcesProvider<T>): Collection<T> {
+        return when(provider) {
             is INonNamespacedResourcesProvider ->
                 provider.getAllResources()
             is INamespacedResourcesProvider -> {
@@ -93,7 +99,6 @@ abstract class ActiveCluster<N: HasMetadata, C: KubernetesClient>(
             }
             else -> emptyList()
         }
-        return resources as Collection<T>
     }
 
     override fun add(resource: HasMetadata): Boolean {
@@ -148,7 +153,7 @@ abstract class ActiveCluster<N: HasMetadata, C: KubernetesClient>(
         try {
             watch.watchAll(getWatchableResources(namespace))
         } catch (e: ResourceException) {
-            logger<ActiveCluster<N, C>>().warn("Could not start watching resources on server ${client.masterUrl}", e)
+            logger<ActiveContext<N, C>>().warn("Could not start watching resources on server ${client.masterUrl}", e)
         }
     }
 

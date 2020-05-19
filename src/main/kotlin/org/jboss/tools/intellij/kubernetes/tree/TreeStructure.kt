@@ -20,8 +20,9 @@ import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.extensions.ExtensionPointName
 import com.intellij.openapi.util.IconLoader
 import io.fabric8.kubernetes.api.model.HasMetadata
+import io.fabric8.kubernetes.api.model.NamedContext
 import org.jboss.tools.intellij.kubernetes.model.IResourceModel
-import org.jboss.tools.intellij.kubernetes.model.cluster.ICluster
+import org.jboss.tools.intellij.kubernetes.model.context.IContext
 import java.util.Optional
 import javax.swing.Icon
 
@@ -48,7 +49,7 @@ open class TreeStructure(private val model: IResourceModel,
 
     override fun getChildElements(element: Any): Array<Any> {
         return when (element) {
-            rootElement -> model.allClusters.toTypedArray()
+            rootElement -> model.allContexts.toTypedArray()
             else -> getValidContributions()
                     .flatMap { getChildElements(element, it) }
                     .toTypedArray()
@@ -56,11 +57,11 @@ open class TreeStructure(private val model: IResourceModel,
     }
 
     private fun getChildElements(element: Any, contribution: ITreeStructureContribution): Collection<Any> {
-        try {
-            return contribution.getChildElements(element)
+        return try {
+            contribution.getChildElements(element)
         } catch (e:  java.lang.Exception) {
             logger<TreeStructure>().warn(e)
-            return listOf(e)
+            listOf(e)
         }
     }
 
@@ -94,10 +95,10 @@ open class TreeStructure(private val model: IResourceModel,
             return descriptor
         }
         return when(element) {
-                is ICluster -> ClusterDescriptor(element, parent)
-                is Exception -> ErrorDescriptor(element, parent)
-                is Folder -> FolderDescriptor(element, parent)
-                else -> Descriptor(element, parent)
+                is IContext -> ContextDescriptor(element, parent, model = model)
+                is Exception -> ErrorDescriptor(element, parent, model = model)
+                is Folder -> FolderDescriptor(element, parent, model = model)
+                else -> Descriptor(element, parent, model = model)
             }
     }
 
@@ -123,17 +124,33 @@ open class TreeStructure(private val model: IResourceModel,
 
     override fun isToBuildChildrenInBackground(element: Any) = true
 
-    private class ClusterDescriptor(cluster: ICluster, parent: NodeDescriptor<*>?) : Descriptor<ICluster>(
-            cluster,
+    open class ContextDescriptor<C: IContext>(
+            context: C,
+            parent: NodeDescriptor<*>? = null,
+            labelProvider: (C) -> String = {
+                val label = if (it.context == null
+                        || it.context?.context == null) {
+                    "<unknown context>"
+                } else {
+                    it.context.name
+                }
+                label
+            },
+            icon: Icon = IconLoader.getIcon("/icons/kubernetes-cluster.svg"),
+            model: IResourceModel)
+        : Descriptor<C>(
+            context,
             parent,
-            { it.url },
-            IconLoader.getIcon("/icons/kubernetes-cluster.svg")
+            labelProvider,
+            icon,
+            model
     )
 
-    private class FolderDescriptor(category: Folder, parent: NodeDescriptor<*>?) : Descriptor<Folder>(
-        category, parent,
-        { it.label }
-
+    private class FolderDescriptor(category: Folder, parent: NodeDescriptor<*>?, model: IResourceModel)
+        : Descriptor<Folder>(
+            category, parent,
+            { it.label },
+            model = model
     ) {
         override fun isMatching(element: Any?): Boolean {
             // change in resource cathegory is notified as change of resource kind
@@ -141,21 +158,24 @@ open class TreeStructure(private val model: IResourceModel,
         }
     }
 
-    private class ErrorDescriptor(exception: java.lang.Exception, parent: NodeDescriptor<*>?) : Descriptor<java.lang.Exception>(
-        exception,
-        parent,
-        { "Error: " + it.message },
-        AllIcons.General.BalloonError
+    private class ErrorDescriptor(exception: java.lang.Exception, parent: NodeDescriptor<*>?, model: IResourceModel)
+        : Descriptor<java.lang.Exception>(
+            exception,
+            parent,
+            { "Error: " + it.message },
+            AllIcons.General.BalloonError,
+            model
     )
 
     open class Descriptor<T>(
         element: T,
         parent: NodeDescriptor<*>?,
         private val labelProvider: (T) -> String = { it?.toString() ?: "" },
-        private val nodeIcon: Icon? = null
+        private val nodeIcon: Icon? = null,
+        protected val model: IResourceModel
     ) : PresentableNodeDescriptor<T>(null, parent) {
 
-        private val element = element;
+        private val element = element
 
         override fun update(presentation: PresentationData) {
             presentation.presentableText = labelProvider.invoke(element)
@@ -183,3 +203,4 @@ open class TreeStructure(private val model: IResourceModel,
 
     data class Folder(val label: String, val kind: Class<out HasMetadata>?)
 }
+

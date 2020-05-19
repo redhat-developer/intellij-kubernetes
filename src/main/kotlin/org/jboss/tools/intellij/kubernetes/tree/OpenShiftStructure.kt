@@ -13,10 +13,9 @@ package org.jboss.tools.intellij.kubernetes.tree
 import com.intellij.ide.util.treeView.NodeDescriptor
 import com.intellij.openapi.util.IconLoader
 import io.fabric8.openshift.api.model.Project
-import io.fabric8.openshift.client.NamespacedOpenShiftClient
 import org.jboss.tools.intellij.kubernetes.model.IResourceModel
 import org.jboss.tools.intellij.kubernetes.model.ResourceException
-import org.jboss.tools.intellij.kubernetes.model.cluster.OpenShiftCluster
+import org.jboss.tools.intellij.kubernetes.model.context.OpenShiftContext
 import org.jboss.tools.intellij.kubernetes.model.resource.ProjectsProvider
 
 class OpenShiftStructure(model: IResourceModel): AbstractTreeStructureContribution(model) {
@@ -26,7 +25,7 @@ class OpenShiftStructure(model: IResourceModel): AbstractTreeStructureContributi
     }
 
     override fun canContribute(): Boolean {
-        return model.currentCluster?.isOpenShift() ?: false
+        return model.currentContext?.isOpenShift() ?: false
     }
 
     override fun getChildElements(element: Any): Collection<Any> {
@@ -58,29 +57,30 @@ class OpenShiftStructure(model: IResourceModel): AbstractTreeStructureContributi
 
     override fun createDescriptor(element: Any, parent: NodeDescriptor<*>?): NodeDescriptor<*>? {
         return when(element) {
-            is OpenShiftCluster -> OpenShiftClusterDescriptor(element)
-            is Project -> ProjectDescriptor(element, model, parent)
+            is OpenShiftContext -> OpenShiftContextDescriptor(element, model)
+            is Project -> ProjectDescriptor(element, parent, model)
             else -> null
         }
     }
 
-    private class OpenShiftClusterDescriptor(element: OpenShiftCluster) : TreeStructure.Descriptor<OpenShiftCluster>(
-        element, null,
-        { element.client.masterUrl.toString() },
-        IconLoader.getIcon("/icons/openshift-cluster.svg")
+    private class OpenShiftContextDescriptor(context: OpenShiftContext, model: IResourceModel) : TreeStructure.ContextDescriptor<OpenShiftContext>(
+        context = context,
+        icon = IconLoader.getIcon("/icons/openshift-cluster.svg"),
+        model = model
     )
 
-    private class ProjectDescriptor(element: Project, model: IResourceModel, parent: NodeDescriptor<*>?) : TreeStructure.Descriptor<Project>(
-        element,
-        parent,
-        {
-            var label = element.metadata.name
-            if (label == model.getCurrentNamespace()) {
-                label = "* $label"
-            }
-            label
-        },
-        IconLoader.getIcon("/icons/project.png")
+    private class ProjectDescriptor(element: Project, parent: NodeDescriptor<*>?, model: IResourceModel) : TreeStructure.Descriptor<Project>(
+            element,
+            parent,
+            {
+                var label = element.metadata.name
+                if (label == model.getCurrentNamespace()) {
+                    label = "* $label"
+                }
+                label
+            },
+            IconLoader.getIcon("/icons/project.png"),
+            model
     )
 
 }

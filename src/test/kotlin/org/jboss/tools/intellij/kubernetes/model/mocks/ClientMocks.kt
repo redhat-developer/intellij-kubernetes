@@ -13,7 +13,10 @@ package org.jboss.tools.intellij.kubernetes.model.mocks
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.whenever
+import io.fabric8.kubernetes.api.model.Context
+import io.fabric8.kubernetes.api.model.DoneableNamespace
 import io.fabric8.kubernetes.api.model.DoneablePod
+import io.fabric8.kubernetes.api.model.NamedContext
 import io.fabric8.kubernetes.api.model.Namespace
 import io.fabric8.kubernetes.api.model.NamespaceList
 import io.fabric8.kubernetes.api.model.Pod
@@ -21,13 +24,14 @@ import io.fabric8.kubernetes.api.model.PodList
 import io.fabric8.kubernetes.client.Config
 import io.fabric8.kubernetes.client.NamespacedKubernetesClient
 import io.fabric8.kubernetes.client.dsl.MixedOperation
-import io.fabric8.kubernetes.client.dsl.Namespaceable
 import io.fabric8.kubernetes.client.dsl.NonNamespaceOperation
 import io.fabric8.kubernetes.client.dsl.PodResource
-import org.jboss.tools.intellij.kubernetes.model.NamespaceListOperation
+import io.fabric8.kubernetes.client.dsl.Resource
 import org.jboss.tools.intellij.kubernetes.model.mocks.Mocks.resource
 import org.mockito.ArgumentMatchers
 import java.net.URL
+typealias NamespaceListOperation =
+        NonNamespaceOperation<Namespace, NamespaceList, DoneableNamespace, Resource<Namespace, DoneableNamespace>>
 
 object ClientMocks {
 
@@ -115,5 +119,17 @@ object ClientMocks {
             .doReturn(pod)
         whenever(mixedOp.withName(pod.metadata.name))
             .doReturn(podResource)
+    }
+
+    fun context(name: String, namespace: String, cluster: String, user: String): NamedContext {
+        val context: Context = mock {
+            on { this.namespace } doReturn namespace
+            on { this.cluster } doReturn cluster
+            on { this.user } doReturn user
+        }
+        return mock {
+            on { this.name } doReturn name
+            on { this.context } doReturn context
+        }
     }
 }

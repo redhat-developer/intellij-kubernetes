@@ -17,7 +17,7 @@ import io.fabric8.kubernetes.api.model.Namespace
 import io.fabric8.kubernetes.api.model.Pod
 import org.jboss.tools.intellij.kubernetes.model.IResourceModel
 import org.jboss.tools.intellij.kubernetes.model.ResourceException
-import org.jboss.tools.intellij.kubernetes.model.cluster.KubernetesCluster
+import org.jboss.tools.intellij.kubernetes.model.context.KubernetesContext
 
 class KubernetesStructure(model: IResourceModel): AbstractTreeStructureContribution(model) {
 
@@ -75,37 +75,40 @@ class KubernetesStructure(model: IResourceModel): AbstractTreeStructureContribut
 
     override fun createDescriptor(element: Any, parent: NodeDescriptor<*>?): NodeDescriptor<*>? {
         return when(element) {
-            is KubernetesCluster -> KubernetesClusterDescriptor(element)
-            is Namespace -> NamespaceDescriptor(element, model, parent)
-            is Pod -> PodDescriptor(element, parent)
+            is KubernetesContext -> KubernetesContextDescriptor(element, model)
+            is Namespace -> NamespaceDescriptor(element, parent, model)
+            is Pod -> PodDescriptor(element, parent, model)
             else -> null
         }
     }
 
-    private class KubernetesClusterDescriptor(element: KubernetesCluster) : TreeStructure.Descriptor<KubernetesCluster>(
-        element, null,
-        { element.client.masterUrl.toString() },
-        IconLoader.getIcon("/icons/kubernetes-cluster.svg")
+    private class KubernetesContextDescriptor(element: KubernetesContext, model: IResourceModel) : TreeStructure.ContextDescriptor<KubernetesContext>(
+            context = element,
+            icon = IconLoader.getIcon("/icons/kubernetes-cluster.svg"),
+            model = model
     )
 
-    private class NamespaceDescriptor(element: Namespace, model: IResourceModel, parent: NodeDescriptor<*>?) : TreeStructure.Descriptor<Namespace>(
-        element,
-        parent,
-        {
-            var label = it.metadata.name
-            if (label == model.getCurrentNamespace()) {
-                label = "* $label"
-            }
-            label
-        },
-        IconLoader.getIcon("/icons/project.png")
+    private class NamespaceDescriptor(element: Namespace, parent: NodeDescriptor<*>?, model: IResourceModel)
+        : TreeStructure.Descriptor<Namespace>(
+            element,
+            parent,
+            {
+                var label = it.metadata.name
+                if (label == model.getCurrentNamespace()) {
+                    label = "* $label"
+                }
+                label
+            },
+            IconLoader.getIcon("/icons/project.png"),
+            model
     )
 
-    private class PodDescriptor(element: HasMetadata, parent: NodeDescriptor<*>?) : TreeStructure.Descriptor<HasMetadata>(
+    private class PodDescriptor(element: HasMetadata, parent: NodeDescriptor<*>?, model: IResourceModel) : TreeStructure.Descriptor<HasMetadata>(
         element,
         parent,
         { it.metadata.name },
-        IconLoader.getIcon("/icons/project.png")
+        IconLoader.getIcon("/icons/project.png"),
+        model
     )
 
 }

@@ -13,7 +13,7 @@
     </extensions>
 
     <extensions defaultExtensionNs="com.intellij">
-        <projectService serviceInterface="org.jboss.tools.intellij.kubernetes.model.IResourceModel"
+        <applicationService serviceInterface="org.jboss.tools.intellij.kubernetes.model.IResourceModel"
                         serviceImplementation="org.jboss.tools.intellij.kubernetes.model.ResourceModel" />
     </extensions>
 
@@ -33,7 +33,7 @@
                     text="Use Namespace"
                     icon="AllIcons.Nodes.EmptyNode"/>
             <action class="org.jboss.tools.intellij.kubernetes.actions.RefreshAction"
-                    id="org.jboss.tools.intellij.kubernetes.actions.Refresh"
+                    id="org.jboss.tools.intellij.kubernetes.actions.RefreshAction"
                     text="Refresh"
                     icon="AllIcons.Actions.Refresh"/>
                     <!-- icon via class: has to be in 'icons' package and name ending with *Icons -->

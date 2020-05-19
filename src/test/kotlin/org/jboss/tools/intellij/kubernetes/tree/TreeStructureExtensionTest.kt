@@ -124,7 +124,8 @@ class TreeStructureExtensionTest {
 		verify(contributing2).getParentElement(any())
 	}
 
-	private fun structureContribution(canContribute: Boolean, children: Any = emptyList<Any>(), parent: Any? = null): ITreeStructureContribution {
+	private fun structureContribution(canContribute: Boolean, children: Any = emptyList<Any>(), parent: Any? = null)
+			: ITreeStructureContribution {
 		return mock {
 			on { canContribute() } doReturn canContribute
 			on { getChildElements(any()) } doAnswer {
@@ -138,10 +139,9 @@ class TreeStructureExtensionTest {
 				}
 			}
 			on { getParentElement(any()) } doAnswer {
-				if (parent is Exception) {
-					throw parent
-				} else {
-					parent
+				when(parent) {
+					is Exception -> throw parent
+					else -> parent
 				}
 			}
 		}

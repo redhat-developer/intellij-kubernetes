@@ -8,11 +8,13 @@
  * Contributors:
  * Red Hat, Inc. - initial API and implementation
  ******************************************************************************/
-package org.jboss.tools.intellij.kubernetes.model.cluster
+package org.jboss.tools.intellij.kubernetes.model.context
 
-interface ICluster {
-	val url: String
+import io.fabric8.kubernetes.api.model.NamedContext
+
+interface IContext {
+	val context: NamedContext?
 }
 
-open class Cluster(override val url: String): ICluster {
+open class Context(override val context: NamedContext?): IContext {
 }

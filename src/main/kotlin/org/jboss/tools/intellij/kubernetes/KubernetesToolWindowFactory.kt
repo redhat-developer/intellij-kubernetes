@@ -29,7 +29,7 @@ import org.jboss.tools.intellij.kubernetes.tree.ResourceModelAdapter
 class KubernetesToolWindowFactory: ToolWindowFactory {
 
     override fun createToolWindowContent(project: Project, toolWindow: ToolWindow) {
-        val resourceModel = ServiceManager.getService(project, IResourceModel::class.java)
+        val resourceModel = ServiceManager.getService(IResourceModel::class.java)
         val structure = TreeStructure(resourceModel)
         val treeModel = StructureTreeModelFactory.create(structure, project);
         ResourceModelAdapter(treeModel, structure, resourceModel)

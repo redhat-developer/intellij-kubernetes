@@ -8,12 +8,12 @@
  * Contributors:
  * Red Hat, Inc. - initial API and implementation
  ******************************************************************************/
-package org.jboss.tools.intellij.kubernetes.model.cluster
+package org.jboss.tools.intellij.kubernetes.model.context
 
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.client.KubernetesClient
 
-interface IActiveCluster<N: HasMetadata, C: KubernetesClient>: ICluster {
+interface IActiveContext<N: HasMetadata, C: KubernetesClient>: IContext {
     val client: C
     fun isOpenShift(): Boolean
     fun setCurrentNamespace(namespace: String)
