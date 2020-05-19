@@ -11,31 +11,33 @@
 package org.jboss.tools.intellij.kubernetes.model.mocks
 
 import com.nhaarman.mockitokotlin2.any
+import com.nhaarman.mockitokotlin2.anyOrNull
 import com.nhaarman.mockitokotlin2.doNothing
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.whenever
 import io.fabric8.kubernetes.api.model.HasMetadata
+import io.fabric8.kubernetes.api.model.NamedContext
 import io.fabric8.kubernetes.api.model.Namespace
 import io.fabric8.kubernetes.api.model.ObjectMeta
 import io.fabric8.kubernetes.client.KubernetesClient
 import io.fabric8.kubernetes.client.NamespacedKubernetesClient
 import org.jboss.tools.intellij.kubernetes.model.IModelChangeObservable
 import org.jboss.tools.intellij.kubernetes.model.IResourceModel
-import org.jboss.tools.intellij.kubernetes.model.cluster.IActiveCluster
+import org.jboss.tools.intellij.kubernetes.model.context.IActiveContext
 import org.jboss.tools.intellij.kubernetes.model.resource.INamespacedResourcesProvider
 import org.jboss.tools.intellij.kubernetes.model.resource.INonNamespacedResourcesProvider
 
 object Mocks {
 
-    fun clusterFactory(cluster: IActiveCluster<HasMetadata, KubernetesClient>): (IModelChangeObservable) -> IActiveCluster<HasMetadata, KubernetesClient> {
+    fun contextFactory(context: IActiveContext<HasMetadata, KubernetesClient>): (IModelChangeObservable, NamedContext?) -> IActiveContext<HasMetadata, KubernetesClient> {
         return mock {
-            doReturn(cluster)
-                .whenever(mock).invoke(any())
+            doReturn(context)
+                    .whenever(mock).invoke(any(), anyOrNull()) // anyOrNull() bcs NamedContext is nullable
         }
     }
 
-    fun cluster(client: NamespacedKubernetesClient, currentNamespace: Namespace): IActiveCluster<HasMetadata, KubernetesClient> {
+    fun context(client: NamespacedKubernetesClient, currentNamespace: Namespace): IActiveContext<HasMetadata, KubernetesClient> {
         return mock {
             doNothing()
                 .whenever(mock).startWatch()

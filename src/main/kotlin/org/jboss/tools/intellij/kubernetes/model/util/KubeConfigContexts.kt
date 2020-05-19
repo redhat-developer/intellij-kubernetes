@@ -12,7 +12,7 @@ package org.jboss.tools.intellij.kubernetes.model.util
 
 import com.intellij.openapi.diagnostic.logger
 import io.fabric8.kubernetes.api.model.Config
-import io.fabric8.kubernetes.api.model.NamedCluster
+import io.fabric8.kubernetes.api.model.NamedContext
 import io.fabric8.kubernetes.client.Config.KUBERNETES_AUTH_TRYKUBECONFIG_SYSTEM_PROPERTY
 import io.fabric8.kubernetes.client.Config.KUBERNETES_KUBECONFIG_FILE
 import io.fabric8.kubernetes.client.internal.KubeConfigUtils
@@ -23,21 +23,26 @@ import java.io.FileReader
 import java.io.IOException
 import java.util.Locale
 
-class KubeConfigClusters {
+class KubeConfigContexts {
 
-	val clusters: List<NamedCluster>
+	val current: NamedContext?
 		get() {
-			return config?.clusters ?: emptyList()
-		}
-
-	private val current: NamedCluster?
-		get() {
+			if (config == null) {
+				return null
+			}
 			val context = KubeConfigUtils.getCurrentContext(config)
-			return clusters.find { it.name == context.cluster }
+			return contexts.find { it.context.user == context.user
+					&& it.context.user == context.user
+					&& it.context.cluster == context.cluster }
 		}
 
-	fun isCurrent(cluster: NamedCluster): Boolean {
-		return cluster == current
+	val contexts: List<NamedContext>
+		get() {
+			return config?.contexts ?: emptyList()
+		}
+
+	fun isCurrent(context: NamedContext): Boolean {
+		return context == current
 	}
 
 	private val config: Config?
@@ -46,7 +51,7 @@ class KubeConfigClusters {
 				return null
 			}
 			val kubeConfigFile = getKubeConfigFile() ?: return null
-			logger<KubeConfigClusters>().debug("Found for Kubernetes config at: [${kubeConfigFile.path}].")
+			logger<KubeConfigContexts>().debug("Found for Kubernetes config at: [${kubeConfigFile.path}].")
 			val contents = getKubeConfigContents(kubeConfigFile)
 			return KubeConfigUtils.parseConfigFromString(contents)
 		}
@@ -56,7 +61,7 @@ class KubeConfigClusters {
 		try {
 			FileReader(file).use { reader -> kubeconfigContents = IOHelpers.readFully(reader) }
 		} catch (e: IOException) {
-			logger<KubeConfigClusters>().error("Could not load Kubernetes config file from ${file.path}", e)
+			logger<KubeConfigContexts>().error("Could not load Kubernetes config file from ${file.path}", e)
 		}
 		return kubeconfigContents
 	}
@@ -81,7 +86,7 @@ class KubeConfigClusters {
 		if (fileNames.isEmpty()) {
 			return null
 		}
-		logger<KubeConfigClusters>().warn(
+		logger<KubeConfigContexts>().warn(
 				"Found multiple Kubernetes config files [$fileNames], using the first one: [$fileNames[0]]. " +
 						"If not desired file, please change it by doing `export KUBECONFIG=/path/to/kubeconfig` " +
 						"on Unix systems or `\$Env:KUBECONFIG=/path/to/kubeconfig` on Windows.");

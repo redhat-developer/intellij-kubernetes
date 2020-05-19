@@ -8,7 +8,7 @@
  * Contributors:
  * Red Hat, Inc. - initial API and implementation
  ******************************************************************************/
-package org.jboss.tools.intellij.kubernetes.model.cluster
+package org.jboss.tools.intellij.kubernetes.model.context
 
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.argumentCaptor
@@ -43,7 +43,7 @@ import org.jboss.tools.intellij.kubernetes.model.resource.IResourcesProvider
 import org.junit.Before
 import org.junit.Test
 
-class KubernetesClusterTest {
+class KubernetesContextTest {
 
     private val allNamespaces = arrayOf(NAMESPACE1, NAMESPACE2, NAMESPACE3)
     private val currentNamespace = NAMESPACE2
@@ -53,30 +53,30 @@ class KubernetesClusterTest {
     private val observable: ModelChangeObservable = mock()
     private val namespacesProvider: INonNamespacedResourcesProvider<Namespace> = nonNamespacedResourceProvider(allNamespaces.toSet())
     private val podsProvider: INamespacedResourcesProvider<Pod> = namespacedResourceProvider(listOf(), currentNamespace)
-    private lateinit var cluster: TestableKubernetesCluster
+    private lateinit var context: TestableKubernetesContext
 
     @Before
     fun before() {
-        cluster = createCluster()
+        context = createContext()
     }
 
-    private fun createCluster(): TestableKubernetesCluster {
+    private fun createContext(): TestableKubernetesContext {
         val resourceProviders: Map<String, IResourcesProvider<out HasMetadata>> =
             mutableMapOf(
                 Pair(Namespace::class.java.name, namespacesProvider),
                 Pair(Pod::class.java.name, podsProvider))
-        val cluster = spy(TestableKubernetesCluster(observable, this@KubernetesClusterTest.client, resourceProviders))
+        val context = spy(TestableKubernetesContext(observable, this@KubernetesContextTest.client, resourceProviders))
         doReturn(
             listOf { watchable1 }, // returned on 1st call
             listOf { watchable2 }) // returned on 2nd call
-            .whenever(cluster).getWatchableResources(any())
-        return cluster
+            .whenever(context).getWatchableResources(any())
+        return context
     }
 
     @Test
-    fun `cluster instantiation should retrieve current namespace in client`() {
+    fun `context instantiation should retrieve current namespace in client`() {
         // given
-        // cluster created in #before
+        // context created in #before
         // when
         // then
         verify(client.configuration).namespace
@@ -86,10 +86,10 @@ class KubernetesClusterTest {
     fun `#setCurrentNamespace should remove watched resources for current namespace`() {
         // given
         // when
-        cluster.setCurrentNamespace(NAMESPACE1.metadata.name)
+        context.setCurrentNamespace(NAMESPACE1.metadata.name)
         // then
         val captor = argumentCaptor<List<() -> Watchable<Watch, Watcher<HasMetadata>>>>()
-        verify(cluster.watch).ignoreAll(captor.capture())
+        verify(context.watch).ignoreAll(captor.capture())
         val suppliers = captor.firstValue
         assertThat(suppliers.first().invoke()).isEqualTo(watchable1)
     }
@@ -98,10 +98,10 @@ class KubernetesClusterTest {
     fun `#setCurrentNamespace should add new watched resources for new current namespace`() {
         // given
         // when
-        cluster.setCurrentNamespace(NAMESPACE1.metadata.name)
+        context.setCurrentNamespace(NAMESPACE1.metadata.name)
         // then
         val captor = argumentCaptor<List<() -> Watchable<Watch, Watcher<HasMetadata>>>>()
-        verify(cluster.watch).watchAll(captor.capture())
+        verify(context.watch).watchAll(captor.capture())
         val suppliers = captor.firstValue
         assertThat(suppliers.first().invoke()).isEqualTo(watchable2)
     }
@@ -111,7 +111,7 @@ class KubernetesClusterTest {
         // given
         val namespace = NAMESPACE1.metadata.name
         // when
-        cluster.setCurrentNamespace(namespace)
+        context.setCurrentNamespace(namespace)
         // then
         verify(podsProvider).invalidate()
     }
@@ -121,7 +121,7 @@ class KubernetesClusterTest {
         // given
         val namespace = NAMESPACE1.metadata.name
         // when
-        cluster.setCurrentNamespace(namespace)
+        context.setCurrentNamespace(namespace)
         // then
         verify(namespacesProvider, never()).invalidate()
     }
@@ -131,7 +131,7 @@ class KubernetesClusterTest {
         // given
         val namespace = currentNamespace.metadata.name
         // when
-        cluster.setCurrentNamespace(namespace)
+        context.setCurrentNamespace(namespace)
         // then
         verify(podsProvider, never()).invalidate()
     }
@@ -140,7 +140,7 @@ class KubernetesClusterTest {
     fun `#setCurrentNamespace should fire change in current namespace`() {
         // given
         // when
-        cluster.setCurrentNamespace(NAMESPACE1.metadata.name)
+        context.setCurrentNamespace(NAMESPACE1.metadata.name)
         // then
         verify(observable).fireCurrentNamespace(NAMESPACE1.metadata.name)
     }
@@ -149,7 +149,7 @@ class KubernetesClusterTest {
     fun `#setCurrentNamespace should set namespace in client`() {
         // given
         // when
-        cluster.setCurrentNamespace(NAMESPACE1.metadata.name)
+        context.setCurrentNamespace(NAMESPACE1.metadata.name)
         // then
         verify(client.configuration).namespace = NAMESPACE1.metadata.name
     }
@@ -157,9 +157,9 @@ class KubernetesClusterTest {
     @Test
     fun `#getCurrentNamespace should retrieve current namespace in client`() {
         // given
-        clearInvocations(client.configuration) // clear invocation when constructing cluster
+        clearInvocations(client.configuration) // clear invocation when constructing context
         // when
-        cluster.getCurrentNamespace()
+        context.getCurrentNamespace()
         // then
         verify(client.configuration).namespace
     }
@@ -170,7 +170,7 @@ class KubernetesClusterTest {
             whenever(client.configuration.namespace)
                 .thenReturn(null)
         // when
-        val namespace = cluster.getCurrentNamespace()
+        val namespace = context.getCurrentNamespace()
         // then
         assertThat(namespace).isEqualTo(allNamespaces[0].metadata.name)
     }
@@ -179,7 +179,7 @@ class KubernetesClusterTest {
     fun `#getResources should get all resources in provider of given type`() {
         // given
         // when
-        cluster.getResources(Namespace::class.java)
+        context.getResources(Namespace::class.java)
         // then
         verify(namespacesProvider).getAllResources()
     }
@@ -188,7 +188,7 @@ class KubernetesClusterTest {
     fun `#getResources should return empty list if there's no provider of given type`() {
         // given
         // when
-        val services = cluster.getResources(Service::class.java)
+        val services = context.getResources(Service::class.java)
         // then
         assertThat(services).isEmpty()
     }
@@ -198,7 +198,7 @@ class KubernetesClusterTest {
         // given
         val namespace = resource<Namespace>("papa smurf namespace")
         // when
-        cluster.add(namespace)
+        context.add(namespace)
         // then
         verify(namespacesProvider).add(namespace)
         verify(podsProvider, never()).add(namespace)
@@ -209,7 +209,7 @@ class KubernetesClusterTest {
         // given
         val pod = resource<Pod>("pod", NAMESPACE2.metadata.name)
         // when
-        cluster.add(pod)
+        context.add(pod)
         // then
         verify(podsProvider).add(pod)
     }
@@ -221,7 +221,7 @@ class KubernetesClusterTest {
         doReturn(true)
             .whenever(podsProvider)!!.add(pod)
         // when
-        val added = cluster.add(pod)
+        val added = context.add(pod)
         // then
         assertThat(added).isTrue()
     }
@@ -233,7 +233,7 @@ class KubernetesClusterTest {
         doReturn(false)
             .whenever(podsProvider).add(pod)
         // when
-        val added = cluster.add(pod)
+        val added = context.add(pod)
         // then
         assertThat(added).isFalse()
     }
@@ -245,7 +245,7 @@ class KubernetesClusterTest {
         doReturn(true)
             .whenever(podsProvider).add(pod)
         // when
-        cluster.add(pod)
+        context.add(pod)
         // then
         verify(observable).fireAdded(pod)
     }
@@ -257,7 +257,7 @@ class KubernetesClusterTest {
         doReturn(false)
                 .whenever(podsProvider).add(pod)
         // when
-        cluster.add(pod)
+        context.add(pod)
         // then
         verify(observable, never()).fireAdded(pod)
     }
@@ -267,7 +267,7 @@ class KubernetesClusterTest {
         // given
         val pod = resource<Pod>("pod", NAMESPACE2.metadata.name)
         // when
-        cluster.remove(pod)
+        context.remove(pod)
         // then
         verify(podsProvider).remove(pod)
     }
@@ -279,7 +279,7 @@ class KubernetesClusterTest {
         doReturn(true)
                 .whenever(podsProvider).remove(pod)
         // when
-        cluster.remove(pod)
+        context.remove(pod)
         // then
         verify(observable).fireRemoved(pod)
     }
@@ -291,7 +291,7 @@ class KubernetesClusterTest {
         doReturn(false)
                 .whenever(podsProvider).remove(pod)
         // when
-        cluster.remove(pod)
+        context.remove(pod)
         // then
         verify(observable, never()).fireRemoved(pod)
     }
@@ -300,7 +300,7 @@ class KubernetesClusterTest {
     fun `#invalidate() should invalidate all resource providers`() {
         // given
         // when
-        cluster.invalidate()
+        context.invalidate()
         // then
         verify(namespacesProvider).invalidate()
         verify(podsProvider).invalidate()
@@ -311,7 +311,7 @@ class KubernetesClusterTest {
         // given
         val pod = resource<Pod>("pod", NAMESPACE2.metadata.name)
         // when
-        cluster.invalidate(pod)
+        context.invalidate(pod)
         // then
         verify(namespacesProvider, never()).invalidate(any())
         verify(podsProvider).invalidate(pod)
@@ -321,16 +321,16 @@ class KubernetesClusterTest {
     fun `#close should close client`() {
         // given
         // when
-        cluster.close()
+        context.close()
         // then
         verify(client).close()
     }
 
-    inner class TestableKubernetesCluster(
+    inner class TestableKubernetesContext(
         observable: ModelChangeObservable,
         client: NamespacedKubernetesClient,
         override val resourceProviders: Map<String, IResourcesProvider<out HasMetadata>>
-    ) : KubernetesCluster(observable, client) {
+    ) : KubernetesContext(observable, client, null) {
 
         public override var watch = mock<ResourceWatch>()
 

@@ -11,91 +11,93 @@
 package org.jboss.tools.intellij.kubernetes.model
 
 import com.nhaarman.mockitokotlin2.any
+import com.nhaarman.mockitokotlin2.anyOrNull
 import com.nhaarman.mockitokotlin2.clearInvocations
+import com.nhaarman.mockitokotlin2.doReturn
+import com.nhaarman.mockitokotlin2.eq
 import com.nhaarman.mockitokotlin2.mock
+import com.nhaarman.mockitokotlin2.never
+import com.nhaarman.mockitokotlin2.times
 import com.nhaarman.mockitokotlin2.verify
-import io.fabric8.kubernetes.api.model.DoneableNamespace
 import io.fabric8.kubernetes.api.model.HasMetadata
+import io.fabric8.kubernetes.api.model.NamedContext
 import io.fabric8.kubernetes.api.model.Namespace
-import io.fabric8.kubernetes.api.model.NamespaceList
 import io.fabric8.kubernetes.api.model.Pod
 import io.fabric8.kubernetes.client.KubernetesClient
 import io.fabric8.kubernetes.client.NamespacedKubernetesClient
-import io.fabric8.kubernetes.client.dsl.NonNamespaceOperation
-import io.fabric8.kubernetes.client.dsl.Resource
-import org.jboss.tools.intellij.kubernetes.model.cluster.IActiveCluster
-import org.jboss.tools.intellij.kubernetes.model.mocks.Mocks.clusterFactory
+import org.assertj.core.api.Assertions.assertThat
+import org.jboss.tools.intellij.kubernetes.model.context.IActiveContext
+import org.jboss.tools.intellij.kubernetes.model.mocks.ClientMocks
+import org.jboss.tools.intellij.kubernetes.model.mocks.Mocks.contextFactory
 import org.jboss.tools.intellij.kubernetes.model.mocks.Mocks.resource
-import org.jboss.tools.intellij.kubernetes.model.mocks.Mocks.cluster
+import org.jboss.tools.intellij.kubernetes.model.mocks.Mocks.context
+import org.jboss.tools.intellij.kubernetes.model.util.KubeConfigContexts
 import org.junit.Test
-
-typealias NamespaceListOperation = NonNamespaceOperation<Namespace, NamespaceList, DoneableNamespace, Resource<Namespace, DoneableNamespace>>
 
 class ResourceModelTest {
 
     private val client: NamespacedKubernetesClient = mock()
     private val modelChange: IModelChangeObservable = mock()
     private val namespace: Namespace = resource("papa smurf")
-    private val cluster: IActiveCluster<HasMetadata, KubernetesClient> = cluster(client, namespace)
-    private val clusterFactory: (IModelChangeObservable) -> IActiveCluster<HasMetadata, KubernetesClient> = clusterFactory(cluster)
-    private val model: IResourceModel = ResourceModel(modelChange, clusterFactory)
+    private val context: IActiveContext<HasMetadata, KubernetesClient> = context(client, namespace)
+    private val contextFactory: (IModelChangeObservable, NamedContext?) -> IActiveContext<HasMetadata, KubernetesClient> =
+            contextFactory(context)
+
+    private val context1 = ClientMocks.context("ctx1", "namespace1", "cluster1", "user1")
+    private val context2 = ClientMocks.context("ctx2", "namespace2", "cluster2", "user2")
+    private val context3 = ClientMocks.context("ctx3", "namespace3", "cluster3", "user3")
+    private val config: KubeConfigContexts = createKubeConfigContexts(
+            context2,
+            listOf(context1, context2, context3)
+    )
+
+    private val model: ResourceModel = ResourceModel(modelChange, contextFactory, config)
 
     @Test
-    fun `#getResources(kind) should call cluster#getResources(kind)`() {
+    fun `#getResources(kind) should call context#getResources(kind)`() {
         // given
         // when
         model.getResources(Pod::class.java)
         // then
-        verify(cluster).getResources(Pod::class.java)
+        verify(context).getResources(Pod::class.java)
     }
 
     @Test
-    fun `#setCurrentNamespace(name) should call cluster#setCurrentNamespace(name)`() {
+    fun `#setCurrentNamespace(name) should call context#setCurrentNamespace(name)`() {
         // given
         // when
         model.setCurrentNamespace("papa-smurf")
         // then
-        verify(cluster).setCurrentNamespace("papa-smurf")
+        verify(context).setCurrentNamespace("papa-smurf")
     }
 
     @Test
-    fun `#getCurrentNamespace() should call cluster#getCurrentNamespace()`() {
+    fun `#getCurrentNamespace() should call context#getCurrentNamespace()`() {
         // given
         // when
         model.getCurrentNamespace()
         // then
-        verify(cluster).getCurrentNamespace()
+        verify(context).getCurrentNamespace()
     }
 
     @Test
-    fun `#invalidate(model) should create new cluster`() {
+    fun `#invalidate(model) should create new context`() {
         // given
-        createCluster() // access cluster field, cause creation of cluster
-        clearInvocations(clusterFactory)
+        model.currentContext // trigger creation of context
+        clearInvocations(contextFactory)
         // when
         model.invalidate(model)
         // then
-        verify(clusterFactory).invoke(any())
+        verify(contextFactory).invoke(any(), anyOrNull()) // anyOrNull() bcs NamedContext is nullable
     }
 
     @Test
-    fun `#invalidate(model) should close existing cluster`() {
+    fun `#invalidate(model) should close existing context`() {
         // given
         // when
         model.invalidate(model)
         // then
-        verify(cluster).close()
-    }
-
-    @Test
-    fun `#invalidate(model) should watch new cluster`() {
-        // given
-        createCluster() // access cluster field, cause creation of cluster
-        clearInvocations(cluster)
-        // when
-        model.invalidate(model)
-        // then
-        verify(cluster).startWatch()
+        verify(context).close()
     }
 
     @Test
@@ -108,14 +110,25 @@ class ResourceModelTest {
     }
 
     @Test
-    fun `#invalidate(class) should call ICluster#invalidate(class)`() {
+    fun `#invalidate(model) should cause #allContexts to (drop cache and) load again`() {
         // given
-        createCluster()
-        clearInvocations(cluster)
+        model.allContexts
+        verify(config, times(1)).contexts
+        clearInvocations(config)
+        // when
+        model.invalidate(model)
+        model.allContexts
+        // then
+        verify(config, times(1)).contexts
+    }
+
+    @Test
+    fun `#invalidate(class) should call context#invalidate(class)`() {
+        // given
         // when
         model.invalidate(Pod::class.java)
         // then
-        verify(cluster).invalidate(Pod::class.java)
+        verify(context).invalidate(Pod::class.java)
     }
 
     @Test
@@ -128,15 +141,13 @@ class ResourceModelTest {
     }
 
     @Test
-    fun `#invalidate(resource) should call ICluster#invalidate(resource)`() {
+    fun `#invalidate(resource) should call context#invalidate(resource)`() {
         // given
-        createCluster()
-        clearInvocations(cluster)
         val resource = mock<HasMetadata>()
         // when
         model.invalidate(resource)
         // then
-        verify(cluster).invalidate(resource)
+        verify(context).invalidate(resource)
     }
 
     @Test
@@ -149,8 +160,63 @@ class ResourceModelTest {
         verify(modelChange).fireModified(resource)
     }
 
-    private fun createCluster() {
-        // access cluster field, cause creation of cluster
-        model.getClient()
+    @Test
+    fun `#allContexts should get all contexts in kube config`() {
+        // given
+        // when
+        model.allContexts
+        // then
+        verify(config).contexts
     }
+
+    @Test
+    fun `#allContexts should return contexts for all contexts in kube config`() {
+        // given
+        // when
+        val numOf = model.allContexts.size
+        // then
+        assertThat(numOf).isEqualTo(config.contexts.size)
+    }
+
+    @Test
+    fun `#allContexts should not load twice`() {
+        // given
+        clearInvocations(config)
+        // when
+        model.allContexts
+        model.allContexts
+        // then
+        verify(config, times(1)).contexts
+    }
+
+    @Test
+    fun `#allContexts should not create currentContext if exists already`() {
+        // given
+        model.invalidate(model)
+        model.currentContext
+        clearInvocations(contextFactory)
+        // when
+        model.allContexts
+        // then
+        verify(contextFactory, never()).invoke(any(), anyOrNull())
+    }
+
+    @Test
+    fun `#currentContext should create new context if there's no context yet`() {
+        // given
+        model.setCurrentContext(null as? IActiveContext<*,*>)
+        // when
+        model.currentContext
+        // then
+        verify(contextFactory).invoke(any(), anyOrNull())
+    }
+
+    private fun createKubeConfigContexts(currentContext: NamedContext, allContexts: List<NamedContext>): KubeConfigContexts {
+        return mock() {
+            on { contexts } doReturn allContexts
+            on { current } doReturn currentContext
+            on { isCurrent(eq(currentContext)) } doReturn true
+        }
+    }
+
 }

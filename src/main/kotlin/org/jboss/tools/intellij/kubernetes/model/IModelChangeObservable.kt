@@ -15,7 +15,7 @@ interface IModelChangeObservable {
     fun fireCurrentNamespace(namespace: String?)
     fun fireRemoved(removed: Any)
     fun fireAdded(added: Any)
-    fun fireModified(removed: Any)
+    fun fireModified(modified: Any)
 }
 
 open class ModelChangeObservable: IModelChangeObservable {

@@ -8,33 +8,33 @@
  * Contributors:
  * Red Hat, Inc. - initial API and implementation
  ******************************************************************************/
-package org.jboss.tools.intellij.kubernetes.model.cluster
+package org.jboss.tools.intellij.kubernetes.model.context
 
 import io.fabric8.kubernetes.api.model.HasMetadata
-import io.fabric8.openshift.api.model.Project
-import io.fabric8.openshift.client.NamespacedOpenShiftClient
+import io.fabric8.kubernetes.api.model.NamedContext
+import io.fabric8.kubernetes.api.model.Namespace
+import io.fabric8.kubernetes.client.NamespacedKubernetesClient
 import org.jboss.tools.intellij.kubernetes.model.IModelChangeObservable
 import org.jboss.tools.intellij.kubernetes.model.resource.IResourcesProvider
 import org.jboss.tools.intellij.kubernetes.model.resource.NamespacesProvider
 import org.jboss.tools.intellij.kubernetes.model.resource.PodsProvider
-import org.jboss.tools.intellij.kubernetes.model.resource.ProjectsProvider
 
-open class OpenShiftCluster(
-    modelChange: IModelChangeObservable,
-    client: NamespacedOpenShiftClient
-) : ActiveCluster<Project, NamespacedOpenShiftClient>(modelChange, client) {
+open class KubernetesContext(
+		modelChange: IModelChangeObservable,
+		client: NamespacedKubernetesClient,
+		context: NamedContext?
+) : ActiveContext<Namespace, NamespacedKubernetesClient>(modelChange, client, context) {
 
-	override fun getInternalResourceProviders(client: NamespacedOpenShiftClient): List<IResourcesProvider<out HasMetadata>> {
-		return listOf(
+	override fun getInternalResourceProviders(client: NamespacedKubernetesClient): List<IResourcesProvider<out HasMetadata>> {
+		return listOf<IResourcesProvider<out HasMetadata>>(
 				NamespacesProvider(client),
-				PodsProvider(client),
-				ProjectsProvider(client)
+				PodsProvider(client)
 		)
 	}
 
-	override fun getNamespaces(): Collection<Project> {
-		return getResources(ProjectsProvider.KIND)
+	override fun getNamespaces(): Collection<Namespace> {
+		return getResources(NamespacesProvider.KIND)
 	}
 
-	override fun isOpenShift() = true
+	override fun isOpenShift() = false
 }
