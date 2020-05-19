@@ -11,6 +11,7 @@
 package org.jboss.tools.intellij.kubernetes.model.cluster
 
 import io.fabric8.kubernetes.api.model.HasMetadata
+import io.fabric8.kubernetes.api.model.NamedContext
 import io.fabric8.kubernetes.api.model.Namespace
 import io.fabric8.kubernetes.client.NamespacedKubernetesClient
 import org.jboss.tools.intellij.kubernetes.model.IModelChangeObservable
@@ -18,10 +19,11 @@ import org.jboss.tools.intellij.kubernetes.model.resource.IResourcesProvider
 import org.jboss.tools.intellij.kubernetes.model.resource.NamespacesProvider
 import org.jboss.tools.intellij.kubernetes.model.resource.PodsProvider
 
-open class KubernetesCluster(
+open class KubernetesContext(
 		modelChange: IModelChangeObservable,
-		client: NamespacedKubernetesClient
-) : ActiveCluster<Namespace, NamespacedKubernetesClient>(modelChange, client) {
+		client: NamespacedKubernetesClient,
+		context: NamedContext?
+) : ActiveContext<Namespace, NamespacedKubernetesClient>(modelChange, client, context) {
 
 	override fun getInternalResourceProviders(client: NamespacedKubernetesClient): List<IResourcesProvider<out HasMetadata>> {
 		return listOf<IResourcesProvider<out HasMetadata>>(

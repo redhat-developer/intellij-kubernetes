@@ -21,7 +21,7 @@ import com.intellij.openapi.extensions.ExtensionPointName
 import com.intellij.openapi.util.IconLoader
 import io.fabric8.kubernetes.api.model.HasMetadata
 import org.jboss.tools.intellij.kubernetes.model.IResourceModel
-import org.jboss.tools.intellij.kubernetes.model.cluster.ICluster
+import org.jboss.tools.intellij.kubernetes.model.cluster.IContext
 import java.util.Optional
 import javax.swing.Icon
 
@@ -47,7 +47,7 @@ open class TreeStructure(private val model: IResourceModel,
 
     override fun getChildElements(element: Any): Array<Any> {
         return when (element) {
-            rootElement -> model.allClusters.toTypedArray()
+            rootElement -> model.allContexts.toTypedArray()
             else -> getValidContributions()
                     .flatMap { getChildElements(element, it) }
                     .toTypedArray()
@@ -93,7 +93,7 @@ open class TreeStructure(private val model: IResourceModel,
             return descriptor
         }
         return when(element) {
-                is ICluster -> ClusterDescriptor(element, parent)
+                is IContext -> ClusterDescriptor(element, parent)
                 is Exception -> ErrorDescriptor(element, parent)
                 is Folder -> FolderDescriptor(element, parent)
                 else -> Descriptor(element, parent)
@@ -122,10 +122,36 @@ open class TreeStructure(private val model: IResourceModel,
 
     override fun isToBuildChildrenInBackground(element: Any) = true
 
-    private class ClusterDescriptor(cluster: ICluster, parent: NodeDescriptor<*>?) : Descriptor<ICluster>(
-            cluster,
+    private class ClusterDescriptor(context: IContext, parent: NodeDescriptor<*>?) : Descriptor<IContext>(
+            context,
             parent,
-            { it.url },
+            {
+                val label = if (it.context == null
+                        || it.context?.context == null) {
+                    "<unknown context>"
+                } else {
+                    var label = ""
+                    val namespace = it.context?.context?.namespace
+                    if (namespace != null && !namespace.isBlank()) {
+                        label += "$namespace/"
+                    }
+                    val cluster = it.context?.context?.cluster
+                    if (cluster != null && !cluster.isBlank()) {
+                        label += "$cluster"
+                    }
+                    val user = it.context?.context?.user
+                    user?.apply {
+                        if (!user.isBlank()) {
+                            label += "/${user.split("/")[0]}"
+                        }
+                    }
+                    if (label.isBlank()) {
+                        label += it.context?.name
+                    }
+                    label
+                }
+                label
+            },
             IconLoader.getIcon("/icons/kubernetes-cluster.svg")
     )
 

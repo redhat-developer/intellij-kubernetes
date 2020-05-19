@@ -17,7 +17,7 @@ import io.fabric8.kubernetes.api.model.Namespace
 import io.fabric8.kubernetes.api.model.Pod
 import org.jboss.tools.intellij.kubernetes.model.IResourceModel
 import org.jboss.tools.intellij.kubernetes.model.ResourceException
-import org.jboss.tools.intellij.kubernetes.model.cluster.KubernetesCluster
+import org.jboss.tools.intellij.kubernetes.model.cluster.KubernetesContext
 
 class KubernetesStructure(model: IResourceModel): AbstractTreeStructureContribution(model) {
 
@@ -75,14 +75,14 @@ class KubernetesStructure(model: IResourceModel): AbstractTreeStructureContribut
 
     override fun createDescriptor(element: Any, parent: NodeDescriptor<*>?): NodeDescriptor<*>? {
         return when(element) {
-            is KubernetesCluster -> KubernetesClusterDescriptor(element)
+            is KubernetesContext -> KubernetesClusterDescriptor(element)
             is Namespace -> NamespaceDescriptor(element, model, parent)
             is Pod -> PodDescriptor(element, parent)
             else -> null
         }
     }
 
-    private class KubernetesClusterDescriptor(element: KubernetesCluster) : TreeStructure.Descriptor<KubernetesCluster>(
+    private class KubernetesClusterDescriptor(element: KubernetesContext) : TreeStructure.Descriptor<KubernetesContext>(
         element, null,
         { element.client.masterUrl.toString() },
         IconLoader.getIcon("/icons/kubernetes-cluster.svg")

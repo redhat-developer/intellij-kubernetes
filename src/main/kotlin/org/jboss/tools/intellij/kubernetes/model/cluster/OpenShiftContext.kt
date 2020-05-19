@@ -11,6 +11,7 @@
 package org.jboss.tools.intellij.kubernetes.model.cluster
 
 import io.fabric8.kubernetes.api.model.HasMetadata
+import io.fabric8.kubernetes.api.model.NamedContext
 import io.fabric8.openshift.api.model.Project
 import io.fabric8.openshift.client.NamespacedOpenShiftClient
 import org.jboss.tools.intellij.kubernetes.model.IModelChangeObservable
@@ -19,10 +20,11 @@ import org.jboss.tools.intellij.kubernetes.model.resource.NamespacesProvider
 import org.jboss.tools.intellij.kubernetes.model.resource.PodsProvider
 import org.jboss.tools.intellij.kubernetes.model.resource.ProjectsProvider
 
-open class OpenShiftCluster(
+open class OpenShiftContext(
     modelChange: IModelChangeObservable,
-    client: NamespacedOpenShiftClient
-) : ActiveCluster<Project, NamespacedOpenShiftClient>(modelChange, client) {
+    client: NamespacedOpenShiftClient,
+	context: NamedContext?
+) : ActiveContext<Project, NamespacedOpenShiftClient>(modelChange, client, context) {
 
 	override fun getInternalResourceProviders(client: NamespacedOpenShiftClient): List<IResourcesProvider<out HasMetadata>> {
 		return listOf(

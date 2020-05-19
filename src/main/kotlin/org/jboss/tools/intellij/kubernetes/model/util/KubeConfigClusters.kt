@@ -11,8 +11,10 @@
 package org.jboss.tools.intellij.kubernetes.model.util
 
 import com.intellij.openapi.diagnostic.logger
+import io.fabric8.kubernetes.api.model.Cluster
 import io.fabric8.kubernetes.api.model.Config
 import io.fabric8.kubernetes.api.model.NamedCluster
+import io.fabric8.kubernetes.api.model.NamedContext
 import io.fabric8.kubernetes.client.Config.KUBERNETES_AUTH_TRYKUBECONFIG_SYSTEM_PROPERTY
 import io.fabric8.kubernetes.client.Config.KUBERNETES_KUBECONFIG_FILE
 import io.fabric8.kubernetes.client.internal.KubeConfigUtils
@@ -25,19 +27,19 @@ import java.util.Locale
 
 class KubeConfigClusters {
 
-	val clusters: List<NamedCluster>
-		get() {
-			return config?.clusters ?: emptyList()
-		}
-
-	private val current: NamedCluster?
+	val currentContext: NamedContext?
 		get() {
 			val context = KubeConfigUtils.getCurrentContext(config)
-			return clusters.find { it.name == context.cluster }
+			return contexts.find { it.context.cluster == context.cluster }
 		}
 
-	fun isCurrent(cluster: NamedCluster): Boolean {
-		return cluster == current
+	val contexts: List<NamedContext>
+		get() {
+			return config?.contexts ?: emptyList()
+		}
+
+	fun isCurrent(context: NamedContext): Boolean {
+		return context == currentContext
 	}
 
 	private val config: Config?

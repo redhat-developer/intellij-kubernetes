@@ -16,7 +16,7 @@ import org.jboss.tools.intellij.kubernetes.model.IResourceModel
 abstract class AbstractTreeStructureContribution(override val model: IResourceModel): ITreeStructureContribution {
 
     protected fun getRootElement(): Any? {
-        return model.currentCluster
+        return model.currentContext
     }
 
     protected fun getResources(kind: Class<out HasMetadata>?): List<Any> {

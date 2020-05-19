@@ -33,11 +33,15 @@
                     text="Use Namespace"
                     icon="AllIcons.Nodes.EmptyNode"/>
             <action class="org.jboss.tools.intellij.kubernetes.actions.RefreshAction"
-                    id="org.jboss.tools.intellij.kubernetes.actions.Refresh"
+                    id="org.jboss.tools.intellij.kubernetes.actions.RefreshAction"
                     text="Refresh"
                     icon="AllIcons.Actions.Refresh"/>
                     <!-- icon via class: has to be in 'icons' package and name ending with *Icons -->
                     <!-- https://www.jetbrains.org/intellij/sdk/docs/reference_guide/work_with_icons_and_images.html -->
+            <action class="org.jboss.tools.intellij.kubernetes.actions.SetAsCurrentClusterAction"
+                    id="org.jboss.tools.intellij.kubernetes.actions.SetAsCurrentClusterAction"
+                    text="Set as Current Cluster"
+                    icon="AllIcons.Nodes.EmptyNode"/>
         </group>
     </actions>
 

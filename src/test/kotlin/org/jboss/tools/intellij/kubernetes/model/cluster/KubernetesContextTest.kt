@@ -43,7 +43,7 @@ import org.jboss.tools.intellij.kubernetes.model.resource.IResourcesProvider
 import org.junit.Before
 import org.junit.Test
 
-class KubernetesClusterTest {
+class KubernetesContextTest {
 
     private val allNamespaces = arrayOf(NAMESPACE1, NAMESPACE2, NAMESPACE3)
     private val currentNamespace = NAMESPACE2
@@ -53,19 +53,19 @@ class KubernetesClusterTest {
     private val observable: ModelChangeObservable = mock()
     private val namespacesProvider: INonNamespacedResourcesProvider<Namespace> = nonNamespacedResourceProvider(allNamespaces.toSet())
     private val podsProvider: INamespacedResourcesProvider<Pod> = namespacedResourceProvider(listOf(), currentNamespace)
-    private lateinit var cluster: TestableKubernetesCluster
+    private lateinit var cluster: TestableKubernetesContext
 
     @Before
     fun before() {
         cluster = createCluster()
     }
 
-    private fun createCluster(): TestableKubernetesCluster {
+    private fun createCluster(): TestableKubernetesContext {
         val resourceProviders: Map<String, IResourcesProvider<out HasMetadata>> =
             mutableMapOf(
                 Pair(Namespace::class.java.name, namespacesProvider),
                 Pair(Pod::class.java.name, podsProvider))
-        val cluster = spy(TestableKubernetesCluster(observable, this@KubernetesClusterTest.client, resourceProviders))
+        val cluster = spy(TestableKubernetesContext(observable, this@KubernetesContextTest.client, resourceProviders))
         doReturn(
             listOf { watchable1 }, // returned on 1st call
             listOf { watchable2 }) // returned on 2nd call
@@ -326,11 +326,11 @@ class KubernetesClusterTest {
         verify(client).close()
     }
 
-    inner class TestableKubernetesCluster(
+    inner class TestableKubernetesContext(
         observable: ModelChangeObservable,
         client: NamespacedKubernetesClient,
         override val resourceProviders: Map<String, IResourcesProvider<out HasMetadata>>
-    ) : KubernetesCluster(observable, client) {
+    ) : KubernetesContext(observable, client) {
 
         public override var watch = mock<ResourceWatch>()
 

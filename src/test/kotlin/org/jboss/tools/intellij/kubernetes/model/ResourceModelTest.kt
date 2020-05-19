@@ -23,7 +23,7 @@ import io.fabric8.kubernetes.client.KubernetesClient
 import io.fabric8.kubernetes.client.NamespacedKubernetesClient
 import io.fabric8.kubernetes.client.dsl.NonNamespaceOperation
 import io.fabric8.kubernetes.client.dsl.Resource
-import org.jboss.tools.intellij.kubernetes.model.cluster.IActiveCluster
+import org.jboss.tools.intellij.kubernetes.model.cluster.IActiveContext
 import org.jboss.tools.intellij.kubernetes.model.mocks.Mocks.clusterFactory
 import org.jboss.tools.intellij.kubernetes.model.mocks.Mocks.resource
 import org.jboss.tools.intellij.kubernetes.model.mocks.Mocks.cluster
@@ -36,8 +36,8 @@ class ResourceModelTest {
     private val client: NamespacedKubernetesClient = mock()
     private val modelChange: IModelChangeObservable = mock()
     private val namespace: Namespace = resource("papa smurf")
-    private val cluster: IActiveCluster<HasMetadata, KubernetesClient> = cluster(client, namespace)
-    private val clusterFactory: (IModelChangeObservable) -> IActiveCluster<HasMetadata, KubernetesClient> = clusterFactory(cluster)
+    private val cluster: IActiveContext<HasMetadata, KubernetesClient> = cluster(client, namespace)
+    private val clusterFactory: (IModelChangeObservable) -> IActiveContext<HasMetadata, KubernetesClient> = clusterFactory(cluster)
     private val model: IResourceModel = ResourceModel(modelChange, clusterFactory)
 
     @Test

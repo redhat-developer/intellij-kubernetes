@@ -8,11 +8,16 @@
  * Contributors:
  * Red Hat, Inc. - initial API and implementation
  ******************************************************************************/
-package org.jboss.tools.intellij.kubernetes.model.cluster
+package org.jboss.tools.intellij.kubernetes.actions
 
-interface ICluster {
-	val url: String
-}
+import com.intellij.icons.AllIcons.Actions.Refresh
+import com.intellij.openapi.actionSystem.AnAction
+import com.intellij.openapi.actionSystem.AnActionEvent
 
-open class Cluster(override val url: String): ICluster {
+class SetAsCurrentClusterAction: AnAction(Refresh) {
+
+    override fun actionPerformed(event: AnActionEvent) {
+        val selectedNode = event.getTree().getSelectedNode()
+        val element = selectedNode?.getDescriptor()?.element
+    }
 }
