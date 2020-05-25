@@ -18,10 +18,7 @@ import javax.swing.tree.TreePath
 class UseProjectAction: StructureTreeAction(Project::class.java) {
 
     override fun actionPerformed(event: AnActionEvent?, path: TreePath?, selectedNode: Any?) {
-        val project = selectedNode?.getElement()
-        if (project !is Project) {
-            return
-        }
-        getResourceModel(event?.project)?.setCurrentNamespace(project.metadata.name)
+        val project: Project = selectedNode?.getElement() ?: return
+        getResourceModel()?.setCurrentNamespace(project.metadata.name)
     }
 }
