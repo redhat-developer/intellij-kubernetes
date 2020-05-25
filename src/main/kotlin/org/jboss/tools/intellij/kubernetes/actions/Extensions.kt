@@ -45,3 +45,7 @@ fun JTree.getSelectedNode(): DefaultMutableTreeNode? {
 fun DefaultMutableTreeNode.getDescriptor(): TreeStructure.Descriptor<*>? {
     return this.userObject as? TreeStructure.Descriptor<*>
 }
+
+fun Any?.getElement(): Any? {
+    return (this as? DefaultMutableTreeNode)?.getDescriptor()?.element
+}

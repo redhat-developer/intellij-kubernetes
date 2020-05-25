@@ -32,6 +32,10 @@
                     id="org.jboss.tools.intellij.kubernetes.actions.UseNamespaceAction"
                     text="Use Namespace"
                     icon="AllIcons.Nodes.EmptyNode"/>
+            <action class="org.jboss.tools.intellij.kubernetes.actions.UseProjectAction"
+                    id="org.jboss.tools.intellij.kubernetes.actions.UseProjectAction"
+                    text="Use Project"
+                    icon="AllIcons.Nodes.EmptyNode"/>
             <action class="org.jboss.tools.intellij.kubernetes.actions.RefreshAction"
                     id="org.jboss.tools.intellij.kubernetes.actions.RefreshAction"
                     text="Refresh"
