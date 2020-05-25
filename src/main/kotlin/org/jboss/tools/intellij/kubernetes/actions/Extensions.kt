@@ -10,42 +10,22 @@
  ******************************************************************************/
 package org.jboss.tools.intellij.kubernetes.actions
 
-import com.intellij.ide.util.treeView.NodeDescriptor
 import com.intellij.openapi.actionSystem.AnAction
-import com.intellij.openapi.actionSystem.AnActionEvent
-import com.intellij.openapi.actionSystem.PlatformDataKeys
 import com.intellij.openapi.components.ServiceManager
 import com.intellij.openapi.project.Project
-import com.intellij.ui.treeStructure.Tree
 import org.jboss.tools.intellij.kubernetes.model.IResourceModel
 import org.jboss.tools.intellij.kubernetes.tree.TreeStructure
-import javax.swing.JTree
 import javax.swing.tree.DefaultMutableTreeNode
 
 
-fun AnActionEvent.getTree(): Tree {
-    return this.getData(PlatformDataKeys.CONTEXT_COMPONENT) as Tree
-}
-
-fun AnActionEvent.getSelectedNode(): DefaultMutableTreeNode? {
-    return getTree().getSelectedNode()
-}
-
-fun AnAction.getResourceModel(project: Project?): IResourceModel? {
-    if (project == null) {
-        return null
-    }
-    return ServiceManager.getService(project, IResourceModel::class.java)
-}
-
-fun JTree.getSelectedNode(): DefaultMutableTreeNode? {
-    return this.selectionModel.selectionPath?.lastPathComponent as DefaultMutableTreeNode
+fun AnAction.getResourceModel(): IResourceModel? {
+    return ServiceManager.getService(IResourceModel::class.java)
 }
 
 fun DefaultMutableTreeNode.getDescriptor(): TreeStructure.Descriptor<*>? {
     return this.userObject as? TreeStructure.Descriptor<*>
 }
 
-fun Any?.getElement(): Any? {
-    return (this as? DefaultMutableTreeNode)?.getDescriptor()?.element
+fun <T> Any.getElement(): T? {
+    return (this as? DefaultMutableTreeNode)?.getDescriptor()?.element as? T
 }

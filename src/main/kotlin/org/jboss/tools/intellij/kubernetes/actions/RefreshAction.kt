@@ -10,19 +10,17 @@
  ******************************************************************************/
 package org.jboss.tools.intellij.kubernetes.actions
 
-import com.intellij.icons.AllIcons.Actions.Refresh
-import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
-import com.intellij.ui.treeStructure.Tree
+import com.redhat.devtools.intellij.common.actions.StructureTreeAction
 import org.jboss.tools.intellij.kubernetes.model.IResourceModel
 import org.jboss.tools.intellij.kubernetes.tree.TreeStructure
+import javax.swing.tree.TreePath
 
-class RefreshAction: AnAction(Refresh) {
+class RefreshAction: StructureTreeAction(Any::class.java) {
 
-    override fun actionPerformed(event: AnActionEvent) {
-        val tree: Tree = event.getTree()
-        val element = tree.getSelectedNode()?.getDescriptor()?.element ?: return
-        val model = getResourceModel(getEventProject(event)) ?: return
+    override fun actionPerformed(event: AnActionEvent?, path: TreePath?, selectedNode: Any?) {
+        val element: Any = selectedNode?.getElement() ?: return
+        val model = getResourceModel() ?: return
         invalidate(element, model)
     }
 
