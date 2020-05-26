@@ -19,6 +19,7 @@ import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.never
 import com.nhaarman.mockitokotlin2.times
 import com.nhaarman.mockitokotlin2.verify
+import com.nhaarman.mockitokotlin2.whenever
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.NamedContext
 import io.fabric8.kubernetes.api.model.Namespace
@@ -27,7 +28,7 @@ import io.fabric8.kubernetes.client.KubernetesClient
 import io.fabric8.kubernetes.client.NamespacedKubernetesClient
 import org.assertj.core.api.Assertions.assertThat
 import org.jboss.tools.intellij.kubernetes.model.context.IActiveContext
-import org.jboss.tools.intellij.kubernetes.model.mocks.ClientMocks
+import org.jboss.tools.intellij.kubernetes.model.mocks.ClientMocks.namedContext
 import org.jboss.tools.intellij.kubernetes.model.mocks.Mocks.contextFactory
 import org.jboss.tools.intellij.kubernetes.model.mocks.Mocks.resource
 import org.jboss.tools.intellij.kubernetes.model.mocks.Mocks.context
@@ -43,9 +44,9 @@ class ResourceModelTest {
     private val contextFactory: (IModelChangeObservable, NamedContext?) -> IActiveContext<HasMetadata, KubernetesClient> =
             contextFactory(context)
 
-    private val context1 = ClientMocks.context("ctx1", "namespace1", "cluster1", "user1")
-    private val context2 = ClientMocks.context("ctx2", "namespace2", "cluster2", "user2")
-    private val context3 = ClientMocks.context("ctx3", "namespace3", "cluster3", "user3")
+    private val context1 = namedContext("ctx1", "namespace1", "cluster1", "user1")
+    private val context2 = namedContext("ctx2", "namespace2", "cluster2", "user2")
+    private val context3 = namedContext("ctx3", "namespace3", "cluster3", "user3")
     private val config: KubeConfigContexts = createKubeConfigContexts(
             context2,
             listOf(context1, context2, context3)
@@ -211,7 +212,7 @@ class ResourceModelTest {
     }
 
     @Test
-    fun `#currentContext should not create new context if there's no current context in kubeconfig`() {
+    fun `#getCurrentContext() should not create new active context if there's no current context in kubeconfig`() {
         // given
         val config: KubeConfigContexts = createKubeConfigContexts(
                 null,
@@ -222,6 +223,56 @@ class ResourceModelTest {
         model.currentContext
         // then
         verify(contextFactory, never()).invoke(any(), anyOrNull())
+    }
+
+    @Test
+    fun `#setCurrentContext(context) should not create new active context if setting (same) existing current context`() {
+        // given
+        val currentContext = model.currentContext
+        clearInvocations(contextFactory)
+        // when
+        model.setCurrentContext(currentContext!!)
+        // then
+        verify(contextFactory, never()).invoke(any(), anyOrNull())
+    }
+
+    @Test
+    fun `#setCurrentContext(context) should create new active context for given context`() {
+        // given
+        model.currentContext
+        clearInvocations(contextFactory)
+        // when
+        model.setCurrentContext(mock())
+        // then
+        verify(contextFactory).invoke(any(), anyOrNull())
+    }
+
+    @Test
+    fun `#setCurrentContext(context) should set current context`() {
+        // given
+        val currentContext: IActiveContext<*,*> = mock()
+        model.currentContext = currentContext
+        // when
+        model.setCurrentContext(mock())
+        // then
+        assertThat(model.currentContext).isNotEqualTo(currentContext)
+    }
+
+    @Test
+    fun `#setCurrentContext(context) should replace context in #allContexts`() {
+        // given
+        val newCurrentContext = context(client, namespace, context3)
+        model.allContexts // create all contexts
+        val currentContext = model.currentContext
+        assertThat(currentContext).isNotEqualTo(newCurrentContext)
+        assertThat(model.allContexts).contains(currentContext)
+        assertThat(model.allContexts).doesNotContain(newCurrentContext)
+        doReturn(newCurrentContext)
+                .whenever(contextFactory).invoke(any(), anyOrNull())
+        // when
+        model.setCurrentContext(newCurrentContext)
+        // then
+        assertThat(model.allContexts).contains(newCurrentContext)
     }
 
     private fun createKubeConfigContexts(currentContext: NamedContext?, allContexts: List<NamedContext>): KubeConfigContexts {

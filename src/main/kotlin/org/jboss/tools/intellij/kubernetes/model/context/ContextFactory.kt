@@ -12,6 +12,7 @@ package org.jboss.tools.intellij.kubernetes.model.context
 
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.NamedContext
+import io.fabric8.kubernetes.client.Config
 import io.fabric8.kubernetes.client.DefaultKubernetesClient
 import io.fabric8.kubernetes.client.KubernetesClient
 import io.fabric8.kubernetes.client.KubernetesClientException
@@ -23,7 +24,8 @@ import java.lang.RuntimeException
 class ContextFactory {
 
 	fun create(observable: IModelChangeObservable, context: NamedContext): IActiveContext<out HasMetadata, out KubernetesClient> {
-		val k8Client = DefaultKubernetesClient()
+		val config = Config.autoConfigure(context.name)
+		val k8Client = DefaultKubernetesClient(config)
 		try {
 			val osClient = k8Client.adapt(NamespacedOpenShiftClient::class.java)
 			return OpenShiftContext(

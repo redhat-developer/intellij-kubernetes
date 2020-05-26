@@ -14,7 +14,6 @@ import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.NamedContext
 import io.fabric8.kubernetes.client.KubernetesClient
 import io.fabric8.kubernetes.client.KubernetesClientException
-import org.jboss.tools.intellij.kubernetes.model.context.ActiveContext
 import org.jboss.tools.intellij.kubernetes.model.context.ContextFactory
 import org.jboss.tools.intellij.kubernetes.model.context.IActiveContext
 import org.jboss.tools.intellij.kubernetes.model.context.IContext
@@ -25,6 +24,7 @@ interface IResourceModel {
     val allContexts: List<IContext>
     val currentContext: IActiveContext<out HasMetadata, out KubernetesClient>?
     fun getClient(): KubernetesClient?
+    fun setCurrentContext(context: IContext)
     fun setCurrentNamespace(namespace: String)
     fun getCurrentNamespace(): String?
     fun <R: HasMetadata> getResources(kind: Class<R>): Collection<R>
@@ -62,6 +62,26 @@ class ResourceModel(
             }
             return field
         }
+
+    override fun setCurrentContext(context: IContext) {
+        if (context == currentContext) {
+            return
+        }
+        closeCurrentContext()
+        val activeContext = createActiveContext(context.context)
+        currentContext = activeContext
+        replaceInAllContexts(activeContext)
+        observable.fireModified(activeContext)
+    }
+
+    private fun replaceInAllContexts(activeContext: IActiveContext<*,*>) {
+        val contextInAll = allContexts.find { it.context == activeContext.context } ?: return
+        val indexOf = allContexts.indexOf(contextInAll)
+        if (indexOf < 0) {
+            return
+        }
+        allContexts[indexOf] = activeContext
+    }
 
     private fun createActiveContext(namedContext: NamedContext): IActiveContext<out HasMetadata, out KubernetesClient> {
         val context = contextFactory(observable, namedContext)
@@ -114,6 +134,7 @@ class ResourceModel(
     override fun invalidate(element: Any?) {
         when(element) {
             is ResourceModel -> invalidate()
+            is IActiveContext<*, *> -> invalidate(element)
             is Class<*> -> invalidate(element)
             is HasMetadata -> invalidate(element)
         }
@@ -123,6 +144,11 @@ class ResourceModel(
         closeCurrentContext()
         allContexts.clear()
         observable.fireModified(this)
+    }
+
+    private fun invalidate(context: IActiveContext<out HasMetadata, out KubernetesClient>) {
+        context.invalidate()
+        observable.fireModified(context)
     }
 
     private fun invalidate(kind: Class<*>) {

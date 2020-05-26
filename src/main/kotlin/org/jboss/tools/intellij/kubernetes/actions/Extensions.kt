@@ -12,7 +12,6 @@ package org.jboss.tools.intellij.kubernetes.actions
 
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.components.ServiceManager
-import com.intellij.openapi.project.Project
 import org.jboss.tools.intellij.kubernetes.model.IResourceModel
 import org.jboss.tools.intellij.kubernetes.tree.TreeStructure
 import javax.swing.tree.DefaultMutableTreeNode
@@ -22,8 +21,8 @@ fun AnAction.getResourceModel(): IResourceModel? {
     return ServiceManager.getService(IResourceModel::class.java)
 }
 
-fun DefaultMutableTreeNode.getDescriptor(): TreeStructure.Descriptor<*>? {
-    return this.userObject as? TreeStructure.Descriptor<*>
+fun Any?.getDescriptor(): TreeStructure.Descriptor<*>? {
+    return (this as? DefaultMutableTreeNode)?.userObject as? TreeStructure.Descriptor<*>
 }
 
 fun <T> Any.getElement(): T? {
