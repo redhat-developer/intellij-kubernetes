@@ -156,6 +156,10 @@ open class TreeStructure(private val model: IResourceModel,
             // change in resource cathegory is notified as change of resource kind
             return this.element.kind == element
         }
+
+        override fun invalidate() {
+            model.invalidate(element.kind)
+        }
     }
 
     private class ErrorDescriptor(exception: java.lang.Exception, parent: NodeDescriptor<*>?, model: IResourceModel)
@@ -193,11 +197,7 @@ open class TreeStructure(private val model: IResourceModel,
         }
 
         open fun invalidate() {
-            getResourceModel().invalidate(element)
-        }
-
-        protected fun getResourceModel(): IResourceModel {
-            return ServiceManager.getService(myProject, IResourceModel::class.java)
+            model.invalidate(element)
         }
     }
 

@@ -12,12 +12,13 @@ package org.jboss.tools.intellij.kubernetes.actions
 
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.redhat.devtools.intellij.common.actions.StructureTreeAction
+import org.jboss.tools.intellij.kubernetes.model.context.IContext
 import javax.swing.tree.TreePath
 
-class RefreshAction: StructureTreeAction(Any::class.java) {
+class SetAsCurrentClusterAction: StructureTreeAction(IContext::class.java) {
 
     override fun actionPerformed(event: AnActionEvent?, path: TreePath?, selectedNode: Any?) {
-        val model = getResourceModel() ?: return
-        selectedNode?.getDescriptor()?.invalidate()
+        val context: IContext = selectedNode?.getElement() ?: return
+        getResourceModel()?.setCurrentContext(context)
     }
 }

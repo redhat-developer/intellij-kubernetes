@@ -121,15 +121,23 @@ object ClientMocks {
             .doReturn(podResource)
     }
 
-    fun context(name: String, namespace: String, cluster: String, user: String): NamedContext {
-        val context: Context = mock {
-            on { this.namespace } doReturn namespace
-            on { this.cluster } doReturn cluster
-            on { this.user } doReturn user
-        }
+    fun namedContext(name: String, namespace: String, cluster: String, user: String): NamedContext {
+        val context: Context = kubeconfigContext(namespace, cluster, user)
+        return namedContext(name, context)
+    }
+
+    fun namedContext(name: String, context: Context): NamedContext {
         return mock {
             on { this.name } doReturn name
             on { this.context } doReturn context
+        }
+    }
+
+    fun kubeconfigContext(namespace: String, cluster: String, user: String): Context {
+        return mock {
+            on { this.namespace } doReturn namespace
+            on { this.cluster } doReturn cluster
+            on { this.user } doReturn user
         }
     }
 }

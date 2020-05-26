@@ -37,7 +37,7 @@ object Mocks {
         }
     }
 
-    fun context(client: NamespacedKubernetesClient, currentNamespace: Namespace): IActiveContext<HasMetadata, KubernetesClient> {
+    fun context(client: NamespacedKubernetesClient, currentNamespace: Namespace, context: NamedContext? = null): IActiveContext<HasMetadata, KubernetesClient> {
         return mock {
             doNothing()
                 .whenever(mock).startWatch()
@@ -45,6 +45,8 @@ object Mocks {
                 .whenever(mock).client
             doReturn(currentNamespace.metadata.name)
                 .whenever(mock).getCurrentNamespace()
+            doReturn(context)
+                    .whenever(mock).context
         }
     }
 
