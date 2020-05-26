@@ -13,8 +13,12 @@ package org.jboss.tools.intellij.kubernetes.model.context
 import io.fabric8.kubernetes.api.model.NamedContext
 
 interface IContext {
-	val context: NamedContext?
+	val context: NamedContext
+	fun invalidate()
 }
 
-open class Context(override val context: NamedContext?): IContext {
+open class Context(override val context: NamedContext): IContext {
+
+	override fun invalidate() {
+	}
 }

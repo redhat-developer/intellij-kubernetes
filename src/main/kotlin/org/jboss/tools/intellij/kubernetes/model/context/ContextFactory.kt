@@ -22,7 +22,7 @@ import java.lang.RuntimeException
 
 class ContextFactory {
 
-	fun create(observable: IModelChangeObservable, context: NamedContext?): IActiveContext<out HasMetadata, out KubernetesClient> {
+	fun create(observable: IModelChangeObservable, context: NamedContext): IActiveContext<out HasMetadata, out KubernetesClient> {
 		val k8Client = DefaultKubernetesClient()
 		try {
 			val osClient = k8Client.adapt(NamespacedOpenShiftClient::class.java)

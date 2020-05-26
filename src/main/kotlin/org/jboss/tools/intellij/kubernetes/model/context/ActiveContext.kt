@@ -30,7 +30,7 @@ import org.jboss.tools.intellij.kubernetes.model.resource.IResourcesProviderFact
 abstract class ActiveContext<N: HasMetadata, C: KubernetesClient>(
     private val modelChange: IModelChangeObservable,
     override val client: C,
-    context: NamedContext?
+    context: NamedContext
 ) : Context(context), IActiveContext<N, C> {
 
     private val extensionName : ExtensionPointName<IResourcesProviderFactory<HasMetadata, C, IResourcesProvider<HasMetadata>>> =

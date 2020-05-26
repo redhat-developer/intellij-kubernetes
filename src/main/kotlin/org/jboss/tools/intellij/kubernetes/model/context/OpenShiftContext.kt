@@ -23,7 +23,7 @@ import org.jboss.tools.intellij.kubernetes.model.resource.ProjectsProvider
 open class OpenShiftContext(
     modelChange: IModelChangeObservable,
     client: NamespacedOpenShiftClient,
-	context: NamedContext?
+	context: NamedContext
 ) : ActiveContext<Project, NamespacedOpenShiftClient>(modelChange, client, context) {
 
 	override fun getInternalResourceProviders(client: NamespacedOpenShiftClient): List<IResourcesProvider<out HasMetadata>> {

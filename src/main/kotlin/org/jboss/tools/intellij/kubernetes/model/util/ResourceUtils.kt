@@ -14,7 +14,7 @@ import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.client.utils.KubernetesResourceUtil
 
 /**
- * return {@code true} if the given resources are equal.
+ * returns {@code true} if the given resources are equal.
  * These are considered equal if their name, namespace and kind are equal.
  */
 fun areEqual(thisResource: HasMetadata, thatResource: HasMetadata): Boolean {
