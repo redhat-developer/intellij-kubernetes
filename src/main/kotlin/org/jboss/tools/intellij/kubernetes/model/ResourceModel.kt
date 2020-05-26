@@ -25,7 +25,6 @@ interface IResourceModel {
     val allContexts: List<IContext>
     val currentContext: IActiveContext<out HasMetadata, out KubernetesClient>?
     fun getClient(): KubernetesClient?
-    fun setCurrentContext(context: IContext?)
     fun setCurrentNamespace(namespace: String)
     fun getCurrentNamespace(): String?
     fun <R: HasMetadata> getResources(kind: Class<R>): Collection<R>
@@ -36,7 +35,7 @@ interface IResourceModel {
 
 class ResourceModel(
     private val observable: IModelChangeObservable = ModelChangeObservable(),
-    private val contextFactory: (IModelChangeObservable, NamedContext?) -> IActiveContext<out HasMetadata, out KubernetesClient> =
+    private val contextFactory: (IModelChangeObservable, NamedContext) -> IActiveContext<out HasMetadata, out KubernetesClient> =
         ContextFactory()::create,
     private val config: KubeConfigContexts = KubeConfigContexts()
 ) : IResourceModel {
@@ -46,7 +45,7 @@ class ResourceModel(
             if (field.isEmpty()) {
                 field.addAll(config.contexts.mapNotNull {
                     if (config.isCurrent(it)) {
-                        currentContext ?: createContext(it)
+                        currentContext ?: createActiveContext(it)
                     } else {
                         Context(it)
                     }
@@ -57,25 +56,22 @@ class ResourceModel(
 
     override var currentContext: IActiveContext<out HasMetadata, out KubernetesClient>? = null
         get() {
-            if (field == null) {
-                field = createContext(config.current)
+            if (field == null
+                    && config.current != null) {
+                field = createActiveContext(config.current!!)
             }
             return field
         }
 
-    override fun setCurrentContext(context: IContext?) {
-
-    }
-
-    private fun createContext(namedContext: NamedContext?): IActiveContext<out HasMetadata, out KubernetesClient> {
+    private fun createActiveContext(namedContext: NamedContext): IActiveContext<out HasMetadata, out KubernetesClient> {
         val context = contextFactory(observable, namedContext)
         context.startWatch()
-        this.currentContext = context
         return context
     }
 
     private fun closeCurrentContext() {
-        currentContext?.close()
+        currentContext?.close() ?: return
+        observable.fireModified(currentContext!!)
         currentContext = null
     }
 

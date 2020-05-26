@@ -30,7 +30,7 @@ class KubeConfigContexts {
 			if (config == null) {
 				return null
 			}
-			val context = KubeConfigUtils.getCurrentContext(config)
+			val context = KubeConfigUtils.getCurrentContext(config) ?: return null
 			return contexts.find { it.context.user == context.user
 					&& it.context.user == context.user
 					&& it.context.cluster == context.cluster }

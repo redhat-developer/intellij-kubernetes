@@ -330,7 +330,7 @@ class KubernetesContextTest {
         observable: ModelChangeObservable,
         client: NamespacedKubernetesClient,
         override val resourceProviders: Map<String, IResourcesProvider<out HasMetadata>>
-    ) : KubernetesContext(observable, client, null) {
+    ) : KubernetesContext(observable, client, mock()) {
 
         public override var watch = mock<ResourceWatch>()
 

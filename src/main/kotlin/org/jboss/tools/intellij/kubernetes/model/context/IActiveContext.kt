@@ -21,7 +21,6 @@ interface IActiveContext<N: HasMetadata, C: KubernetesClient>: IContext {
     fun <T: HasMetadata> getResources(kind: Class<T>): Collection<T>
     fun add(resource: HasMetadata): Boolean
     fun remove(resource: HasMetadata): Boolean
-    fun invalidate()
     fun invalidate(kind: Class<out HasMetadata>)
     fun invalidate(resource: HasMetadata)
     fun startWatch()

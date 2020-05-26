@@ -204,18 +204,33 @@ class ResourceModelTest {
     @Test
     fun `#currentContext should create new context if there's no context yet`() {
         // given
-        model.setCurrentContext(null as? IActiveContext<*,*>)
         // when
         model.currentContext
         // then
         verify(contextFactory).invoke(any(), anyOrNull())
     }
 
-    private fun createKubeConfigContexts(currentContext: NamedContext, allContexts: List<NamedContext>): KubeConfigContexts {
+    @Test
+    fun `#currentContext should not create new context if there's no current context in kubeconfig`() {
+        // given
+        val config: KubeConfigContexts = createKubeConfigContexts(
+                null,
+                listOf(context1, context2, context3)
+        )
+        val model: ResourceModel = ResourceModel(modelChange, contextFactory, config)
+        // when
+        model.currentContext
+        // then
+        verify(contextFactory, never()).invoke(any(), anyOrNull())
+    }
+
+    private fun createKubeConfigContexts(currentContext: NamedContext?, allContexts: List<NamedContext>): KubeConfigContexts {
         return mock() {
             on { contexts } doReturn allContexts
             on { current } doReturn currentContext
-            on { isCurrent(eq(currentContext)) } doReturn true
+            if (currentContext != null) {
+                on { isCurrent(eq(currentContext)) } doReturn true
+            }
         }
     }
 

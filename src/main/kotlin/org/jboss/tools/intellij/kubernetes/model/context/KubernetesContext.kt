@@ -22,7 +22,7 @@ import org.jboss.tools.intellij.kubernetes.model.resource.PodsProvider
 open class KubernetesContext(
 		modelChange: IModelChangeObservable,
 		client: NamespacedKubernetesClient,
-		context: NamedContext?
+		context: NamedContext
 ) : ActiveContext<Namespace, NamespacedKubernetesClient>(modelChange, client, context) {
 
 	override fun getInternalResourceProviders(client: NamespacedKubernetesClient): List<IResourcesProvider<out HasMetadata>> {
