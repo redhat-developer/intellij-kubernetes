@@ -16,8 +16,8 @@ import io.fabric8.kubernetes.api.model.Namespace
 import io.fabric8.kubernetes.client.NamespacedKubernetesClient
 import org.jboss.tools.intellij.kubernetes.model.IModelChangeObservable
 import org.jboss.tools.intellij.kubernetes.model.resource.IResourcesProvider
-import org.jboss.tools.intellij.kubernetes.model.resource.NamespacesProvider
-import org.jboss.tools.intellij.kubernetes.model.resource.PodsProvider
+import org.jboss.tools.intellij.kubernetes.model.resource.kubernetes.NamespacesProvider
+import org.jboss.tools.intellij.kubernetes.model.resource.kubernetes.PodsProvider
 
 open class KubernetesContext(
 		modelChange: IModelChangeObservable,

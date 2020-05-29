@@ -16,9 +16,10 @@ import io.fabric8.openshift.api.model.Project
 import io.fabric8.openshift.client.NamespacedOpenShiftClient
 import org.jboss.tools.intellij.kubernetes.model.IModelChangeObservable
 import org.jboss.tools.intellij.kubernetes.model.resource.IResourcesProvider
-import org.jboss.tools.intellij.kubernetes.model.resource.NamespacesProvider
-import org.jboss.tools.intellij.kubernetes.model.resource.PodsProvider
-import org.jboss.tools.intellij.kubernetes.model.resource.ProjectsProvider
+import org.jboss.tools.intellij.kubernetes.model.resource.kubernetes.NamespacesProvider
+import org.jboss.tools.intellij.kubernetes.model.resource.kubernetes.PodsProvider
+import org.jboss.tools.intellij.kubernetes.model.resource.openshift.ImageStreamsProvider
+import org.jboss.tools.intellij.kubernetes.model.resource.openshift.ProjectsProvider
 
 open class OpenShiftContext(
     modelChange: IModelChangeObservable,
@@ -30,7 +31,8 @@ open class OpenShiftContext(
 		return listOf(
 				NamespacesProvider(client),
 				PodsProvider(client),
-				ProjectsProvider(client)
+				ProjectsProvider(client),
+				ImageStreamsProvider(client)
 		)
 	}
 

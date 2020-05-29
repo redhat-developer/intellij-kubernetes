@@ -15,6 +15,7 @@ import org.jboss.tools.intellij.kubernetes.model.mocks.ClientMocks.NAMESPACE1
 import org.jboss.tools.intellij.kubernetes.model.mocks.ClientMocks.NAMESPACE2
 import org.jboss.tools.intellij.kubernetes.model.mocks.ClientMocks.NAMESPACE3
 import org.jboss.tools.intellij.kubernetes.model.mocks.ClientMocks.client
+import org.jboss.tools.intellij.kubernetes.model.resource.kubernetes.NamespacesProvider
 import org.junit.Test
 
 class NamespacesProviderTest {
