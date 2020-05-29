@@ -28,12 +28,16 @@ import io.fabric8.kubernetes.client.KubernetesClient
 import io.fabric8.kubernetes.client.NamespacedKubernetesClient
 import org.assertj.core.api.Assertions.assertThat
 import org.jboss.tools.intellij.kubernetes.model.context.IActiveContext
+import org.jboss.tools.intellij.kubernetes.model.mocks.ClientMocks.POD1
+import org.jboss.tools.intellij.kubernetes.model.mocks.ClientMocks.POD2
+import org.jboss.tools.intellij.kubernetes.model.mocks.ClientMocks.POD3
 import org.jboss.tools.intellij.kubernetes.model.mocks.ClientMocks.namedContext
 import org.jboss.tools.intellij.kubernetes.model.mocks.Mocks.contextFactory
 import org.jboss.tools.intellij.kubernetes.model.mocks.Mocks.resource
 import org.jboss.tools.intellij.kubernetes.model.mocks.Mocks.context
 import org.jboss.tools.intellij.kubernetes.model.util.KubeConfigContexts
 import org.junit.Test
+import java.util.function.Predicate
 
 class ResourceModelTest {
 
@@ -61,6 +65,21 @@ class ResourceModelTest {
         model.getResources(Pod::class.java)
         // then
         verify(context).getResources(Pod::class.java)
+    }
+
+    @Test
+    fun `#getResources(kind) should call predicate#test for each resource that is returned from context`() {
+        // given
+        val filter = mock<Predicate<Pod>>()
+        whenever(context.getResources(any<Class<HasMetadata>>()))
+                .thenReturn(listOf(
+                        POD1,
+                        POD2,
+                        POD3))
+        // when
+        model.getResources(Pod::class.java, filter)
+        // then
+        verify(filter, times(3)).test(any())
     }
 
     @Test

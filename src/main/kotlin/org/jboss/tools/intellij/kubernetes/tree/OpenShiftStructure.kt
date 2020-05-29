@@ -12,19 +12,22 @@ package org.jboss.tools.intellij.kubernetes.tree
 
 import com.intellij.ide.util.treeView.NodeDescriptor
 import com.intellij.openapi.util.IconLoader
+import io.fabric8.kubernetes.api.model.ReplicationController
+import io.fabric8.openshift.api.model.DeploymentConfig
 import io.fabric8.openshift.api.model.ImageStream
 import io.fabric8.openshift.api.model.Project
 import org.jboss.tools.intellij.kubernetes.model.IResourceModel
 import org.jboss.tools.intellij.kubernetes.model.ResourceException
 import org.jboss.tools.intellij.kubernetes.model.context.OpenShiftContext
-import org.jboss.tools.intellij.kubernetes.model.resource.openshift.ImageStreamsProvider
-import org.jboss.tools.intellij.kubernetes.model.resource.openshift.ProjectsProvider
+import org.jboss.tools.intellij.kubernetes.model.resource.openshift.DeploymentConfigFor
+import org.jboss.tools.intellij.kubernetes.model.resource.openshift.ReplicationControllerFor
 
 class OpenShiftStructure(model: IResourceModel): AbstractTreeStructureContribution(model) {
 
     companion object Folders {
         val PROJECTS = TreeStructure.Folder("Projects", Project::class.java)
         val IMAGESTREAMS = TreeStructure.Folder("ImageStreams", ImageStream::class.java)
+        val DEPLOYMENTCONFIGS = TreeStructure.Folder("DeploymentConfigs", DeploymentConfig::class.java)
     }
 
     override fun canContribute(): Boolean {
@@ -36,9 +39,15 @@ class OpenShiftStructure(model: IResourceModel): AbstractTreeStructureContributi
             getRootElement() ->
                 listOf(PROJECTS)
             KubernetesStructure.WORKLOADS ->
-                listOf<Any>(IMAGESTREAMS)
+                listOf<Any>(
+                        IMAGESTREAMS,
+                        DEPLOYMENTCONFIGS)
+            is DeploymentConfig ->
+                model.getResources(ReplicationController::class.java,
+                        ReplicationControllerFor(element))
             PROJECTS,
-            IMAGESTREAMS ->
+            IMAGESTREAMS,
+            DEPLOYMENTCONFIGS ->
                 getResources((element as TreeStructure.Folder).kind)
             else -> emptyList()
         }
@@ -57,6 +66,13 @@ class OpenShiftStructure(model: IResourceModel): AbstractTreeStructureContributi
                     IMAGESTREAMS
                 IMAGESTREAMS ->
                     KubernetesStructure.WORKLOADS
+                is DeploymentConfig ->
+                    DEPLOYMENTCONFIGS
+                DEPLOYMENTCONFIGS ->
+                    KubernetesStructure.WORKLOADS
+                is ReplicationController ->
+                    model.getResources(DeploymentConfig::class.java,
+                            DeploymentConfigFor(element))
                 else ->
                     getRootElement()
             }
@@ -70,6 +86,8 @@ class OpenShiftStructure(model: IResourceModel): AbstractTreeStructureContributi
             is OpenShiftContext -> OpenShiftContextDescriptor(element, model)
             is Project -> ProjectDescriptor(element, parent, model)
             is ImageStream -> ImageStreamDescriptor(element, parent, model)
+            is DeploymentConfig -> DeploymentConfigDescriptor(element, parent, model)
+            is ReplicationController -> ReplicationControllerDescriptor(element, parent, model)
             else -> null
         }
     }
@@ -95,6 +113,22 @@ class OpenShiftStructure(model: IResourceModel): AbstractTreeStructureContributi
     )
 
     private class ImageStreamDescriptor(element: ImageStream, parent: NodeDescriptor<*>?, model: IResourceModel) : TreeStructure.Descriptor<ImageStream>(
+            element,
+            parent,
+            { element.metadata.name },
+            IconLoader.getIcon("/icons/project.png"),
+            model
+    )
+
+    private class DeploymentConfigDescriptor(element: DeploymentConfig, parent: NodeDescriptor<*>?, model: IResourceModel) : TreeStructure.Descriptor<DeploymentConfig>(
+            element,
+            parent,
+            { element.metadata.name },
+            IconLoader.getIcon("/icons/project.png"),
+            model
+    )
+
+    private class ReplicationControllerDescriptor(element: ReplicationController, parent: NodeDescriptor<*>?, model: IResourceModel) : TreeStructure.Descriptor<ReplicationController>(
             element,
             parent,
             { element.metadata.name },

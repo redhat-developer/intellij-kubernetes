@@ -19,6 +19,7 @@ import org.jboss.tools.intellij.kubernetes.model.context.IActiveContext
 import org.jboss.tools.intellij.kubernetes.model.context.IContext
 import org.jboss.tools.intellij.kubernetes.model.context.Context
 import org.jboss.tools.intellij.kubernetes.model.util.KubeConfigContexts
+import java.util.function.Predicate
 
 interface IResourceModel {
     val allContexts: List<IContext>
@@ -28,6 +29,7 @@ interface IResourceModel {
     fun setCurrentNamespace(namespace: String)
     fun getCurrentNamespace(): String?
     fun <R: HasMetadata> getResources(kind: Class<R>): Collection<R>
+    fun <R: HasMetadata> getResources(kind: Class<R>, predicate: Predicate<R>): Collection<R>
     fun getKind(resource: HasMetadata): Class<out HasMetadata>
     fun invalidate(element: Any?)
     fun addListener(listener: ModelChangeObservable.IResourceChangeListener)
@@ -114,6 +116,10 @@ class ResourceModel(
             throw ResourceException(
                 "Could not get current namespace for server ${currentContext?.client?.masterUrl}", e)
         }
+    }
+
+    override fun <R: HasMetadata> getResources(kind: Class<R>, filter: Predicate<R>): Collection<R> {
+        return getResources(kind).filter { filter.test(it) }
     }
 
     override fun <R: HasMetadata> getResources(kind: Class<R>): Collection<R> {

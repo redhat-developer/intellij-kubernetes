@@ -26,6 +26,7 @@ import org.jboss.tools.intellij.kubernetes.model.resource.INamespacedResourcesPr
 import org.jboss.tools.intellij.kubernetes.model.resource.INonNamespacedResourcesProvider
 import org.jboss.tools.intellij.kubernetes.model.resource.IResourcesProvider
 import org.jboss.tools.intellij.kubernetes.model.resource.IResourcesProviderFactory
+import java.util.function.Predicate
 
 abstract class ActiveContext<N: HasMetadata, C: KubernetesClient>(
     private val modelChange: IModelChangeObservable,
