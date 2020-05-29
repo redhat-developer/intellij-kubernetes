@@ -18,8 +18,10 @@ import org.jboss.tools.intellij.kubernetes.model.IModelChangeObservable
 import org.jboss.tools.intellij.kubernetes.model.resource.IResourcesProvider
 import org.jboss.tools.intellij.kubernetes.model.resource.kubernetes.NamespacesProvider
 import org.jboss.tools.intellij.kubernetes.model.resource.kubernetes.PodsProvider
+import org.jboss.tools.intellij.kubernetes.model.resource.openshift.DeploymentConfigsProvider
 import org.jboss.tools.intellij.kubernetes.model.resource.openshift.ImageStreamsProvider
 import org.jboss.tools.intellij.kubernetes.model.resource.openshift.ProjectsProvider
+import org.jboss.tools.intellij.kubernetes.model.resource.openshift.ReplicationControllersProvider
 
 open class OpenShiftContext(
     modelChange: IModelChangeObservable,
@@ -32,7 +34,9 @@ open class OpenShiftContext(
 				NamespacesProvider(client),
 				PodsProvider(client),
 				ProjectsProvider(client),
-				ImageStreamsProvider(client)
+				ImageStreamsProvider(client),
+				DeploymentConfigsProvider(client),
+				ReplicationControllersProvider(client)
 		)
 	}
 
