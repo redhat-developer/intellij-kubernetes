@@ -8,29 +8,29 @@
  * Contributors:
  * Red Hat, Inc. - initial API and implementation
  ******************************************************************************/
-package org.jboss.tools.intellij.kubernetes.model.resource
+package org.jboss.tools.intellij.kubernetes.model.resource.kubernetes
 
-import io.fabric8.kubernetes.api.model.HasMetadata
-import io.fabric8.kubernetes.api.model.Pod
+import io.fabric8.kubernetes.api.model.Namespace
 import io.fabric8.kubernetes.client.KubernetesClient
 import io.fabric8.kubernetes.client.Watch
 import io.fabric8.kubernetes.client.Watcher
 import io.fabric8.kubernetes.client.dsl.Watchable
+import org.jboss.tools.intellij.kubernetes.model.resource.NonNamespacedResourcesProvider
 
-open class PodsProvider(client: KubernetesClient)
-    : NamespacedResourcesProvider<Pod, KubernetesClient>(client) {
+class NamespacesProvider(client: KubernetesClient)
+    : NonNamespacedResourcesProvider<Namespace, KubernetesClient>(client) {
 
     companion object {
-        val KIND = Pod::class.java;
+        val KIND = Namespace::class.java
     }
 
     override val kind = KIND
 
-    override fun loadAllResources(namespace: String): List<Pod> {
-        return client.pods().inNamespace(namespace).list().items
+    override fun loadAllResources(): List<Namespace> {
+        return client.namespaces().list().items
     }
 
-    override fun getWatchableResource(namespace: String): () -> Watchable<Watch, Watcher<Pod>>? {
-        return { client.pods().inNamespace(namespace) }
+    override fun getWatchableResource(): () -> Watchable<Watch, Watcher<Namespace>>? {
+        return { client.namespaces() }
     }
 }

@@ -12,16 +12,19 @@ package org.jboss.tools.intellij.kubernetes.tree
 
 import com.intellij.ide.util.treeView.NodeDescriptor
 import com.intellij.openapi.util.IconLoader
+import io.fabric8.openshift.api.model.ImageStream
 import io.fabric8.openshift.api.model.Project
 import org.jboss.tools.intellij.kubernetes.model.IResourceModel
 import org.jboss.tools.intellij.kubernetes.model.ResourceException
 import org.jboss.tools.intellij.kubernetes.model.context.OpenShiftContext
-import org.jboss.tools.intellij.kubernetes.model.resource.ProjectsProvider
+import org.jboss.tools.intellij.kubernetes.model.resource.openshift.ImageStreamsProvider
+import org.jboss.tools.intellij.kubernetes.model.resource.openshift.ProjectsProvider
 
 class OpenShiftStructure(model: IResourceModel): AbstractTreeStructureContribution(model) {
 
     companion object Folders {
         val PROJECTS = TreeStructure.Folder("Projects", Project::class.java)
+        val IMAGESTREAMS = TreeStructure.Folder("ImageStreams", ImageStream::class.java)
     }
 
     override fun canContribute(): Boolean {
@@ -32,8 +35,11 @@ class OpenShiftStructure(model: IResourceModel): AbstractTreeStructureContributi
         return when (element) {
             getRootElement() ->
                 listOf(PROJECTS)
-            PROJECTS ->
-                model.getResources(ProjectsProvider.KIND)
+            KubernetesStructure.WORKLOADS ->
+                listOf<Any>(IMAGESTREAMS)
+            PROJECTS,
+            IMAGESTREAMS ->
+                getResources((element as TreeStructure.Folder).kind)
             else -> emptyList()
         }
     }
@@ -47,6 +53,10 @@ class OpenShiftStructure(model: IResourceModel): AbstractTreeStructureContributi
                     PROJECTS
                 PROJECTS ->
                     getRootElement()
+                is ImageStream ->
+                    IMAGESTREAMS
+                IMAGESTREAMS ->
+                    KubernetesStructure.WORKLOADS
                 else ->
                     getRootElement()
             }
@@ -59,6 +69,7 @@ class OpenShiftStructure(model: IResourceModel): AbstractTreeStructureContributi
         return when(element) {
             is OpenShiftContext -> OpenShiftContextDescriptor(element, model)
             is Project -> ProjectDescriptor(element, parent, model)
+            is ImageStream -> ImageStreamDescriptor(element, parent, model)
             else -> null
         }
     }
@@ -83,4 +94,11 @@ class OpenShiftStructure(model: IResourceModel): AbstractTreeStructureContributi
             model
     )
 
+    private class ImageStreamDescriptor(element: ImageStream, parent: NodeDescriptor<*>?, model: IResourceModel) : TreeStructure.Descriptor<ImageStream>(
+            element,
+            parent,
+            { element.metadata.name },
+            IconLoader.getIcon("/icons/project.png"),
+            model
+    )
 }

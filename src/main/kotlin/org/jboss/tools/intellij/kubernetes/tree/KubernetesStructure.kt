@@ -39,7 +39,7 @@ class KubernetesStructure(model: IResourceModel): AbstractTreeStructureContribut
                     WORKLOADS
                 )
             NODES ->
-                listOf<Any>()
+                listOf()
             WORKLOADS ->
                 listOf<Any>(PODS)
             NAMESPACES,
