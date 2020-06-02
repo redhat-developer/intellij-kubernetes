@@ -17,6 +17,7 @@ import io.fabric8.kubernetes.client.NamespacedKubernetesClient
 import org.jboss.tools.intellij.kubernetes.model.IModelChangeObservable
 import org.jboss.tools.intellij.kubernetes.model.resource.IResourcesProvider
 import org.jboss.tools.intellij.kubernetes.model.resource.kubernetes.NamespacesProvider
+import org.jboss.tools.intellij.kubernetes.model.resource.kubernetes.NodesProvider
 import org.jboss.tools.intellij.kubernetes.model.resource.kubernetes.PodsProvider
 
 open class KubernetesContext(
@@ -28,6 +29,7 @@ open class KubernetesContext(
 	override fun getInternalResourceProviders(client: NamespacedKubernetesClient): List<IResourcesProvider<out HasMetadata>> {
 		return listOf<IResourcesProvider<out HasMetadata>>(
 				NamespacesProvider(client),
+				NodesProvider(client),
 				PodsProvider(client)
 		)
 	}

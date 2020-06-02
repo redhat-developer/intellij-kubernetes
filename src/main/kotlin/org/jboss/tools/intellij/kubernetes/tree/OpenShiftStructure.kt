@@ -12,6 +12,7 @@ package org.jboss.tools.intellij.kubernetes.tree
 
 import com.intellij.ide.util.treeView.NodeDescriptor
 import com.intellij.openapi.util.IconLoader
+import io.fabric8.kubernetes.api.model.Node
 import io.fabric8.kubernetes.api.model.ReplicationController
 import io.fabric8.openshift.api.model.DeploymentConfig
 import io.fabric8.openshift.api.model.ImageStream
@@ -21,6 +22,8 @@ import org.jboss.tools.intellij.kubernetes.model.ResourceException
 import org.jboss.tools.intellij.kubernetes.model.context.OpenShiftContext
 import org.jboss.tools.intellij.kubernetes.model.resource.openshift.DeploymentConfigFor
 import org.jboss.tools.intellij.kubernetes.model.resource.openshift.ReplicationControllerFor
+import org.jboss.tools.intellij.kubernetes.tree.KubernetesStructure.Folders.NODES
+import org.jboss.tools.intellij.kubernetes.tree.KubernetesStructure.Folders.WORKLOADS
 
 class OpenShiftStructure(model: IResourceModel): AbstractTreeStructureContribution(model) {
 
@@ -38,7 +41,7 @@ class OpenShiftStructure(model: IResourceModel): AbstractTreeStructureContributi
         return when (element) {
             getRootElement() ->
                 listOf(PROJECTS)
-            KubernetesStructure.WORKLOADS ->
+            WORKLOADS ->
                 listOf<Any>(
                         IMAGESTREAMS,
                         DEPLOYMENTCONFIGS)
@@ -62,14 +65,18 @@ class OpenShiftStructure(model: IResourceModel): AbstractTreeStructureContributi
                     PROJECTS
                 PROJECTS ->
                     getRootElement()
+                is Node ->
+                    NODES
+                NODES ->
+                    getRootElement()
                 is ImageStream ->
                     IMAGESTREAMS
                 IMAGESTREAMS ->
-                    KubernetesStructure.WORKLOADS
+                    WORKLOADS
                 is DeploymentConfig ->
                     DEPLOYMENTCONFIGS
                 DEPLOYMENTCONFIGS ->
-                    KubernetesStructure.WORKLOADS
+                    WORKLOADS
                 is ReplicationController ->
                     model.getResources(DeploymentConfig::class.java,
                             DeploymentConfigFor(element))

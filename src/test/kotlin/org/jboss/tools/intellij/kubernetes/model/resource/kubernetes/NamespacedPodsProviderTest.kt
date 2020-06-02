@@ -8,7 +8,7 @@
  * Contributors:
  * Red Hat, Inc. - initial API and implementation
  ******************************************************************************/
-package org.jboss.tools.intellij.kubernetes.model.resource
+package org.jboss.tools.intellij.kubernetes.model.resource.kubernetes
 
 import com.nhaarman.mockitokotlin2.spy
 import com.nhaarman.mockitokotlin2.times
@@ -28,11 +28,10 @@ import org.jboss.tools.intellij.kubernetes.model.mocks.ClientMocks.items
 import org.jboss.tools.intellij.kubernetes.model.mocks.ClientMocks.list
 import org.jboss.tools.intellij.kubernetes.model.mocks.ClientMocks.pods
 import org.jboss.tools.intellij.kubernetes.model.mocks.Mocks.resource
-import org.jboss.tools.intellij.kubernetes.model.resource.kubernetes.PodsProvider
 import org.junit.Before
 import org.junit.Test
 
-class PodsProviderTest {
+class NamespacedPodsProviderTest {
 
     private val currentNamespace = NAMESPACE2.metadata.name
     private val client = client(currentNamespace, arrayOf(NAMESPACE1, NAMESPACE2, NAMESPACE3))

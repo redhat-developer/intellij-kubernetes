@@ -8,7 +8,7 @@
  * Contributors:
  * Red Hat, Inc. - initial API and implementation
  ******************************************************************************/
-package org.jboss.tools.intellij.kubernetes.model.resource
+package org.jboss.tools.intellij.kubernetes.model.resource.kubernetes
 
 import com.nhaarman.mockitokotlin2.verify
 import org.jboss.tools.intellij.kubernetes.model.mocks.ClientMocks.NAMESPACE1
