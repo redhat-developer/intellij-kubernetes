@@ -14,18 +14,20 @@ import com.intellij.ide.util.treeView.NodeDescriptor
 import com.intellij.openapi.util.IconLoader
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.Namespace
+import io.fabric8.kubernetes.api.model.Node
 import io.fabric8.kubernetes.api.model.Pod
 import org.jboss.tools.intellij.kubernetes.model.IResourceModel
 import org.jboss.tools.intellij.kubernetes.model.ResourceException
 import org.jboss.tools.intellij.kubernetes.model.context.KubernetesContext
+import org.jboss.tools.intellij.kubernetes.tree.TreeStructure.Folder
 
 class KubernetesStructure(model: IResourceModel): AbstractTreeStructureContribution(model) {
 
     companion object Folders {
-        val NAMESPACES = TreeStructure.Folder("Namespaces", Namespace::class.java)
-        val NODES = TreeStructure.Folder("Nodes", null)
-        val WORKLOADS = TreeStructure.Folder("Workloads", null)
-        val PODS = TreeStructure.Folder("Pods", Pod::class.java)
+        val NAMESPACES = Folder("Namespaces", Namespace::class.java)
+        val NODES = Folder("Nodes", Node::class.java)
+        val WORKLOADS = Folder("Workloads", null)
+        val PODS = Folder("Pods", Pod::class.java)
     }
 
     override fun canContribute() = true
@@ -38,13 +40,13 @@ class KubernetesStructure(model: IResourceModel): AbstractTreeStructureContribut
                     NODES,
                     WORKLOADS
                 )
+            NAMESPACES,
             NODES ->
-                listOf()
+                getResources((element as Folder).kind)
             WORKLOADS ->
                 listOf<Any>(PODS)
-            NAMESPACES,
             PODS ->
-                getResources((element as TreeStructure.Folder).kind)
+                getResources((element as Folder).kind)
             else ->
                 listOf()
         }
@@ -77,6 +79,7 @@ class KubernetesStructure(model: IResourceModel): AbstractTreeStructureContribut
         return when(element) {
             is KubernetesContext -> KubernetesContextDescriptor(element, model)
             is Namespace -> NamespaceDescriptor(element, parent, model)
+            is Node -> KubernetesNodeDescriptor(element, parent, model)
             is Pod -> PodDescriptor(element, parent, model)
             else -> null
         }
@@ -103,12 +106,21 @@ class KubernetesStructure(model: IResourceModel): AbstractTreeStructureContribut
             model
     )
 
-    private class PodDescriptor(element: HasMetadata, parent: NodeDescriptor<*>?, model: IResourceModel) : TreeStructure.Descriptor<HasMetadata>(
-        element,
-        parent,
-        { it.metadata.name },
-        IconLoader.getIcon("/icons/project.png"),
-        model
+    private class PodDescriptor(element: HasMetadata, parent: NodeDescriptor<*>?, model: IResourceModel)
+        : TreeStructure.Descriptor<HasMetadata>(
+            element,
+            parent,
+            { it.metadata.name },
+            IconLoader.getIcon("/icons/project.png"),
+            model
     )
 
+    private class KubernetesNodeDescriptor(element: HasMetadata, parent: NodeDescriptor<*>?, model: IResourceModel)
+        : TreeStructure.Descriptor<HasMetadata>(
+            element,
+            parent,
+            { it.metadata.name },
+            IconLoader.getIcon("/icons/project.png"),
+            model
+    )
 }
