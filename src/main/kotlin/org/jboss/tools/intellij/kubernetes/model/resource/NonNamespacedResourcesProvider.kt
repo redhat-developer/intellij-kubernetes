@@ -13,8 +13,8 @@ package org.jboss.tools.intellij.kubernetes.model.resource
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.client.KubernetesClient
 
-abstract class NonNamespacedResourcesProvider<R : HasMetadata, C : KubernetesClient>(client: C) :
-    AbstractResourcesProvider<R, C>(client), INonNamespacedResourcesProvider<R> {
+abstract class NonNamespacedResourcesProvider<R : HasMetadata, C: KubernetesClient>(protected val client: C)
+    : AbstractResourcesProvider<R>(), INonNamespacedResourcesProvider<R> {
 
     override fun getAllResources(): Collection<R> {
         if (allResources.isEmpty()) {
