@@ -18,18 +18,19 @@ import org.jboss.tools.intellij.kubernetes.model.context.ContextFactory
 import org.jboss.tools.intellij.kubernetes.model.context.IActiveContext
 import org.jboss.tools.intellij.kubernetes.model.context.IContext
 import org.jboss.tools.intellij.kubernetes.model.context.Context
+import org.jboss.tools.intellij.kubernetes.model.context.IActiveContext.*
 import org.jboss.tools.intellij.kubernetes.model.util.KubeConfigContexts
 import java.util.function.Predicate
 
 interface IResourceModel {
+
     val allContexts: List<IContext>
     val currentContext: IActiveContext<out HasMetadata, out KubernetesClient>?
     fun getClient(): KubernetesClient?
     fun setCurrentContext(context: IContext)
     fun setCurrentNamespace(namespace: String)
     fun getCurrentNamespace(): String?
-    fun <R: HasMetadata> getResources(kind: Class<R>): Collection<R>
-    fun <R: HasMetadata> getResources(kind: Class<R>, predicate: Predicate<R>): Collection<R>
+    fun <R: HasMetadata> getResources(kind: Class<R>, namespaced: ResourcesIn, filter: Predicate<R>? = null): Collection<R>
     fun getKind(resource: HasMetadata): Class<out HasMetadata>
     fun invalidate(element: Any?)
     fun addListener(listener: ModelChangeObservable.IResourceChangeListener)
@@ -118,13 +119,14 @@ class ResourceModel(
         }
     }
 
-    override fun <R: HasMetadata> getResources(kind: Class<R>, filter: Predicate<R>): Collection<R> {
-        return getResources(kind).filter { filter.test(it) }
-    }
-
-    override fun <R: HasMetadata> getResources(kind: Class<R>): Collection<R> {
+    override fun <R: HasMetadata> getResources(kind: Class<R>, namespaced: ResourcesIn, filter: Predicate<R>?): Collection<R> {
         try {
-            return currentContext?.getResources(kind) ?: return emptyList()
+            val resources = currentContext?.getResources(kind, namespaced) ?: return emptyList()
+            return if (filter == null) {
+                resources
+            } else {
+                resources.filter { filter.test(it) }
+            }
         } catch (e: KubernetesClientException) {
             if (isNotFound(e)) {
                 return emptyList()

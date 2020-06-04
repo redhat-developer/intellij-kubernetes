@@ -128,8 +128,7 @@ open class TreeStructure(private val model: IResourceModel,
             context: C,
             parent: NodeDescriptor<*>? = null,
             labelProvider: (C) -> String = {
-                val label = if (it.context == null
-                        || it.context?.context == null) {
+                val label = if (it.context.context == null) {
                     "<unknown context>"
                 } else {
                     it.context.name

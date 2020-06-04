@@ -17,7 +17,7 @@ import io.fabric8.openshift.api.model.ImageStream
 import io.fabric8.openshift.client.NamespacedOpenShiftClient
 import org.jboss.tools.intellij.kubernetes.model.resource.NamespacedResourcesProvider
 
-open class ImageStreamsProvider(client: NamespacedOpenShiftClient)
+class ImageStreamsProvider(client: NamespacedOpenShiftClient)
     : NamespacedResourcesProvider<ImageStream, NamespacedOpenShiftClient>(client) {
 
     companion object {

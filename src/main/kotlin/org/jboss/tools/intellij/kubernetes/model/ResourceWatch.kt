@@ -28,7 +28,7 @@ open class ResourceWatch(
 ) {
     private var watches: MutableMap<Watchable<Watch, Watcher<HasMetadata>>, Watch?> = mutableMapOf()
 
-    fun watchAll(suppliers: List<() -> Watchable<Watch, Watcher<HasMetadata>>?>) {
+    fun watchAll(suppliers: Collection<() -> Watchable<Watch, Watcher<HasMetadata>>?>) {
         suppliers.forEach {
             try {
                 doWatch(it)
@@ -56,7 +56,7 @@ open class ResourceWatch(
         return watches.keys.toList()
     }
 
-    fun ignoreAll(suppliers: List<() -> Watchable<Watch, Watcher<HasMetadata>>?>) {
+    fun ignoreAll(suppliers: Collection<() -> Watchable<Watch, Watcher<HasMetadata>>?>) {
         suppliers.forEach {
             ignore(it)
         }

@@ -8,29 +8,29 @@
  * Contributors:
  * Red Hat, Inc. - initial API and implementation
  ******************************************************************************/
-package org.jboss.tools.intellij.kubernetes.model.resource
+package org.jboss.tools.intellij.kubernetes.model.resource.kubernetes
 
-import io.fabric8.kubernetes.api.model.HasMetadata
+import io.fabric8.kubernetes.api.model.Pod
 import io.fabric8.kubernetes.client.KubernetesClient
 import io.fabric8.kubernetes.client.Watch
 import io.fabric8.kubernetes.client.Watcher
 import io.fabric8.kubernetes.client.dsl.Watchable
+import org.jboss.tools.intellij.kubernetes.model.resource.NonNamespacedResourcesProvider
 
-interface INonNamespacedResourcesProvider<T: HasMetadata>: IResourcesProvider<T> {
+class AllPodsProvider(client: KubernetesClient)
+    : NonNamespacedResourcesProvider<Pod, KubernetesClient>(client) {
 
-    fun getAllResources(): Collection<T>
-    fun getWatchableResource(): () -> Watchable<Watch, Watcher<T>>?
-}
-
-abstract class NonNamespacedResourcesProvider<R : HasMetadata, C: KubernetesClient>(protected val client: C)
-    : AbstractResourcesProvider<R>(), INonNamespacedResourcesProvider<R> {
-
-    override fun getAllResources(): Collection<R> {
-        if (allResources.isEmpty()) {
-            allResources.addAll(loadAllResources())
-        }
-        return allResources
+    companion object {
+        val KIND = Pod::class.java;
     }
 
-    protected abstract fun loadAllResources(): List<R>
+    override val kind = KIND
+
+    override fun loadAllResources(): List<Pod> {
+        return client.pods().inAnyNamespace().list().items
+    }
+
+    override fun getWatchableResource(): () -> Watchable<Watch, Watcher<Pod>>? {
+        return { client.pods().inAnyNamespace() }
+    }
 }

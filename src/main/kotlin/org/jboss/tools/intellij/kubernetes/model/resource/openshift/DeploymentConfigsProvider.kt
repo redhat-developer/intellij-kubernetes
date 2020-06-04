@@ -17,7 +17,7 @@ import io.fabric8.openshift.api.model.DeploymentConfig
 import io.fabric8.openshift.client.NamespacedOpenShiftClient
 import org.jboss.tools.intellij.kubernetes.model.resource.NamespacedResourcesProvider
 
-open class DeploymentConfigsProvider(client: NamespacedOpenShiftClient)
+class DeploymentConfigsProvider(client: NamespacedOpenShiftClient)
     : NamespacedResourcesProvider<DeploymentConfig, NamespacedOpenShiftClient>(client) {
 
     companion object {

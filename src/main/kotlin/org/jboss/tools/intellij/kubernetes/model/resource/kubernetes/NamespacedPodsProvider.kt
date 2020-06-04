@@ -17,7 +17,7 @@ import io.fabric8.kubernetes.client.Watcher
 import io.fabric8.kubernetes.client.dsl.Watchable
 import org.jboss.tools.intellij.kubernetes.model.resource.NamespacedResourcesProvider
 
-open class PodsProvider(client: KubernetesClient)
+open class NamespacedPodsProvider(client: KubernetesClient)
     : NamespacedResourcesProvider<Pod, KubernetesClient>(client) {
 
     companion object {

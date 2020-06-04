@@ -41,15 +41,32 @@ class ResourceModelAdapter<Structure: AbstractTreeStructure>(
     }
 
     override fun removed(removed: Any) {
-        invalidatePath { getTreePath(getParentElement(removed)) }
+        invalidateParent(removed)
     }
 
     override fun added(added: Any) {
-        invalidatePath { getTreePath(getParentElement(added)) }
+        invalidateParent(added)
     }
 
     override fun modified(modified: Any) {
         invalidatePath { getTreePath(modified) }
+    }
+
+    private fun invalidateParent(element: Any) {
+        val parent = getParentElement(element)
+        if (parent is Collection<*>) {
+            invalidatePath(parent)
+        } else {
+            invalidatePath { getTreePath(parent) }
+        }
+    }
+
+    private fun invalidatePath(parent: Collection<*>) {
+        parent.forEach {
+            if (it != null) {
+                invalidatePath { getTreePath(it) }
+            }
+        }
     }
 
     private fun invalidatePath(pathSupplier: () -> TreePath) {
