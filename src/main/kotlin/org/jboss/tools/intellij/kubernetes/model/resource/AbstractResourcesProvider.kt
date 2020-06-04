@@ -14,9 +14,7 @@ import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.client.KubernetesClient
 import org.jboss.tools.intellij.kubernetes.model.util.areEqual
 
-abstract class AbstractResourcesProvider<R : HasMetadata, C : KubernetesClient>(
-    protected val client: C
-) : IResourcesProvider<R> {
+abstract class AbstractResourcesProvider<R : HasMetadata> : IResourcesProvider<R> {
 
     protected val allResources = mutableSetOf<R>()
 

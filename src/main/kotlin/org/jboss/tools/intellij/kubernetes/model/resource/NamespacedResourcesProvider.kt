@@ -14,8 +14,8 @@ import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.client.KubernetesClient
 
 abstract class NamespacedResourcesProvider<R : HasMetadata, C : KubernetesClient>(
-    client: C
-) : AbstractResourcesProvider<R, C>(client), INamespacedResourcesProvider<R> {
+    protected val client: C
+) : AbstractResourcesProvider<R>(), INamespacedResourcesProvider<R> {
 
     protected var namespace: String? = null
 
