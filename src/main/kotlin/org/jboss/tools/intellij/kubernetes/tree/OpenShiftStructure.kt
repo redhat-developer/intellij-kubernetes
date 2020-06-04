@@ -19,9 +19,10 @@ import io.fabric8.openshift.api.model.ImageStream
 import io.fabric8.openshift.api.model.Project
 import org.jboss.tools.intellij.kubernetes.model.IResourceModel
 import org.jboss.tools.intellij.kubernetes.model.ResourceException
+import org.jboss.tools.intellij.kubernetes.model.context.IActiveContext.*
 import org.jboss.tools.intellij.kubernetes.model.context.OpenShiftContext
-import org.jboss.tools.intellij.kubernetes.model.resource.openshift.DeploymentConfigFor
-import org.jboss.tools.intellij.kubernetes.model.resource.openshift.ReplicationControllerFor
+import org.jboss.tools.intellij.kubernetes.model.resource.DeploymentConfigFor
+import org.jboss.tools.intellij.kubernetes.model.resource.ReplicationControllerFor
 import org.jboss.tools.intellij.kubernetes.tree.KubernetesStructure.Folders.NODES
 import org.jboss.tools.intellij.kubernetes.tree.KubernetesStructure.Folders.WORKLOADS
 
@@ -47,11 +48,14 @@ class OpenShiftStructure(model: IResourceModel): AbstractTreeStructureContributi
                         DEPLOYMENTCONFIGS)
             is DeploymentConfig ->
                 model.getResources(ReplicationController::class.java,
+                        ResourcesIn.CURRENT_NAMESPACE,
                         ReplicationControllerFor(element))
-            PROJECTS,
-            IMAGESTREAMS,
+            PROJECTS ->
+                getSortedResources(Project::class.java, ResourcesIn.NO_NAMESPACE)
+            IMAGESTREAMS ->
+                getSortedResources(ImageStream::class.java, ResourcesIn.CURRENT_NAMESPACE)
             DEPLOYMENTCONFIGS ->
-                getResources((element as TreeStructure.Folder).kind)
+                getSortedResources(DeploymentConfig::class.java, ResourcesIn.CURRENT_NAMESPACE)
             else -> emptyList()
         }
     }
@@ -78,7 +82,8 @@ class OpenShiftStructure(model: IResourceModel): AbstractTreeStructureContributi
                 DEPLOYMENTCONFIGS ->
                     WORKLOADS
                 is ReplicationController ->
-                    model.getResources(DeploymentConfig::class.java,
+                    getSortedResources(DeploymentConfig::class.java,
+                            ResourcesIn.CURRENT_NAMESPACE,
                             DeploymentConfigFor(element))
                 else ->
                     getRootElement()

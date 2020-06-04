@@ -28,6 +28,7 @@ import io.fabric8.kubernetes.client.KubernetesClient
 import io.fabric8.kubernetes.client.NamespacedKubernetesClient
 import org.assertj.core.api.Assertions.assertThat
 import org.jboss.tools.intellij.kubernetes.model.context.IActiveContext
+import org.jboss.tools.intellij.kubernetes.model.context.IActiveContext.*
 import org.jboss.tools.intellij.kubernetes.model.mocks.ClientMocks.POD1
 import org.jboss.tools.intellij.kubernetes.model.mocks.ClientMocks.POD2
 import org.jboss.tools.intellij.kubernetes.model.mocks.ClientMocks.POD3
@@ -59,25 +60,34 @@ class ResourceModelTest {
     private val model: ResourceModel = ResourceModel(modelChange, contextFactory, config)
 
     @Test
-    fun `#getResources(kind) should call context#getResources(kind)`() {
+    fun `#getResources(kind, CURRENT_NAMESPACE) should call context#getResources(kind, CURRENT_NAMESPACE)`() {
         // given
         // when
-        model.getResources(Pod::class.java)
+        model.getResources(Pod::class.java, ResourcesIn.CURRENT_NAMESPACE)
         // then
-        verify(context).getResources(Pod::class.java)
+        verify(context).getResources(Pod::class.java, ResourcesIn.CURRENT_NAMESPACE)
+    }
+
+    @Test
+    fun `#getResources(kind, NO_NAMESPACE) should call context#getResources(kind, NO_NAMESPACE)`() {
+        // given
+        // when
+        model.getResources(Pod::class.java, ResourcesIn.NO_NAMESPACE)
+        // then
+        verify(context).getResources(Pod::class.java, ResourcesIn.NO_NAMESPACE)
     }
 
     @Test
     fun `#getResources(kind) should call predicate#test for each resource that is returned from context`() {
         // given
         val filter = mock<Predicate<Pod>>()
-        whenever(context.getResources(any<Class<HasMetadata>>()))
+        whenever(context.getResources(any<Class<HasMetadata>>(), any()))
                 .thenReturn(listOf(
                         POD1,
                         POD2,
                         POD3))
         // when
-        model.getResources(Pod::class.java, filter)
+        model.getResources(Pod::class.java, ResourcesIn.NO_NAMESPACE, filter)
         // then
         verify(filter, times(3)).test(any())
     }

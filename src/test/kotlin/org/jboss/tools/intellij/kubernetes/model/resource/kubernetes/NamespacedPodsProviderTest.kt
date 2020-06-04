@@ -163,7 +163,7 @@ class NamespacedPodsProviderTest {
         assertThat(removed).isFalse()
     }
 
-    class TestablePodsProvider(client: KubernetesClient): PodsProvider(client) {
+    class TestablePodsProvider(client: KubernetesClient): NamespacedPodsProvider(client) {
 
         public override fun loadAllResources(namespace: String): List<Pod> {
             return super.loadAllResources(namespace)

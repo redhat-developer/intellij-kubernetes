@@ -19,7 +19,7 @@ import io.fabric8.kubernetes.client.dsl.Watchable
 import org.jboss.tools.intellij.kubernetes.model.resource.NamespacedResourcesProvider
 import org.jboss.tools.intellij.kubernetes.model.resource.NonNamespacedResourcesProvider
 
-open class NodesProvider(client: KubernetesClient)
+class NodesProvider(client: KubernetesClient)
     : NonNamespacedResourcesProvider<Node, KubernetesClient>(client) {
 
     companion object {

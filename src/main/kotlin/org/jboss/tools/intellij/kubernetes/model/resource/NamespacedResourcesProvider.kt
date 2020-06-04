@@ -12,17 +12,26 @@ package org.jboss.tools.intellij.kubernetes.model.resource
 
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.client.KubernetesClient
+import io.fabric8.kubernetes.client.Watch
+import io.fabric8.kubernetes.client.Watcher
+import io.fabric8.kubernetes.client.dsl.Watchable
+
+interface INamespacedResourcesProvider<T: HasMetadata>: IResourcesProvider<T> {
+
+    fun getAllResources(namespace: String): Collection<T>
+    fun getWatchableResource(namespace: String): () -> Watchable<Watch, Watcher<T>>?
+}
 
 abstract class NamespacedResourcesProvider<R : HasMetadata, C : KubernetesClient>(
     protected val client: C
 ) : AbstractResourcesProvider<R>(), INamespacedResourcesProvider<R> {
 
-    protected var namespace: String? = null
+    private var namespace: String? = null
 
     override fun getAllResources(namespace: String): Collection<R> {
         if (namespace != this.namespace) {
-            this.namespace = namespace
             invalidate()
+            this.namespace = namespace
         }
         if (allResources.isEmpty()) {
             allResources.addAll(loadAllResources(namespace))

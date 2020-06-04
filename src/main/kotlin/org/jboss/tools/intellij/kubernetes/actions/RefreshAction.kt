@@ -17,7 +17,6 @@ import javax.swing.tree.TreePath
 class RefreshAction: StructureTreeAction(Any::class.java) {
 
     override fun actionPerformed(event: AnActionEvent?, path: TreePath?, selectedNode: Any?) {
-        val model = getResourceModel() ?: return
         selectedNode?.getDescriptor()?.invalidate()
     }
 }

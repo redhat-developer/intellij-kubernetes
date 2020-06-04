@@ -50,14 +50,18 @@ object Mocks {
         }
     }
 
-    fun <T: HasMetadata> namespacedResourceProvider(resources: Collection<T>, namespace: Namespace): INamespacedResourcesProvider<T> {
+    fun <T: HasMetadata> namespacedResourceProvider(kind: Class<T>, resources: Collection<T>, namespace: Namespace)
+            : INamespacedResourcesProvider<T> {
         return mock {
+            on { this.kind } doReturn kind
             on { getAllResources(namespace.metadata.name) } doReturn resources
         }
     }
 
-    fun <T: HasMetadata> nonNamespacedResourceProvider(resources: Collection<T>): INonNamespacedResourcesProvider<T> {
+    fun <T: HasMetadata> nonNamespacedResourceProvider(kind: Class<T>, resources: Collection<T>)
+            : INonNamespacedResourcesProvider<T> {
         return mock {
+            on { this.kind } doReturn kind
             on { getAllResources() } doReturn(resources)
         }
     }
