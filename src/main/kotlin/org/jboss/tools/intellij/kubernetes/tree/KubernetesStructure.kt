@@ -18,8 +18,8 @@ import io.fabric8.kubernetes.api.model.Node
 import io.fabric8.kubernetes.api.model.Pod
 import org.jboss.tools.intellij.kubernetes.model.IResourceModel
 import org.jboss.tools.intellij.kubernetes.model.ResourceException
-import org.jboss.tools.intellij.kubernetes.model.context.IActiveContext.*
 import org.jboss.tools.intellij.kubernetes.model.context.KubernetesContext
+import org.jboss.tools.intellij.kubernetes.model.resourceName
 import org.jboss.tools.intellij.kubernetes.tree.TreeStructure.Folder
 
 class KubernetesStructure(model: IResourceModel): AbstractTreeStructureContribution(model) {
@@ -42,15 +42,27 @@ class KubernetesStructure(model: IResourceModel): AbstractTreeStructureContribut
                     WORKLOADS
                 )
             NAMESPACES ->
-                getSortedResources(Namespace::class.java, ResourcesIn.NO_NAMESPACE)
+                model.resources(Namespace::class.java)
+                        .inNoNamespace()
+                        .list()
+                        .sortedBy(resourceName)
             NODES ->
-                getSortedResources(Node::class.java, ResourcesIn.NO_NAMESPACE)
+                model.resources(Node::class.java)
+                        .inNoNamespace()
+                        .list()
+                        .sortedBy(resourceName)
             is Node ->
-                getSortedResources(Pod::class.java, ResourcesIn.ANY_NAMESPACE)
+                model.resources(Pod::class.java)
+                        .inAnyNamespace()
+                        .list()
+                        .sortedBy(resourceName)
             WORKLOADS ->
                 listOf<Any>(PODS)
             PODS ->
-                getSortedResources(Pod::class.java, ResourcesIn.CURRENT_NAMESPACE)
+                model.resources(Pod::class.java)
+                        .inCurrentNamespace()
+                        .list()
+                        .sortedBy(resourceName)
             else ->
                 listOf()
         }

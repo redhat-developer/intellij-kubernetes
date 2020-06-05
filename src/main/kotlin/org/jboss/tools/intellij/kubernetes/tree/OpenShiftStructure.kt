@@ -19,7 +19,7 @@ import io.fabric8.openshift.api.model.ImageStream
 import io.fabric8.openshift.api.model.Project
 import org.jboss.tools.intellij.kubernetes.model.IResourceModel
 import org.jboss.tools.intellij.kubernetes.model.ResourceException
-import org.jboss.tools.intellij.kubernetes.model.context.IActiveContext.*
+import org.jboss.tools.intellij.kubernetes.model.resourceName
 import org.jboss.tools.intellij.kubernetes.model.context.OpenShiftContext
 import org.jboss.tools.intellij.kubernetes.model.resource.DeploymentConfigFor
 import org.jboss.tools.intellij.kubernetes.model.resource.ReplicationControllerFor
@@ -47,15 +47,25 @@ class OpenShiftStructure(model: IResourceModel): AbstractTreeStructureContributi
                         IMAGESTREAMS,
                         DEPLOYMENTCONFIGS)
             is DeploymentConfig ->
-                model.getResources(ReplicationController::class.java,
-                        ResourcesIn.CURRENT_NAMESPACE,
-                        ReplicationControllerFor(element))
+                model.resources(ReplicationController::class.java)
+                        .inCurrentNamespace()
+                        .filtered(ReplicationControllerFor(element))
+                        .list()
+                        .sortedBy(resourceName)
             PROJECTS ->
-                getSortedResources(Project::class.java, ResourcesIn.NO_NAMESPACE)
+                model.resources(Project::class.java)
+                        .inNoNamespace()
+                        .list()
+                        .sortedBy(resourceName)
             IMAGESTREAMS ->
-                getSortedResources(ImageStream::class.java, ResourcesIn.CURRENT_NAMESPACE)
+                model.resources(ImageStream::class.java)
+                        .inCurrentNamespace()
+                        .list()
             DEPLOYMENTCONFIGS ->
-                getSortedResources(DeploymentConfig::class.java, ResourcesIn.CURRENT_NAMESPACE)
+                model.resources(DeploymentConfig::class.java)
+                        .inCurrentNamespace()
+                        .list()
+                        .sortedBy(resourceName)
             else -> emptyList()
         }
     }
@@ -82,9 +92,11 @@ class OpenShiftStructure(model: IResourceModel): AbstractTreeStructureContributi
                 DEPLOYMENTCONFIGS ->
                     WORKLOADS
                 is ReplicationController ->
-                    getSortedResources(DeploymentConfig::class.java,
-                            ResourcesIn.CURRENT_NAMESPACE,
-                            DeploymentConfigFor(element))
+                    model.resources(DeploymentConfig::class.java)
+                            .inCurrentNamespace()
+                            .filtered(DeploymentConfigFor(element))
+                            .list()
+                            .sortedBy(resourceName)
                 else ->
                     getRootElement()
             }

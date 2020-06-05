@@ -30,7 +30,7 @@ interface IResourceModel {
     fun setCurrentContext(context: IContext)
     fun setCurrentNamespace(namespace: String)
     fun getCurrentNamespace(): String?
-    fun <R: HasMetadata> getResources(kind: Class<R>, namespaced: ResourcesIn, filter: Predicate<R>? = null): Collection<R>
+    fun <R: HasMetadata> resources(kind: Class<R>): Namespaceable<R>
     fun getKind(resource: HasMetadata): Class<out HasMetadata>
     fun invalidate(element: Any?)
     fun addListener(listener: ModelChangeObservable.IResourceChangeListener)
@@ -119,7 +119,11 @@ class ResourceModel(
         }
     }
 
-    override fun <R: HasMetadata> getResources(kind: Class<R>, namespaced: ResourcesIn, filter: Predicate<R>?): Collection<R> {
+    override fun <R: HasMetadata> resources(kind: Class<R>): Namespaceable<R> {
+        return Namespaceable(kind, this)
+    }
+
+    fun <R: HasMetadata> getResources(kind: Class<R>, namespaced: ResourcesIn, filter: Predicate<R>? = null): Collection<R> {
         try {
             val resources = currentContext?.getResources(kind, namespaced) ?: return emptyList()
             return if (filter == null) {
