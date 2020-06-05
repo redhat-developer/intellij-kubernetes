@@ -10,21 +10,11 @@
  ******************************************************************************/
 package org.jboss.tools.intellij.kubernetes.tree
 
-import io.fabric8.kubernetes.api.model.HasMetadata
 import org.jboss.tools.intellij.kubernetes.model.IResourceModel
-import org.jboss.tools.intellij.kubernetes.model.context.IActiveContext
-import org.jboss.tools.intellij.kubernetes.model.context.IActiveContext.ResourcesIn
-import java.util.function.Predicate
 
 abstract class AbstractTreeStructureContribution(override val model: IResourceModel): ITreeStructureContribution {
 
     protected fun getRootElement(): Any? {
         return model.currentContext
     }
-
-    protected fun <R: HasMetadata> getSortedResources(kind: Class<R>, namespaced: ResourcesIn, filter: Predicate<R>? = null): Collection<R> {
-        return model.getResources(kind, namespaced, filter)
-                .sortedBy { it.metadata.name }
-    }
-
 }
