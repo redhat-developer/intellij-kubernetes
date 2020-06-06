@@ -17,27 +17,37 @@ import io.fabric8.kubernetes.client.Watcher
 import io.fabric8.kubernetes.client.dsl.Watchable
 
 interface INamespacedResourcesProvider<T: HasMetadata>: IResourcesProvider<T> {
-
-    fun getAllResources(namespace: String): Collection<T>
-    fun getWatchableResource(namespace: String): () -> Watchable<Watch, Watcher<T>>?
+    var namespace: String?
 }
 
 abstract class NamespacedResourcesProvider<R : HasMetadata, C : KubernetesClient>(
     protected val client: C
 ) : AbstractResourcesProvider<R>(), INamespacedResourcesProvider<R> {
 
-    private var namespace: String? = null
-
-    override fun getAllResources(namespace: String): Collection<R> {
-        if (namespace != this.namespace) {
+    override var namespace: String? = null
+        set(namespace) {
             invalidate()
-            this.namespace = namespace
+            field = namespace
         }
+
+    override fun getAllResources(): Collection<R> {
         if (allResources.isEmpty()) {
-            allResources.addAll(loadAllResources(namespace))
+            if (namespace != null) {
+                allResources.addAll(loadAllResources(namespace!!))
+            }
         }
         return allResources
     }
 
     protected abstract fun loadAllResources(namespace: String): List<R>
+
+    override fun getWatchableResource(): () -> Watchable<Watch, Watcher<R>>? {
+        if (namespace == null) {
+            return { null }
+        }
+        return getWatchableResource(this.namespace!!)
+    }
+
+    abstract fun getWatchableResource(namespace: String): () -> Watchable<Watch, Watcher<R>>?
+
 }

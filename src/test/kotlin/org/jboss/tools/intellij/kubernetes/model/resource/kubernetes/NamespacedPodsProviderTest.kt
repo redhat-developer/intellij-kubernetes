@@ -10,11 +10,18 @@
  ******************************************************************************/
 package org.jboss.tools.intellij.kubernetes.model.resource.kubernetes
 
+import com.nhaarman.mockitokotlin2.any
+import com.nhaarman.mockitokotlin2.argumentCaptor
+import com.nhaarman.mockitokotlin2.clearInvocations
+import com.nhaarman.mockitokotlin2.never
 import com.nhaarman.mockitokotlin2.spy
 import com.nhaarman.mockitokotlin2.times
 import com.nhaarman.mockitokotlin2.verify
 import io.fabric8.kubernetes.api.model.Pod
 import io.fabric8.kubernetes.client.KubernetesClient
+import io.fabric8.kubernetes.client.Watch
+import io.fabric8.kubernetes.client.Watcher
+import io.fabric8.kubernetes.client.dsl.Watchable
 import org.assertj.core.api.Assertions.assertThat
 import org.jboss.tools.intellij.kubernetes.model.mocks.ClientMocks.NAMESPACE1
 import org.jboss.tools.intellij.kubernetes.model.mocks.ClientMocks.NAMESPACE2
@@ -40,53 +47,112 @@ class NamespacedPodsProviderTest {
     @Before
     fun before() {
         items(list(inNamespace(pods(client))), POD1, POD2, POD3)
+        provider.namespace = currentNamespace
     }
 
     @Test
-    fun `#getAllResources returns cached pods, won't load a 2nd time`() {
+    fun `#getAllResources() returns cached pods, won't load a 2nd time`() {
         // given
         val namespace = NAMESPACE1.metadata.name
-        provider.getAllResources(namespace)
+        provider.namespace =  namespace
+        provider.getAllResources()
         // when
-        provider.getAllResources(namespace)
+        provider.getAllResources()
         // then
         verify(provider, times(1)).loadAllResources(namespace)
     }
 
     @Test
-    fun `#getAllResources wont return cached but load pods if #invalidate() is called`() {
+    fun `#getAllResources() wont return cached but load pods if #invalidate() is called`() {
         // given
         val namespace = NAMESPACE1.metadata.name
-        provider.getAllResources(namespace)
+        provider.namespace =  namespace
+        provider.getAllResources()
         verify(provider, times(1)).loadAllResources(namespace)
         provider.invalidate()
         // when
-        provider.getAllResources(namespace)
+        provider.getAllResources()
         // then
         verify(provider, times(2)).loadAllResources(namespace)
+    }
+
+    @Test
+    fun `#getAllResources() won't load resources if namespace is null`() {
+        // given
+        provider.namespace =  null
+        // when
+        provider.getAllResources()
+        // then
+        verify(provider, never()).loadAllResources(any())
+    }
+
+    @Test
+    fun `#getWatchableResouces() won't return watchable resources if namespace is null`() {
+        // given
+        provider.namespace =  null
+        // when
+        provider.getWatchableResource()
+        // then
+        verify(provider, never()).getWatchableResource(any())
+    }
+
+    @Test
+    fun `#setNamespace(namespace) sets namespace that's used in #loadAllResources(namespace)`() {
+        // given
+        val namespace = "darth vader"
+        provider.namespace =  namespace
+        val namespaceCaptor = argumentCaptor<String>()
+        // when
+        provider.getAllResources()
+        // then
+        verify(provider).loadAllResources(namespaceCaptor.capture())
+        assertThat(namespaceCaptor.firstValue).isEqualTo(namespace)
+    }
+
+    @Test
+    fun `#setNamespace(namespace) sets namespace that's used in #getWatchableResources(namespace)`() {
+        // given
+        val namespace = "darth vader"
+        provider.namespace =  namespace
+        val namespaceCaptor = argumentCaptor<String>()
+        // when
+        provider.getWatchableResource()
+        // then
+        verify(provider).getWatchableResource(namespaceCaptor.capture())
+        assertThat(namespaceCaptor.firstValue).isEqualTo(namespace)
+    }
+
+    @Test
+    fun `#setNamespace(namespace) invalidates cache`() {
+        // given
+        clearInvocations(provider)
+        // when
+        provider.namespace =  "skywalker"
+        // then
+        verify(provider).invalidate()
     }
 
     @Test
     fun `#add(pod) adds pod if not contained yet`() {
         // given
         val pod = resource<Pod>("papa-smurf")
-        assertThat(provider.getAllResources(currentNamespace)).doesNotContain(pod)
+        assertThat(provider.getAllResources()).doesNotContain(pod)
         // when
         provider.add(pod)
         // then
-        assertThat(provider.getAllResources(currentNamespace)).contains(pod)
+        assertThat(provider.getAllResources()).contains(pod)
     }
 
     @Test
     fun `#add(pod) does not add if pod is already contained`() {
         // given
-        val pod = provider.getAllResources(currentNamespace).elementAt(0)
+        val pod = provider.getAllResources().elementAt(0)
         // when
-        val size = provider.getAllResources(currentNamespace).size
+        val size = provider.getAllResources().size
         provider.add(pod)
         // then
-        assertThat(provider.getAllResources(currentNamespace)).contains(pod)
-        assertThat(provider.getAllResources(currentNamespace).size).isEqualTo(size)
+        assertThat(provider.getAllResources()).contains(pod)
+        assertThat(provider.getAllResources().size).isEqualTo(size)
     }
 
     @Test
@@ -102,7 +168,7 @@ class NamespacedPodsProviderTest {
     @Test
     fun `#add(pod) returns false if pod was not added`() {
         // given
-        val pod = provider.getAllResources(currentNamespace).elementAt(0)
+        val pod = provider.getAllResources().elementAt(0)
         // when
         val added = provider.add(pod)
         // then
@@ -112,28 +178,28 @@ class NamespacedPodsProviderTest {
     @Test
     fun `#remove(pod) removes the given pod`() {
         // given
-        val pod = provider.getAllResources(currentNamespace).elementAt(0)
+        val pod = provider.getAllResources().elementAt(0)
         // when
         provider.remove(pod)
         // then
-        assertThat(provider.getAllResources(currentNamespace)).doesNotContain(pod)
+        assertThat(provider.getAllResources()).doesNotContain(pod)
     }
 
     @Test
     fun `#remove(pod) removes the given pod if it isn't the same instance but matches in name and namespace`() {
         // given
-        val pod1 = provider.getAllResources(currentNamespace).elementAt(0)
+        val pod1 = provider.getAllResources().elementAt(0)
         val pod2 = resource<Pod>(pod1.metadata.name, pod1.metadata.namespace)
         // when
         provider.remove(pod2)
         // then
-        assertThat(provider.getAllResources(currentNamespace)).doesNotContain(pod1)
+        assertThat(provider.getAllResources()).doesNotContain(pod1)
     }
 
     @Test
     fun `#remove(pod) returns true if pod was removed`() {
         // given
-        val pod = provider.getAllResources(currentNamespace).elementAt(0)
+        val pod = provider.getAllResources().elementAt(0)
         // when
         val removed = provider.remove(pod)
         // then
@@ -144,13 +210,13 @@ class NamespacedPodsProviderTest {
     fun `#remove(pod) does not remove if pod is not contained`() {
         // given
         val pod = resource<Pod>("papa-smurf")
-        assertThat(provider.getAllResources(currentNamespace)).doesNotContain(pod)
+        assertThat(provider.getAllResources()).doesNotContain(pod)
         // when
-        val size = provider.getAllResources(currentNamespace).size
+        val size = provider.getAllResources().size
         provider.remove(pod)
         // then
-        assertThat(provider.getAllResources(currentNamespace)).doesNotContain(pod)
-        assertThat(provider.getAllResources(currentNamespace).size).isEqualTo(size)
+        assertThat(provider.getAllResources()).doesNotContain(pod)
+        assertThat(provider.getAllResources().size).isEqualTo(size)
     }
 
     @Test
@@ -167,6 +233,10 @@ class NamespacedPodsProviderTest {
 
         public override fun loadAllResources(namespace: String): List<Pod> {
             return super.loadAllResources(namespace)
+        }
+
+        public override fun getWatchableResource(namespace: String): () -> Watchable<Watch, Watcher<Pod>>? {
+            return super.getWatchableResource(namespace)
         }
     }
 }
