@@ -19,6 +19,7 @@ import io.fabric8.kubernetes.client.KubernetesClientException
 import io.fabric8.kubernetes.client.Watch
 import io.fabric8.kubernetes.client.Watcher
 import io.fabric8.kubernetes.client.dsl.Watchable
+import org.apache.commons.lang3.BooleanUtils.or
 import org.jboss.tools.intellij.kubernetes.model.IModelChangeObservable
 import org.jboss.tools.intellij.kubernetes.model.ResourceWatch
 import org.jboss.tools.intellij.kubernetes.model.ResourceException
@@ -82,7 +83,10 @@ abstract class ActiveContext<N: HasMetadata, C: KubernetesClient>(
             stopWatch(currentNamespace)
         }
         client.configuration.namespace = namespace
-        invalidateNamespacedProviders()
+        namespacedProviders.forEach {
+            it.value.invalidate()
+            it.value.namespace = namespace
+        }
         startWatch(namespace)
         modelChange.fireCurrentNamespace(namespace)
     }
@@ -104,8 +108,7 @@ abstract class ActiveContext<N: HasMetadata, C: KubernetesClient>(
     override fun <T: HasMetadata> getResources(kind: Class<T>, resourcesIn: ResourcesIn): Collection<T> {
         val resources = when(resourcesIn) {
             ResourcesIn.CURRENT_NAMESPACE -> {
-                val namespace = getCurrentNamespace() ?: return emptyList()
-                namespacedProviders[kind.name]?.getAllResources(namespace) ?: emptyList()
+                namespacedProviders[kind.name]?.getAllResources() ?: emptyList()
             }
             ResourcesIn.ANY_NAMESPACE,
             ResourcesIn.NO_NAMESPACE ->
@@ -115,10 +118,11 @@ abstract class ActiveContext<N: HasMetadata, C: KubernetesClient>(
     }
 
     override fun add(resource: HasMetadata): Boolean {
-        var addedToNamespaced = addToNamespacedProvider(resource)
-        val addedToNonNamespaced = add(nonNamespacedProviders[resource::class.java.name], resource)
         // we need to add resource to both
-        return addedToNamespaced || addedToNonNamespaced
+        return or(
+                addToNamespacedProvider(resource),
+                add(nonNamespacedProviders[resource::class.java.name], resource)
+        )
     }
 
     private fun addToNamespacedProvider(resource: HasMetadata): Boolean {
@@ -141,10 +145,11 @@ abstract class ActiveContext<N: HasMetadata, C: KubernetesClient>(
     }
 
     override fun remove(resource: HasMetadata): Boolean {
-        var removedFromNamespaced = removeFromNamespacedProvider(resource)
-        val removedFromNonNamespaced = remove(nonNamespacedProviders[resource::class.java.name], resource)
         // we need to remove resource from both
-        return removedFromNamespaced || removedFromNonNamespaced
+        return or(
+                removeFromNamespacedProvider(resource),
+                remove(nonNamespacedProviders[resource::class.java.name], resource)
+        )
     }
 
     private fun removeFromNamespacedProvider(resource: HasMetadata): Boolean {
@@ -169,7 +174,7 @@ abstract class ActiveContext<N: HasMetadata, C: KubernetesClient>(
     protected open fun getWatchableResources(namespace: String): Collection<() -> Watchable<Watch, Watcher<HasMetadata>>?> {
         val resources = mutableListOf<() -> Watchable<Watch, out Watcher<out HasMetadata>>?>()
         resources.addAll(namespacedProviders.values
-                        .map { it.getWatchableResource(namespace) })
+                        .map { it.getWatchableResource() })
         resources.addAll(nonNamespacedProviders.values
                 .map { it.getWatchableResource() })
         return resources as Collection<() ->Watchable<Watch, Watcher<HasMetadata>>?>
@@ -209,12 +214,6 @@ abstract class ActiveContext<N: HasMetadata, C: KubernetesClient>(
 
     override fun close() {
         client.close()
-    }
-
-    private fun invalidateNamespacedProviders() {
-        namespacedProviders.forEach {
-            it.value.invalidate()
-        }
     }
 
     private fun <P: IResourcesProvider<*>> getAllResourceProviders(providerType: Class<P>): Map<out String, P> {

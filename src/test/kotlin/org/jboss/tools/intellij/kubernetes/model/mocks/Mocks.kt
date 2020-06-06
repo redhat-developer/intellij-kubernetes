@@ -53,8 +53,12 @@ object Mocks {
     fun <T: HasMetadata> namespacedResourceProvider(kind: Class<T>, resources: Collection<T>, namespace: Namespace)
             : INamespacedResourcesProvider<T> {
         return mock {
-            on { this.kind } doReturn kind
-            on { getAllResources(namespace.metadata.name) } doReturn resources
+            doReturn(namespace.metadata.name)
+                    .whenever(mock).namespace
+            doReturn(kind)
+                    .whenever(mock).kind
+            doReturn(resources)
+                    .whenever(mock).getAllResources()
         }
     }
 

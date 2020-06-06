@@ -17,9 +17,6 @@ import io.fabric8.kubernetes.client.Watcher
 import io.fabric8.kubernetes.client.dsl.Watchable
 
 interface INonNamespacedResourcesProvider<T: HasMetadata>: IResourcesProvider<T> {
-
-    fun getAllResources(): Collection<T>
-    fun getWatchableResource(): () -> Watchable<Watch, Watcher<T>>?
 }
 
 abstract class NonNamespacedResourcesProvider<R : HasMetadata, C: KubernetesClient>(protected val client: C)

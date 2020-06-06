@@ -11,9 +11,14 @@
 package org.jboss.tools.intellij.kubernetes.model.resource
 
 import io.fabric8.kubernetes.api.model.HasMetadata
+import io.fabric8.kubernetes.client.Watch
+import io.fabric8.kubernetes.client.Watcher
+import io.fabric8.kubernetes.client.dsl.Watchable
 
 interface IResourcesProvider<R: HasMetadata> {
     val kind: Class<R>
+    fun getAllResources(): Collection<R>
+    fun getWatchableResource(): () -> Watchable<Watch, Watcher<R>>?
     fun invalidate()
     fun invalidate(resource: HasMetadata)
     fun add(resource: HasMetadata): Boolean
