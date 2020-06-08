@@ -15,12 +15,10 @@ import com.intellij.ide.projectView.PresentationData
 import com.intellij.ide.util.treeView.AbstractTreeStructure
 import com.intellij.ide.util.treeView.NodeDescriptor
 import com.intellij.ide.util.treeView.PresentableNodeDescriptor
-import com.intellij.openapi.components.ServiceManager
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.extensions.ExtensionPointName
 import com.intellij.openapi.util.IconLoader
 import io.fabric8.kubernetes.api.model.HasMetadata
-import io.fabric8.kubernetes.api.model.NamedContext
 import org.jboss.tools.intellij.kubernetes.model.IResourceModel
 import org.jboss.tools.intellij.kubernetes.model.context.IContext
 import java.util.Optional
@@ -127,28 +125,28 @@ open class TreeStructure(private val model: IResourceModel,
     open class ContextDescriptor<C: IContext>(
             context: C,
             parent: NodeDescriptor<*>? = null,
-            labelProvider: (C) -> String = {
-                val label = if (it.context.context == null) {
-                    "<unknown context>"
-                } else {
-                    it.context.name
-                }
-                label
-            },
-            icon: Icon = IconLoader.getIcon("/icons/kubernetes-cluster.svg"),
             model: IResourceModel)
         : Descriptor<C>(
             context,
             parent,
-            labelProvider,
-            icon,
             model
-    )
+    ) {
+        override fun getLabel(element: C): String {
+            return if (element.context.context == null) {
+                "<unknown context>"
+            } else {
+                element.context.name
+            }
+        }
+
+        override fun getIcon(element: C): Icon? {
+            return IconLoader.getIcon("/icons/kubernetes-cluster.svg")
+        }
+    }
 
     private class FolderDescriptor(category: Folder, parent: NodeDescriptor<*>?, model: IResourceModel)
         : Descriptor<Folder>(
             category, parent,
-            { it.label },
             model = model
     ) {
         override fun isMatching(element: Any?): Boolean {
@@ -159,32 +157,38 @@ open class TreeStructure(private val model: IResourceModel,
         override fun invalidate() {
             model.invalidate(element.kind)
         }
+
+        override fun getLabel(element: Folder): String {
+            return element.label
+        }
     }
 
     private class ErrorDescriptor(exception: java.lang.Exception, parent: NodeDescriptor<*>?, model: IResourceModel)
         : Descriptor<java.lang.Exception>(
             exception,
             parent,
-            { "Error: " + it.message },
-            AllIcons.General.BalloonError,
             model
-    )
+    ) {
+        override fun getLabel(element: java.lang.Exception): String {
+            return "Error: " + element.message
+        }
+
+        override fun getIcon(element: java.lang.Exception): Icon? {
+            return AllIcons.General.BalloonError
+        }
+    }
 
     open class Descriptor<T>(
-        element: T,
-        parent: NodeDescriptor<*>?,
-        private val labelProvider: (T) -> String = { it?.toString() ?: "" },
-        private val nodeIcon: Icon? = null,
-        protected val model: IResourceModel
+            element: T,
+            parent: NodeDescriptor<*>?,
+            protected val model: IResourceModel
     ) : PresentableNodeDescriptor<T>(null, parent) {
 
         private val element = element
 
         override fun update(presentation: PresentationData) {
-            presentation.presentableText = labelProvider.invoke(element)
-            if (nodeIcon != null) {
-                presentation.setIcon(nodeIcon)
-            }
+            presentation.presentableText = getLabel(element)
+            updateIcon(getIcon(element), presentation)
         }
 
         open fun isMatching(element: Any?): Boolean {
@@ -197,6 +201,20 @@ open class TreeStructure(private val model: IResourceModel,
 
         open fun invalidate() {
             model.invalidate(element)
+        }
+
+        protected open fun getLabel(element: T): String {
+            return element?.toString() ?: ""
+        }
+
+        protected open fun getIcon(element: T): Icon? {
+            return null
+        }
+
+        private fun updateIcon(icon: Icon?, presentation: PresentationData) {
+            if (icon != null) {
+                presentation.setIcon(icon)
+            }
         }
     }
 

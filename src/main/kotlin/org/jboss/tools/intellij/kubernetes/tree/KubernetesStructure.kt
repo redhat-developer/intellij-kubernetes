@@ -12,7 +12,6 @@ package org.jboss.tools.intellij.kubernetes.tree
 
 import com.intellij.ide.util.treeView.NodeDescriptor
 import com.intellij.openapi.util.IconLoader
-import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.Namespace
 import io.fabric8.kubernetes.api.model.Node
 import io.fabric8.kubernetes.api.model.Pod
@@ -20,7 +19,9 @@ import org.jboss.tools.intellij.kubernetes.model.IResourceModel
 import org.jboss.tools.intellij.kubernetes.model.ResourceException
 import org.jboss.tools.intellij.kubernetes.model.context.KubernetesContext
 import org.jboss.tools.intellij.kubernetes.model.resourceName
-import org.jboss.tools.intellij.kubernetes.tree.TreeStructure.Folder
+import org.jboss.tools.intellij.kubernetes.model.util.isRunning
+import org.jboss.tools.intellij.kubernetes.tree.TreeStructure.*
+import javax.swing.Icon
 
 class KubernetesStructure(model: IResourceModel): AbstractTreeStructureContribution(model) {
 
@@ -101,42 +102,61 @@ class KubernetesStructure(model: IResourceModel): AbstractTreeStructureContribut
         }
     }
 
-    private class KubernetesContextDescriptor(element: KubernetesContext, model: IResourceModel) : TreeStructure.ContextDescriptor<KubernetesContext>(
+    private class KubernetesContextDescriptor(element: KubernetesContext, model: IResourceModel) : ContextDescriptor<KubernetesContext>(
             context = element,
-            icon = IconLoader.getIcon("/icons/kubernetes-cluster.svg"),
             model = model
-    )
+    ) {
+        override fun getIcon(context: KubernetesContext): Icon? {
+            return IconLoader.getIcon("/icons/kubernetes-cluster.svg")
+        }
+    }
 
     private class NamespaceDescriptor(element: Namespace, parent: NodeDescriptor<*>?, model: IResourceModel)
-        : TreeStructure.Descriptor<Namespace>(
+        : Descriptor<Namespace>(
             element,
             parent,
-            {
-                var label = it.metadata.name
-                if (label == model.getCurrentNamespace()) {
-                    label = "* $label"
-                }
-                label
-            },
-            IconLoader.getIcon("/icons/project.png"),
             model
-    )
+    ) {
+        override fun getLabel(namespace: Namespace): String {
+            var label = namespace.metadata.name
+            if (label == model.getCurrentNamespace()) {
+                label = "* $label"
+            }
+            return label
+        }
+
+        override fun getIcon(namespace: Namespace): Icon? {
+            return IconLoader.getIcon("/icons/project.png")
+        }
+    }
 
     private class PodDescriptor(element: Pod, parent: NodeDescriptor<*>?, model: IResourceModel)
-        : TreeStructure.Descriptor<Pod>(
+        : Descriptor<Pod>(
             element,
             parent,
-            { it.metadata.name },
-            IconLoader.getIcon("/icons/project.png"),
             model
-    )
+    ) {
+        override fun getLabel(element: Pod): String {
+            return element.metadata.name
+        }
+
+        override fun getIcon(pod: Pod): Icon? {
+            return IconLoader.getIcon("/icons/project.png")
+        }
+    }
 
     private class KubernetesNodeDescriptor(element: Node, parent: NodeDescriptor<*>?, model: IResourceModel)
-        : TreeStructure.Descriptor<Node>(
+        : Descriptor<Node>(
             element,
             parent,
-            { it.metadata.name },
-            IconLoader.getIcon("/icons/project.png"),
             model
-    )
+    ) {
+        override fun getLabel(element: Node): String {
+            return element.metadata.name
+        }
+
+        override fun getIcon(node: Node): Icon? {
+            return IconLoader.getIcon("/icons/project.png")
+        }
+    }
 }
