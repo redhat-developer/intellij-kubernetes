@@ -25,6 +25,7 @@ import org.jboss.tools.intellij.kubernetes.model.resource.DeploymentConfigFor
 import org.jboss.tools.intellij.kubernetes.model.resource.ReplicationControllerFor
 import org.jboss.tools.intellij.kubernetes.tree.KubernetesStructure.Folders.NODES
 import org.jboss.tools.intellij.kubernetes.tree.KubernetesStructure.Folders.WORKLOADS
+import javax.swing.Icon
 
 class OpenShiftStructure(model: IResourceModel): AbstractTreeStructureContribution(model) {
 
@@ -118,45 +119,71 @@ class OpenShiftStructure(model: IResourceModel): AbstractTreeStructureContributi
 
     private class OpenShiftContextDescriptor(context: OpenShiftContext, model: IResourceModel) : TreeStructure.ContextDescriptor<OpenShiftContext>(
         context = context,
-        icon = IconLoader.getIcon("/icons/openshift-cluster.svg"),
         model = model
-    )
+    ) {
+        override fun getIcon(context: OpenShiftContext): Icon? {
+            return IconLoader.getIcon("/icons/openshift-cluster.svg")
+        }
+    }
 
     private class ProjectDescriptor(element: Project, parent: NodeDescriptor<*>?, model: IResourceModel) : TreeStructure.Descriptor<Project>(
             element,
             parent,
-            {
-                var label = element.metadata.name
-                if (label == model.getCurrentNamespace()) {
-                    label = "* $label"
-                }
-                label
-            },
-            IconLoader.getIcon("/icons/project.png"),
             model
-    )
+
+    ) {
+        override fun getLabel(element: Project): String {
+            var label = element.metadata.name
+            if (label == model.getCurrentNamespace()) {
+                label = "* $label"
+            }
+            return label
+        }
+
+        override fun getIcon(project: Project): Icon? {
+            return IconLoader.getIcon("/icons/project.png")
+        }
+    }
 
     private class ImageStreamDescriptor(element: ImageStream, parent: NodeDescriptor<*>?, model: IResourceModel) : TreeStructure.Descriptor<ImageStream>(
             element,
             parent,
-            { element.metadata.name },
-            IconLoader.getIcon("/icons/project.png"),
             model
-    )
+    ) {
+        override fun getLabel(imageStream: ImageStream): String {
+            return imageStream.metadata.name
+        }
+
+        override fun getIcon(imageStream: ImageStream): Icon? {
+            return IconLoader.getIcon("/icons/project.png")
+        }
+    }
 
     private class DeploymentConfigDescriptor(element: DeploymentConfig, parent: NodeDescriptor<*>?, model: IResourceModel) : TreeStructure.Descriptor<DeploymentConfig>(
             element,
             parent,
-            { element.metadata.name },
-            IconLoader.getIcon("/icons/project.png"),
             model
-    )
+    ) {
+        override fun getLabel(element: DeploymentConfig): String {
+            return element.metadata.name
+        }
+
+        override fun getIcon(dc: DeploymentConfig): Icon? {
+            return IconLoader.getIcon("/icons/project.png")
+        }
+    }
 
     private class ReplicationControllerDescriptor(element: ReplicationController, parent: NodeDescriptor<*>?, model: IResourceModel) : TreeStructure.Descriptor<ReplicationController>(
             element,
             parent,
-            { element.metadata.name },
-            IconLoader.getIcon("/icons/project.png"),
             model
-    )
+    ) {
+        override fun getLabel(element: ReplicationController): String {
+            return element.metadata.name
+        }
+
+        override fun getIcon(rc: ReplicationController): Icon? {
+            return IconLoader.getIcon("/icons/project.png")
+        }
+    }
 }

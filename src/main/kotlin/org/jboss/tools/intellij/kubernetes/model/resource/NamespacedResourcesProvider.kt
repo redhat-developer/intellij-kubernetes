@@ -48,6 +48,6 @@ abstract class NamespacedResourcesProvider<R : HasMetadata, C : KubernetesClient
         return getWatchableResource(this.namespace!!)
     }
 
-    abstract fun getWatchableResource(namespace: String): () -> Watchable<Watch, Watcher<R>>?
+    protected abstract fun getWatchableResource(namespace: String): () -> Watchable<Watch, Watcher<R>>?
 
 }
