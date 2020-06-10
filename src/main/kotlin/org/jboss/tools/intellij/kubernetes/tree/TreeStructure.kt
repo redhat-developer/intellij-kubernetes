@@ -19,6 +19,8 @@ import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.extensions.ExtensionPointName
 import com.intellij.openapi.util.IconLoader
 import io.fabric8.kubernetes.api.model.HasMetadata
+import io.fabric8.kubernetes.api.model.Pod
+import javassist.runtime.Desc
 import org.jboss.tools.intellij.kubernetes.model.IResourceModel
 import org.jboss.tools.intellij.kubernetes.model.context.IContext
 import java.util.Optional
@@ -144,6 +146,20 @@ open class TreeStructure(private val model: IResourceModel,
         }
     }
 
+    open class ResourcePropertyDescriptor<T>(
+            element: T,
+            parent: NodeDescriptor<*>?,
+            model: IResourceModel
+    ) : Descriptor<T>(
+            element,
+            parent,
+            model
+    ) {
+        override fun getElement(): T? {
+            return null
+        }
+    }
+
     private class FolderDescriptor(category: Folder, parent: NodeDescriptor<*>?, model: IResourceModel)
         : Descriptor<Folder>(
             category, parent,
@@ -151,11 +167,11 @@ open class TreeStructure(private val model: IResourceModel,
     ) {
         override fun isMatching(element: Any?): Boolean {
             // change in resource cathegory is notified as change of resource kind
-            return this.element.kind == element
+            return this.element?.kind == element
         }
 
         override fun invalidate() {
-            model.invalidate(element.kind)
+            model.invalidate(element?.kind)
         }
 
         override fun getLabel(element: Folder): String {
@@ -195,7 +211,7 @@ open class TreeStructure(private val model: IResourceModel,
             return this.element == element
         }
 
-        override fun getElement(): T {
+        override fun getElement(): T? {
             return element;
         }
 
@@ -219,5 +235,9 @@ open class TreeStructure(private val model: IResourceModel,
     }
 
     data class Folder(val label: String, val kind: Class<out HasMetadata>?)
+
+    abstract class DescriptorFactory<R: HasMetadata>(protected val resource: R) {
+        abstract fun create(parent: NodeDescriptor<*>?, model: IResourceModel): NodeDescriptor<Pod>?
+    }
 }
 
