@@ -30,14 +30,16 @@ import org.jboss.tools.intellij.kubernetes.model.resource.INonNamespacedResource
 
 object Mocks {
 
-    fun contextFactory(context: IActiveContext<HasMetadata, KubernetesClient>): (IModelChangeObservable, NamedContext?) -> IActiveContext<HasMetadata, KubernetesClient> {
+    fun contextFactory(context: IActiveContext<HasMetadata, KubernetesClient>)
+            : (IModelChangeObservable, NamedContext?) -> IActiveContext<HasMetadata, KubernetesClient> {
         return mock {
             doReturn(context)
                     .whenever(mock).invoke(any(), anyOrNull()) // anyOrNull() bcs NamedContext is nullable
         }
     }
 
-    fun context(client: NamespacedKubernetesClient, currentNamespace: Namespace, context: NamedContext? = null): IActiveContext<HasMetadata, KubernetesClient> {
+    fun context(client: NamespacedKubernetesClient, currentNamespace: Namespace, context: NamedContext? = null)
+            : IActiveContext<HasMetadata, KubernetesClient> {
         return mock {
             doNothing()
                 .whenever(mock).startWatch()

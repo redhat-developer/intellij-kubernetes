@@ -121,7 +121,7 @@ class OpenShiftStructure(model: IResourceModel): AbstractTreeStructureContributi
         context = context,
         model = model
     ) {
-        override fun getIcon(context: OpenShiftContext): Icon? {
+        override fun getIcon(element: OpenShiftContext): Icon? {
             return IconLoader.getIcon("/icons/openshift-cluster.svg")
         }
     }
@@ -140,7 +140,7 @@ class OpenShiftStructure(model: IResourceModel): AbstractTreeStructureContributi
             return label
         }
 
-        override fun getIcon(project: Project): Icon? {
+        override fun getIcon(element: Project): Icon? {
             return IconLoader.getIcon("/icons/project.png")
         }
     }
@@ -150,11 +150,11 @@ class OpenShiftStructure(model: IResourceModel): AbstractTreeStructureContributi
             parent,
             model
     ) {
-        override fun getLabel(imageStream: ImageStream): String {
-            return imageStream.metadata.name
+        override fun getLabel(element: ImageStream): String {
+            return element.metadata.name
         }
 
-        override fun getIcon(imageStream: ImageStream): Icon? {
+        override fun getIcon(element: ImageStream): Icon? {
             return IconLoader.getIcon("/icons/project.png")
         }
     }
@@ -168,7 +168,7 @@ class OpenShiftStructure(model: IResourceModel): AbstractTreeStructureContributi
             return element.metadata.name
         }
 
-        override fun getIcon(dc: DeploymentConfig): Icon? {
+        override fun getIcon(element: DeploymentConfig): Icon? {
             return IconLoader.getIcon("/icons/project.png")
         }
     }
@@ -182,7 +182,7 @@ class OpenShiftStructure(model: IResourceModel): AbstractTreeStructureContributi
             return element.metadata.name
         }
 
-        override fun getIcon(rc: ReplicationController): Icon? {
+        override fun getIcon(element: ReplicationController): Icon? {
             return IconLoader.getIcon("/icons/project.png")
         }
     }

@@ -19,13 +19,20 @@ import org.jboss.tools.intellij.kubernetes.model.IResourceModel
 import org.jboss.tools.intellij.kubernetes.model.ResourceException
 import org.jboss.tools.intellij.kubernetes.model.context.KubernetesContext
 import org.jboss.tools.intellij.kubernetes.model.resourceName
+import org.jboss.tools.intellij.kubernetes.model.util.getContainers
 import org.jboss.tools.intellij.kubernetes.model.util.isRunning
-import org.jboss.tools.intellij.kubernetes.tree.TreeStructure.*
+import org.jboss.tools.intellij.kubernetes.tree.KubernetesStructure.Folders.NAMESPACES
+import org.jboss.tools.intellij.kubernetes.tree.KubernetesStructure.Folders.NODES
+import org.jboss.tools.intellij.kubernetes.tree.KubernetesStructure.Folders.PODS
+import org.jboss.tools.intellij.kubernetes.tree.KubernetesStructure.Folders.WORKLOADS
+import org.jboss.tools.intellij.kubernetes.tree.TreeStructure.Folder
+import org.jboss.tools.intellij.kubernetes.tree.TreeStructure.DescriptorFactory
+import org.jboss.tools.intellij.kubernetes.tree.TreeStructure.Descriptor
 import javax.swing.Icon
 
 class KubernetesStructure(model: IResourceModel): AbstractTreeStructureContribution(model) {
 
-    companion object Folders {
+    object Folders {
         val NAMESPACES = Folder("Namespaces", Namespace::class.java)
         val NODES = Folder("Nodes", Node::class.java)
         val WORKLOADS = Folder("Workloads", null)
@@ -64,6 +71,9 @@ class KubernetesStructure(model: IResourceModel): AbstractTreeStructureContribut
                         .inCurrentNamespace()
                         .list()
                         .sortedBy(resourceName)
+            is Pod ->
+                listOf(PodContainersDescriptorFactory(element),
+                        PodIpDescriptorFactory(element))
             else ->
                 listOf()
         }
@@ -98,15 +108,16 @@ class KubernetesStructure(model: IResourceModel): AbstractTreeStructureContribut
             is Namespace -> NamespaceDescriptor(element, parent, model)
             is Node -> KubernetesNodeDescriptor(element, parent, model)
             is Pod -> PodDescriptor(element, parent, model)
+            is DescriptorFactory<*> -> element.create(parent, model)
             else -> null
         }
     }
 
-    private class KubernetesContextDescriptor(element: KubernetesContext, model: IResourceModel) : ContextDescriptor<KubernetesContext>(
+    private class KubernetesContextDescriptor(element: KubernetesContext, model: IResourceModel) : TreeStructure.ContextDescriptor<KubernetesContext>(
             context = element,
             model = model
     ) {
-        override fun getIcon(context: KubernetesContext): Icon? {
+        override fun getIcon(element: KubernetesContext): Icon? {
             return IconLoader.getIcon("/icons/kubernetes-cluster.svg")
         }
     }
@@ -117,22 +128,22 @@ class KubernetesStructure(model: IResourceModel): AbstractTreeStructureContribut
             parent,
             model
     ) {
-        override fun getLabel(namespace: Namespace): String {
-            var label = namespace.metadata.name
+        override fun getLabel(element: Namespace): String {
+            var label = element.metadata.name
             if (label == model.getCurrentNamespace()) {
                 label = "* $label"
             }
             return label
         }
 
-        override fun getIcon(namespace: Namespace): Icon? {
+        override fun getIcon(element: Namespace): Icon? {
             return IconLoader.getIcon("/icons/project.png")
         }
     }
 
-    private class PodDescriptor(element: Pod, parent: NodeDescriptor<*>?, model: IResourceModel)
+    private class PodDescriptor(pod: Pod, parent: NodeDescriptor<*>?, model: IResourceModel)
         : Descriptor<Pod>(
-            element,
+            pod,
             parent,
             model
     ) {
@@ -140,8 +151,51 @@ class KubernetesStructure(model: IResourceModel): AbstractTreeStructureContribut
             return element.metadata.name
         }
 
-        override fun getIcon(pod: Pod): Icon? {
-            return IconLoader.getIcon("/icons/project.png")
+        override fun getIcon(element: Pod): Icon? {
+            return if(element.isRunning()) {
+                IconLoader.getIcon("/icons/runningPod.svg")
+            } else {
+                IconLoader.getIcon("/icons/errorPod.svg")
+            }
+        }
+    }
+
+    private class PodContainersDescriptorFactory(pod: Pod): TreeStructure.DescriptorFactory<Pod>(pod) {
+
+        override fun create(parent: NodeDescriptor<*>?, model: IResourceModel): NodeDescriptor<Pod>? {
+            return PodContainersDescriptor(resource, parent, model)
+        }
+
+        private class PodContainersDescriptor(element: Pod, parent: NodeDescriptor<*>?, model: IResourceModel)
+            : TreeStructure.ResourcePropertyDescriptor<Pod>(
+                element,
+                parent,
+                model
+        ) {
+            override fun getLabel(element: Pod): String {
+                val total = element.getContainers().size
+                val ready = element.getContainers().filter { it.ready }.size
+                val state = element.status.phase
+                return "$state ($ready/$total)"
+            }
+        }
+    }
+
+    private class PodIpDescriptorFactory(pod: Pod): TreeStructure.DescriptorFactory<Pod>(pod) {
+
+        override fun create(parent: NodeDescriptor<*>?, model: IResourceModel): NodeDescriptor<Pod>? {
+            return PodIpDescriptor(resource, parent, model)
+        }
+
+        private class PodIpDescriptor(element: Pod, parent: NodeDescriptor<*>?, model: IResourceModel)
+            : TreeStructure.ResourcePropertyDescriptor<Pod>(
+                element,
+                parent,
+                model
+        ) {
+            override fun getLabel(element: Pod): String {
+                return element.status?.podIP ?: "<No IP>"
+            }
         }
     }
 
@@ -155,7 +209,7 @@ class KubernetesStructure(model: IResourceModel): AbstractTreeStructureContribut
             return element.metadata.name
         }
 
-        override fun getIcon(node: Node): Icon? {
+        override fun getIcon(element: Node): Icon? {
             return IconLoader.getIcon("/icons/project.png")
         }
     }
