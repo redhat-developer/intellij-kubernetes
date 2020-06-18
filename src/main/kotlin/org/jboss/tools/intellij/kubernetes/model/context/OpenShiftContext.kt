@@ -18,6 +18,7 @@ import org.jboss.tools.intellij.kubernetes.model.IModelChangeObservable
 import org.jboss.tools.intellij.kubernetes.model.context.IActiveContext.*
 import org.jboss.tools.intellij.kubernetes.model.resource.IResourcesProvider
 import org.jboss.tools.intellij.kubernetes.model.resource.kubernetes.AllPodsProvider
+import org.jboss.tools.intellij.kubernetes.model.resource.kubernetes.EndpointsProvider
 import org.jboss.tools.intellij.kubernetes.model.resource.kubernetes.NamespacesProvider
 import org.jboss.tools.intellij.kubernetes.model.resource.kubernetes.NodesProvider
 import org.jboss.tools.intellij.kubernetes.model.resource.kubernetes.NamespacedPodsProvider
@@ -44,7 +45,8 @@ open class OpenShiftContext(
 				ImageStreamsProvider(client),
 				DeploymentConfigsProvider(client),
 				ReplicationControllersProvider(client),
-				ServicesProvider(client)
+				ServicesProvider(client),
+				EndpointsProvider(client)
 		)
 	}
 

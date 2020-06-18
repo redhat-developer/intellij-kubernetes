@@ -23,6 +23,9 @@ import org.jboss.tools.intellij.kubernetes.model.resourceName
 import org.jboss.tools.intellij.kubernetes.model.context.OpenShiftContext
 import org.jboss.tools.intellij.kubernetes.model.resource.DeploymentConfigFor
 import org.jboss.tools.intellij.kubernetes.model.resource.ReplicationControllerFor
+import org.jboss.tools.intellij.kubernetes.tree.TreeStructure.Folder
+import org.jboss.tools.intellij.kubernetes.tree.TreeStructure.Descriptor
+import org.jboss.tools.intellij.kubernetes.tree.TreeStructure.ResourceDescriptor
 import org.jboss.tools.intellij.kubernetes.tree.KubernetesStructure.Folders.NODES
 import org.jboss.tools.intellij.kubernetes.tree.KubernetesStructure.Folders.WORKLOADS
 import javax.swing.Icon
@@ -30,9 +33,9 @@ import javax.swing.Icon
 class OpenShiftStructure(model: IResourceModel): AbstractTreeStructureContribution(model) {
 
     companion object Folders {
-        val PROJECTS = TreeStructure.Folder("Projects", Project::class.java)
-        val IMAGESTREAMS = TreeStructure.Folder("ImageStreams", ImageStream::class.java)
-        val DEPLOYMENTCONFIGS = TreeStructure.Folder("DeploymentConfigs", DeploymentConfig::class.java)
+        val PROJECTS = Folder("Projects", Project::class.java)
+        val IMAGESTREAMS = Folder("ImageStreams", ImageStream::class.java)
+        val DEPLOYMENTCONFIGS = Folder("DeploymentConfigs", DeploymentConfig::class.java)
     }
 
     override fun canContribute(): Boolean {
@@ -117,21 +120,22 @@ class OpenShiftStructure(model: IResourceModel): AbstractTreeStructureContributi
         }
     }
 
-    private class OpenShiftContextDescriptor(context: OpenShiftContext, model: IResourceModel) : TreeStructure.ContextDescriptor<OpenShiftContext>(
-        context = context,
-        model = model
+    private class OpenShiftContextDescriptor(context: OpenShiftContext, model: IResourceModel)
+        : TreeStructure.ContextDescriptor<OpenShiftContext>(
+            context = context,
+            model = model
     ) {
         override fun getIcon(element: OpenShiftContext): Icon? {
             return IconLoader.getIcon("/icons/openshift-cluster.svg")
         }
     }
 
-    private class ProjectDescriptor(element: Project, parent: NodeDescriptor<*>?, model: IResourceModel) : TreeStructure.Descriptor<Project>(
-            element,
-            parent,
-            model
+    private class ProjectDescriptor(
+            element: Project,
+            parent: NodeDescriptor<*>?,
+            model: IResourceModel)
+        : ResourceDescriptor<Project>(element, parent, model) {
 
-    ) {
         override fun getLabel(element: Project): String {
             var label = element.metadata.name
             if (label == model.getCurrentNamespace()) {
@@ -139,51 +143,23 @@ class OpenShiftStructure(model: IResourceModel): AbstractTreeStructureContributi
             }
             return label
         }
-
-        override fun getIcon(element: Project): Icon? {
-            return IconLoader.getIcon("/icons/project.png")
-        }
     }
 
-    private class ImageStreamDescriptor(element: ImageStream, parent: NodeDescriptor<*>?, model: IResourceModel) : TreeStructure.Descriptor<ImageStream>(
-            element,
-            parent,
-            model
-    ) {
-        override fun getLabel(element: ImageStream): String {
-            return element.metadata.name
-        }
+    private class ImageStreamDescriptor(
+            element: ImageStream,
+            parent: NodeDescriptor<*>?,
+            model: IResourceModel)
+        : ResourceDescriptor<ImageStream>(element, parent,model)
 
-        override fun getIcon(element: ImageStream): Icon? {
-            return IconLoader.getIcon("/icons/project.png")
-        }
-    }
+    private class DeploymentConfigDescriptor(
+            element: DeploymentConfig,
+            parent: NodeDescriptor<*>?,
+            model: IResourceModel)
+        : ResourceDescriptor<DeploymentConfig>(element, parent, model)
 
-    private class DeploymentConfigDescriptor(element: DeploymentConfig, parent: NodeDescriptor<*>?, model: IResourceModel) : TreeStructure.Descriptor<DeploymentConfig>(
-            element,
-            parent,
-            model
-    ) {
-        override fun getLabel(element: DeploymentConfig): String {
-            return element.metadata.name
-        }
-
-        override fun getIcon(element: DeploymentConfig): Icon? {
-            return IconLoader.getIcon("/icons/project.png")
-        }
-    }
-
-    private class ReplicationControllerDescriptor(element: ReplicationController, parent: NodeDescriptor<*>?, model: IResourceModel) : TreeStructure.Descriptor<ReplicationController>(
-            element,
-            parent,
-            model
-    ) {
-        override fun getLabel(element: ReplicationController): String {
-            return element.metadata.name
-        }
-
-        override fun getIcon(element: ReplicationController): Icon? {
-            return IconLoader.getIcon("/icons/project.png")
-        }
-    }
+    private class ReplicationControllerDescriptor(
+            element: ReplicationController,
+            parent: NodeDescriptor<*>?,
+            model: IResourceModel)
+        : ResourceDescriptor<ReplicationController>(element, parent,model)
 }
