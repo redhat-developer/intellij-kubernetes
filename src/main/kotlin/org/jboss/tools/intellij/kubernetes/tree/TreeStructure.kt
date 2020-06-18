@@ -194,6 +194,16 @@ open class TreeStructure(
         }
     }
 
+    open class ResourceDescriptor<T: HasMetadata>(
+            element: T,
+            parent: NodeDescriptor<*>?,
+            model: IResourceModel): Descriptor<T>(element, parent, model) {
+
+        override fun getLabel(element: T): String {
+            return element.metadata.name
+        }
+    }
+
     open class Descriptor<T>(
             element: T,
             parent: NodeDescriptor<*>?,
@@ -220,7 +230,7 @@ open class TreeStructure(
         }
 
         protected open fun getLabel(element: T): String {
-            return element?.toString() ?: ""
+            return element.toString()
         }
 
         protected open fun getIcon(element: T): Icon? {

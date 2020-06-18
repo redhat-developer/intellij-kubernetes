@@ -12,6 +12,7 @@ package org.jboss.tools.intellij.kubernetes.tree
 
 import com.intellij.ide.util.treeView.NodeDescriptor
 import com.intellij.openapi.util.IconLoader
+import io.fabric8.kubernetes.api.model.Endpoints
 import io.fabric8.kubernetes.api.model.Namespace
 import io.fabric8.kubernetes.api.model.Node
 import io.fabric8.kubernetes.api.model.Pod
@@ -23,15 +24,14 @@ import org.jboss.tools.intellij.kubernetes.model.resource.DeploymentConfigFor
 import org.jboss.tools.intellij.kubernetes.model.resourceName
 import org.jboss.tools.intellij.kubernetes.model.util.getContainers
 import org.jboss.tools.intellij.kubernetes.model.util.isRunning
+import org.jboss.tools.intellij.kubernetes.tree.KubernetesStructure.Folders.ENDPOINTS
 import org.jboss.tools.intellij.kubernetes.tree.KubernetesStructure.Folders.NAMESPACES
 import org.jboss.tools.intellij.kubernetes.tree.KubernetesStructure.Folders.NETWORK
 import org.jboss.tools.intellij.kubernetes.tree.KubernetesStructure.Folders.NODES
 import org.jboss.tools.intellij.kubernetes.tree.KubernetesStructure.Folders.PODS
 import org.jboss.tools.intellij.kubernetes.tree.KubernetesStructure.Folders.SERVICES
 import org.jboss.tools.intellij.kubernetes.tree.KubernetesStructure.Folders.WORKLOADS
-import org.jboss.tools.intellij.kubernetes.tree.TreeStructure.Folder
-import org.jboss.tools.intellij.kubernetes.tree.TreeStructure.DescriptorFactory
-import org.jboss.tools.intellij.kubernetes.tree.TreeStructure.Descriptor
+import org.jboss.tools.intellij.kubernetes.tree.TreeStructure.*
 import javax.swing.Icon
 
 class KubernetesStructure(model: IResourceModel): AbstractTreeStructureContribution(model) {
@@ -43,6 +43,7 @@ class KubernetesStructure(model: IResourceModel): AbstractTreeStructureContribut
         val PODS = Folder("Pods", Pod::class.java)
         val NETWORK = Folder("Network", null)
         val SERVICES = Folder("Services", Service::class.java)
+        val ENDPOINTS = Folder("Endpoints", Endpoints::class.java)
     }
 
     override fun canContribute() = true
@@ -82,7 +83,9 @@ class KubernetesStructure(model: IResourceModel): AbstractTreeStructureContribut
                 listOf(PodContainersDescriptorFactory(element),
                         PodIpDescriptorFactory(element))
             NETWORK ->
-                listOf<Any>(SERVICES)
+                listOf<Any>(
+                        SERVICES,
+                        ENDPOINTS)
             SERVICES ->
                 model.resources(Service::class.java)
                         .inCurrentNamespace()
@@ -94,7 +97,11 @@ class KubernetesStructure(model: IResourceModel): AbstractTreeStructureContribut
                         .filtered(DeploymentConfigFor.PodForService(element))
                         .list()
                         .sortedBy(resourceName)
-
+            ENDPOINTS ->
+                model.resources(Endpoints::class.java)
+                        .inCurrentNamespace()
+                        .list()
+                        .sortedBy(resourceName)
             else ->
                 listOf()
         }
@@ -123,6 +130,10 @@ class KubernetesStructure(model: IResourceModel): AbstractTreeStructureContribut
                     SERVICES
                 SERVICES ->
                     NETWORK
+                is Endpoints ->
+                    ENDPOINTS
+                ENDPOINTS ->
+                    NETWORK
                 NETWORK ->
                     getRootElement()
                 else ->
@@ -140,12 +151,13 @@ class KubernetesStructure(model: IResourceModel): AbstractTreeStructureContribut
             is Node -> KubernetesNodeDescriptor(element, parent, model)
             is Pod -> PodDescriptor(element, parent, model)
             is Service -> ServiceDescriptor(element, parent, model)
+            is Endpoints -> EndpointsDescriptor(element, parent, model)
             is DescriptorFactory<*> -> element.create(parent, model)
             else -> null
         }
     }
 
-    private class KubernetesContextDescriptor(element: KubernetesContext, model: IResourceModel) : TreeStructure.ContextDescriptor<KubernetesContext>(
+    private class KubernetesContextDescriptor(element: KubernetesContext, model: IResourceModel) : ContextDescriptor<KubernetesContext>(
             context = element,
             model = model
     ) {
@@ -192,14 +204,14 @@ class KubernetesStructure(model: IResourceModel): AbstractTreeStructureContribut
         }
     }
 
-    private class PodContainersDescriptorFactory(pod: Pod): TreeStructure.DescriptorFactory<Pod>(pod) {
+    private class PodContainersDescriptorFactory(pod: Pod): DescriptorFactory<Pod>(pod) {
 
         override fun create(parent: NodeDescriptor<*>?, model: IResourceModel): NodeDescriptor<Pod>? {
             return PodContainersDescriptor(resource, parent, model)
         }
 
         private class PodContainersDescriptor(element: Pod, parent: NodeDescriptor<*>?, model: IResourceModel)
-            : TreeStructure.ResourcePropertyDescriptor<Pod>(
+            : ResourcePropertyDescriptor<Pod>(
                 element,
                 parent,
                 model
@@ -213,14 +225,14 @@ class KubernetesStructure(model: IResourceModel): AbstractTreeStructureContribut
         }
     }
 
-    private class PodIpDescriptorFactory(pod: Pod): TreeStructure.DescriptorFactory<Pod>(pod) {
+    private class PodIpDescriptorFactory(pod: Pod): DescriptorFactory<Pod>(pod) {
 
         override fun create(parent: NodeDescriptor<*>?, model: IResourceModel): NodeDescriptor<Pod>? {
             return PodIpDescriptor(resource, parent, model)
         }
 
         private class PodIpDescriptor(element: Pod, parent: NodeDescriptor<*>?, model: IResourceModel)
-            : TreeStructure.ResourcePropertyDescriptor<Pod>(
+            : ResourcePropertyDescriptor<Pod>(
                 element,
                 parent,
                 model
@@ -232,32 +244,23 @@ class KubernetesStructure(model: IResourceModel): AbstractTreeStructureContribut
     }
 
     private class ServiceDescriptor(element: Service, parent: NodeDescriptor<*>?, model: IResourceModel)
-        : Descriptor<Service>(
+        : ResourceDescriptor<Service>(
             element,
             parent,
             model
-    ) {
-        override fun getLabel(element: Service): String {
-            return element.metadata.name
-        }
+    )
 
-        override fun getIcon(element: Service): Icon? {
-            return IconLoader.getIcon("/icons/project.png")
-        }
-    }
+    private class EndpointsDescriptor(element: Endpoints, parent: NodeDescriptor<*>?, model: IResourceModel)
+        : ResourceDescriptor<Endpoints>(
+            element,
+            parent,
+            model
+    )
 
     private class KubernetesNodeDescriptor(element: Node, parent: NodeDescriptor<*>?, model: IResourceModel)
-        : Descriptor<Node>(
+        : ResourceDescriptor<Node>(
             element,
             parent,
             model
-    ) {
-        override fun getLabel(element: Node): String {
-            return element.metadata.name
-        }
-
-        override fun getIcon(element: Node): Icon? {
-            return IconLoader.getIcon("/icons/project.png")
-        }
-    }
+    )
 }
