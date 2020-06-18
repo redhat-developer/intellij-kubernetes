@@ -8,33 +8,33 @@
  * Contributors:
  * Red Hat, Inc. - initial API and implementation
  ******************************************************************************/
-package org.jboss.tools.intellij.kubernetes.model.resource.openshift
+package org.jboss.tools.intellij.kubernetes.model.resource.kubernetes
 
-import io.fabric8.kubernetes.api.model.ReplicationController
+import io.fabric8.kubernetes.api.model.Service
 import io.fabric8.kubernetes.client.KubernetesClient
+import io.fabric8.kubernetes.client.NamespacedKubernetesClient
 import io.fabric8.kubernetes.client.Watch
 import io.fabric8.kubernetes.client.Watcher
 import io.fabric8.kubernetes.client.dsl.Watchable
 import io.fabric8.openshift.api.model.DeploymentConfig
-import io.fabric8.openshift.api.model.ImageStream
 import io.fabric8.openshift.client.NamespacedOpenShiftClient
-import io.fabric8.openshift.client.OpenShiftClient
 import org.jboss.tools.intellij.kubernetes.model.resource.NamespacedResourcesProvider
 
-class ReplicationControllersProvider(client: OpenShiftClient)
-    : NamespacedResourcesProvider<ReplicationController, OpenShiftClient>(client) {
+class ServicesProvider(client: KubernetesClient)
+    : NamespacedResourcesProvider<Service, KubernetesClient>(client) {
 
     companion object {
-        val KIND = ReplicationController::class.java;
+        val KIND = Service::class.java;
     }
 
     override val kind = KIND
 
-    override fun loadAllResources(namespace: String): List<ReplicationController> {
-        return client.replicationControllers().inNamespace(namespace).list().items
+    override fun loadAllResources(namespace: String): List<Service> {
+        return client.services().inNamespace(namespace).list().items
     }
 
-    override fun getWatchableResource(namespace: String): () -> Watchable<Watch, Watcher<ReplicationController>>? {
-        return { client.replicationControllers().inNamespace(namespace) }
+    override fun getWatchableResource(namespace: String): () -> Watchable<Watch, Watcher<Service>>? {
+        return { client.services().inNamespace(namespace) }
     }
+
 }

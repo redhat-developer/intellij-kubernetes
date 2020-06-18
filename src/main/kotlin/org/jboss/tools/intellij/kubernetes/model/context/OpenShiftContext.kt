@@ -21,6 +21,7 @@ import org.jboss.tools.intellij.kubernetes.model.resource.kubernetes.AllPodsProv
 import org.jboss.tools.intellij.kubernetes.model.resource.kubernetes.NamespacesProvider
 import org.jboss.tools.intellij.kubernetes.model.resource.kubernetes.NodesProvider
 import org.jboss.tools.intellij.kubernetes.model.resource.kubernetes.NamespacedPodsProvider
+import org.jboss.tools.intellij.kubernetes.model.resource.kubernetes.ServicesProvider
 import org.jboss.tools.intellij.kubernetes.model.resource.openshift.DeploymentConfigsProvider
 import org.jboss.tools.intellij.kubernetes.model.resource.openshift.ImageStreamsProvider
 import org.jboss.tools.intellij.kubernetes.model.resource.openshift.ProjectsProvider
@@ -37,12 +38,14 @@ open class OpenShiftContext(
 		return listOf(
 				NamespacesProvider(client),
 				NodesProvider(client),
-				NamespacedPodsProvider(client),
 				AllPodsProvider(client),
+				NamespacedPodsProvider(client),
 				ProjectsProvider(client),
 				ImageStreamsProvider(client),
 				DeploymentConfigsProvider(client),
-				ReplicationControllersProvider(client)
+				ReplicationControllersProvider(client),
+				ServicesProvider(client)
+
 		)
 	}
 

@@ -18,7 +18,7 @@ import io.fabric8.openshift.client.NamespacedOpenShiftClient
 import io.fabric8.openshift.client.OpenShiftClient
 import org.jboss.tools.intellij.kubernetes.model.resource.NonNamespacedResourcesProvider
 
-class ProjectsProvider(client: NamespacedOpenShiftClient)
+class ProjectsProvider(client: OpenShiftClient)
     : NonNamespacedResourcesProvider<Project, OpenShiftClient>(client) {
 
     companion object {

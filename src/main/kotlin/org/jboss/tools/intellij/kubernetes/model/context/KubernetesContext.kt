@@ -21,6 +21,7 @@ import org.jboss.tools.intellij.kubernetes.model.resource.kubernetes.AllPodsProv
 import org.jboss.tools.intellij.kubernetes.model.resource.kubernetes.NamespacesProvider
 import org.jboss.tools.intellij.kubernetes.model.resource.kubernetes.NodesProvider
 import org.jboss.tools.intellij.kubernetes.model.resource.kubernetes.NamespacedPodsProvider
+import org.jboss.tools.intellij.kubernetes.model.resource.kubernetes.ServicesProvider
 
 open class KubernetesContext(
 		modelChange: IModelChangeObservable,
@@ -33,8 +34,9 @@ open class KubernetesContext(
 		return listOf(
 				NamespacesProvider(client),
 				NodesProvider(client),
+				AllPodsProvider(client),
 				NamespacedPodsProvider(client),
-				AllPodsProvider(client)
+				ServicesProvider(client)
 		)
 	}
 

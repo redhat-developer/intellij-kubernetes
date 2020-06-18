@@ -10,7 +10,9 @@
  ******************************************************************************/
 package org.jboss.tools.intellij.kubernetes.model.resource
 
+import io.fabric8.kubernetes.api.model.Pod
 import io.fabric8.kubernetes.api.model.ReplicationController
+import io.fabric8.kubernetes.api.model.Service
 import io.fabric8.openshift.api.model.DeploymentConfig
 import java.util.function.Predicate
 
@@ -32,4 +34,12 @@ class DeploymentConfigFor(private val dc: ReplicationController) : Predicate<Dep
 		return dcName != null
 				&& dcName == dc.metadata.annotations[deploymentConfigAnnotation]
 	}
+
+	class PodForService(private val service: Service) : Predicate<Pod> {
+
+		override fun test(pod: Pod): Boolean {
+			return service.spec.selector.all { pod.metadata.labels.entries.contains(it) }
+		}
+	}
+
 }

@@ -15,15 +15,19 @@ import com.intellij.openapi.util.IconLoader
 import io.fabric8.kubernetes.api.model.Namespace
 import io.fabric8.kubernetes.api.model.Node
 import io.fabric8.kubernetes.api.model.Pod
+import io.fabric8.kubernetes.api.model.Service
 import org.jboss.tools.intellij.kubernetes.model.IResourceModel
 import org.jboss.tools.intellij.kubernetes.model.ResourceException
 import org.jboss.tools.intellij.kubernetes.model.context.KubernetesContext
+import org.jboss.tools.intellij.kubernetes.model.resource.DeploymentConfigFor
 import org.jboss.tools.intellij.kubernetes.model.resourceName
 import org.jboss.tools.intellij.kubernetes.model.util.getContainers
 import org.jboss.tools.intellij.kubernetes.model.util.isRunning
 import org.jboss.tools.intellij.kubernetes.tree.KubernetesStructure.Folders.NAMESPACES
+import org.jboss.tools.intellij.kubernetes.tree.KubernetesStructure.Folders.NETWORK
 import org.jboss.tools.intellij.kubernetes.tree.KubernetesStructure.Folders.NODES
 import org.jboss.tools.intellij.kubernetes.tree.KubernetesStructure.Folders.PODS
+import org.jboss.tools.intellij.kubernetes.tree.KubernetesStructure.Folders.SERVICES
 import org.jboss.tools.intellij.kubernetes.tree.KubernetesStructure.Folders.WORKLOADS
 import org.jboss.tools.intellij.kubernetes.tree.TreeStructure.Folder
 import org.jboss.tools.intellij.kubernetes.tree.TreeStructure.DescriptorFactory
@@ -37,6 +41,8 @@ class KubernetesStructure(model: IResourceModel): AbstractTreeStructureContribut
         val NODES = Folder("Nodes", Node::class.java)
         val WORKLOADS = Folder("Workloads", null)
         val PODS = Folder("Pods", Pod::class.java)
+        val NETWORK = Folder("Network", null)
+        val SERVICES = Folder("Services", Service::class.java)
     }
 
     override fun canContribute() = true
@@ -47,7 +53,8 @@ class KubernetesStructure(model: IResourceModel): AbstractTreeStructureContribut
                 mutableListOf<Any>(
                     NAMESPACES,
                     NODES,
-                    WORKLOADS
+                    WORKLOADS,
+                    NETWORK
                 )
             NAMESPACES ->
                 model.resources(Namespace::class.java)
@@ -74,6 +81,20 @@ class KubernetesStructure(model: IResourceModel): AbstractTreeStructureContribut
             is Pod ->
                 listOf(PodContainersDescriptorFactory(element),
                         PodIpDescriptorFactory(element))
+            NETWORK ->
+                listOf<Any>(SERVICES)
+            SERVICES ->
+                model.resources(Service::class.java)
+                        .inCurrentNamespace()
+                        .list()
+                        .sortedBy(resourceName)
+            is Service ->
+                model.resources(Pod::class.java)
+                        .inCurrentNamespace()
+                        .filtered(DeploymentConfigFor.PodForService(element))
+                        .list()
+                        .sortedBy(resourceName)
+
             else ->
                 listOf()
         }
@@ -86,14 +107,24 @@ class KubernetesStructure(model: IResourceModel): AbstractTreeStructureContribut
                     model
                 is Namespace ->
                     NAMESPACES
+                NAMESPACES ->
+                    getRootElement()
                 is Pod ->
-                    listOf(PODS, NODES)
-                NAMESPACES,
-                NODES,
-                WORKLOADS ->
+                    listOf(PODS, NODES, SERVICES)
+                is Node ->
+                    NODES
+                NODES ->
                     getRootElement()
                 PODS ->
                     WORKLOADS
+                WORKLOADS ->
+                    getRootElement()
+                is Service ->
+                    SERVICES
+                SERVICES ->
+                    NETWORK
+                NETWORK ->
+                    getRootElement()
                 else ->
                     getRootElement()
             }
@@ -108,6 +139,7 @@ class KubernetesStructure(model: IResourceModel): AbstractTreeStructureContribut
             is Namespace -> NamespaceDescriptor(element, parent, model)
             is Node -> KubernetesNodeDescriptor(element, parent, model)
             is Pod -> PodDescriptor(element, parent, model)
+            is Service -> ServiceDescriptor(element, parent, model)
             is DescriptorFactory<*> -> element.create(parent, model)
             else -> null
         }
@@ -196,6 +228,21 @@ class KubernetesStructure(model: IResourceModel): AbstractTreeStructureContribut
             override fun getLabel(element: Pod): String {
                 return element.status?.podIP ?: "<No IP>"
             }
+        }
+    }
+
+    private class ServiceDescriptor(element: Service, parent: NodeDescriptor<*>?, model: IResourceModel)
+        : Descriptor<Service>(
+            element,
+            parent,
+            model
+    ) {
+        override fun getLabel(element: Service): String {
+            return element.metadata.name
+        }
+
+        override fun getIcon(element: Service): Icon? {
+            return IconLoader.getIcon("/icons/project.png")
         }
     }
 

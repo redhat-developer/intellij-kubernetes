@@ -15,10 +15,11 @@ import io.fabric8.kubernetes.client.Watcher
 import io.fabric8.kubernetes.client.dsl.Watchable
 import io.fabric8.openshift.api.model.ImageStream
 import io.fabric8.openshift.client.NamespacedOpenShiftClient
+import io.fabric8.openshift.client.OpenShiftClient
 import org.jboss.tools.intellij.kubernetes.model.resource.NamespacedResourcesProvider
 
-class ImageStreamsProvider(client: NamespacedOpenShiftClient)
-    : NamespacedResourcesProvider<ImageStream, NamespacedOpenShiftClient>(client) {
+class ImageStreamsProvider(client: OpenShiftClient)
+    : NamespacedResourcesProvider<ImageStream, OpenShiftClient>(client) {
 
     companion object {
         val KIND = ImageStream::class.java;

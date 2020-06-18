@@ -15,10 +15,11 @@ import io.fabric8.kubernetes.client.Watcher
 import io.fabric8.kubernetes.client.dsl.Watchable
 import io.fabric8.openshift.api.model.DeploymentConfig
 import io.fabric8.openshift.client.NamespacedOpenShiftClient
+import io.fabric8.openshift.client.OpenShiftClient
 import org.jboss.tools.intellij.kubernetes.model.resource.NamespacedResourcesProvider
 
-class DeploymentConfigsProvider(client: NamespacedOpenShiftClient)
-    : NamespacedResourcesProvider<DeploymentConfig, NamespacedOpenShiftClient>(client) {
+class DeploymentConfigsProvider(client: OpenShiftClient)
+    : NamespacedResourcesProvider<DeploymentConfig, OpenShiftClient>(client) {
 
     companion object {
         val KIND = DeploymentConfig::class.java;
