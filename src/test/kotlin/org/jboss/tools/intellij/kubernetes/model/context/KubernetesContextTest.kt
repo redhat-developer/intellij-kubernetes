@@ -91,8 +91,8 @@ class KubernetesContextTest {
 		val context = spy(TestableKubernetesContext(
 				observable,
 				this@KubernetesContextTest.client,
-		internalResourcesProviders,
-		extensionResourceProviders))
+				internalResourcesProviders,
+				extensionResourceProviders))
 		doReturn(
 				listOf { watchable1 }, // returned on 1st call
 				listOf { watchable2 }) // returned on 2nd call
@@ -457,7 +457,8 @@ class KubernetesContextTest {
 			return internalResourceProviders
 		}
 
-		public override fun getExtensionResourceProviders(client: NamespacedKubernetesClient): List<IResourcesProvider<out HasMetadata>> {
+		public override fun getExtensionResourceProviders(client: NamespacedKubernetesClient)
+				: List<IResourcesProvider<out HasMetadata>> {
 			return extensionResourcesProviders
 		}
 

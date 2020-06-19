@@ -58,13 +58,17 @@ abstract class ActiveContext<N: HasMetadata, C: KubernetesClient>(
             ExtensionPointName.create("org.jboss.tools.intellij.kubernetes.resourceProvider")
 
     protected open val namespacedProviders: Map<String, INamespacedResourcesProvider<HasMetadata>> by lazy {
-        getAllResourceProviders(INamespacedResourcesProvider::class.java)
+        val namespacedProviders = getAllResourceProviders(INamespacedResourcesProvider::class.java)
                 as Map<String, INamespacedResourcesProvider<HasMetadata>>
+        val namespace = getCurrentNamespace()
+        namespacedProviders.forEach { it.value.namespace = namespace }
+        namespacedProviders
     }
 
     protected open val nonNamespacedProviders: Map<String, INonNamespacedResourcesProvider<HasMetadata>> by lazy {
-        getAllResourceProviders(INonNamespacedResourcesProvider::class.java)
+        val nonNamespacedProviders = getAllResourceProviders(INonNamespacedResourcesProvider::class.java)
                 as Map<String, INonNamespacedResourcesProvider<HasMetadata>>
+        nonNamespacedProviders
     }
 
     protected var namespace: String? = client.configuration.namespace
@@ -172,12 +176,12 @@ abstract class ActiveContext<N: HasMetadata, C: KubernetesClient>(
     }
 
     protected open fun getWatchableResources(namespace: String): Collection<() -> Watchable<Watch, Watcher<HasMetadata>>?> {
-        val resources = mutableListOf<() -> Watchable<Watch, out Watcher<out HasMetadata>>?>()
+        val resources: MutableList<() ->Watchable<Watch, Watcher<HasMetadata>>?> = mutableListOf()
         resources.addAll(namespacedProviders.values
                         .map { it.getWatchableResource() })
         resources.addAll(nonNamespacedProviders.values
                 .map { it.getWatchableResource() })
-        return resources as Collection<() ->Watchable<Watch, Watcher<HasMetadata>>?>
+        return resources
     }
 
     override fun invalidate() {
@@ -216,7 +220,7 @@ abstract class ActiveContext<N: HasMetadata, C: KubernetesClient>(
         client.close()
     }
 
-    private fun <P: IResourcesProvider<*>> getAllResourceProviders(providerType: Class<P>): Map<out String, P> {
+    private fun <P: IResourcesProvider<out HasMetadata>> getAllResourceProviders(providerType: Class<P>): Map<String, P> {
         val providers = mutableMapOf<String, P>()
         providers.putAll(
                 getInternalResourceProviders(client)

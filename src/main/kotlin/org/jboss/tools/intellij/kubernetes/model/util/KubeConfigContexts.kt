@@ -25,18 +25,18 @@ import java.util.Locale
 
 class KubeConfigContexts {
 
-	val current: NamedContext?
-		get() {
-			if (config == null) {
-				return null
-			}
-			val context = KubeConfigUtils.getCurrentContext(config) ?: return null
-			return contexts.find {
+	val current: NamedContext? by lazy {
+		var currentContext: NamedContext? = null
+		val context = KubeConfigUtils.getCurrentContext(config) ?: null
+		if (context != null) {
+			currentContext = contexts.find {
 				it.context.user == context.user
-					&& it.context.user == context.user
-					&& it.context.cluster == context.cluster
+						&& it.context.user == context.user
+						&& it.context.cluster == context.cluster
 			}
 		}
+		currentContext
+	}
 
 	val contexts: List<NamedContext>
 		get() {

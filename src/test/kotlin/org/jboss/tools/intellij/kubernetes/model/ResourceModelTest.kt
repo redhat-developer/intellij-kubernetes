@@ -113,7 +113,7 @@ class ResourceModelTest {
     @Test
     fun `#invalidate(model) should create new context`() {
         // given
-        model.currentContext // trigger creation of context
+        model.getCurrentContext() // trigger creation of context
         clearInvocations(contextFactory)
         // when
         model.invalidate(model)
@@ -142,12 +142,12 @@ class ResourceModelTest {
     @Test
     fun `#invalidate(model) should cause #allContexts to (drop cache and) load again`() {
         // given
-        model.allContexts
+        model.getAllContexts()
         verify(config, times(1)).contexts
         clearInvocations(config)
         // when
         model.invalidate(model)
-        model.allContexts
+        model.getAllContexts()
         // then
         verify(config, times(1)).contexts
     }
@@ -194,7 +194,7 @@ class ResourceModelTest {
     fun `#allContexts should get all contexts in kube config`() {
         // given
         // when
-        model.allContexts
+        model.getAllContexts()
         // then
         verify(config).contexts
     }
@@ -203,7 +203,7 @@ class ResourceModelTest {
     fun `#allContexts should return contexts for all contexts in kube config`() {
         // given
         // when
-        val numOf = model.allContexts.size
+        val numOf = model.getAllContexts().size
         // then
         assertThat(numOf).isEqualTo(config.contexts.size)
     }
@@ -213,8 +213,8 @@ class ResourceModelTest {
         // given
         clearInvocations(config)
         // when
-        model.allContexts
-        model.allContexts
+        model.getAllContexts()
+        model.getAllContexts()
         // then
         verify(config, times(1)).contexts
     }
@@ -223,10 +223,10 @@ class ResourceModelTest {
     fun `#allContexts should not create currentContext if exists already`() {
         // given
         model.invalidate(model)
-        model.currentContext
+        model.getCurrentContext()
         clearInvocations(contextFactory)
         // when
-        model.allContexts
+        model.getAllContexts()
         // then
         verify(contextFactory, never()).invoke(any(), anyOrNull())
     }
@@ -235,7 +235,7 @@ class ResourceModelTest {
     fun `#currentContext should create new context if there's no context yet`() {
         // given
         // when
-        model.currentContext
+        model.getCurrentContext()
         // then
         verify(contextFactory).invoke(any(), anyOrNull())
     }
@@ -249,7 +249,7 @@ class ResourceModelTest {
         )
         val model: ResourceModel = ResourceModel(modelChange, contextFactory, config)
         // when
-        model.currentContext
+        model.getCurrentContext()
         // then
         verify(contextFactory, never()).invoke(any(), anyOrNull())
     }
@@ -257,7 +257,7 @@ class ResourceModelTest {
     @Test
     fun `#setCurrentContext(context) should not create new active context if setting (same) existing current context`() {
         // given
-        val currentContext = model.currentContext
+        val currentContext = model.getCurrentContext()
         clearInvocations(contextFactory)
         // when
         model.setCurrentContext(currentContext!!)
@@ -268,7 +268,7 @@ class ResourceModelTest {
     @Test
     fun `#setCurrentContext(context) should create new active context for given context`() {
         // given
-        model.currentContext
+        model.getCurrentContext()
         clearInvocations(contextFactory)
         // when
         model.setCurrentContext(mock())
@@ -277,31 +277,20 @@ class ResourceModelTest {
     }
 
     @Test
-    fun `#setCurrentContext(context) should set current context`() {
-        // given
-        val currentContext: IActiveContext<*,*> = mock()
-        model.currentContext = currentContext
-        // when
-        model.setCurrentContext(mock())
-        // then
-        assertThat(model.currentContext).isNotEqualTo(currentContext)
-    }
-
-    @Test
     fun `#setCurrentContext(context) should replace context in #allContexts`() {
         // given
         val newCurrentContext = context(client, namespace, context3)
-        model.allContexts // create all contexts
-        val currentContext = model.currentContext
+        model.getAllContexts() // create all contexts
+        val currentContext = model.getCurrentContext()
         assertThat(currentContext).isNotEqualTo(newCurrentContext)
-        assertThat(model.allContexts).contains(currentContext)
-        assertThat(model.allContexts).doesNotContain(newCurrentContext)
+        assertThat(model.getAllContexts()).contains(currentContext)
+        assertThat(model.getAllContexts()).doesNotContain(newCurrentContext)
         doReturn(newCurrentContext)
                 .whenever(contextFactory).invoke(any(), anyOrNull())
         // when
         model.setCurrentContext(newCurrentContext)
         // then
-        assertThat(model.allContexts).contains(newCurrentContext)
+        assertThat(model.getAllContexts()).contains(newCurrentContext)
     }
 
     private fun createKubeConfigContexts(currentContext: NamedContext?, allContexts: List<NamedContext>): KubeConfigContexts {
@@ -313,5 +302,4 @@ class ResourceModelTest {
             }
         }
     }
-
 }

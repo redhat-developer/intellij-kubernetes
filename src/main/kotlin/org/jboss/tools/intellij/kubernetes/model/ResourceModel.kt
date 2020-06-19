@@ -17,17 +17,16 @@ import io.fabric8.kubernetes.client.KubernetesClientException
 import org.jboss.tools.intellij.kubernetes.model.context.ContextFactory
 import org.jboss.tools.intellij.kubernetes.model.context.IActiveContext
 import org.jboss.tools.intellij.kubernetes.model.context.IContext
-import org.jboss.tools.intellij.kubernetes.model.context.Context
 import org.jboss.tools.intellij.kubernetes.model.context.IActiveContext.*
 import org.jboss.tools.intellij.kubernetes.model.util.KubeConfigContexts
 import java.util.function.Predicate
 
 interface IResourceModel {
 
-    val allContexts: List<IContext>
-    val currentContext: IActiveContext<out HasMetadata, out KubernetesClient>?
     fun getClient(): KubernetesClient?
     fun setCurrentContext(context: IContext)
+    fun getCurrentContext(): IActiveContext<out HasMetadata, out KubernetesClient>?
+    fun getAllContexts(): List<IContext>
     fun setCurrentNamespace(namespace: String)
     fun getCurrentNamespace(): String?
     fun <R: HasMetadata> resources(kind: Class<R>): Namespaceable<R>
@@ -38,68 +37,27 @@ interface IResourceModel {
 
 class ResourceModel(
     private val observable: IModelChangeObservable = ModelChangeObservable(),
-    private val contextFactory: (IModelChangeObservable, NamedContext) -> IActiveContext<out HasMetadata, out KubernetesClient> =
+    contextFactory: (IModelChangeObservable, NamedContext) -> IActiveContext<out HasMetadata, out KubernetesClient> =
         ContextFactory()::create,
-    private val config: KubeConfigContexts = KubeConfigContexts()
+    config: KubeConfigContexts = KubeConfigContexts()
 ) : IResourceModel {
 
-    override val allContexts: MutableList<IContext> = mutableListOf()
-        get() {
-            if (field.isEmpty()) {
-                field.addAll(config.contexts.mapNotNull {
-                    if (config.isCurrent(it)) {
-                        currentContext ?: createActiveContext(it)
-                    } else {
-                        Context(it)
-                    }
-                })
-            }
-            return field
-        }
-
-    override var currentContext: IActiveContext<out HasMetadata, out KubernetesClient>? = null
-        get() {
-            if (field == null
-                    && config.current != null) {
-                field = createActiveContext(config.current!!)
-            }
-            return field
-        }
+    private val contexts: IContexts = Contexts(observable, contextFactory, config)
 
     override fun setCurrentContext(context: IContext) {
-        if (context == currentContext) {
-            return
-        }
-        closeCurrentContext()
-        val activeContext = createActiveContext(context.context)
-        currentContext = activeContext
-        replaceInAllContexts(activeContext)
-        observable.fireModified(activeContext)
+        contexts.setCurrent(context)
     }
 
-    private fun replaceInAllContexts(activeContext: IActiveContext<*,*>) {
-        val contextInAll = allContexts.find { it.context == activeContext.context } ?: return
-        val indexOf = allContexts.indexOf(contextInAll)
-        if (indexOf < 0) {
-            return
-        }
-        allContexts[indexOf] = activeContext
+    override fun getCurrentContext(): IActiveContext<out HasMetadata, out KubernetesClient>? {
+        return contexts.current
     }
 
-    private fun createActiveContext(namedContext: NamedContext): IActiveContext<out HasMetadata, out KubernetesClient> {
-        val context = contextFactory(observable, namedContext)
-        context.startWatch()
-        return context
-    }
-
-    private fun closeCurrentContext() {
-        currentContext?.close() ?: return
-        observable.fireModified(currentContext!!)
-        currentContext = null
+    override fun getAllContexts(): List<IContext> {
+        return contexts.allContexts
     }
 
     override fun getClient(): KubernetesClient? {
-        return currentContext?.client
+        return contexts.current?.client
     }
 
     override fun addListener(listener: ModelChangeObservable.IResourceChangeListener) {
@@ -107,15 +65,15 @@ class ResourceModel(
     }
 
     override fun setCurrentNamespace(namespace: String) {
-        currentContext?.setCurrentNamespace(namespace)
+        contexts.current?.setCurrentNamespace(namespace)
     }
 
     override fun getCurrentNamespace(): String? {
         try {
-            return currentContext?.getCurrentNamespace() ?: return null
+            return contexts.current?.getCurrentNamespace() ?: return null
         } catch (e: KubernetesClientException) {
             throw ResourceException(
-                "Could not get current namespace for server ${currentContext?.client?.masterUrl}", e)
+                "Could not get current namespace for server ${contexts.current?.client?.masterUrl}", e)
         }
     }
 
@@ -125,7 +83,7 @@ class ResourceModel(
 
     fun <R: HasMetadata> getResources(kind: Class<R>, namespaced: ResourcesIn, filter: Predicate<R>? = null): Collection<R> {
         try {
-            val resources = currentContext?.getResources(kind, namespaced) ?: return emptyList()
+            val resources = contexts.current?.getResources(kind, namespaced) ?: return emptyList()
             return if (filter == null) {
                 resources
             } else {
@@ -135,7 +93,7 @@ class ResourceModel(
             if (isNotFound(e)) {
                 return emptyList()
             }
-            throw ResourceException("Could not get ${kind.simpleName}s for server ${currentContext?.client?.masterUrl}", e)
+            throw ResourceException("Could not get ${kind.simpleName}s for server ${contexts.current?.client?.masterUrl}", e)
         }
     }
 
@@ -153,8 +111,8 @@ class ResourceModel(
     }
 
     private fun invalidate() {
-        closeCurrentContext()
-        allContexts.clear()
+        contexts.closeCurrent()
+        contexts.allContexts.clear()
         observable.fireModified(this)
     }
 
@@ -165,12 +123,12 @@ class ResourceModel(
 
     private fun invalidate(kind: Class<*>) {
         val hasMetadataClass = kind as? Class<HasMetadata> ?: return
-        currentContext?.invalidate(hasMetadataClass) ?: return
+        contexts.current?.invalidate(hasMetadataClass) ?: return
         observable.fireModified(hasMetadataClass)
     }
 
     private fun invalidate(resource: HasMetadata) {
-        currentContext?.invalidate(resource) ?: return
+        contexts.current?.invalidate(resource) ?: return
         observable.fireModified(resource)
     }
 

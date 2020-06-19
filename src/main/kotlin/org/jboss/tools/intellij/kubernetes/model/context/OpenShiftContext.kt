@@ -45,7 +45,6 @@ open class OpenShiftContext(
 				DeploymentConfigsProvider(client),
 				ReplicationControllersProvider(client),
 				ServicesProvider(client)
-
 		)
 	}
 

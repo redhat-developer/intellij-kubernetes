@@ -20,7 +20,6 @@ import com.intellij.openapi.extensions.ExtensionPointName
 import com.intellij.openapi.util.IconLoader
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.Pod
-import javassist.runtime.Desc
 import org.jboss.tools.intellij.kubernetes.model.IResourceModel
 import org.jboss.tools.intellij.kubernetes.model.context.IContext
 import java.util.Optional
@@ -31,9 +30,10 @@ import javax.swing.Icon
  *
  * @see PresentableNodeDescriptor
  */
-open class TreeStructure(private val model: IResourceModel,
-                         private val extensionPoint: ExtensionPointName<ITreeStructureContributionFactory> =
-                                 ExtensionPointName.create("org.jboss.tools.intellij.kubernetes.structureContribution"))
+open class TreeStructure(
+        private val model: IResourceModel,
+        private val extensionPoint: ExtensionPointName<ITreeStructureContributionFactory> =
+                ExtensionPointName.create("org.jboss.tools.intellij.kubernetes.structureContribution"))
     : AbstractTreeStructure() {
 
     private val contributions by lazy {
@@ -49,7 +49,7 @@ open class TreeStructure(private val model: IResourceModel,
 
     override fun getChildElements(element: Any): Array<Any> {
         return when (element) {
-            rootElement -> model.allContexts.toTypedArray()
+            rootElement -> model.getAllContexts().toTypedArray()
             else -> getValidContributions()
                     .flatMap { getChildElements(element, it) }
                     .toTypedArray()

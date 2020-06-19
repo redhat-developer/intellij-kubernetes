@@ -32,6 +32,6 @@ class ProjectsProvider(client: OpenShiftClient)
     }
 
     override fun getWatchableResource(): () -> Watchable<Watch, Watcher<Project>>? {
-        return { client.projects() as Watchable<Watch, Watcher<Project>>}
+        return { client.projects() as Watchable<Watch, Watcher<Project>> }
     }
 }
