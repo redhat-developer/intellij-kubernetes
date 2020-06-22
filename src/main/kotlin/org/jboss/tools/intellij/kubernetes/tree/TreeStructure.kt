@@ -247,7 +247,7 @@ open class TreeStructure(
     data class Folder(val label: String, val kind: Class<out HasMetadata>?)
 
     abstract class DescriptorFactory<R: HasMetadata>(protected val resource: R) {
-        abstract fun create(parent: NodeDescriptor<*>?, model: IResourceModel): NodeDescriptor<Pod>?
+        abstract fun create(parent: NodeDescriptor<*>?, model: IResourceModel): NodeDescriptor<R>?
     }
 }
 
