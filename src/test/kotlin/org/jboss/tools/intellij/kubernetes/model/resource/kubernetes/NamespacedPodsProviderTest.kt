@@ -87,13 +87,13 @@ class NamespacedPodsProviderTest {
     }
 
     @Test
-    fun `#getWatchableResouces() won't return watchable resources if namespace is null`() {
+    fun `#getRetrieveOperation() won't return operations if namespace is null`() {
         // given
         provider.namespace =  null
         // when
-        provider.getWatchableResource()
+        provider.getRetrieveOperation()
         // then
-        verify(provider, never()).getWatchableResource(any())
+        verify(provider, never()).getRetrieveOperation(any())
     }
 
     @Test
@@ -110,15 +110,15 @@ class NamespacedPodsProviderTest {
     }
 
     @Test
-    fun `#setNamespace(namespace) sets namespace that's used in #getWatchableResources(namespace)`() {
+    fun `#setNamespace(namespace) sets namespace that's used in #getRetrieveOperation(namespace)`() {
         // given
         val namespace = "darth vader"
         provider.namespace =  namespace
         val namespaceCaptor = argumentCaptor<String>()
         // when
-        provider.getWatchableResource()
+        provider.getRetrieveOperation()
         // then
-        verify(provider).getWatchableResource(namespaceCaptor.capture())
+        verify(provider).getRetrieveOperation(namespaceCaptor.capture())
         assertThat(namespaceCaptor.firstValue).isEqualTo(namespace)
     }
 
@@ -235,8 +235,8 @@ class NamespacedPodsProviderTest {
             return super.loadAllResources(namespace)
         }
 
-        public override fun getWatchableResource(namespace: String): () -> Watchable<Watch, Watcher<Pod>>? {
-            return super.getWatchableResource(namespace)
+        public override fun getRetrieveOperation(namespace: String): () -> Watchable<Watch, Watcher<Pod>>? {
+            return super.getRetrieveOperation(namespace)
         }
     }
 }

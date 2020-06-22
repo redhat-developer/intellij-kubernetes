@@ -175,12 +175,12 @@ abstract class ActiveContext<N: HasMetadata, C: KubernetesClient>(
         return removed
     }
 
-    protected open fun getWatchableResources(namespace: String): Collection<() -> Watchable<Watch, Watcher<HasMetadata>>?> {
+    protected open fun getRetrieveOperations(namespace: String): Collection<() -> Watchable<Watch, Watcher<HasMetadata>>?> {
         val resources: MutableList<() ->Watchable<Watch, Watcher<HasMetadata>>?> = mutableListOf()
         resources.addAll(namespacedProviders.values
-                        .map { it.getWatchableResource() })
+                .map { it.getRetrieveOperation() })
         resources.addAll(nonNamespacedProviders.values
-                .map { it.getWatchableResource() })
+                .map { it.getRetrieveOperation() })
         return resources
     }
 
@@ -206,14 +206,14 @@ abstract class ActiveContext<N: HasMetadata, C: KubernetesClient>(
 
     private fun startWatch(namespace: String) {
         try {
-            watch.watchAll(getWatchableResources(namespace))
+            watch.watchAll(getRetrieveOperations(namespace))
         } catch (e: ResourceException) {
             logger<ActiveContext<N, C>>().warn("Could not start watching resources on server ${client.masterUrl}", e)
         }
     }
 
     private fun stopWatch(namespace: String) {
-        watch.ignoreAll(getWatchableResources(namespace))
+        watch.ignoreAll(getRetrieveOperations(namespace))
     }
 
     override fun close() {

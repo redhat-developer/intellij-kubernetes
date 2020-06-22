@@ -27,11 +27,7 @@ class ProjectsProvider(client: OpenShiftClient)
 
     override val kind = KIND
 
-    override fun loadAllResources(): List<Project> {
-        return client.projects().list().items
-    }
-
-    override fun getWatchableResource(): () -> Watchable<Watch, Watcher<Project>>? {
+    override fun getRetrieveOperation(): () -> Watchable<Watch, Watcher<Project>>? {
         return { client.projects() as Watchable<Watch, Watcher<Project>> }
     }
 }

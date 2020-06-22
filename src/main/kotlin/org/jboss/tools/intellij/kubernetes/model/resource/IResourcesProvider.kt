@@ -18,7 +18,7 @@ import io.fabric8.kubernetes.client.dsl.Watchable
 interface IResourcesProvider<R: HasMetadata> {
     val kind: Class<R>
     fun getAllResources(): Collection<R>
-    fun getWatchableResource(): () -> Watchable<Watch, Watcher<R>>?
+    fun getRetrieveOperation(): () -> Watchable<Watch, Watcher<R>>?
     fun invalidate()
     fun invalidate(resource: HasMetadata)
     fun add(resource: HasMetadata): Boolean

@@ -14,7 +14,6 @@ import io.fabric8.kubernetes.client.Watch
 import io.fabric8.kubernetes.client.Watcher
 import io.fabric8.kubernetes.client.dsl.Watchable
 import io.fabric8.openshift.api.model.DeploymentConfig
-import io.fabric8.openshift.client.NamespacedOpenShiftClient
 import io.fabric8.openshift.client.OpenShiftClient
 import org.jboss.tools.intellij.kubernetes.model.resource.NamespacedResourcesProvider
 
@@ -27,11 +26,7 @@ class DeploymentConfigsProvider(client: OpenShiftClient)
 
     override val kind = KIND
 
-    override fun loadAllResources(namespace: String): List<DeploymentConfig> {
-        return client.deploymentConfigs().inNamespace(namespace).list().items
-    }
-
-    override fun getWatchableResource(namespace: String): () -> Watchable<Watch, Watcher<DeploymentConfig>>? {
+    override fun getRetrieveOperation(namespace: String): () -> Watchable<Watch, Watcher<DeploymentConfig>>? {
         return { client.deploymentConfigs().inNamespace(namespace) }
     }
 
