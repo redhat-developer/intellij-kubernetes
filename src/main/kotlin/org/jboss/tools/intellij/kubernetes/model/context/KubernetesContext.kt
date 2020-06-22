@@ -13,6 +13,8 @@ package org.jboss.tools.intellij.kubernetes.model.context
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.NamedContext
 import io.fabric8.kubernetes.api.model.Namespace
+import io.fabric8.kubernetes.api.model.PersistentVolume
+import io.fabric8.kubernetes.api.model.PersistentVolumeClaim
 import io.fabric8.kubernetes.client.NamespacedKubernetesClient
 import org.jboss.tools.intellij.kubernetes.model.IModelChangeObservable
 import org.jboss.tools.intellij.kubernetes.model.context.IActiveContext.*
@@ -22,7 +24,10 @@ import org.jboss.tools.intellij.kubernetes.model.resource.kubernetes.EndpointsPr
 import org.jboss.tools.intellij.kubernetes.model.resource.kubernetes.NamespacesProvider
 import org.jboss.tools.intellij.kubernetes.model.resource.kubernetes.NodesProvider
 import org.jboss.tools.intellij.kubernetes.model.resource.kubernetes.NamespacedPodsProvider
+import org.jboss.tools.intellij.kubernetes.model.resource.kubernetes.PersistentVolumeClaimsProvider
+import org.jboss.tools.intellij.kubernetes.model.resource.kubernetes.PersistentVolumesProvider
 import org.jboss.tools.intellij.kubernetes.model.resource.kubernetes.ServicesProvider
+import org.jboss.tools.intellij.kubernetes.model.resource.kubernetes.StorageClassesProvider
 
 open class KubernetesContext(
 		modelChange: IModelChangeObservable,
@@ -38,7 +43,10 @@ open class KubernetesContext(
 				AllPodsProvider(client),
 				NamespacedPodsProvider(client),
 				ServicesProvider(client),
-				EndpointsProvider(client)
+				EndpointsProvider(client),
+				PersistentVolumesProvider(client),
+				PersistentVolumeClaimsProvider(client),
+				StorageClassesProvider(client)
 		)
 	}
 

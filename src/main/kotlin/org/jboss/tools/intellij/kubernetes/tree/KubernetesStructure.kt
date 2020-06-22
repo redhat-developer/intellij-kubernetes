@@ -15,8 +15,11 @@ import com.intellij.openapi.util.IconLoader
 import io.fabric8.kubernetes.api.model.Endpoints
 import io.fabric8.kubernetes.api.model.Namespace
 import io.fabric8.kubernetes.api.model.Node
+import io.fabric8.kubernetes.api.model.PersistentVolume
+import io.fabric8.kubernetes.api.model.PersistentVolumeClaim
 import io.fabric8.kubernetes.api.model.Pod
 import io.fabric8.kubernetes.api.model.Service
+import io.fabric8.kubernetes.api.model.storage.StorageClass
 import org.jboss.tools.intellij.kubernetes.model.IResourceModel
 import org.jboss.tools.intellij.kubernetes.model.ResourceException
 import org.jboss.tools.intellij.kubernetes.model.context.KubernetesContext
@@ -28,8 +31,12 @@ import org.jboss.tools.intellij.kubernetes.tree.KubernetesStructure.Folders.ENDP
 import org.jboss.tools.intellij.kubernetes.tree.KubernetesStructure.Folders.NAMESPACES
 import org.jboss.tools.intellij.kubernetes.tree.KubernetesStructure.Folders.NETWORK
 import org.jboss.tools.intellij.kubernetes.tree.KubernetesStructure.Folders.NODES
+import org.jboss.tools.intellij.kubernetes.tree.KubernetesStructure.Folders.PERSISTENT_VOLUMES
+import org.jboss.tools.intellij.kubernetes.tree.KubernetesStructure.Folders.PERSISTENT_VOLUME_CLAIMS
 import org.jboss.tools.intellij.kubernetes.tree.KubernetesStructure.Folders.PODS
 import org.jboss.tools.intellij.kubernetes.tree.KubernetesStructure.Folders.SERVICES
+import org.jboss.tools.intellij.kubernetes.tree.KubernetesStructure.Folders.STORAGE
+import org.jboss.tools.intellij.kubernetes.tree.KubernetesStructure.Folders.STORAGE_CLASSES
 import org.jboss.tools.intellij.kubernetes.tree.KubernetesStructure.Folders.WORKLOADS
 import org.jboss.tools.intellij.kubernetes.tree.TreeStructure.*
 import javax.swing.Icon
@@ -40,10 +47,14 @@ class KubernetesStructure(model: IResourceModel): AbstractTreeStructureContribut
         val NAMESPACES = Folder("Namespaces", Namespace::class.java)
         val NODES = Folder("Nodes", Node::class.java)
         val WORKLOADS = Folder("Workloads", null)
-        val PODS = Folder("Pods", Pod::class.java)
+            val PODS = Folder("Pods", Pod::class.java) //  Workloads / Pods
         val NETWORK = Folder("Network", null)
-        val SERVICES = Folder("Services", Service::class.java)
-        val ENDPOINTS = Folder("Endpoints", Endpoints::class.java)
+            val SERVICES = Folder("Services", Service::class.java) // Network / Services
+            val ENDPOINTS = Folder("Endpoints", Endpoints::class.java) // Network / Endpoints
+        val STORAGE = Folder("Storage", Endpoints::class.java)
+            val PERSISTENT_VOLUMES = Folder("Persistent Volumes", PersistentVolume::class.java)
+            val PERSISTENT_VOLUME_CLAIMS = Folder("Persistent Volume Claims", PersistentVolumeClaim::class.java)
+            val STORAGE_CLASSES = Folder("Storage Classes", StorageClass::class.java)
     }
 
     override fun canContribute() = true
@@ -55,7 +66,8 @@ class KubernetesStructure(model: IResourceModel): AbstractTreeStructureContribut
                     NAMESPACES,
                     NODES,
                     WORKLOADS,
-                    NETWORK
+                    NETWORK,
+                    STORAGE
                 )
             NAMESPACES ->
                 model.resources(Namespace::class.java)
@@ -102,6 +114,26 @@ class KubernetesStructure(model: IResourceModel): AbstractTreeStructureContribut
                         .inCurrentNamespace()
                         .list()
                         .sortedBy(resourceName)
+            STORAGE ->
+                listOf<Any>(
+                        PERSISTENT_VOLUMES,
+                        PERSISTENT_VOLUME_CLAIMS,
+                        STORAGE_CLASSES)
+            PERSISTENT_VOLUMES ->
+                model.resources(PersistentVolume::class.java)
+                        .inAnyNamespace()
+                        .list()
+                        .sortedBy(resourceName)
+            PERSISTENT_VOLUME_CLAIMS ->
+                model.resources(PersistentVolumeClaim::class.java)
+                        .inCurrentNamespace()
+                        .list()
+                        .sortedBy(resourceName)
+            STORAGE_CLASSES ->
+                model.resources(StorageClass::class.java)
+                        .inAnyNamespace()
+                        .list()
+                        .sortedBy(resourceName)
             else ->
                 listOf()
         }
@@ -136,6 +168,20 @@ class KubernetesStructure(model: IResourceModel): AbstractTreeStructureContribut
                     NETWORK
                 NETWORK ->
                     getRootElement()
+                is PersistentVolume ->
+                    PERSISTENT_VOLUMES
+                PERSISTENT_VOLUMES ->
+                    STORAGE
+                is PersistentVolumeClaim ->
+                    PERSISTENT_VOLUME_CLAIMS
+                is StorageClass ->
+                    STORAGE_CLASSES
+                PERSISTENT_VOLUME_CLAIMS ->
+                    STORAGE
+                STORAGE_CLASSES ->
+                    STORAGE
+                STORAGE ->
+                    getRootElement()
                 else ->
                     getRootElement()
             }
@@ -153,6 +199,9 @@ class KubernetesStructure(model: IResourceModel): AbstractTreeStructureContribut
             is Service -> ServiceDescriptor(element, parent, model)
             is Endpoints -> EndpointsDescriptor(element, parent, model)
             is DescriptorFactory<*> -> element.create(parent, model)
+            is PersistentVolume -> ResourceDescriptor(element, parent, model)
+            is PersistentVolumeClaim -> ResourceDescriptor(element, parent, model)
+            is StorageClass -> ResourceDescriptor(element, parent, model)
             else -> null
         }
     }

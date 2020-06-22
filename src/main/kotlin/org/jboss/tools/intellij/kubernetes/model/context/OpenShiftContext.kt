@@ -22,7 +22,10 @@ import org.jboss.tools.intellij.kubernetes.model.resource.kubernetes.EndpointsPr
 import org.jboss.tools.intellij.kubernetes.model.resource.kubernetes.NamespacesProvider
 import org.jboss.tools.intellij.kubernetes.model.resource.kubernetes.NodesProvider
 import org.jboss.tools.intellij.kubernetes.model.resource.kubernetes.NamespacedPodsProvider
+import org.jboss.tools.intellij.kubernetes.model.resource.kubernetes.PersistentVolumeClaimsProvider
+import org.jboss.tools.intellij.kubernetes.model.resource.kubernetes.PersistentVolumesProvider
 import org.jboss.tools.intellij.kubernetes.model.resource.kubernetes.ServicesProvider
+import org.jboss.tools.intellij.kubernetes.model.resource.kubernetes.StorageClassesProvider
 import org.jboss.tools.intellij.kubernetes.model.resource.openshift.DeploymentConfigsProvider
 import org.jboss.tools.intellij.kubernetes.model.resource.openshift.ImageStreamsProvider
 import org.jboss.tools.intellij.kubernetes.model.resource.openshift.ProjectsProvider
@@ -46,7 +49,10 @@ open class OpenShiftContext(
 				DeploymentConfigsProvider(client),
 				ReplicationControllersProvider(client),
 				ServicesProvider(client),
-				EndpointsProvider(client)
+				EndpointsProvider(client),
+				PersistentVolumesProvider(client),
+				PersistentVolumeClaimsProvider(client),
+				StorageClassesProvider(client)
 		)
 	}
 
