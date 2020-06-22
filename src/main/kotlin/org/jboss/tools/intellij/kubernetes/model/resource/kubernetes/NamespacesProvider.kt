@@ -26,11 +26,7 @@ class NamespacesProvider(client: KubernetesClient)
 
     override val kind = KIND
 
-    override fun loadAllResources(): List<Namespace> {
-        return client.namespaces().list().items
-    }
-
-    override fun getWatchableResource(): () -> Watchable<Watch, Watcher<Namespace>>? {
+    override fun getRetrieveOperation(): () -> Watchable<Watch, Watcher<Namespace>>? {
         return { client.namespaces() }
     }
 }

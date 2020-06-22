@@ -96,7 +96,7 @@ class KubernetesContextTest {
 		doReturn(
 				listOf { watchable1 }, // returned on 1st call
 				listOf { watchable2 }) // returned on 2nd call
-				.whenever(context).getWatchableResources(any())
+				.whenever(context).getRetrieveOperations(any())
 		return context
 	}
 
@@ -448,7 +448,7 @@ class KubernetesContextTest {
 
 		public override var watch = mock<ResourceWatch>()
 
-		public override fun getWatchableResources(namespace: String): List<() -> Watchable<Watch, Watcher<HasMetadata>>?> {
+		public override fun getRetrieveOperations(namespace: String): List<() -> Watchable<Watch, Watcher<HasMetadata>>?> {
 			TODO("override with mocking")
 		}
 

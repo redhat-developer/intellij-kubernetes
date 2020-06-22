@@ -11,14 +11,10 @@
 package org.jboss.tools.intellij.kubernetes.model.resource.kubernetes
 
 import io.fabric8.kubernetes.api.model.Endpoints
-import io.fabric8.kubernetes.api.model.Service
 import io.fabric8.kubernetes.client.KubernetesClient
-import io.fabric8.kubernetes.client.NamespacedKubernetesClient
 import io.fabric8.kubernetes.client.Watch
 import io.fabric8.kubernetes.client.Watcher
 import io.fabric8.kubernetes.client.dsl.Watchable
-import io.fabric8.openshift.api.model.DeploymentConfig
-import io.fabric8.openshift.client.NamespacedOpenShiftClient
 import org.jboss.tools.intellij.kubernetes.model.resource.NamespacedResourcesProvider
 
 class EndpointsProvider(client: KubernetesClient)
@@ -30,11 +26,7 @@ class EndpointsProvider(client: KubernetesClient)
 
     override val kind = KIND
 
-    override fun loadAllResources(namespace: String): List<Endpoints> {
-        return client.endpoints().inNamespace(namespace).list().items
-    }
-
-    override fun getWatchableResource(namespace: String): () -> Watchable<Watch, Watcher<Endpoints>>? {
+    override fun getRetrieveOperation(namespace: String): () -> Watchable<Watch, Watcher<Endpoints>>? {
         return { client.endpoints().inNamespace(namespace) }
     }
 

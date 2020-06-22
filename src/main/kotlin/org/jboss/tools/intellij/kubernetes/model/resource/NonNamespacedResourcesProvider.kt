@@ -11,13 +11,11 @@
 package org.jboss.tools.intellij.kubernetes.model.resource
 
 import io.fabric8.kubernetes.api.model.HasMetadata
+import io.fabric8.kubernetes.api.model.KubernetesResourceList
 import io.fabric8.kubernetes.client.KubernetesClient
-import io.fabric8.kubernetes.client.Watch
-import io.fabric8.kubernetes.client.Watcher
-import io.fabric8.kubernetes.client.dsl.Watchable
+import io.fabric8.kubernetes.client.dsl.Listable
 
-interface INonNamespacedResourcesProvider<T: HasMetadata>: IResourcesProvider<T> {
-}
+interface INonNamespacedResourcesProvider<T: HasMetadata>: IResourcesProvider<T>
 
 abstract class NonNamespacedResourcesProvider<R : HasMetadata, C: KubernetesClient>(protected val client: C)
     : AbstractResourcesProvider<R>(), INonNamespacedResourcesProvider<R> {
@@ -29,5 +27,7 @@ abstract class NonNamespacedResourcesProvider<R : HasMetadata, C: KubernetesClie
         return allResources
     }
 
-    protected abstract fun loadAllResources(): List<R>
+    protected open fun loadAllResources(): List<R> {
+        return (getRetrieveOperation().invoke() as Listable<KubernetesResourceList<R>>).list().items
+    }
 }

@@ -11,12 +11,10 @@
 package org.jboss.tools.intellij.kubernetes.model.resource.kubernetes
 
 import io.fabric8.kubernetes.api.model.Node
-import io.fabric8.kubernetes.api.model.Pod
 import io.fabric8.kubernetes.client.KubernetesClient
 import io.fabric8.kubernetes.client.Watch
 import io.fabric8.kubernetes.client.Watcher
 import io.fabric8.kubernetes.client.dsl.Watchable
-import org.jboss.tools.intellij.kubernetes.model.resource.NamespacedResourcesProvider
 import org.jboss.tools.intellij.kubernetes.model.resource.NonNamespacedResourcesProvider
 
 class NodesProvider(client: KubernetesClient)
@@ -32,7 +30,7 @@ class NodesProvider(client: KubernetesClient)
         return client.nodes().list().items
     }
 
-    override fun getWatchableResource(): () -> Watchable<Watch, Watcher<Node>>? {
+    override fun getRetrieveOperation(): () -> Watchable<Watch, Watcher<Node>>? {
         return { client.nodes() }
     }
 }

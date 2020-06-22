@@ -11,13 +11,9 @@
 package org.jboss.tools.intellij.kubernetes.model.resource.openshift
 
 import io.fabric8.kubernetes.api.model.ReplicationController
-import io.fabric8.kubernetes.client.KubernetesClient
 import io.fabric8.kubernetes.client.Watch
 import io.fabric8.kubernetes.client.Watcher
 import io.fabric8.kubernetes.client.dsl.Watchable
-import io.fabric8.openshift.api.model.DeploymentConfig
-import io.fabric8.openshift.api.model.ImageStream
-import io.fabric8.openshift.client.NamespacedOpenShiftClient
 import io.fabric8.openshift.client.OpenShiftClient
 import org.jboss.tools.intellij.kubernetes.model.resource.NamespacedResourcesProvider
 
@@ -30,11 +26,7 @@ class ReplicationControllersProvider(client: OpenShiftClient)
 
     override val kind = KIND
 
-    override fun loadAllResources(namespace: String): List<ReplicationController> {
-        return client.replicationControllers().inNamespace(namespace).list().items
-    }
-
-    override fun getWatchableResource(namespace: String): () -> Watchable<Watch, Watcher<ReplicationController>>? {
+    override fun getRetrieveOperation(namespace: String): () -> Watchable<Watch, Watcher<ReplicationController>>? {
         return { client.replicationControllers().inNamespace(namespace) }
     }
 }

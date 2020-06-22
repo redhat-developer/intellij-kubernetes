@@ -26,11 +26,7 @@ open class NamespacedPodsProvider(client: KubernetesClient)
 
     override val kind = KIND
 
-    override fun loadAllResources(namespace: String): List<Pod> {
-        return client.pods().inNamespace(namespace).list().items
-    }
-
-    override fun getWatchableResource(namespace: String): () -> Watchable<Watch, Watcher<Pod>>? {
+    override fun getRetrieveOperation(namespace: String): () -> Watchable<Watch, Watcher<Pod>>? {
         return { client.pods().inNamespace(namespace) }
     }
 }
