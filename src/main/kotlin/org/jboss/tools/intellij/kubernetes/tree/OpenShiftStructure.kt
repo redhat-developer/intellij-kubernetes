@@ -12,6 +12,7 @@ package org.jboss.tools.intellij.kubernetes.tree
 
 import com.intellij.ide.util.treeView.NodeDescriptor
 import com.intellij.openapi.util.IconLoader
+import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.Node
 import io.fabric8.kubernetes.api.model.ReplicationController
 import io.fabric8.openshift.api.model.DeploymentConfig
@@ -112,9 +113,9 @@ class OpenShiftStructure(model: IResourceModel): AbstractTreeStructureContributi
         return when(element) {
             is OpenShiftContext -> OpenShiftContextDescriptor(element, model)
             is Project -> ProjectDescriptor(element, parent, model)
-            is ImageStream -> ImageStreamDescriptor(element, parent, model)
-            is DeploymentConfig -> DeploymentConfigDescriptor(element, parent, model)
-            is ReplicationController -> ReplicationControllerDescriptor(element, parent, model)
+            is ImageStream,
+            is DeploymentConfig,
+            is ReplicationController -> ResourceDescriptor(element as HasMetadata, parent, model)
             else -> null
         }
     }
@@ -143,22 +144,4 @@ class OpenShiftStructure(model: IResourceModel): AbstractTreeStructureContributi
             return label
         }
     }
-
-    private class ImageStreamDescriptor(
-            element: ImageStream,
-            parent: NodeDescriptor<*>?,
-            model: IResourceModel)
-        : ResourceDescriptor<ImageStream>(element, parent,model)
-
-    private class DeploymentConfigDescriptor(
-            element: DeploymentConfig,
-            parent: NodeDescriptor<*>?,
-            model: IResourceModel)
-        : ResourceDescriptor<DeploymentConfig>(element, parent, model)
-
-    private class ReplicationControllerDescriptor(
-            element: ReplicationController,
-            parent: NodeDescriptor<*>?,
-            model: IResourceModel)
-        : ResourceDescriptor<ReplicationController>(element, parent,model)
 }
