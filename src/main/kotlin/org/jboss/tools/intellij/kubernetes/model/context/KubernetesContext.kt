@@ -22,6 +22,7 @@ import org.jboss.tools.intellij.kubernetes.model.resource.IResourcesProvider
 import org.jboss.tools.intellij.kubernetes.model.resource.kubernetes.AllPodsProvider
 import org.jboss.tools.intellij.kubernetes.model.resource.kubernetes.ConfigMapsProvider
 import org.jboss.tools.intellij.kubernetes.model.resource.kubernetes.EndpointsProvider
+import org.jboss.tools.intellij.kubernetes.model.resource.kubernetes.IngressProvider
 import org.jboss.tools.intellij.kubernetes.model.resource.kubernetes.NamespacesProvider
 import org.jboss.tools.intellij.kubernetes.model.resource.kubernetes.NodesProvider
 import org.jboss.tools.intellij.kubernetes.model.resource.kubernetes.NamespacedPodsProvider
@@ -50,7 +51,8 @@ open class KubernetesContext(
 				PersistentVolumeClaimsProvider(client),
 				StorageClassesProvider(client),
 				ConfigMapsProvider(client),
-				SecretsProvider(client)
+				SecretsProvider(client),
+				IngressProvider(client)
 		)
 	}
 

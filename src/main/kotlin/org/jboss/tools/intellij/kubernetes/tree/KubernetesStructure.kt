@@ -22,10 +22,12 @@ import io.fabric8.kubernetes.api.model.PersistentVolumeClaim
 import io.fabric8.kubernetes.api.model.Pod
 import io.fabric8.kubernetes.api.model.Secret
 import io.fabric8.kubernetes.api.model.Service
+import io.fabric8.kubernetes.api.model.extensions.Ingress
 import io.fabric8.kubernetes.api.model.storage.StorageClass
 import org.jboss.tools.intellij.kubernetes.model.IResourceModel
 import org.jboss.tools.intellij.kubernetes.model.ResourceException
 import org.jboss.tools.intellij.kubernetes.model.context.KubernetesContext
+import org.jboss.tools.intellij.kubernetes.model.resource.DeploymentConfigFor
 import org.jboss.tools.intellij.kubernetes.model.resource.PodForService
 import org.jboss.tools.intellij.kubernetes.model.resourceName
 import org.jboss.tools.intellij.kubernetes.model.util.getContainers
@@ -33,6 +35,7 @@ import org.jboss.tools.intellij.kubernetes.model.util.isRunning
 import org.jboss.tools.intellij.kubernetes.tree.KubernetesStructure.Folders.CONFIGURATION
 import org.jboss.tools.intellij.kubernetes.tree.KubernetesStructure.Folders.CONFIG_MAPS
 import org.jboss.tools.intellij.kubernetes.tree.KubernetesStructure.Folders.ENDPOINTS
+import org.jboss.tools.intellij.kubernetes.tree.KubernetesStructure.Folders.INGRESS
 import org.jboss.tools.intellij.kubernetes.tree.KubernetesStructure.Folders.NAMESPACES
 import org.jboss.tools.intellij.kubernetes.tree.KubernetesStructure.Folders.NETWORK
 import org.jboss.tools.intellij.kubernetes.tree.KubernetesStructure.Folders.NODES
@@ -57,6 +60,7 @@ class KubernetesStructure(model: IResourceModel) : AbstractTreeStructureContribu
         val NETWORK = Folder("Network", null)
             val SERVICES = Folder("Services", Service::class.java) // Network / Services
             val ENDPOINTS = Folder("Endpoints", Endpoints::class.java) // Network / Endpoints
+			val INGRESS = Folder("Ingress", Ingress::class.java) // Network / Ingress
         val STORAGE = Folder("Storage", Endpoints::class.java)
             val PERSISTENT_VOLUMES = Folder("Persistent Volumes", PersistentVolume::class.java)
             val PERSISTENT_VOLUME_CLAIMS = Folder("Persistent Volume Claims", PersistentVolumeClaim::class.java)
@@ -107,7 +111,8 @@ class KubernetesStructure(model: IResourceModel) : AbstractTreeStructureContribu
             NETWORK ->
                 listOf<Any>(
                         SERVICES,
-                        ENDPOINTS)
+                        ENDPOINTS,
+                        INGRESS)
             SERVICES ->
                 model.resources(Service::class.java)
                         .inCurrentNamespace()
@@ -123,6 +128,11 @@ class KubernetesStructure(model: IResourceModel) : AbstractTreeStructureContribu
                 model.resources(Endpoints::class.java)
                         .inCurrentNamespace()
                         .list()
+                        .sortedBy(resourceName)
+            INGRESS ->
+                model.resources(Ingress::class.java)
+                        .inCurrentNamespace()
+						.list()
                         .sortedBy(resourceName)
             STORAGE ->
                 listOf<Any>(
@@ -203,6 +213,10 @@ class KubernetesStructure(model: IResourceModel) : AbstractTreeStructureContribu
                     ENDPOINTS
                 ENDPOINTS ->
                     NETWORK
+                is Ingress ->
+                    INGRESS
+                INGRESS ->
+                    NETWORK
                 NETWORK ->
                     getRootElement()
                 is PersistentVolume ->
@@ -238,7 +252,7 @@ class KubernetesStructure(model: IResourceModel) : AbstractTreeStructureContribu
     }
 
     override fun createDescriptor(element: Any, parent: NodeDescriptor<*>?): NodeDescriptor<*>? {
-        return when(element) {
+        return when (element) {
 			is KubernetesContext -> KubernetesContextDescriptor(element, model)
 			is Namespace -> NamespaceDescriptor(element, parent, model)
 			is Node -> ResourceDescriptor(element, parent, model)
@@ -246,6 +260,7 @@ class KubernetesStructure(model: IResourceModel) : AbstractTreeStructureContribu
 			is DescriptorFactory<*> -> element.create(parent, model)
             is Service,
             is Endpoints,
+            is Ingress,
             is PersistentVolume,
             is PersistentVolumeClaim,
             is StorageClass,
