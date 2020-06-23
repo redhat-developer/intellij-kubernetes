@@ -24,16 +24,18 @@ import io.fabric8.kubernetes.api.model.Secret
 import io.fabric8.kubernetes.api.model.Service
 import io.fabric8.kubernetes.api.model.extensions.Ingress
 import io.fabric8.kubernetes.api.model.storage.StorageClass
+import io.fabric8.kubernetes.api.model.apps.Deployment
 import org.jboss.tools.intellij.kubernetes.model.IResourceModel
 import org.jboss.tools.intellij.kubernetes.model.ResourceException
 import org.jboss.tools.intellij.kubernetes.model.context.KubernetesContext
-import org.jboss.tools.intellij.kubernetes.model.resource.DeploymentConfigFor
+import org.jboss.tools.intellij.kubernetes.model.resource.PodForDeployment
 import org.jboss.tools.intellij.kubernetes.model.resource.PodForService
 import org.jboss.tools.intellij.kubernetes.model.resourceName
 import org.jboss.tools.intellij.kubernetes.model.util.getContainers
 import org.jboss.tools.intellij.kubernetes.model.util.isRunning
 import org.jboss.tools.intellij.kubernetes.tree.KubernetesStructure.Folders.CONFIGURATION
 import org.jboss.tools.intellij.kubernetes.tree.KubernetesStructure.Folders.CONFIG_MAPS
+import org.jboss.tools.intellij.kubernetes.tree.KubernetesStructure.Folders.DEPLOYMENTS
 import org.jboss.tools.intellij.kubernetes.tree.KubernetesStructure.Folders.ENDPOINTS
 import org.jboss.tools.intellij.kubernetes.tree.KubernetesStructure.Folders.INGRESS
 import org.jboss.tools.intellij.kubernetes.tree.KubernetesStructure.Folders.NAMESPACES
@@ -52,18 +54,19 @@ import javax.swing.Icon
 
 class KubernetesStructure(model: IResourceModel) : AbstractTreeStructureContribution(model) {
     object Folders {
-        val NAMESPACES = Folder("Namespaces", Namespace::class.java)
-        val NODES = Folder("Nodes", Node::class.java)
-        val WORKLOADS = Folder("Workloads", null)
-            val PODS = Folder("Pods", Pod::class.java) //  Workloads / Pods
-        val NETWORK = Folder("Network", null)
-            val SERVICES = Folder("Services", Service::class.java) // Network / Services
-            val ENDPOINTS = Folder("Endpoints", Endpoints::class.java) // Network / Endpoints
+		val NAMESPACES = Folder("Namespaces", Namespace::class.java)
+		val NODES = Folder("Nodes", Node::class.java)
+		val WORKLOADS = Folder("Workloads", null)
+			val DEPLOYMENTS = Folder("Deployments", Deployment::class.java) //  Workloads / Deployments
+			val PODS = Folder("Pods", Pod::class.java) //  Workloads / Pods
+		val NETWORK = Folder("Network", null)
+			val SERVICES = Folder("Services", Service::class.java) // Network / Services
+			val ENDPOINTS = Folder("Endpoints", Endpoints::class.java) // Network / Endpoints
 			val INGRESS = Folder("Ingress", Ingress::class.java) // Network / Ingress
-        val STORAGE = Folder("Storage", Endpoints::class.java)
-            val PERSISTENT_VOLUMES = Folder("Persistent Volumes", PersistentVolume::class.java)
-            val PERSISTENT_VOLUME_CLAIMS = Folder("Persistent Volume Claims", PersistentVolumeClaim::class.java)
-            val STORAGE_CLASSES = Folder("Storage Classes", StorageClass::class.java)
+		val STORAGE = Folder("Storage", Endpoints::class.java)
+			val PERSISTENT_VOLUMES = Folder("Persistent Volumes", PersistentVolume::class.java)
+			val PERSISTENT_VOLUME_CLAIMS = Folder("Persistent Volume Claims", PersistentVolumeClaim::class.java)
+			val STORAGE_CLASSES = Folder("Storage Classes", StorageClass::class.java)
 		val CONFIGURATION = Folder("Configuration", null)
 			val CONFIG_MAPS = Folder("Config Maps", ConfigMap::class.java) // Network / Services
 			val SECRETS = Folder("Secrets", Secret::class.java) // Network / Endpoints
@@ -113,19 +116,20 @@ class KubernetesStructure(model: IResourceModel) : AbstractTreeStructureContribu
 			is Node -> ResourceDescriptor(element, parent, model)
 			is Pod -> PodDescriptor(element, parent, model)
 			is DescriptorFactory<*> -> element.create(parent, model)
-            is Service,
-            is Endpoints,
-            is Ingress,
-            is PersistentVolume,
-            is PersistentVolumeClaim,
-            is StorageClass,
+			is Deployment,
+			is Service,
+			is Endpoints,
+			is Ingress,
+			is PersistentVolume,
+			is PersistentVolumeClaim,
+			is StorageClass,
 			is ConfigMap,
 			is Secret ->
 				ResourceDescriptor(element as HasMetadata, parent, model)
 			else ->
 				null
-        }
-    }
+		}
+	}
 
 	override fun canContribute() = true
 
@@ -333,9 +337,31 @@ class KubernetesStructure(model: IResourceModel) : AbstractTreeStructureContribu
 				element<Any> {
 					anchor { it == WORKLOADS }
 					childElements {
-						listOf<Any>(PODS)
+						listOf<Any>(DEPLOYMENTS,
+								PODS)
 					}
 					parentElements { getRootElement() }
+				},
+				element<Any> {
+					anchor { it == DEPLOYMENTS }
+					childElements {
+						model.resources(Deployment::class.java)
+								.inCurrentNamespace()
+								.list()
+								.sortedBy(resourceName)
+					}
+					parentElements { WORKLOADS }
+				},
+				element<Deployment> {
+					anchor { it is Deployment }
+					childElements {
+						model.resources(Pod::class.java)
+								.inCurrentNamespace()
+								.filtered(PodForDeployment(it))
+								.list()
+								.sortedBy(resourceName)
+					}
+					parentElements { DEPLOYMENTS }
 				},
 				element<Any> {
 					anchor { it == PODS }
