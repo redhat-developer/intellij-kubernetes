@@ -51,7 +51,6 @@ import org.jboss.tools.intellij.kubernetes.tree.TreeStructure.*
 import javax.swing.Icon
 
 class KubernetesStructure(model: IResourceModel) : AbstractTreeStructureContribution(model) {
-
     object Folders {
         val NAMESPACES = Folder("Namespaces", Namespace::class.java)
         val NODES = Folder("Nodes", Node::class.java)
@@ -70,188 +69,44 @@ class KubernetesStructure(model: IResourceModel) : AbstractTreeStructureContribu
 			val SECRETS = Folder("Secrets", Secret::class.java) // Network / Endpoints
     }
 
-	override fun canContribute() = true
+	private val elementsTree: List<ElementNode<*>> = listOf(
+			element<Any> {
+				anchor { it == getRootElement() }
+				childElements {
+					listOf(NAMESPACES,
+							NODES,
+							WORKLOADS,
+							NETWORK,
+							STORAGE,
+							CONFIGURATION
+					)
+				}
+				parentElements { model }
+			},
+			*createPodElements(), // pods are in several places (NODES, WORKLOADS, NETWORK, etc)
+			*createNamespacesElements(),
+			*createNodesElements(),
+			*createWorkloadElements(),
+			*createNetworkElements(),
+			*createStorageElements(),
+			*createConfigurationElements()
+	)
 
-    override fun getChildElements(element: Any): Collection<Any> {
-        return when (element) {
-            getRootElement() ->
-                mutableListOf<Any>(
-                    NAMESPACES,
-                    NODES,
-                    WORKLOADS,
-                    NETWORK,
-                    STORAGE,
-					CONFIGURATION
-				)
-            NAMESPACES ->
-                model.resources(Namespace::class.java)
-                        .inNoNamespace()
-                        .list()
-                        .sortedBy(resourceName)
-            NODES ->
-                model.resources(Node::class.java)
-                        .inNoNamespace()
-                        .list()
-                        .sortedBy(resourceName)
-            is Node ->
-                model.resources(Pod::class.java)
-                        .inAnyNamespace()
-                        .list()
-                        .sortedBy(resourceName)
-            WORKLOADS ->
-                listOf<Any>(PODS)
-            PODS ->
-                model.resources(Pod::class.java)
-                        .inCurrentNamespace()
-                        .list()
-                        .sortedBy(resourceName)
-            is Pod ->
-                listOf(PodContainersDescriptorFactory(element),
-                        PodIpDescriptorFactory(element))
-            NETWORK ->
-                listOf<Any>(
-                        SERVICES,
-                        ENDPOINTS,
-                        INGRESS)
-            SERVICES ->
-                model.resources(Service::class.java)
-                        .inCurrentNamespace()
-                        .list()
-                        .sortedBy(resourceName)
-            is Service ->
-                model.resources(Pod::class.java)
-                        .inCurrentNamespace()
-                        .filtered(PodForService(element))
-                        .list()
-                        .sortedBy(resourceName)
-            ENDPOINTS ->
-                model.resources(Endpoints::class.java)
-                        .inCurrentNamespace()
-                        .list()
-                        .sortedBy(resourceName)
-            INGRESS ->
-                model.resources(Ingress::class.java)
-                        .inCurrentNamespace()
-						.list()
-                        .sortedBy(resourceName)
-            STORAGE ->
-                listOf<Any>(
-                        PERSISTENT_VOLUMES,
-                        PERSISTENT_VOLUME_CLAIMS,
-                        STORAGE_CLASSES)
-            PERSISTENT_VOLUMES ->
-                model.resources(PersistentVolume::class.java)
-                        .inAnyNamespace()
-                        .list()
-                        .sortedBy(resourceName)
-            PERSISTENT_VOLUME_CLAIMS ->
-                model.resources(PersistentVolumeClaim::class.java)
-                        .inCurrentNamespace()
-                        .list()
-                        .sortedBy(resourceName)
-            STORAGE_CLASSES ->
-                model.resources(StorageClass::class.java)
-                        .inAnyNamespace()
-                        .list()
-                        .sortedBy(resourceName)
-			CONFIGURATION ->
-				listOf<Any>(
-						CONFIG_MAPS,
-						SECRETS)
-			CONFIG_MAPS ->
-				model.resources(ConfigMap::class.java)
-						.inCurrentNamespace()
-						.list()
-						.sortedBy(resourceName)
-			is ConfigMap ->
-				createDataDescriptors(element.data, element)
-			SECRETS ->
-				model.resources(Secret::class.java)
-						.inCurrentNamespace()
-						.list()
-						.sortedBy(resourceName)
-			is Secret ->
-				createDataDescriptors(element.data, element)
-			else ->
-                listOf()
-        }
-    }
+	override fun getChildElements(element: Any): Collection<Any> {
+		val node = elementsTree.find { it.isAnchor(element) }
+		return node?.getChildElements(element) ?: emptyList()
+	}
 
-	private fun <R: HasMetadata> createDataDescriptors(data: Map<String, String>, element: R): List<DescriptorFactory<R>> {
-		return if (data == null
-				|| data.isEmpty()) {
-			listOf(EmptyDataDescriptorFactory(element))
-		} else {
-			data.keys.map { DataEntryDescriptorFactory(it, element) }
+	override fun getParentElement(element: Any): Any? {
+		try {
+			val node = elementsTree.find { it.isAnchor(element) } ?: return getRootElement()
+			return node.getParentElements(element)
+		} catch (e: ResourceException) {
+			return null
 		}
 	}
 
-    override fun getParentElement(element: Any): Any? {
-        try {
-            return when (element) {
-                getRootElement() ->
-                    model
-                is Namespace ->
-                    NAMESPACES
-                NAMESPACES ->
-                    getRootElement()
-                is Pod ->
-                    listOf(PODS, NODES, SERVICES)
-                is Node ->
-                    NODES
-                NODES ->
-                    getRootElement()
-                PODS ->
-                    WORKLOADS
-                WORKLOADS ->
-                    getRootElement()
-                is Service ->
-                    SERVICES
-                SERVICES ->
-                    NETWORK
-                is Endpoints ->
-                    ENDPOINTS
-                ENDPOINTS ->
-                    NETWORK
-                is Ingress ->
-                    INGRESS
-                INGRESS ->
-                    NETWORK
-                NETWORK ->
-                    getRootElement()
-                is PersistentVolume ->
-                    PERSISTENT_VOLUMES
-                PERSISTENT_VOLUMES ->
-                    STORAGE
-                is PersistentVolumeClaim ->
-                    PERSISTENT_VOLUME_CLAIMS
-                is StorageClass ->
-                    STORAGE_CLASSES
-                PERSISTENT_VOLUME_CLAIMS ->
-                    STORAGE
-                STORAGE_CLASSES ->
-                    STORAGE
-                STORAGE ->
-                    getRootElement()
-				is ConfigMap ->
-					CONFIG_MAPS
-				CONFIG_MAPS ->
-					CONFIGURATION
-				is Secret ->
-					SECRETS
-				SECRETS ->
-					CONFIGURATION
-				CONFIGURATION ->
-					getRootElement()
-				else ->
-					getRootElement()
-            }
-        } catch(e: ResourceException) {
-            return null
-        }
-    }
-
-    override fun createDescriptor(element: Any, parent: NodeDescriptor<*>?): NodeDescriptor<*>? {
+	override fun createDescriptor(element: Any, parent: NodeDescriptor<*>?): NodeDescriptor<*>? {
         return when (element) {
 			is KubernetesContext -> KubernetesContextDescriptor(element, model)
 			is Namespace -> NamespaceDescriptor(element, parent, model)
@@ -271,6 +126,8 @@ class KubernetesStructure(model: IResourceModel) : AbstractTreeStructureContribu
 				null
         }
     }
+
+	override fun canContribute() = true
 
 	private class KubernetesContextDescriptor(element: KubernetesContext, model: IResourceModel) : ContextDescriptor<KubernetesContext>(
 			context = element,
@@ -316,6 +173,15 @@ class KubernetesStructure(model: IResourceModel) : AbstractTreeStructureContribu
 			} else {
 				IconLoader.getIcon("/icons/errorPod.svg")
 			}
+		}
+	}
+
+	private fun <R: HasMetadata> createDataDescriptorFactories(data: Map<String, String>?, element: R): List<DescriptorFactory<R>> {
+		return if (data == null
+				|| data.isEmpty()) {
+			listOf(EmptyDataDescriptorFactory(element))
+		} else {
+			data.keys.map { DataEntryDescriptorFactory(it, element) }
 		}
 	}
 
@@ -399,5 +265,237 @@ class KubernetesStructure(model: IResourceModel) : AbstractTreeStructureContribu
 				return "no data entries"
 			}
 		}
+	}
+
+	private fun createNamespacesElements(): Array<ElementNode<*>> {
+		return arrayOf(
+				element<Any> {
+					anchor { it == NAMESPACES }
+					childElements {
+						model.resources(Namespace::class.java)
+								.inNoNamespace()
+								.list()
+								.sortedBy(resourceName)
+					}
+					parentElements { getRootElement() }
+				},
+				element<Any> {
+					anchor { it is Namespace }
+					parentElements { NAMESPACES }
+				}
+		)
+	}
+
+	private fun createPodElements(): Array<ElementNode<*>> {
+		return arrayOf(
+				element<Pod> {
+					anchor { it is Pod }
+					childElements {
+						listOf(PodContainersDescriptorFactory(it),
+								PodIpDescriptorFactory(it))
+					}
+					parentElements {
+						listOf(PODS,
+								NODES,
+								SERVICES)
+					}
+				}
+		)
+	}
+
+	private fun createNodesElements(): Array<ElementNode<*>> {
+		return arrayOf(
+				element<Any> {
+					anchor { it == NODES }
+					childElements {
+						model.resources(Node::class.java)
+								.inNoNamespace()
+								.list()
+								.sortedBy(resourceName)
+					}
+					parentElements { getRootElement() }
+				},
+				element<Any> {
+					anchor { it is Node }
+					childElements {
+						model.resources(Pod::class.java)
+								.inAnyNamespace()
+								.list()
+								.sortedBy(resourceName)
+					}
+					parentElements { NODES }
+				}
+		)
+	}
+
+	private fun createWorkloadElements(): Array<ElementNode<*>> {
+		return arrayOf(
+				element<Any> {
+					anchor { it == WORKLOADS }
+					childElements {
+						listOf<Any>(PODS)
+					}
+					parentElements { getRootElement() }
+				},
+				element<Any> {
+					anchor { it == PODS }
+					childElements {
+						model.resources(Pod::class.java)
+								.inCurrentNamespace()
+								.list()
+								.sortedBy(resourceName)
+					}
+					parentElements { WORKLOADS }
+				}
+		)
+	}
+
+	private fun createNetworkElements(): Array<ElementNode<*>> {
+		return arrayOf(
+				element<Any> {
+					anchor { it == NETWORK }
+					childElements {
+						listOf<Any>(
+								SERVICES,
+								ENDPOINTS,
+								INGRESS)
+					}
+					parentElements { getRootElement() }
+				},
+				element<Any> {
+					anchor { it == SERVICES }
+					childElements {
+						model.resources(Service::class.java)
+								.inCurrentNamespace()
+								.list()
+								.sortedBy(resourceName)
+					}
+					parentElements { NETWORK }
+				},
+				element<Service> {
+					anchor { it is Service }
+					childElements {
+						model.resources(Pod::class.java)
+								.inCurrentNamespace()
+								.filtered(PodForService(it))
+								.list()
+								.sortedBy(resourceName)
+					}
+					parentElements { SERVICES }
+				},
+				element<Any> {
+					anchor { it == ENDPOINTS }
+					childElements {
+						model.resources(Endpoints::class.java)
+								.inCurrentNamespace()
+								.list()
+								.sortedBy(resourceName)
+					}
+					parentElements { NETWORK }
+				},
+				element<Any> {
+					anchor { it == INGRESS }
+					childElements {
+						model.resources(Ingress::class.java)
+								.inCurrentNamespace()
+								.list()
+								.sortedBy(resourceName)
+					}
+					parentElements { NETWORK }
+				}
+		)
+	}
+
+	private fun createStorageElements(): Array<ElementNode<*>> {
+		return arrayOf(
+				element<Any> {
+					anchor { it == STORAGE }
+					childElements {
+						listOf<Any>(
+								PERSISTENT_VOLUMES,
+								PERSISTENT_VOLUME_CLAIMS,
+								STORAGE_CLASSES)
+					}
+					parentElements { getRootElement() }
+				},
+				element<Any> {
+					anchor { it == PERSISTENT_VOLUMES }
+					childElements {
+						model.resources(PersistentVolume::class.java)
+								.inAnyNamespace()
+								.list()
+								.sortedBy(resourceName)
+					}
+					parentElements { STORAGE }
+				},
+				element<Any> {
+					anchor { it == PERSISTENT_VOLUME_CLAIMS }
+					childElements {
+						model.resources(PersistentVolumeClaim::class.java)
+								.inCurrentNamespace()
+								.list()
+								.sortedBy(resourceName)
+					}
+					parentElements { STORAGE }
+				},
+				element<Any> {
+					anchor { it == STORAGE_CLASSES }
+					childElements {
+						model.resources(StorageClass::class.java)
+								.inAnyNamespace()
+								.list()
+								.sortedBy(resourceName)
+					}
+					parentElements { STORAGE }
+				}
+		)
+	}
+
+	private fun createConfigurationElements(): Array<ElementNode<*>> {
+		return arrayOf(
+				element<Any> {
+					anchor { it == CONFIGURATION }
+					childElements {
+						listOf<Any>(
+								CONFIG_MAPS,
+								SECRETS)
+					}
+					parentElements { getRootElement() }
+				},
+				element<Any> {
+					anchor { it == CONFIG_MAPS }
+					childElements {
+						model.resources(ConfigMap::class.java)
+								.inCurrentNamespace()
+								.list()
+								.sortedBy(resourceName)
+					}
+					parentElements { CONFIGURATION }
+				},
+				element<ConfigMap> {
+					anchor { it is ConfigMap }
+					childElements {
+						createDataDescriptorFactories(it.data, it)
+					}
+					parentElements { CONFIGURATION }
+				},
+				element<Any> {
+					anchor { it == SECRETS }
+					childElements {
+						model.resources(Secret::class.java)
+								.inCurrentNamespace()
+								.list()
+								.sortedBy(resourceName)
+					}
+					parentElements { CONFIGURATION }
+				},
+				element<Secret>{
+					anchor { it is Secret }
+					childElements {
+						createDataDescriptorFactories(it.data, it)
+					}
+					parentElements { CONFIGURATION }
+				}
+		)
 	}
 }
