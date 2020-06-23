@@ -19,10 +19,9 @@ import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.extensions.ExtensionPointName
 import com.intellij.openapi.util.IconLoader
 import io.fabric8.kubernetes.api.model.HasMetadata
-import io.fabric8.kubernetes.api.model.Pod
 import org.jboss.tools.intellij.kubernetes.model.IResourceModel
 import org.jboss.tools.intellij.kubernetes.model.context.IContext
-import java.util.Optional
+import java.util.*
 import javax.swing.Icon
 
 /**
@@ -38,8 +37,8 @@ open class TreeStructure(
 
     private val contributions by lazy {
         listOf(
-            *getTreeStructureDefaults(model).toTypedArray(),
-            *getTreeStructureExtensions(model).toTypedArray()
+                *getTreeStructureDefaults(model).toTypedArray(),
+                *getTreeStructureExtensions(model).toTypedArray()
         )
     }
 
@@ -59,18 +58,18 @@ open class TreeStructure(
     private fun getChildElements(element: Any, contribution: ITreeStructureContribution): Collection<Any> {
         return try {
             contribution.getChildElements(element)
-        } catch (e:  java.lang.Exception) {
+        } catch (e: java.lang.Exception) {
             logger<TreeStructure>().warn(e)
             listOf(e)
         }
     }
 
     override fun getParentElement(element: Any): Any? {
-            val parent: Optional<Any?> = getValidContributions().stream()
-                    .map { getParentElement(element, it) }
-                    .filter { it != null }
-                    .findAny()
-            return parent.orElse(rootElement)
+        val parent: Optional<Any?> = getValidContributions().stream()
+                .map { getParentElement(element, it) }
+                .filter { it != null }
+                .findAny()
+        return parent.orElse(rootElement)
     }
 
     private fun getParentElement(element: Any, contribution: ITreeStructureContribution): Any? {
@@ -94,17 +93,17 @@ open class TreeStructure(
         if (descriptor != null) {
             return descriptor
         }
-        return when(element) {
-                is IContext -> ContextDescriptor(element, parent, model = model)
-                is Exception -> ErrorDescriptor(element, parent, model = model)
-                is Folder -> FolderDescriptor(element, parent, model = model)
-                else -> Descriptor(element, parent, model = model)
-            }
+        return when (element) {
+            is IContext -> ContextDescriptor(element, parent, model = model)
+            is Exception -> ErrorDescriptor(element, parent, model = model)
+            is Folder -> FolderDescriptor(element, parent, model = model)
+            else -> Descriptor(element, parent, model = model)
+        }
     }
 
     private fun getValidContributions(): Collection<ITreeStructureContribution> {
         return contributions
-            .filter { it.canContribute() }
+                .filter { it.canContribute() }
     }
 
     private fun getTreeStructureExtensions(model: IResourceModel): List<ITreeStructureContribution> {
@@ -124,7 +123,7 @@ open class TreeStructure(
 
     override fun isToBuildChildrenInBackground(element: Any) = true
 
-    open class ContextDescriptor<C: IContext>(
+    open class ContextDescriptor<C : IContext>(
             context: C,
             parent: NodeDescriptor<*>? = null,
             model: IResourceModel)
@@ -194,10 +193,10 @@ open class TreeStructure(
         }
     }
 
-    open class ResourceDescriptor<T: HasMetadata>(
+    open class ResourceDescriptor<T : HasMetadata>(
             element: T,
             parent: NodeDescriptor<*>?,
-            model: IResourceModel): Descriptor<T>(element, parent, model) {
+            model: IResourceModel) : Descriptor<T>(element, parent, model) {
 
         override fun getLabel(element: T): String {
             return element.metadata.name
@@ -246,8 +245,9 @@ open class TreeStructure(
 
     data class Folder(val label: String, val kind: Class<out HasMetadata>?)
 
-    abstract class DescriptorFactory<R: HasMetadata>(protected val resource: R) {
+    abstract class DescriptorFactory<R : HasMetadata>(protected val resource: R) {
         abstract fun create(parent: NodeDescriptor<*>?, model: IResourceModel): NodeDescriptor<R>?
     }
 }
+
 

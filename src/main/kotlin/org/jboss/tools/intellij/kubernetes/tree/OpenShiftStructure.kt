@@ -24,7 +24,6 @@ import org.jboss.tools.intellij.kubernetes.model.context.OpenShiftContext
 import org.jboss.tools.intellij.kubernetes.model.resource.DeploymentConfigFor
 import org.jboss.tools.intellij.kubernetes.model.resource.ReplicationControllerFor
 import org.jboss.tools.intellij.kubernetes.tree.TreeStructure.Folder
-import org.jboss.tools.intellij.kubernetes.tree.TreeStructure.Descriptor
 import org.jboss.tools.intellij.kubernetes.tree.TreeStructure.ResourceDescriptor
 import org.jboss.tools.intellij.kubernetes.tree.KubernetesStructure.Folders.NODES
 import org.jboss.tools.intellij.kubernetes.tree.KubernetesStructure.Folders.WORKLOADS
