@@ -34,12 +34,11 @@ class DeploymentConfigFor(private val dc: ReplicationController) : Predicate<Dep
 		return dcName != null
 				&& dcName == dc.metadata.annotations[deploymentConfigAnnotation]
 	}
+}
 
-	class PodForService(private val service: Service) : Predicate<Pod> {
+class PodForService(private val service: Service) : Predicate<Pod> {
 
-		override fun test(pod: Pod): Boolean {
-			return service.spec.selector.all { pod.metadata.labels.entries.contains(it) }
-		}
+	override fun test(pod: Pod): Boolean {
+		return service.spec.selector.all { pod.metadata.labels.entries.contains(it) }
 	}
-
 }

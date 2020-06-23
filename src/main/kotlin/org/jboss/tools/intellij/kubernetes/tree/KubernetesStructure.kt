@@ -20,7 +20,7 @@ import io.fabric8.kubernetes.api.model.Service
 import org.jboss.tools.intellij.kubernetes.model.IResourceModel
 import org.jboss.tools.intellij.kubernetes.model.ResourceException
 import org.jboss.tools.intellij.kubernetes.model.context.KubernetesContext
-import org.jboss.tools.intellij.kubernetes.model.resource.DeploymentConfigFor
+import org.jboss.tools.intellij.kubernetes.model.resource.PodForService
 import org.jboss.tools.intellij.kubernetes.model.resourceName
 import org.jboss.tools.intellij.kubernetes.model.util.getContainers
 import org.jboss.tools.intellij.kubernetes.model.util.isRunning
@@ -94,7 +94,7 @@ class KubernetesStructure(model: IResourceModel): AbstractTreeStructureContribut
             is Service ->
                 model.resources(Pod::class.java)
                         .inCurrentNamespace()
-                        .filtered(DeploymentConfigFor.PodForService(element))
+                        .filtered(PodForService(element))
                         .list()
                         .sortedBy(resourceName)
             ENDPOINTS ->
