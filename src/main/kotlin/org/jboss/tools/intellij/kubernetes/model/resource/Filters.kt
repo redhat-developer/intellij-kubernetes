@@ -15,6 +15,7 @@ import io.fabric8.kubernetes.api.model.Pod
 import io.fabric8.kubernetes.api.model.ReplicationController
 import io.fabric8.kubernetes.api.model.Service
 import io.fabric8.kubernetes.api.model.apps.Deployment
+import io.fabric8.kubernetes.api.model.apps.StatefulSet
 import io.fabric8.openshift.api.model.DeploymentConfig
 import java.util.function.Predicate
 
@@ -44,10 +45,12 @@ class PodForService(service: Service)
 class PodForDeployment(deployment: Deployment)
 	: PodForResource<Pod>(deployment.spec.selector.matchLabels)
 
+class PodForStatefulSet(private val statefulSet: StatefulSet)
+	: PodForResource<Pod>(statefulSet.spec.selector.matchLabels)
+
 open class PodForResource<R: HasMetadata>(private val selectorLabels: Map<String, String>): Predicate<Pod> {
 
 	override fun test(pod: Pod): Boolean {
 		return selectorLabels.all { pod.metadata.labels.entries.contains(it) }
 	}
-
 }
