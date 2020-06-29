@@ -13,6 +13,8 @@ package org.jboss.tools.intellij.kubernetes.model.resource
 import io.fabric8.kubernetes.api.model.Pod
 import io.fabric8.kubernetes.api.model.ReplicationController
 import io.fabric8.kubernetes.api.model.Service
+import io.fabric8.kubernetes.api.model.batch.CronJob
+import io.fabric8.kubernetes.api.model.batch.Job
 import io.fabric8.openshift.api.model.DeploymentConfig
 import java.util.function.Predicate
 
