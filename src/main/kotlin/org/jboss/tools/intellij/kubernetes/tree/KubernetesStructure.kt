@@ -24,6 +24,7 @@ import io.fabric8.kubernetes.api.model.Secret
 import io.fabric8.kubernetes.api.model.Service
 import io.fabric8.kubernetes.api.model.apps.DaemonSet
 import io.fabric8.kubernetes.api.model.apps.StatefulSet
+import io.fabric8.kubernetes.api.model.batch.Job
 import io.fabric8.kubernetes.api.model.extensions.Ingress
 import io.fabric8.kubernetes.api.model.storage.StorageClass
 import io.fabric8.kubernetes.api.model.apps.Deployment
@@ -52,6 +53,7 @@ import org.jboss.tools.intellij.kubernetes.tree.KubernetesStructure.Folders.PODS
 import org.jboss.tools.intellij.kubernetes.tree.KubernetesStructure.Folders.SECRETS
 import org.jboss.tools.intellij.kubernetes.tree.KubernetesStructure.Folders.SERVICES
 import org.jboss.tools.intellij.kubernetes.tree.KubernetesStructure.Folders.STATEFULSETS
+import org.jboss.tools.intellij.kubernetes.tree.KubernetesStructure.Folders.JOBS
 import org.jboss.tools.intellij.kubernetes.tree.KubernetesStructure.Folders.STORAGE
 import org.jboss.tools.intellij.kubernetes.tree.KubernetesStructure.Folders.STORAGE_CLASSES
 import org.jboss.tools.intellij.kubernetes.tree.KubernetesStructure.Folders.WORKLOADS
@@ -66,6 +68,7 @@ class KubernetesStructure(model: IResourceModel) : AbstractTreeStructureContribu
 			val DEPLOYMENTS = Folder("Deployments", Deployment::class.java) //  Workloads / StatefulSets
 			val STATEFULSETS = Folder("StatefulSets", StatefulSet::class.java) //  Workloads / StatefulSets
 			val DAEMONSETS = Folder("DaemonSets", DaemonSet::class.java) //  Workloads / Pods
+			val JOBS = Folder("Jobs", Job::class.java) //  Workloads / StatefulSets
             val PODS = Folder("Pods", Pod::class.java) //  Workloads / Pods
         val NETWORK = Folder("Network", null)
             val SERVICES = Folder("Services", Service::class.java) // Network / Services
@@ -127,6 +130,7 @@ class KubernetesStructure(model: IResourceModel) : AbstractTreeStructureContribu
 			is Deployment,
 			is StatefulSet,
 			is DaemonSet,
+			is Job,
             is Service,
             is Endpoints,
             is Ingress,
@@ -352,7 +356,8 @@ class KubernetesStructure(model: IResourceModel) : AbstractTreeStructureContribu
 						listOf<Any>(DEPLOYMENTS,
 								STATEFULSETS,
 								DAEMONSETS,
-								PODS)
+								PODS,
+								JOBS)
 					}
 					parentElements { getRootElement() }
 				},
@@ -414,6 +419,16 @@ class KubernetesStructure(model: IResourceModel) : AbstractTreeStructureContribu
 						model.resources(Pod::class.java)
 								.inCurrentNamespace()
 								.filtered(PodForDaemonSet(it))
+								.list()
+								.sortedBy(resourceName)
+					}
+					parentElements { WORKLOADS }
+				},
+				element<Any> {
+					anchor { it == JOBS }
+							childElements {
+						model.resources(Job::class.java)
+								.inCurrentNamespace()
 								.list()
 								.sortedBy(resourceName)
 					}
