@@ -11,6 +11,7 @@
 package org.jboss.tools.intellij.kubernetes.model.resource.kubernetes
 
 import io.fabric8.kubernetes.api.model.apps.StatefulSet
+import io.fabric8.kubernetes.api.model.apps.DaemonSet
 import io.fabric8.kubernetes.client.AppsAPIGroupClient
 import io.fabric8.kubernetes.client.KubernetesClient
 import io.fabric8.kubernetes.client.Watch
@@ -18,7 +19,7 @@ import io.fabric8.kubernetes.client.Watcher
 import io.fabric8.kubernetes.client.dsl.Watchable
 import org.jboss.tools.intellij.kubernetes.model.resource.NamespacedResourcesProvider
 
-class StatefulSetsProvider(client: KubernetesClient)
+class DaemonSetsProvider(client: KubernetesClient)
     : NamespacedResourcesProvider<StatefulSet, KubernetesClient>(client),
         IAdaptedClient<AppsAPIGroupClient> by AdaptedClient(client, AppsAPIGroupClient::class.java) {
 
