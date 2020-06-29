@@ -21,7 +21,7 @@ import com.intellij.openapi.util.IconLoader
 import io.fabric8.kubernetes.api.model.HasMetadata
 import org.jboss.tools.intellij.kubernetes.model.IResourceModel
 import org.jboss.tools.intellij.kubernetes.model.context.IContext
-import java.util.*
+import java.util.Optional
 import javax.swing.Icon
 
 /**
