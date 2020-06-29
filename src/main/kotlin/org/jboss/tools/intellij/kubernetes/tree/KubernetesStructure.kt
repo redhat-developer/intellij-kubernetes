@@ -31,6 +31,7 @@ import org.jboss.tools.intellij.kubernetes.model.IResourceModel
 import org.jboss.tools.intellij.kubernetes.model.ResourceException
 import org.jboss.tools.intellij.kubernetes.model.context.KubernetesContext
 import org.jboss.tools.intellij.kubernetes.model.resource.PodForDeployment
+import org.jboss.tools.intellij.kubernetes.model.resource.PodForDaemonSet
 import org.jboss.tools.intellij.kubernetes.model.resource.PodForService
 import org.jboss.tools.intellij.kubernetes.model.resource.PodForStatefulSet
 import org.jboss.tools.intellij.kubernetes.model.resourceName
@@ -39,6 +40,7 @@ import org.jboss.tools.intellij.kubernetes.model.util.isRunning
 import org.jboss.tools.intellij.kubernetes.tree.KubernetesStructure.Folders.CONFIGURATION
 import org.jboss.tools.intellij.kubernetes.tree.KubernetesStructure.Folders.CONFIG_MAPS
 import org.jboss.tools.intellij.kubernetes.tree.KubernetesStructure.Folders.DEPLOYMENTS
+import org.jboss.tools.intellij.kubernetes.tree.KubernetesStructure.Folders.DAEMONSETS
 import org.jboss.tools.intellij.kubernetes.tree.KubernetesStructure.Folders.ENDPOINTS
 import org.jboss.tools.intellij.kubernetes.tree.KubernetesStructure.Folders.INGRESS
 import org.jboss.tools.intellij.kubernetes.tree.KubernetesStructure.Folders.NAMESPACES
@@ -63,6 +65,7 @@ class KubernetesStructure(model: IResourceModel) : AbstractTreeStructureContribu
         val WORKLOADS = Folder("Workloads", null)
 			val DEPLOYMENTS = Folder("Deployments", Deployment::class.java) //  Workloads / StatefulSets
 			val STATEFULSETS = Folder("StatefulSets", StatefulSet::class.java) //  Workloads / StatefulSets
+			val DAEMONSETS = Folder("DaemonSets", DaemonSet::class.java) //  Workloads / Pods
             val PODS = Folder("Pods", Pod::class.java) //  Workloads / Pods
         val NETWORK = Folder("Network", null)
             val SERVICES = Folder("Services", Service::class.java) // Network / Services
@@ -123,6 +126,7 @@ class KubernetesStructure(model: IResourceModel) : AbstractTreeStructureContribu
 			is DescriptorFactory<*> -> element.create(parent, model)
 			is Deployment,
 			is StatefulSet,
+			is DaemonSet,
             is Service,
             is Endpoints,
             is Ingress,
@@ -308,7 +312,8 @@ class KubernetesStructure(model: IResourceModel) : AbstractTreeStructureContribu
 						listOf(PODS,
 								NODES,
 								SERVICES,
-								STATEFULSETS)
+								STATEFULSETS,
+								DAEMONSETS)
 					}
 				}
 		)
@@ -345,7 +350,9 @@ class KubernetesStructure(model: IResourceModel) : AbstractTreeStructureContribu
 					anchor { it == WORKLOADS }
 					childElements {
 						listOf<Any>(DEPLOYMENTS,
-								STATEFULSETS)
+								STATEFULSETS,
+								DAEMONSETS,
+								PODS)
 					}
 					parentElements { getRootElement() }
 				},
@@ -353,16 +360,6 @@ class KubernetesStructure(model: IResourceModel) : AbstractTreeStructureContribu
 					anchor { it == DEPLOYMENTS }
 					childElements {
 						model.resources(Deployment::class.java)
-								.inCurrentNamespace()
-								.list()
-								.sortedBy(resourceName)
-					}
-					parentElements { WORKLOADS }
-				},
-				element<Any> {
-					anchor { it == STATEFULSETS }
-					childElements {
-						model.resources(StatefulSet::class.java)
 								.inCurrentNamespace()
 								.list()
 								.sortedBy(resourceName)
@@ -380,12 +377,43 @@ class KubernetesStructure(model: IResourceModel) : AbstractTreeStructureContribu
 					}
 					parentElements { DEPLOYMENTS }
 				},
+				element<Any> {
+					anchor { it == STATEFULSETS }
+					childElements {
+						model.resources(StatefulSet::class.java)
+								.inCurrentNamespace()
+								.list()
+								.sortedBy(resourceName)
+					}
+					parentElements { WORKLOADS }
+				},
 				element<StatefulSet> {
 					anchor { it is StatefulSet }
 					childElements {
 						model.resources(Pod::class.java)
 								.inCurrentNamespace()
 								.filtered(PodForStatefulSet(it))
+								.list()
+								.sortedBy(resourceName)
+					}
+					parentElements { WORKLOADS }
+				},
+				element<Any> {
+					anchor { it == DAEMONSETS }
+					childElements {
+						model.resources(DaemonSet::class.java)
+								.inCurrentNamespace()
+								.list()
+								.sortedBy(resourceName)
+					}
+					parentElements { WORKLOADS }
+				},
+				element<DaemonSet> {
+					anchor { it is DaemonSet }
+					childElements {
+						model.resources(Pod::class.java)
+								.inCurrentNamespace()
+								.filtered(PodForDaemonSet(it))
 								.list()
 								.sortedBy(resourceName)
 					}
