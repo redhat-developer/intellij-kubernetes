@@ -19,7 +19,8 @@ import io.fabric8.kubernetes.client.dsl.Watchable
 import org.jboss.tools.intellij.kubernetes.model.resource.NonNamespacedResourcesProvider
 
 class StorageClassesProvider(client: KubernetesClient)
-    : NonNamespacedResourcesProvider<StorageClass, KubernetesClient>(client) {
+    : NonNamespacedResourcesProvider<StorageClass, KubernetesClient>(client),
+        IAdaptedClient<StorageAPIGroupClient> by AdaptedClient(client, StorageAPIGroupClient::class.java) {
 
     companion object {
         val KIND = StorageClass::class.java
@@ -27,11 +28,7 @@ class StorageClassesProvider(client: KubernetesClient)
 
     override val kind = KIND
 
-    private val storageClient: StorageAPIGroupClient by lazy {
-        client.adapt(StorageAPIGroupClient::class.java)
-    }
-
     override fun getRetrieveOperation(): () -> Watchable<Watch, Watcher<StorageClass>>? {
-        return { storageClient.storageClasses() }
+        return { adaptedClient.storageClasses() }
     }
 }
