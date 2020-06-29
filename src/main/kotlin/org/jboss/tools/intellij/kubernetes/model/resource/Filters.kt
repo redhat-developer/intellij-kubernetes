@@ -13,6 +13,8 @@ package org.jboss.tools.intellij.kubernetes.model.resource
 import io.fabric8.kubernetes.api.model.Pod
 import io.fabric8.kubernetes.api.model.ReplicationController
 import io.fabric8.kubernetes.api.model.Service
+import io.fabric8.kubernetes.api.model.apps.StatefulSet
+import io.fabric8.kubernetes.api.model.batch.Job
 import io.fabric8.openshift.api.model.DeploymentConfig
 import java.util.function.Predicate
 
@@ -40,5 +42,12 @@ class PodForService(private val service: Service) : Predicate<Pod> {
 
 	override fun test(pod: Pod): Boolean {
 		return service.spec.selector.all { pod.metadata.labels.entries.contains(it) }
+	}
+}
+
+class PodForJob(private val job: Job) : Predicate<Pod> {
+
+	override fun test(pod: Pod): Boolean {
+		return job.spec.selector.matchLabels.all { pod.metadata.labels.entries.contains(it) }
 	}
 }

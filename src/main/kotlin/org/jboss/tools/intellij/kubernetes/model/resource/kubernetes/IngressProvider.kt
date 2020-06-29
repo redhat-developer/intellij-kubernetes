@@ -10,9 +10,7 @@
  ******************************************************************************/
 package org.jboss.tools.intellij.kubernetes.model.resource.kubernetes
 
-import io.fabric8.kubernetes.api.model.extensions.DoneableIngress
 import io.fabric8.kubernetes.api.model.extensions.Ingress
-import io.fabric8.kubernetes.api.model.extensions.IngressList
 import io.fabric8.kubernetes.client.ExtensionsAPIGroupClient
 import io.fabric8.kubernetes.client.KubernetesClient
 import io.fabric8.kubernetes.client.Watch
@@ -21,18 +19,17 @@ import io.fabric8.kubernetes.client.dsl.Watchable
 import org.jboss.tools.intellij.kubernetes.model.resource.NamespacedResourcesProvider
 
 class IngressProvider(client: KubernetesClient)
-    : NamespacedResourcesProvider<Ingress, KubernetesClient>(client) {
+    : NamespacedResourcesProvider<Ingress, KubernetesClient>(client),
+        IAdaptedClient<ExtensionsAPIGroupClient> by AdaptedClient(client, ExtensionsAPIGroupClient::class.java) {
 
     companion object {
         val KIND = Ingress::class.java;
     }
 
-    private val ingressClient = client.adapt(ExtensionsAPIGroupClient::class.java)
-
     override val kind = KIND
 
     override fun getRetrieveOperation(namespace: String): () -> Watchable<Watch, Watcher<Ingress>>? {
-        return { ingressClient.ingresses().inNamespace(namespace) }
+        return { adaptedClient.ingresses().inNamespace(namespace) }
     }
 
 }

@@ -13,8 +13,6 @@ package org.jboss.tools.intellij.kubernetes.model.context
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.NamedContext
 import io.fabric8.kubernetes.api.model.Namespace
-import io.fabric8.kubernetes.api.model.PersistentVolume
-import io.fabric8.kubernetes.api.model.PersistentVolumeClaim
 import io.fabric8.kubernetes.client.NamespacedKubernetesClient
 import org.jboss.tools.intellij.kubernetes.model.IModelChangeObservable
 import org.jboss.tools.intellij.kubernetes.model.context.IActiveContext.*
@@ -30,6 +28,7 @@ import org.jboss.tools.intellij.kubernetes.model.resource.kubernetes.PersistentV
 import org.jboss.tools.intellij.kubernetes.model.resource.kubernetes.PersistentVolumesProvider
 import org.jboss.tools.intellij.kubernetes.model.resource.kubernetes.SecretsProvider
 import org.jboss.tools.intellij.kubernetes.model.resource.kubernetes.ServicesProvider
+import org.jboss.tools.intellij.kubernetes.model.resource.kubernetes.JobsProvider
 import org.jboss.tools.intellij.kubernetes.model.resource.kubernetes.StorageClassesProvider
 
 open class KubernetesContext(
@@ -44,6 +43,7 @@ open class KubernetesContext(
 				NamespacesProvider(client),
 				NodesProvider(client),
 				AllPodsProvider(client),
+				JobsProvider(client),
 				NamespacedPodsProvider(client),
 				ServicesProvider(client),
 				EndpointsProvider(client),
