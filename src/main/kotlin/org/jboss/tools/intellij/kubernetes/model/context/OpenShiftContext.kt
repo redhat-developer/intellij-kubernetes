@@ -28,6 +28,7 @@ import org.jboss.tools.intellij.kubernetes.model.resource.kubernetes.PersistentV
 import org.jboss.tools.intellij.kubernetes.model.resource.kubernetes.PersistentVolumesProvider
 import org.jboss.tools.intellij.kubernetes.model.resource.kubernetes.SecretsProvider
 import org.jboss.tools.intellij.kubernetes.model.resource.kubernetes.ServicesProvider
+import org.jboss.tools.intellij.kubernetes.model.resource.kubernetes.StatefulSetsProvider
 import org.jboss.tools.intellij.kubernetes.model.resource.kubernetes.StorageClassesProvider
 import org.jboss.tools.intellij.kubernetes.model.resource.openshift.DeploymentConfigsProvider
 import org.jboss.tools.intellij.kubernetes.model.resource.openshift.ImageStreamsProvider
@@ -46,6 +47,7 @@ open class OpenShiftContext(
 				NamespacesProvider(client),
 				NodesProvider(client),
 				AllPodsProvider(client),
+				StatefulSetsProvider(client),
 				NamespacedPodsProvider(client),
 				ProjectsProvider(client),
 				ImageStreamsProvider(client),

@@ -10,27 +10,26 @@
  ******************************************************************************/
 package org.jboss.tools.intellij.kubernetes.model.resource.kubernetes
 
-import io.fabric8.kubernetes.api.model.extensions.Ingress
-import io.fabric8.kubernetes.client.ExtensionsAPIGroupClient
+import io.fabric8.kubernetes.api.model.apps.StatefulSet
+import io.fabric8.kubernetes.client.AppsAPIGroupClient
 import io.fabric8.kubernetes.client.KubernetesClient
 import io.fabric8.kubernetes.client.Watch
 import io.fabric8.kubernetes.client.Watcher
 import io.fabric8.kubernetes.client.dsl.Watchable
 import org.jboss.tools.intellij.kubernetes.model.resource.NamespacedResourcesProvider
 
-class IngressProvider(client: KubernetesClient)
-    : NamespacedResourcesProvider<Ingress, KubernetesClient>(client) {
+class StatefulSetsProvider(client: KubernetesClient)
+    : NamespacedResourcesProvider<StatefulSet, KubernetesClient>(client),
+        IAdaptedClient<AppsAPIGroupClient> by AdaptedClient(client, AppsAPIGroupClient::class.java) {
 
     companion object {
-        val KIND = Ingress::class.java;
+        val KIND = StatefulSet::class.java;
     }
-
-    private val ingressClient = client.adapt(ExtensionsAPIGroupClient::class.java)
 
     override val kind = KIND
 
-    override fun getRetrieveOperation(namespace: String): () -> Watchable<Watch, Watcher<Ingress>>? {
-        return { ingressClient.ingresses().inNamespace(namespace) }
+    override fun getRetrieveOperation(namespace: String): () -> Watchable<Watch, Watcher<StatefulSet>>? {
+        return { adaptedClient.statefulSets().inNamespace(namespace) }
     }
 
 }

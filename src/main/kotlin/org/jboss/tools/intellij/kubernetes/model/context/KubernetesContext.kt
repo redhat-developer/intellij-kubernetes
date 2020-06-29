@@ -30,6 +30,7 @@ import org.jboss.tools.intellij.kubernetes.model.resource.kubernetes.PersistentV
 import org.jboss.tools.intellij.kubernetes.model.resource.kubernetes.PersistentVolumesProvider
 import org.jboss.tools.intellij.kubernetes.model.resource.kubernetes.SecretsProvider
 import org.jboss.tools.intellij.kubernetes.model.resource.kubernetes.ServicesProvider
+import org.jboss.tools.intellij.kubernetes.model.resource.kubernetes.StatefulSetsProvider
 import org.jboss.tools.intellij.kubernetes.model.resource.kubernetes.StorageClassesProvider
 
 open class KubernetesContext(
@@ -44,6 +45,7 @@ open class KubernetesContext(
 				NamespacesProvider(client),
 				NodesProvider(client),
 				AllPodsProvider(client),
+				StatefulSetsProvider(client),
 				NamespacedPodsProvider(client),
 				ServicesProvider(client),
 				EndpointsProvider(client),
