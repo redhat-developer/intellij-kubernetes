@@ -24,6 +24,7 @@ import io.fabric8.kubernetes.api.model.Secret
 import io.fabric8.kubernetes.api.model.Service
 import io.fabric8.kubernetes.api.model.apps.DaemonSet
 import io.fabric8.kubernetes.api.model.apps.StatefulSet
+import io.fabric8.kubernetes.api.model.batch.CronJob
 import io.fabric8.kubernetes.api.model.batch.Job
 import io.fabric8.kubernetes.api.model.extensions.Ingress
 import io.fabric8.kubernetes.api.model.storage.StorageClass
@@ -31,8 +32,8 @@ import io.fabric8.kubernetes.api.model.apps.Deployment
 import org.jboss.tools.intellij.kubernetes.model.IResourceModel
 import org.jboss.tools.intellij.kubernetes.model.ResourceException
 import org.jboss.tools.intellij.kubernetes.model.context.KubernetesContext
-import org.jboss.tools.intellij.kubernetes.model.resource.PodForDeployment
 import org.jboss.tools.intellij.kubernetes.model.resource.PodForDaemonSet
+import org.jboss.tools.intellij.kubernetes.model.resource.PodForDeployment
 import org.jboss.tools.intellij.kubernetes.model.resource.PodForService
 import org.jboss.tools.intellij.kubernetes.model.resource.PodForStatefulSet
 import org.jboss.tools.intellij.kubernetes.model.resourceName
@@ -54,6 +55,7 @@ import org.jboss.tools.intellij.kubernetes.tree.KubernetesStructure.Folders.SECR
 import org.jboss.tools.intellij.kubernetes.tree.KubernetesStructure.Folders.SERVICES
 import org.jboss.tools.intellij.kubernetes.tree.KubernetesStructure.Folders.STATEFULSETS
 import org.jboss.tools.intellij.kubernetes.tree.KubernetesStructure.Folders.JOBS
+import org.jboss.tools.intellij.kubernetes.tree.KubernetesStructure.Folders.CRONJOBS
 import org.jboss.tools.intellij.kubernetes.tree.KubernetesStructure.Folders.STORAGE
 import org.jboss.tools.intellij.kubernetes.tree.KubernetesStructure.Folders.STORAGE_CLASSES
 import org.jboss.tools.intellij.kubernetes.tree.KubernetesStructure.Folders.WORKLOADS
@@ -69,18 +71,19 @@ class KubernetesStructure(model: IResourceModel) : AbstractTreeStructureContribu
 			val STATEFULSETS = Folder("StatefulSets", StatefulSet::class.java) //  Workloads / StatefulSets
 			val DAEMONSETS = Folder("DaemonSets", DaemonSet::class.java) //  Workloads / Pods
 			val JOBS = Folder("Jobs", Job::class.java) //  Workloads / StatefulSets
+			val CRONJOBS = Folder("CronJobs", CronJob::class.java) //  Workloads / StatefulSets
             val PODS = Folder("Pods", Pod::class.java) //  Workloads / Pods
         val NETWORK = Folder("Network", null)
             val SERVICES = Folder("Services", Service::class.java) // Network / Services
             val ENDPOINTS = Folder("Endpoints", Endpoints::class.java) // Network / Endpoints
 			val INGRESS = Folder("Ingress", Ingress::class.java) // Network / Ingress
 		val STORAGE = Folder("Storage", Endpoints::class.java)
-			val PERSISTENT_VOLUMES = Folder("Persistent Volumes", PersistentVolume::class.java)
-			val PERSISTENT_VOLUME_CLAIMS = Folder("Persistent Volume Claims", PersistentVolumeClaim::class.java)
-			val STORAGE_CLASSES = Folder("Storage Classes", StorageClass::class.java)
+			val PERSISTENT_VOLUMES = Folder("Persistent Volumes", PersistentVolume::class.java) // Storage / Persistent Volumes
+			val PERSISTENT_VOLUME_CLAIMS = Folder("Persistent Volume Claims", PersistentVolumeClaim::class.java) // Storage / Persistent Volume Claims
+			val STORAGE_CLASSES = Folder("Storage Classes", StorageClass::class.java) // Storage / Storage Classes
 		val CONFIGURATION = Folder("Configuration", null)
-			val CONFIG_MAPS = Folder("Config Maps", ConfigMap::class.java) // Network / Services
-			val SECRETS = Folder("Secrets", Secret::class.java) // Network / Endpoints
+			val CONFIG_MAPS = Folder("Config Maps", ConfigMap::class.java) // Configuration / Config Maps
+			val SECRETS = Folder("Secrets", Secret::class.java) // Configuration / Secrets
     }
 
 	private val elementsTree: List<ElementNode<*>> = listOf(
@@ -131,6 +134,7 @@ class KubernetesStructure(model: IResourceModel) : AbstractTreeStructureContribu
 			is StatefulSet,
 			is DaemonSet,
 			is Job,
+			is CronJob,
             is Service,
             is Endpoints,
             is Ingress,
@@ -356,8 +360,9 @@ class KubernetesStructure(model: IResourceModel) : AbstractTreeStructureContribu
 						listOf<Any>(DEPLOYMENTS,
 								STATEFULSETS,
 								DAEMONSETS,
-								PODS,
-								JOBS)
+								JOBS,
+								CRONJOBS,
+								PODS)
 					}
 					parentElements { getRootElement() }
 				},
@@ -426,8 +431,18 @@ class KubernetesStructure(model: IResourceModel) : AbstractTreeStructureContribu
 				},
 				element<Any> {
 					anchor { it == JOBS }
-							childElements {
+					childElements {
 						model.resources(Job::class.java)
+								.inCurrentNamespace()
+								.list()
+								.sortedBy(resourceName)
+					}
+					parentElements { WORKLOADS }
+				},
+				element<Any> {
+					anchor { it == CRONJOBS }
+					childElements {
+						model.resources(CronJob::class.java)
 								.inCurrentNamespace()
 								.list()
 								.sortedBy(resourceName)
