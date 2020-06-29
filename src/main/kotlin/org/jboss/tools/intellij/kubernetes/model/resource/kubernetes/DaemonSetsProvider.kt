@@ -10,27 +10,26 @@
  ******************************************************************************/
 package org.jboss.tools.intellij.kubernetes.model.resource.kubernetes
 
-import io.fabric8.kubernetes.api.model.extensions.Ingress
-import io.fabric8.kubernetes.client.ExtensionsAPIGroupClient
+import io.fabric8.kubernetes.api.model.apps.DaemonSet
+import io.fabric8.kubernetes.client.AppsAPIGroupClient
 import io.fabric8.kubernetes.client.KubernetesClient
 import io.fabric8.kubernetes.client.Watch
 import io.fabric8.kubernetes.client.Watcher
 import io.fabric8.kubernetes.client.dsl.Watchable
 import org.jboss.tools.intellij.kubernetes.model.resource.NamespacedResourcesProvider
 
-class IngressProvider(client: KubernetesClient)
-    : NamespacedResourcesProvider<Ingress, KubernetesClient>(client) {
+class DaemonSetsProvider(client: KubernetesClient)
+	: NamespacedResourcesProvider<DaemonSet, KubernetesClient>(client),
+		IAdaptedClient<AppsAPIGroupClient> by AdaptedClient(client, AppsAPIGroupClient::class.java) {
 
-    companion object {
-        val KIND = Ingress::class.java;
-    }
+	companion object {
+		val KIND = DaemonSet::class.java;
+	}
 
-    private val ingressClient = client.adapt(ExtensionsAPIGroupClient::class.java)
+	override val kind = KIND
 
-    override val kind = KIND
-
-    override fun getRetrieveOperation(namespace: String): () -> Watchable<Watch, Watcher<Ingress>>? {
-        return { ingressClient.ingresses().inNamespace(namespace) }
-    }
+	override fun getRetrieveOperation(namespace: String): () -> Watchable<Watch, Watcher<DaemonSet>>? {
+		return { adaptedClient.daemonSets().inNamespace(namespace) }
+	}
 
 }

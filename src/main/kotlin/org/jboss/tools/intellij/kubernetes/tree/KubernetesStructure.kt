@@ -22,18 +22,21 @@ import io.fabric8.kubernetes.api.model.PersistentVolumeClaim
 import io.fabric8.kubernetes.api.model.Pod
 import io.fabric8.kubernetes.api.model.Secret
 import io.fabric8.kubernetes.api.model.Service
+import io.fabric8.kubernetes.api.model.apps.DaemonSet
 import io.fabric8.kubernetes.api.model.extensions.Ingress
 import io.fabric8.kubernetes.api.model.storage.StorageClass
 import org.jboss.tools.intellij.kubernetes.model.IResourceModel
 import org.jboss.tools.intellij.kubernetes.model.ResourceException
 import org.jboss.tools.intellij.kubernetes.model.context.KubernetesContext
 import org.jboss.tools.intellij.kubernetes.model.resource.DeploymentConfigFor
+import org.jboss.tools.intellij.kubernetes.model.resource.PodForDaemonSet
 import org.jboss.tools.intellij.kubernetes.model.resource.PodForService
 import org.jboss.tools.intellij.kubernetes.model.resourceName
 import org.jboss.tools.intellij.kubernetes.model.util.getContainers
 import org.jboss.tools.intellij.kubernetes.model.util.isRunning
 import org.jboss.tools.intellij.kubernetes.tree.KubernetesStructure.Folders.CONFIGURATION
 import org.jboss.tools.intellij.kubernetes.tree.KubernetesStructure.Folders.CONFIG_MAPS
+import org.jboss.tools.intellij.kubernetes.tree.KubernetesStructure.Folders.DAEMONSETS
 import org.jboss.tools.intellij.kubernetes.tree.KubernetesStructure.Folders.ENDPOINTS
 import org.jboss.tools.intellij.kubernetes.tree.KubernetesStructure.Folders.INGRESS
 import org.jboss.tools.intellij.kubernetes.tree.KubernetesStructure.Folders.NAMESPACES
@@ -55,6 +58,7 @@ class KubernetesStructure(model: IResourceModel) : AbstractTreeStructureContribu
         val NAMESPACES = Folder("Namespaces", Namespace::class.java)
         val NODES = Folder("Nodes", Node::class.java)
         val WORKLOADS = Folder("Workloads", null)
+			val DAEMONSETS = Folder("DaemonSets", DaemonSet::class.java) //  Workloads / Pods
             val PODS = Folder("Pods", Pod::class.java) //  Workloads / Pods
         val NETWORK = Folder("Network", null)
             val SERVICES = Folder("Services", Service::class.java) // Network / Services
@@ -113,6 +117,7 @@ class KubernetesStructure(model: IResourceModel) : AbstractTreeStructureContribu
 			is Node -> ResourceDescriptor(element, parent, model)
 			is Pod -> PodDescriptor(element, parent, model)
 			is DescriptorFactory<*> -> element.create(parent, model)
+			is DaemonSet,
             is Service,
             is Endpoints,
             is Ingress,
@@ -333,9 +338,31 @@ class KubernetesStructure(model: IResourceModel) : AbstractTreeStructureContribu
 				element<Any> {
 					anchor { it == WORKLOADS }
 					childElements {
-						listOf<Any>(PODS)
+						listOf<Any>(PODS,
+								DAEMONSETS)
 					}
 					parentElements { getRootElement() }
+				},
+				element<Any> {
+					anchor { it == DAEMONSETS }
+					childElements {
+						model.resources(DaemonSet::class.java)
+								.inCurrentNamespace()
+								.list()
+								.sortedBy(resourceName)
+					}
+					parentElements { WORKLOADS }
+				},
+				element<DaemonSet> {
+					anchor { it is DaemonSet }
+					childElements {
+						model.resources(Pod::class.java)
+								.inCurrentNamespace()
+								.filtered(PodForDaemonSet(it))
+								.list()
+								.sortedBy(resourceName)
+					}
+					parentElements { WORKLOADS }
 				},
 				element<Any> {
 					anchor { it == PODS }

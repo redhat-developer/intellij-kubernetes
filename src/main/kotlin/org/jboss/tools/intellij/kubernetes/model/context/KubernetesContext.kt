@@ -21,6 +21,7 @@ import org.jboss.tools.intellij.kubernetes.model.context.IActiveContext.*
 import org.jboss.tools.intellij.kubernetes.model.resource.IResourcesProvider
 import org.jboss.tools.intellij.kubernetes.model.resource.kubernetes.AllPodsProvider
 import org.jboss.tools.intellij.kubernetes.model.resource.kubernetes.ConfigMapsProvider
+import org.jboss.tools.intellij.kubernetes.model.resource.kubernetes.DaemonSetsProvider
 import org.jboss.tools.intellij.kubernetes.model.resource.kubernetes.EndpointsProvider
 import org.jboss.tools.intellij.kubernetes.model.resource.kubernetes.IngressProvider
 import org.jboss.tools.intellij.kubernetes.model.resource.kubernetes.NamespacesProvider
@@ -44,6 +45,7 @@ open class KubernetesContext(
 				NamespacesProvider(client),
 				NodesProvider(client),
 				AllPodsProvider(client),
+				DaemonSetsProvider(client),
 				NamespacedPodsProvider(client),
 				ServicesProvider(client),
 				EndpointsProvider(client),
