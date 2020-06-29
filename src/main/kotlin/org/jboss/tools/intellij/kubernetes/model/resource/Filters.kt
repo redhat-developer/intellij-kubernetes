@@ -17,6 +17,7 @@ import io.fabric8.kubernetes.api.model.Service
 import io.fabric8.kubernetes.api.model.apps.Deployment
 import io.fabric8.kubernetes.api.model.apps.StatefulSet
 import io.fabric8.kubernetes.api.model.apps.DaemonSet
+import io.fabric8.kubernetes.api.model.batch.Job
 import io.fabric8.openshift.api.model.DeploymentConfig
 import java.util.function.Predicate
 
