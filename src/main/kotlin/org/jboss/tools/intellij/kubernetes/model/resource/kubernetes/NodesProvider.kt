@@ -30,7 +30,7 @@ class NodesProvider(client: KubernetesClient)
         return client.nodes().list().items
     }
 
-    override fun getRetrieveOperation(): () -> Watchable<Watch, Watcher<Node>>? {
+    override fun getWatchable(): () -> Watchable<Watch, Watcher<Node>>? {
         return { client.nodes() }
     }
 }

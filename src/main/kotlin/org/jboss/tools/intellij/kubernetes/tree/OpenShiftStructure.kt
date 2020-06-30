@@ -20,14 +20,14 @@ import io.fabric8.openshift.api.model.ImageStream
 import io.fabric8.openshift.api.model.Project
 import org.jboss.tools.intellij.kubernetes.model.IResourceModel
 import org.jboss.tools.intellij.kubernetes.model.ResourceException
-import org.jboss.tools.intellij.kubernetes.model.resourceName
 import org.jboss.tools.intellij.kubernetes.model.context.OpenShiftContext
 import org.jboss.tools.intellij.kubernetes.model.resource.DeploymentConfigFor
 import org.jboss.tools.intellij.kubernetes.model.resource.ReplicationControllerFor
-import org.jboss.tools.intellij.kubernetes.tree.TreeStructure.Folder
-import org.jboss.tools.intellij.kubernetes.tree.TreeStructure.ResourceDescriptor
+import org.jboss.tools.intellij.kubernetes.model.resourceName
 import org.jboss.tools.intellij.kubernetes.tree.KubernetesStructure.Folders.NODES
 import org.jboss.tools.intellij.kubernetes.tree.KubernetesStructure.Folders.WORKLOADS
+import org.jboss.tools.intellij.kubernetes.tree.TreeStructure.Folder
+import org.jboss.tools.intellij.kubernetes.tree.TreeStructure.ResourceDescriptor
 import javax.swing.Icon
 
 class OpenShiftStructure(model: IResourceModel): AbstractTreeStructureContribution(model) {

@@ -28,14 +28,14 @@ import io.fabric8.kubernetes.client.KubernetesClient
 import io.fabric8.kubernetes.client.NamespacedKubernetesClient
 import org.assertj.core.api.Assertions.assertThat
 import org.jboss.tools.intellij.kubernetes.model.context.IActiveContext
-import org.jboss.tools.intellij.kubernetes.model.context.IActiveContext.*
+import org.jboss.tools.intellij.kubernetes.model.context.IActiveContext.ResourcesIn
 import org.jboss.tools.intellij.kubernetes.model.mocks.ClientMocks.POD1
 import org.jboss.tools.intellij.kubernetes.model.mocks.ClientMocks.POD2
 import org.jboss.tools.intellij.kubernetes.model.mocks.ClientMocks.POD3
 import org.jboss.tools.intellij.kubernetes.model.mocks.ClientMocks.namedContext
+import org.jboss.tools.intellij.kubernetes.model.mocks.Mocks.context
 import org.jboss.tools.intellij.kubernetes.model.mocks.Mocks.contextFactory
 import org.jboss.tools.intellij.kubernetes.model.mocks.Mocks.resource
-import org.jboss.tools.intellij.kubernetes.model.mocks.Mocks.context
 import org.jboss.tools.intellij.kubernetes.model.util.KubeConfigContexts
 import org.junit.Test
 import java.util.function.Predicate

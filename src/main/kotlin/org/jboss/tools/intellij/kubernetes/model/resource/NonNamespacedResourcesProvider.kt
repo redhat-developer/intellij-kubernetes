@@ -28,6 +28,6 @@ abstract class NonNamespacedResourcesProvider<R : HasMetadata, C: KubernetesClie
     }
 
     protected open fun loadAllResources(): List<R> {
-        return (getRetrieveOperation().invoke() as? Listable<KubernetesResourceList<R>>)?.list()?.items ?: emptyList()
+        return (getWatchable().invoke() as? Listable<KubernetesResourceList<R>>)?.list()?.items ?: emptyList()
     }
 }

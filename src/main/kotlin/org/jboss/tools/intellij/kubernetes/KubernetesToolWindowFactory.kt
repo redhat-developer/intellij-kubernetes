@@ -23,8 +23,8 @@ import com.intellij.ui.tree.AsyncTreeModel
 import com.intellij.ui.treeStructure.Tree
 import com.redhat.devtools.intellij.common.tree.StructureTreeModelFactory
 import org.jboss.tools.intellij.kubernetes.model.IResourceModel
-import org.jboss.tools.intellij.kubernetes.tree.TreeStructure
 import org.jboss.tools.intellij.kubernetes.tree.ResourceModelAdapter
+import org.jboss.tools.intellij.kubernetes.tree.TreeStructure
 
 class KubernetesToolWindowFactory: ToolWindowFactory {
 
@@ -35,7 +35,7 @@ class KubernetesToolWindowFactory: ToolWindowFactory {
         ResourceModelAdapter(treeModel, structure, resourceModel)
         val tree = Tree(AsyncTreeModel(treeModel))
         tree.isRootVisible = false
-        tree.cellRenderer = NodeRenderer();
+        tree.cellRenderer = NodeRenderer()
         val panel = ScrollPaneFactory.createScrollPane(tree)
         PopupHandler.installPopupHandler(tree, "org.jboss.tools.intellij.kubernetes.tree", ActionPlaces.UNKNOWN)
         val contentFactory = ContentFactory.SERVICE.getInstance()

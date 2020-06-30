@@ -26,7 +26,7 @@ class ServicesProvider(client: KubernetesClient)
 
     override val kind = KIND
 
-    override fun getRetrieveOperation(namespace: String): () -> Watchable<Watch, Watcher<Service>>? {
+    override fun getLoadOperation(namespace: String): () -> Watchable<Watch, Watcher<Service>>? {
         return { client.services().inNamespace(namespace) }
     }
 

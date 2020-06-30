@@ -16,6 +16,8 @@ import io.fabric8.kubernetes.client.KubernetesClient
 import io.fabric8.kubernetes.client.Watch
 import io.fabric8.kubernetes.client.Watcher
 import io.fabric8.kubernetes.client.dsl.Watchable
+import org.jboss.tools.intellij.kubernetes.model.AdaptedClient
+import org.jboss.tools.intellij.kubernetes.model.IAdaptedClient
 import org.jboss.tools.intellij.kubernetes.model.resource.NamespacedResourcesProvider
 
 class DaemonSetsProvider(client: KubernetesClient)
@@ -28,7 +30,7 @@ class DaemonSetsProvider(client: KubernetesClient)
 
 	override val kind = KIND
 
-	override fun getRetrieveOperation(namespace: String): () -> Watchable<Watch, Watcher<DaemonSet>>? {
+	override fun getLoadOperation(namespace: String): () -> Watchable<Watch, Watcher<DaemonSet>>? {
 		return { adaptedClient.daemonSets().inNamespace(namespace) }
 	}
 }

@@ -16,6 +16,8 @@ import io.fabric8.kubernetes.client.StorageAPIGroupClient
 import io.fabric8.kubernetes.client.Watch
 import io.fabric8.kubernetes.client.Watcher
 import io.fabric8.kubernetes.client.dsl.Watchable
+import org.jboss.tools.intellij.kubernetes.model.AdaptedClient
+import org.jboss.tools.intellij.kubernetes.model.IAdaptedClient
 import org.jboss.tools.intellij.kubernetes.model.resource.NonNamespacedResourcesProvider
 
 class StorageClassesProvider(client: KubernetesClient)
@@ -28,7 +30,7 @@ class StorageClassesProvider(client: KubernetesClient)
 
     override val kind = KIND
 
-    override fun getRetrieveOperation(): () -> Watchable<Watch, Watcher<StorageClass>>? {
+    override fun getWatchable(): () -> Watchable<Watch, Watcher<StorageClass>>? {
         return { adaptedClient.storageClasses() }
     }
 }

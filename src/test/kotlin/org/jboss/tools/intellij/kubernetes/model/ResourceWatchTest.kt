@@ -13,10 +13,10 @@ package org.jboss.tools.intellij.kubernetes.model
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.spy
-import com.nhaarman.mockitokotlin2.times
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.whenever
 import io.fabric8.kubernetes.api.model.HasMetadata
+import io.fabric8.kubernetes.api.model.ListOptions
 import io.fabric8.kubernetes.client.Watch
 import io.fabric8.kubernetes.client.Watcher
 import io.fabric8.kubernetes.client.dsl.Watchable
@@ -210,13 +210,17 @@ class ResourceWatchTest {
         }
 
         override fun watch(resourceVersion: String?, watcher: Watcher<HasMetadata>?): Watch {
-            this.watcher = watcher
-            return watch
+            return watch(watcher)
+        }
+
+        override fun watch(options: ListOptions?, watcher: Watcher<HasMetadata>?): Watch {
+            return watch(watcher)
         }
 
         fun isWatchCalled(): Boolean {
             return watcher != null
         }
+
     }
 
     private class WatchFake: Watch {

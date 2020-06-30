@@ -11,7 +11,7 @@
 package org.jboss.tools.intellij.kubernetes.model
 
 import io.fabric8.kubernetes.api.model.HasMetadata
-import org.jboss.tools.intellij.kubernetes.model.context.IActiveContext.*
+import org.jboss.tools.intellij.kubernetes.model.context.IActiveContext.ResourcesIn
 import java.util.function.Predicate
 
 val resourceName: (HasMetadata) -> String? = { it.metadata.name }

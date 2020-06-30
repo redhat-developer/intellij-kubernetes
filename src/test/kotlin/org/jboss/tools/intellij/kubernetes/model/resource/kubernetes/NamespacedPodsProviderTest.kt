@@ -91,9 +91,9 @@ class NamespacedPodsProviderTest {
         // given
         provider.namespace =  null
         // when
-        provider.getRetrieveOperation()
+        provider.getWatchable()
         // then
-        verify(provider, never()).getRetrieveOperation(any())
+        verify(provider, never()).getLoadOperation(any())
     }
 
     @Test
@@ -116,9 +116,9 @@ class NamespacedPodsProviderTest {
         provider.namespace =  namespace
         val namespaceCaptor = argumentCaptor<String>()
         // when
-        provider.getRetrieveOperation()
+        provider.getWatchable()
         // then
-        verify(provider).getRetrieveOperation(namespaceCaptor.capture())
+        verify(provider).getLoadOperation(namespaceCaptor.capture())
         assertThat(namespaceCaptor.firstValue).isEqualTo(namespace)
     }
 
@@ -235,8 +235,8 @@ class NamespacedPodsProviderTest {
             return super.loadAllResources(namespace)
         }
 
-        public override fun getRetrieveOperation(namespace: String): () -> Watchable<Watch, Watcher<Pod>>? {
-            return super.getRetrieveOperation(namespace)
+        public override fun getLoadOperation(namespace: String): () -> Watchable<Watch, Watcher<Pod>>? {
+            return super.getLoadOperation(namespace)
         }
     }
 }

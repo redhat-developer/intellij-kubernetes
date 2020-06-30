@@ -8,7 +8,7 @@
  * Contributors:
  * Red Hat, Inc. - initial API and implementation
  ******************************************************************************/
-package org.jboss.tools.intellij.kubernetes.model.resource.kubernetes
+package org.jboss.tools.intellij.kubernetes.model
 
 import io.fabric8.kubernetes.client.Client
 import io.fabric8.kubernetes.client.KubernetesClient

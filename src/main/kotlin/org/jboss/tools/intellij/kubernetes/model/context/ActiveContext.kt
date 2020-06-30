@@ -14,6 +14,7 @@ import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.extensions.ExtensionPointName
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.NamedContext
+import io.fabric8.kubernetes.api.model.apiextensions.CustomResourceDefinition
 import io.fabric8.kubernetes.client.KubernetesClient
 import io.fabric8.kubernetes.client.KubernetesClientException
 import io.fabric8.kubernetes.client.Watch
@@ -21,13 +22,14 @@ import io.fabric8.kubernetes.client.Watcher
 import io.fabric8.kubernetes.client.dsl.Watchable
 import org.apache.commons.lang3.BooleanUtils.or
 import org.jboss.tools.intellij.kubernetes.model.IModelChangeObservable
-import org.jboss.tools.intellij.kubernetes.model.ResourceWatch
 import org.jboss.tools.intellij.kubernetes.model.ResourceException
-import org.jboss.tools.intellij.kubernetes.model.context.IActiveContext.*
+import org.jboss.tools.intellij.kubernetes.model.ResourceWatch
+import org.jboss.tools.intellij.kubernetes.model.context.IActiveContext.ResourcesIn
 import org.jboss.tools.intellij.kubernetes.model.resource.INamespacedResourcesProvider
 import org.jboss.tools.intellij.kubernetes.model.resource.INonNamespacedResourcesProvider
 import org.jboss.tools.intellij.kubernetes.model.resource.IResourcesProvider
 import org.jboss.tools.intellij.kubernetes.model.resource.IResourcesProviderFactory
+import org.jboss.tools.intellij.kubernetes.model.resource.kubernetes.CustomResourcesProvider
 
 interface IActiveContext<N: HasMetadata, C: KubernetesClient>: IContext {
 
@@ -40,6 +42,7 @@ interface IActiveContext<N: HasMetadata, C: KubernetesClient>: IContext {
     fun setCurrentNamespace(namespace: String)
     fun getCurrentNamespace(): String?
     fun <T: HasMetadata> getResources(kind: Class<T>, resourcesIn: ResourcesIn): Collection<T>
+    fun getCustomResources(definition: CustomResourceDefinition, resourcesIn: ResourcesIn): Collection<HasMetadata>
     fun add(resource: HasMetadata): Boolean
     fun remove(resource: HasMetadata): Boolean
     fun invalidate(kind: Class<out HasMetadata>)
@@ -70,6 +73,8 @@ abstract class ActiveContext<N: HasMetadata, C: KubernetesClient>(
                 as Map<String, INonNamespacedResourcesProvider<HasMetadata>>
         nonNamespacedProviders
     }
+
+    protected open val customResourceDefinitionProviders: MutableMap<CustomResourceDefinition, CustomResourcesProvider> = mutableMapOf()
 
     protected var namespace: String? = client.configuration.namespace
 
@@ -110,15 +115,28 @@ abstract class ActiveContext<N: HasMetadata, C: KubernetesClient>(
     protected abstract fun getNamespaces(): Collection<N>
 
     override fun <T: HasMetadata> getResources(kind: Class<T>, resourcesIn: ResourcesIn): Collection<T> {
-        val resources = when(resourcesIn) {
+        val provider: IResourcesProvider<T>? = getProvider(kind.name, resourcesIn)
+        return provider?.getAllResources() ?: return emptyList()
+    }
+
+    private fun <T: HasMetadata> getProvider(kind: String, resourcesIn: ResourcesIn): IResourcesProvider<T>? {
+        return when(resourcesIn) {
             ResourcesIn.CURRENT_NAMESPACE -> {
-                namespacedProviders[kind.name]?.getAllResources() ?: emptyList()
+                namespacedProviders[kind] as? IResourcesProvider<T>
             }
             ResourcesIn.ANY_NAMESPACE,
             ResourcesIn.NO_NAMESPACE ->
-                nonNamespacedProviders[kind.name]?.getAllResources() ?: emptyList()
+                nonNamespacedProviders[kind] as? IResourcesProvider<T>
         }
-        return resources as Collection<T>
+    }
+
+    override fun getCustomResources(definition: CustomResourceDefinition, resourcesIn: ResourcesIn): Collection<HasMetadata> {
+        var provider = getProvider<HasMetadata>(definition.metadata.name, resourcesIn) as? CustomResourcesProvider
+        if (provider == null) {
+            provider = CustomResourcesProvider(definition, client)
+            provider.namespace = getCurrentNamespace()
+        }
+        return provider.getAllResources()
     }
 
     override fun add(resource: HasMetadata): Boolean {
@@ -178,9 +196,9 @@ abstract class ActiveContext<N: HasMetadata, C: KubernetesClient>(
     protected open fun getRetrieveOperations(namespace: String): Collection<() -> Watchable<Watch, Watcher<HasMetadata>>?> {
         val resources: MutableList<() ->Watchable<Watch, Watcher<HasMetadata>>?> = mutableListOf()
         resources.addAll(namespacedProviders.values
-                .map { it.getRetrieveOperation() })
+                .map { it.getWatchable() })
         resources.addAll(nonNamespacedProviders.values
-                .map { it.getRetrieveOperation() })
+                .map { it.getWatchable() })
         return resources
     }
 

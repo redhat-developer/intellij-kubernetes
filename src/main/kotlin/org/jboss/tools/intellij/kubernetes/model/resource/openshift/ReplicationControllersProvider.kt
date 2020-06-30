@@ -26,7 +26,7 @@ class ReplicationControllersProvider(client: OpenShiftClient)
 
     override val kind = KIND
 
-    override fun getRetrieveOperation(namespace: String): () -> Watchable<Watch, Watcher<ReplicationController>>? {
+    override fun getLoadOperation(namespace: String): () -> Watchable<Watch, Watcher<ReplicationController>>? {
         return { client.replicationControllers().inNamespace(namespace) }
     }
 }

@@ -11,7 +11,6 @@
 package org.jboss.tools.intellij.kubernetes.model.resource
 
 import io.fabric8.kubernetes.api.model.HasMetadata
-import io.fabric8.kubernetes.client.KubernetesClient
 import org.jboss.tools.intellij.kubernetes.model.util.areEqual
 
 abstract class AbstractResourcesProvider<R : HasMetadata> : IResourcesProvider<R> {

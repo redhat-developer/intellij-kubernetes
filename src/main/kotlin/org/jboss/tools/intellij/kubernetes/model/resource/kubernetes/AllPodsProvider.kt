@@ -30,7 +30,7 @@ class AllPodsProvider(client: KubernetesClient)
         return client.pods().inAnyNamespace().list().items
     }
 
-    override fun getRetrieveOperation(): () -> Watchable<Watch, Watcher<Pod>>? {
+    override fun getWatchable(): () -> Watchable<Watch, Watcher<Pod>>? {
         return { client.pods().inAnyNamespace() }
     }
 }

@@ -26,7 +26,7 @@ class PersistentVolumesProvider(client: KubernetesClient)
 
     override val kind = KIND
 
-    override fun getRetrieveOperation(): () -> Watchable<Watch, Watcher<PersistentVolume>>? {
+    override fun getWatchable(): () -> Watchable<Watch, Watcher<PersistentVolume>>? {
         return { client.persistentVolumes() }
     }
 }

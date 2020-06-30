@@ -10,28 +10,23 @@
  ******************************************************************************/
 package org.jboss.tools.intellij.kubernetes.model.resource.kubernetes
 
-import io.fabric8.kubernetes.api.model.extensions.Ingress
-import io.fabric8.kubernetes.client.ExtensionsAPIGroupClient
+import io.fabric8.kubernetes.api.model.apiextensions.CustomResourceDefinition
 import io.fabric8.kubernetes.client.KubernetesClient
 import io.fabric8.kubernetes.client.Watch
 import io.fabric8.kubernetes.client.Watcher
 import io.fabric8.kubernetes.client.dsl.Watchable
-import org.jboss.tools.intellij.kubernetes.model.AdaptedClient
-import org.jboss.tools.intellij.kubernetes.model.IAdaptedClient
-import org.jboss.tools.intellij.kubernetes.model.resource.NamespacedResourcesProvider
+import org.jboss.tools.intellij.kubernetes.model.resource.NonNamespacedResourcesProvider
 
-class IngressProvider(client: KubernetesClient)
-    : NamespacedResourcesProvider<Ingress, KubernetesClient>(client),
-        IAdaptedClient<ExtensionsAPIGroupClient> by AdaptedClient(client, ExtensionsAPIGroupClient::class.java) {
+class CustomResourceDefinitionsProvider(client: KubernetesClient)
+    : NonNamespacedResourcesProvider<CustomResourceDefinition, KubernetesClient>(client) {
 
     companion object {
-        val KIND = Ingress::class.java;
+        val KIND = CustomResourceDefinition::class.java;
     }
 
     override val kind = KIND
 
-    override fun getLoadOperation(namespace: String): () -> Watchable<Watch, Watcher<Ingress>>? {
-        return { adaptedClient.ingresses().inNamespace(namespace) }
+    override fun getWatchable(): () -> Watchable<Watch, Watcher<CustomResourceDefinition>>? {
+        return { client.customResourceDefinitions() }
     }
-
 }

@@ -19,7 +19,6 @@ import io.fabric8.kubernetes.client.KubernetesClientException
 import io.fabric8.openshift.client.NamespacedOpenShiftClient
 import io.fabric8.openshift.client.OpenShiftNotAvailableException
 import org.jboss.tools.intellij.kubernetes.model.IModelChangeObservable
-import java.lang.RuntimeException
 
 class ContextFactory {
 

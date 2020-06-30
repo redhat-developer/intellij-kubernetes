@@ -42,16 +42,18 @@ abstract class NamespacedResourcesProvider<R : HasMetadata, C : KubernetesClient
     }
 
     protected open fun loadAllResources(namespace: String): List<R> {
-        return (getRetrieveOperation(namespace).invoke() as? Listable<KubernetesResourceList<R>>)?.list()?.items ?: emptyList()
+        return (getLoadOperation(namespace).invoke() as? Listable<KubernetesResourceList<R>>)?.list()?.items ?: emptyList()
     }
 
-    override fun getRetrieveOperation(): () -> Watchable<Watch, Watcher<R>>? {
+    override fun getWatchable(): () -> Watchable<Watch, Watcher<R>>? {
         if (namespace == null) {
             return { null }
         }
-        return getRetrieveOperation (namespace!!)
+        return getLoadOperation (namespace!!)
     }
 
-    protected abstract fun getRetrieveOperation(namespace: String): () -> Watchable<Watch, Watcher<R>>?
+    protected open fun getLoadOperation(namespace: String): () -> Watchable<Watch, Watcher<R>>? {
+        return { null }
+    }
 
 }

@@ -12,12 +12,13 @@ package org.jboss.tools.intellij.kubernetes.model
 
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.NamedContext
+import io.fabric8.kubernetes.api.model.apiextensions.CustomResourceDefinition
 import io.fabric8.kubernetes.client.KubernetesClient
 import io.fabric8.kubernetes.client.KubernetesClientException
 import org.jboss.tools.intellij.kubernetes.model.context.ContextFactory
 import org.jboss.tools.intellij.kubernetes.model.context.IActiveContext
+import org.jboss.tools.intellij.kubernetes.model.context.IActiveContext.ResourcesIn
 import org.jboss.tools.intellij.kubernetes.model.context.IContext
-import org.jboss.tools.intellij.kubernetes.model.context.IActiveContext.*
 import org.jboss.tools.intellij.kubernetes.model.util.KubeConfigContexts
 import java.util.function.Predicate
 
@@ -30,6 +31,7 @@ interface IResourceModel {
     fun setCurrentNamespace(namespace: String)
     fun getCurrentNamespace(): String?
     fun <R: HasMetadata> resources(kind: Class<R>): Namespaceable<R>
+    fun getCustomResources(definition: CustomResourceDefinition, resourcesIn: ResourcesIn): Collection<HasMetadata>
     fun getKind(resource: HasMetadata): Class<out HasMetadata>
     fun invalidate(element: Any?)
     fun addListener(listener: ModelChangeObservable.IResourceChangeListener)
@@ -95,6 +97,10 @@ class ResourceModel(
             }
             throw ResourceException("Could not get ${kind.simpleName}s for server ${contexts.current?.client?.masterUrl}", e)
         }
+    }
+
+    override fun getCustomResources(definition: CustomResourceDefinition, resourcesIn: ResourcesIn): Collection<HasMetadata> {
+        return contexts.current?.getCustomResources(definition, resourcesIn) ?: emptyList()
     }
 
     override fun getKind(resource: HasMetadata): Class<out HasMetadata> {
