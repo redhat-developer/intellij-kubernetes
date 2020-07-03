@@ -24,6 +24,7 @@ import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.NamedContext
 import io.fabric8.kubernetes.api.model.Namespace
 import io.fabric8.kubernetes.api.model.Pod
+import io.fabric8.kubernetes.api.model.apiextensions.CustomResourceDefinition
 import io.fabric8.kubernetes.client.KubernetesClient
 import io.fabric8.kubernetes.client.NamespacedKubernetesClient
 import org.assertj.core.api.Assertions.assertThat
@@ -90,6 +91,16 @@ class ResourceModelTest {
         model.getResources(Pod::class.java, ResourcesIn.NO_NAMESPACE, filter)
         // then
         verify(filter, times(3)).test(any())
+    }
+
+    @Test
+    fun `#getCustomResources should call activeContext#getCustomResources`() {
+        // given
+        val definition = mock<CustomResourceDefinition>()
+        // when
+        model.getCustomResources(definition, ResourcesIn.CURRENT_NAMESPACE)
+        // then
+        verify(context).getCustomResources(definition, ResourcesIn.CURRENT_NAMESPACE)
     }
 
     @Test
