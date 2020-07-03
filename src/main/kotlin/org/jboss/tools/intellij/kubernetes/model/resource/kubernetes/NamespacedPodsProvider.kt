@@ -21,7 +21,7 @@ open class NamespacedPodsProvider(client: KubernetesClient)
     : NamespacedResourcesProvider<Pod, KubernetesClient>(client) {
 
     companion object {
-        val KIND = Pod::class.java;
+        val KIND = Pod::class.java
     }
 
     override val kind = KIND

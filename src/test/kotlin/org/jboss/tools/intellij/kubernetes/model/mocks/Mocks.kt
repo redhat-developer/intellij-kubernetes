@@ -85,7 +85,7 @@ object Mocks {
     }
 
     fun resourceModel(client: KubernetesClient): IResourceModel {
-        return mock<IResourceModel> {
+        return mock {
             on { getClient() } doReturn client
         }
     }

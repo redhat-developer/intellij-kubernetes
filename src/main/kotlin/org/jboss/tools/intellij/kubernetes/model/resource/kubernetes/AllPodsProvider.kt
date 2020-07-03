@@ -21,7 +21,7 @@ class AllPodsProvider(client: KubernetesClient)
     : NonNamespacedResourcesProvider<Pod, KubernetesClient>(client) {
 
     companion object {
-        val KIND = Pod::class.java;
+        val KIND = Pod::class.java
     }
 
     override val kind = KIND

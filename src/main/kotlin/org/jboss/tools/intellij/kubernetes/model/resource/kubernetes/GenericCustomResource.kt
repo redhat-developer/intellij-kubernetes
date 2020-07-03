@@ -21,4 +21,4 @@ class GenericCustomResource : CustomResource(), Namespaced {
 }
 
 @JsonDeserialize(using = JsonDeserializer.None::class)
-class GenericCustomResourceSpec(val values: Map<String, Any>) : KubernetesResource
+class GenericCustomResourceSpec(values: Map<String, Any>) : KubernetesResource

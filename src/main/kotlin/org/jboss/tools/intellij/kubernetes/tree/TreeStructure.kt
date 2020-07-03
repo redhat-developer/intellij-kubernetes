@@ -219,7 +219,7 @@ open class TreeStructure(
         }
 
         override fun getElement(): T? {
-            return element;
+            return element
         }
 
         open fun invalidate() {

@@ -22,7 +22,7 @@ class DeploymentsProvider(client: KubernetesClient)
     : NamespacedResourcesProvider<Deployment, KubernetesClient>(client) {
 
     companion object {
-        val KIND = Deployment::class.java;
+        val KIND = Deployment::class.java
     }
 
     override val kind = KIND

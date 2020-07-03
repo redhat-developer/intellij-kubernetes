@@ -21,7 +21,7 @@ class CustomResourceDefinitionsProvider(client: KubernetesClient)
     : NonNamespacedResourcesProvider<CustomResourceDefinition, KubernetesClient>(client) {
 
     companion object {
-        val KIND = CustomResourceDefinition::class.java;
+        val KIND = CustomResourceDefinition::class.java
     }
 
     override val kind = KIND

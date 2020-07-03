@@ -21,7 +21,7 @@ class EndpointsProvider(client: KubernetesClient)
     : NamespacedResourcesProvider<Endpoints, KubernetesClient>(client) {
 
     companion object {
-        val KIND = Endpoints::class.java;
+        val KIND = Endpoints::class.java
     }
 
     override val kind = KIND

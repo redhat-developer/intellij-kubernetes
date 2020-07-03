@@ -25,7 +25,7 @@ class CronJobsProvider(client: KubernetesClient)
         IAdaptedClient<BatchAPIGroupClient> by AdaptedClient(client, BatchAPIGroupClient::class.java) {
 
     companion object {
-        val KIND = CronJob::class.java;
+        val KIND = CronJob::class.java
     }
 
     override val kind = KIND

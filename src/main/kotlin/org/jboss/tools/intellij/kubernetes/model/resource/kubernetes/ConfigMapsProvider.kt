@@ -21,7 +21,7 @@ class ConfigMapsProvider(client: KubernetesClient)
     : NamespacedResourcesProvider<ConfigMap, KubernetesClient>(client) {
 
     companion object {
-        val KIND = ConfigMap::class.java;
+        val KIND = ConfigMap::class.java
     }
 
     override val kind = KIND

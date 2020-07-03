@@ -25,7 +25,7 @@ class DaemonSetsProvider(client: KubernetesClient)
 		IAdaptedClient<AppsAPIGroupClient> by AdaptedClient(client, AppsAPIGroupClient::class.java) {
 
 	companion object {
-		val KIND = DaemonSet::class.java;
+		val KIND = DaemonSet::class.java
 	}
 
 	override val kind = KIND

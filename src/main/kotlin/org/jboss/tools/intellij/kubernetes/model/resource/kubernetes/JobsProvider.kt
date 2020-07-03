@@ -25,7 +25,7 @@ class JobsProvider(client: KubernetesClient)
         IAdaptedClient<BatchAPIGroupClient> by AdaptedClient(client, BatchAPIGroupClient::class.java) {
 
     companion object {
-        val KIND = Job::class.java;
+        val KIND = Job::class.java
     }
 
     override val kind = KIND

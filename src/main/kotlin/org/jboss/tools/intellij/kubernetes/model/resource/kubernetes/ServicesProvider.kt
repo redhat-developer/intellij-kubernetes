@@ -21,7 +21,7 @@ class ServicesProvider(client: KubernetesClient)
     : NamespacedResourcesProvider<Service, KubernetesClient>(client) {
 
     companion object {
-        val KIND = Service::class.java;
+        val KIND = Service::class.java
     }
 
     override val kind = KIND

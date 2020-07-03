@@ -20,7 +20,7 @@ import io.fabric8.kubernetes.client.KubernetesClientException
 import io.fabric8.kubernetes.client.Watch
 import io.fabric8.kubernetes.client.Watcher
 import io.fabric8.kubernetes.client.dsl.Watchable
-import org.apache.commons.lang3.BooleanUtils.or
+import org.apache.commons.lang3.BooleanUtils
 import org.jboss.tools.intellij.kubernetes.model.IModelChangeObservable
 import org.jboss.tools.intellij.kubernetes.model.ResourceException
 import org.jboss.tools.intellij.kubernetes.model.ResourceWatch
@@ -52,14 +52,13 @@ interface IActiveContext<N: HasMetadata, C: KubernetesClient>: IContext {
 }
 
 abstract class ActiveContext<N: HasMetadata, C: KubernetesClient>(
-    private val modelChange: IModelChangeObservable,
-    override val client: C,
-    context: NamedContext
+        private val modelChange: IModelChangeObservable,
+        final override val client: C,
+        context: NamedContext
 ) : Context(context), IActiveContext<N, C> {
 
     private val extensionName: ExtensionPointName<IResourcesProviderFactory<HasMetadata, C, IResourcesProvider<HasMetadata>>> =
             ExtensionPointName.create("org.jboss.tools.intellij.kubernetes.resourceProvider")
-
     protected open val namespacedProviders: Map<String, INamespacedResourcesProvider<HasMetadata>> by lazy {
         val namespacedProviders = getAllResourceProviders(INamespacedResourcesProvider::class.java)
                 as Map<String, INamespacedResourcesProvider<HasMetadata>>
@@ -67,17 +66,13 @@ abstract class ActiveContext<N: HasMetadata, C: KubernetesClient>(
         namespacedProviders.forEach { it.value.namespace = namespace }
         namespacedProviders
     }
-
     protected open val nonNamespacedProviders: Map<String, INonNamespacedResourcesProvider<HasMetadata>> by lazy {
         val nonNamespacedProviders = getAllResourceProviders(INonNamespacedResourcesProvider::class.java)
                 as Map<String, INonNamespacedResourcesProvider<HasMetadata>>
         nonNamespacedProviders
     }
-
     protected open val customResourceDefinitionProviders: MutableMap<CustomResourceDefinition, CustomResourcesProvider> = mutableMapOf()
-
     protected var namespace: String? = client.configuration.namespace
-
     protected open var watch: ResourceWatch = ResourceWatch(
             addOperation = { add(it) },
             removeOperation = { remove(it) })
@@ -141,7 +136,7 @@ abstract class ActiveContext<N: HasMetadata, C: KubernetesClient>(
 
     override fun add(resource: HasMetadata): Boolean {
         // we need to add resource to both
-        return or(
+        return BooleanUtils.or(
                 addToNamespacedProvider(resource),
                 add(nonNamespacedProviders[resource::class.java.name], resource)
         )
@@ -168,7 +163,7 @@ abstract class ActiveContext<N: HasMetadata, C: KubernetesClient>(
 
     override fun remove(resource: HasMetadata): Boolean {
         // we need to remove resource from both
-        return or(
+        return BooleanUtils.or(
                 removeFromNamespacedProvider(resource),
                 remove(nonNamespacedProviders[resource::class.java.name], resource)
         )

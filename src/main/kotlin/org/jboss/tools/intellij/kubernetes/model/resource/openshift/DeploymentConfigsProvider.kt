@@ -21,7 +21,7 @@ class DeploymentConfigsProvider(client: OpenShiftClient)
     : NamespacedResourcesProvider<DeploymentConfig, OpenShiftClient>(client) {
 
     companion object {
-        val KIND = DeploymentConfig::class.java;
+        val KIND = DeploymentConfig::class.java
     }
 
     override val kind = KIND

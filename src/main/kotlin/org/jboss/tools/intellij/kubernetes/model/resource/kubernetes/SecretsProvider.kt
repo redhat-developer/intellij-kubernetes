@@ -21,7 +21,7 @@ class SecretsProvider(client: KubernetesClient)
     : NamespacedResourcesProvider<Secret, KubernetesClient>(client) {
 
     companion object {
-        val KIND = Secret::class.java;
+        val KIND = Secret::class.java
     }
 
     override val kind = KIND

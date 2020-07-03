@@ -25,7 +25,7 @@ class IngressProvider(client: KubernetesClient)
         IAdaptedClient<ExtensionsAPIGroupClient> by AdaptedClient(client, ExtensionsAPIGroupClient::class.java) {
 
     companion object {
-        val KIND = Ingress::class.java;
+        val KIND = Ingress::class.java
     }
 
     override val kind = KIND

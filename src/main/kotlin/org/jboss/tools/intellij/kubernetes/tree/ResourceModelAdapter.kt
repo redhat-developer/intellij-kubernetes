@@ -104,21 +104,21 @@ class ResourceModelAdapter<Structure: AbstractTreeStructure>(
     private fun findTreePath(element: Any?, start: DefaultMutableTreeNode?): TreePath? {
         if (element == null
             || start == null) {
-            return null;
+            return null
         }
         for (child in start.children()) {
             if (child !is DefaultMutableTreeNode) {
                 continue
             }
             if (hasElement(element, child)) {
-                return TreePath(child.path);
+                return TreePath(child.path)
             }
-            val path = findTreePath(element, child);
+            val path = findTreePath(element, child)
             if (path != null) {
-                return path;
+                return path
             }
         }
-        return null;
+        return null
     }
 
     private fun hasElement(element: Any?, node: DefaultMutableTreeNode): Boolean {

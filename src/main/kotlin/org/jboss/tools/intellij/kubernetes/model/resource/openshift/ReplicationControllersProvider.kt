@@ -21,7 +21,7 @@ class ReplicationControllersProvider(client: OpenShiftClient)
     : NamespacedResourcesProvider<ReplicationController, OpenShiftClient>(client) {
 
     companion object {
-        val KIND = ReplicationController::class.java;
+        val KIND = ReplicationController::class.java
     }
 
     override val kind = KIND

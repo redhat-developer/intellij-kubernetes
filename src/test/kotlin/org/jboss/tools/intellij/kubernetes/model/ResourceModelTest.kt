@@ -247,7 +247,7 @@ class ResourceModelTest {
                 null,
                 listOf(context1, context2, context3)
         )
-        val model: ResourceModel = ResourceModel(modelChange, contextFactory, config)
+        val model = ResourceModel(modelChange, contextFactory, config)
         // when
         model.getCurrentContext()
         // then
@@ -294,7 +294,7 @@ class ResourceModelTest {
     }
 
     private fun createKubeConfigContexts(currentContext: NamedContext?, allContexts: List<NamedContext>): KubeConfigContexts {
-        return mock() {
+        return mock {
             on { contexts } doReturn allContexts
             on { current } doReturn currentContext
             if (currentContext != null) {

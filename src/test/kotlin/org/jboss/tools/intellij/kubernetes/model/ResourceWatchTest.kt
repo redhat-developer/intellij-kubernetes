@@ -66,7 +66,7 @@ class ResourceWatchTest {
         // given
         val sizeBeforeAdd = watch.getAll().size
         // when
-        watch.watch { -> null }
+        watch.watch { null }
         // then
         assertThat(watch.getAll().size).isEqualTo(sizeBeforeAdd)
     }
@@ -184,7 +184,7 @@ class ResourceWatchTest {
         assertThat(watchable2.watch.isClosed())
     }
 
-    private class OperationState() {
+    private class OperationState {
         private var resource: HasMetadata? = null
 
         fun operation(resource: HasMetadata) {

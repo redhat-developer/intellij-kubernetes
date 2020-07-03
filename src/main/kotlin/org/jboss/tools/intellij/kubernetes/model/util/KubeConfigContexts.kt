@@ -79,11 +79,11 @@ class KubeConfigContexts {
 
 	private fun getKubeConfigFilename(): String? {
 		val fileName = Utils.getSystemPropertyOrEnvVar(KUBERNETES_KUBECONFIG_FILE,
-				File(getHomeDir(),".kube" + File.separator + "config").toString());
+				File(getHomeDir(),".kube" + File.separator + "config").toString())
 
 		// if system property/env var contains multiple files take the first one based on the environment
 		// we are running in (eg. : for Linux, ; for Windows)
-		val fileNames: List<String> = fileName.split(File.pathSeparator);
+		val fileNames: List<String> = fileName.split(File.pathSeparator)
 
 		if (fileNames.isEmpty()) {
 			return null
@@ -91,8 +91,8 @@ class KubeConfigContexts {
 		logger<KubeConfigContexts>().warn(
 				"Found multiple Kubernetes config files [$fileNames], using the first one: [$fileNames[0]]. " +
 						"If not desired file, please change it by doing `export KUBECONFIG=/path/to/kubeconfig` " +
-						"on Unix systems or `\$Env:KUBECONFIG=/path/to/kubeconfig` on Windows.");
-		return fileNames[0];
+						"on Unix systems or `\$Env:KUBECONFIG=/path/to/kubeconfig` on Windows.")
+		return fileNames[0]
 	}
 
 	private	fun getHomeDir(): String? {

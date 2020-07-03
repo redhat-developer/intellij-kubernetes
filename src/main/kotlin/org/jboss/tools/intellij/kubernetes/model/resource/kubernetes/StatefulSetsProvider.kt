@@ -25,7 +25,7 @@ class StatefulSetsProvider(client: KubernetesClient)
         IAdaptedClient<AppsAPIGroupClient> by AdaptedClient(client, AppsAPIGroupClient::class.java) {
 
     companion object {
-        val KIND = StatefulSet::class.java;
+        val KIND = StatefulSet::class.java
     }
 
     override val kind = KIND

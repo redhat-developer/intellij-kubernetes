@@ -52,7 +52,7 @@ private fun Pod.hasDeletionTimestamp(): Boolean {
 
 private fun Pod.isInState(state: String): Boolean {
 	return state == this.status?.phase
-			|| state == this.status?.reason;
+			|| state == this.status?.reason
 }
 
 private fun Pod.hasRunningContainer(): Boolean {
@@ -83,7 +83,7 @@ private fun ContainerStatus.isInitializing(): Boolean {
 	val state = this.state ?: return true
 	return when {
 		state.isTerminated() ->
-			state.hasNonNullExitCode();
+			state.hasNonNullExitCode()
 		state.isWaiting() ->
 			return !state.isWaitingInitializing()
 		else ->

@@ -21,7 +21,7 @@ class NodesProvider(client: KubernetesClient)
     : NonNamespacedResourcesProvider<Node, KubernetesClient>(client) {
 
     companion object {
-        val KIND = Node::class.java;
+        val KIND = Node::class.java
     }
 
     override val kind = KIND

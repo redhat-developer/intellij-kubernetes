@@ -31,7 +31,7 @@ class KubernetesToolWindowFactory: ToolWindowFactory {
     override fun createToolWindowContent(project: Project, toolWindow: ToolWindow) {
         val resourceModel = ServiceManager.getService(IResourceModel::class.java)
         val structure = TreeStructure(resourceModel)
-        val treeModel = StructureTreeModelFactory.create(structure, project);
+        val treeModel = StructureTreeModelFactory.create(structure, project)
         ResourceModelAdapter(treeModel, structure, resourceModel)
         val tree = Tree(AsyncTreeModel(treeModel))
         tree.isRootVisible = false

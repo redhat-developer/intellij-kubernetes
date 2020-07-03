@@ -46,7 +46,7 @@ object ClientMocks {
     fun client(currentNamespace: String?, namespaces: Array<Namespace>, masterUrl: URL = URL("http://localhost"))
             : NamespacedKubernetesClient {
         val namespacesMock = namespaceListOperation(namespaces)
-        val config = mock<Config>() {
+        val config = mock<Config> {
             on { namespace } doReturn currentNamespace
         }
 
@@ -133,7 +133,7 @@ object ClientMocks {
         }
     }
 
-    fun kubeconfigContext(namespace: String, cluster: String, user: String): Context {
+    private fun kubeconfigContext(namespace: String, cluster: String, user: String): Context {
         return mock {
             on { this.namespace } doReturn namespace
             on { this.cluster } doReturn cluster

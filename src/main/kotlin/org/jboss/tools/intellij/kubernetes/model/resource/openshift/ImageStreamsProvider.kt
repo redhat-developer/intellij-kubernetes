@@ -21,7 +21,7 @@ class ImageStreamsProvider(client: OpenShiftClient)
     : NamespacedResourcesProvider<ImageStream, OpenShiftClient>(client) {
 
     companion object {
-        val KIND = ImageStream::class.java;
+        val KIND = ImageStream::class.java
     }
 
     override val kind = KIND
