@@ -21,6 +21,7 @@ import com.intellij.openapi.util.IconLoader
 import io.fabric8.kubernetes.api.model.HasMetadata
 import org.jboss.tools.intellij.kubernetes.model.IResourceModel
 import org.jboss.tools.intellij.kubernetes.model.context.IContext
+import org.jboss.tools.intellij.kubernetes.model.resource.ResourceKind
 import java.util.*
 import javax.swing.Icon
 
@@ -241,7 +242,7 @@ open class TreeStructure(
         }
     }
 
-    data class Folder(val label: String, val kind: Class<out HasMetadata>?)
+    data class Folder(val label: String, val kind: ResourceKind<out HasMetadata>?)
 }
 
 

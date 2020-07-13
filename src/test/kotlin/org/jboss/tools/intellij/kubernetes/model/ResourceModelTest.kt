@@ -36,7 +36,9 @@ import org.jboss.tools.intellij.kubernetes.model.mocks.ClientMocks.POD3
 import org.jboss.tools.intellij.kubernetes.model.mocks.ClientMocks.namedContext
 import org.jboss.tools.intellij.kubernetes.model.mocks.Mocks.context
 import org.jboss.tools.intellij.kubernetes.model.mocks.Mocks.contextFactory
-import org.jboss.tools.intellij.kubernetes.model.mocks.Mocks.resource
+import org.jboss.tools.intellij.kubernetes.model.mocks.ClientMocks.resource
+import org.jboss.tools.intellij.kubernetes.model.resource.ResourceKind
+import org.jboss.tools.intellij.kubernetes.model.resource.kubernetes.NamespacedPodsProvider
 import org.jboss.tools.intellij.kubernetes.model.util.KubeConfigContexts
 import org.junit.Test
 import java.util.function.Predicate
@@ -64,31 +66,31 @@ class ResourceModelTest {
     fun `#getResources(kind, CURRENT_NAMESPACE) should call context#getResources(kind, CURRENT_NAMESPACE)`() {
         // given
         // when
-        model.getResources(Pod::class.java, ResourcesIn.CURRENT_NAMESPACE)
+        model.getResources(NamespacedPodsProvider.KIND, ResourcesIn.CURRENT_NAMESPACE)
         // then
-        verify(context).getResources(Pod::class.java, ResourcesIn.CURRENT_NAMESPACE)
+        verify(context).getResources(NamespacedPodsProvider.KIND, ResourcesIn.CURRENT_NAMESPACE)
     }
 
     @Test
     fun `#getResources(kind, NO_NAMESPACE) should call context#getResources(kind, NO_NAMESPACE)`() {
         // given
         // when
-        model.getResources(Pod::class.java, ResourcesIn.NO_NAMESPACE)
+        model.getResources(NamespacedPodsProvider.KIND, ResourcesIn.NO_NAMESPACE)
         // then
-        verify(context).getResources(Pod::class.java, ResourcesIn.NO_NAMESPACE)
+        verify(context).getResources(NamespacedPodsProvider.KIND, ResourcesIn.NO_NAMESPACE)
     }
 
     @Test
     fun `#getResources(kind) should call predicate#test for each resource that is returned from context`() {
         // given
         val filter = mock<Predicate<Pod>>()
-        whenever(context.getResources(any<Class<HasMetadata>>(), any()))
+        whenever(context.getResources(any<ResourceKind<HasMetadata>>(), any()))
                 .thenReturn(listOf(
                         POD1,
                         POD2,
                         POD3))
         // when
-        model.getResources(Pod::class.java, ResourcesIn.NO_NAMESPACE, filter)
+        model.getResources(NamespacedPodsProvider.KIND, ResourcesIn.NO_NAMESPACE, filter)
         // then
         verify(filter, times(3)).test(any())
     }
@@ -167,18 +169,18 @@ class ResourceModelTest {
     fun `#invalidate(class) should call context#invalidate(class)`() {
         // given
         // when
-        model.invalidate(Pod::class.java)
+        model.invalidate(NamespacedPodsProvider.KIND)
         // then
-        verify(context).invalidate(Pod::class.java)
+        verify(context).invalidate(NamespacedPodsProvider.KIND)
     }
 
     @Test
     fun `#invalidate(class) should fire class change`() {
         // given
         // when
-        model.invalidate(Pod::class.java)
+        model.invalidate(NamespacedPodsProvider.KIND)
         // then
-        verify(modelChange).fireModified(Pod::class.java)
+        verify(modelChange).fireModified(NamespacedPodsProvider.KIND)
     }
 
     @Test

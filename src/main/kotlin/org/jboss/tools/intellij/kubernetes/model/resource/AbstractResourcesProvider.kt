@@ -26,14 +26,15 @@ abstract class AbstractResourcesProvider<R : HasMetadata> : IResourcesProvider<R
     }
 
     override fun add(resource: HasMetadata): Boolean {
-        if (!kind.isAssignableFrom(resource::class.java)) {
+        if (!kind.clazz.isAssignableFrom(resource::class.java)) {
             return false
         }
         return allResources.add(resource as R)
     }
 
     override fun remove(resource: HasMetadata): Boolean {
-        if (!kind.isAssignableFrom(resource::class.java)) {
+        val resourceClass = resource::class.java
+        if (!kind.clazz.isAssignableFrom(resourceClass)) {
             return false
         }
         // do not remove by instance equality bcs instance to be removed can be different

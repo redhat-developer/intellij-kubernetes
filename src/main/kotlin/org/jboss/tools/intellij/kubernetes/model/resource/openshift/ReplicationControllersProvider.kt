@@ -16,12 +16,13 @@ import io.fabric8.kubernetes.client.Watcher
 import io.fabric8.kubernetes.client.dsl.Watchable
 import io.fabric8.openshift.client.OpenShiftClient
 import org.jboss.tools.intellij.kubernetes.model.resource.NamespacedResourcesProvider
+import org.jboss.tools.intellij.kubernetes.model.resource.ResourceKind
 
 class ReplicationControllersProvider(client: OpenShiftClient)
     : NamespacedResourcesProvider<ReplicationController, OpenShiftClient>(client) {
 
     companion object {
-        val KIND = ReplicationController::class.java
+        val KIND = ResourceKind.new(ReplicationController::class.java)
     }
 
     override val kind = KIND

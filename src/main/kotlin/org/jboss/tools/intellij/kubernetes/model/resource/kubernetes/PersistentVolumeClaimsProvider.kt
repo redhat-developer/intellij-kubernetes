@@ -16,12 +16,13 @@ import io.fabric8.kubernetes.client.Watch
 import io.fabric8.kubernetes.client.Watcher
 import io.fabric8.kubernetes.client.dsl.Watchable
 import org.jboss.tools.intellij.kubernetes.model.resource.NamespacedResourcesProvider
+import org.jboss.tools.intellij.kubernetes.model.resource.ResourceKind
 
 class PersistentVolumeClaimsProvider(client: KubernetesClient)
     : NamespacedResourcesProvider<PersistentVolumeClaim, KubernetesClient>(client) {
 
     companion object {
-        val KIND = PersistentVolumeClaim::class.java
+        val KIND = ResourceKind.new(PersistentVolumeClaim::class.java)
     }
 
     override val kind = KIND

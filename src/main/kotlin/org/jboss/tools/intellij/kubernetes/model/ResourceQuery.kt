@@ -12,12 +12,13 @@ package org.jboss.tools.intellij.kubernetes.model
 
 import io.fabric8.kubernetes.api.model.HasMetadata
 import org.jboss.tools.intellij.kubernetes.model.context.IActiveContext.ResourcesIn
+import org.jboss.tools.intellij.kubernetes.model.resource.ResourceKind
 import java.util.function.Predicate
 
 val resourceName: (HasMetadata) -> String? = { it.metadata.name }
 
 class Listable<R: HasMetadata>(
-		private val resourceKind: Class<R>,
+		private val resourceKind: ResourceKind<R>,
 		private val resourceIn: ResourcesIn,
 		private val filter: Predicate<R>? = null,
 		private val model: ResourceModel) {
@@ -28,7 +29,7 @@ class Listable<R: HasMetadata>(
 }
 
 class Filterable<R: HasMetadata>(
-		private val resourceKind: Class<R>,
+		private val resourceKind: ResourceKind<R>,
 		private val resourceIn: ResourcesIn,
 		private val model: ResourceModel) {
 
@@ -42,7 +43,7 @@ class Filterable<R: HasMetadata>(
 }
 
 class Namespaceable<R: HasMetadata>(
-		private val resourceKind: Class<R>,
+		private val resourceKind: ResourceKind<R>,
 		private val model: ResourceModel) {
 
 	fun inAnyNamespace(): Filterable<R> {

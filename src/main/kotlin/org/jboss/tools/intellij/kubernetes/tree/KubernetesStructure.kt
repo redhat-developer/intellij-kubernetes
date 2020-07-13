@@ -35,6 +35,25 @@ import org.jboss.tools.intellij.kubernetes.model.resource.PodForDaemonSet
 import org.jboss.tools.intellij.kubernetes.model.resource.PodForDeployment
 import org.jboss.tools.intellij.kubernetes.model.resource.PodForService
 import org.jboss.tools.intellij.kubernetes.model.resource.PodForStatefulSet
+import org.jboss.tools.intellij.kubernetes.model.resource.ResourceKind
+import org.jboss.tools.intellij.kubernetes.model.resource.kubernetes.AllPodsProvider
+import org.jboss.tools.intellij.kubernetes.model.resource.kubernetes.ConfigMapsProvider
+import org.jboss.tools.intellij.kubernetes.model.resource.kubernetes.CronJobsProvider
+import org.jboss.tools.intellij.kubernetes.model.resource.kubernetes.CustomResourceDefinitionsProvider
+import org.jboss.tools.intellij.kubernetes.model.resource.kubernetes.DaemonSetsProvider
+import org.jboss.tools.intellij.kubernetes.model.resource.kubernetes.DeploymentsProvider
+import org.jboss.tools.intellij.kubernetes.model.resource.kubernetes.EndpointsProvider
+import org.jboss.tools.intellij.kubernetes.model.resource.kubernetes.IngressProvider
+import org.jboss.tools.intellij.kubernetes.model.resource.kubernetes.JobsProvider
+import org.jboss.tools.intellij.kubernetes.model.resource.kubernetes.NamespacedPodsProvider
+import org.jboss.tools.intellij.kubernetes.model.resource.kubernetes.NamespacesProvider
+import org.jboss.tools.intellij.kubernetes.model.resource.kubernetes.NodesProvider
+import org.jboss.tools.intellij.kubernetes.model.resource.kubernetes.PersistentVolumeClaimsProvider
+import org.jboss.tools.intellij.kubernetes.model.resource.kubernetes.PersistentVolumesProvider
+import org.jboss.tools.intellij.kubernetes.model.resource.kubernetes.SecretsProvider
+import org.jboss.tools.intellij.kubernetes.model.resource.kubernetes.ServicesProvider
+import org.jboss.tools.intellij.kubernetes.model.resource.kubernetes.StatefulSetsProvider
+import org.jboss.tools.intellij.kubernetes.model.resource.kubernetes.StorageClassesProvider
 import org.jboss.tools.intellij.kubernetes.model.resourceName
 import org.jboss.tools.intellij.kubernetes.tree.KubernetesStructure.Folders.CONFIGURATION
 import org.jboss.tools.intellij.kubernetes.tree.KubernetesStructure.Folders.CONFIG_MAPS
@@ -61,27 +80,27 @@ import org.jboss.tools.intellij.kubernetes.tree.TreeStructure.Folder
 
 class KubernetesStructure(model: IResourceModel) : AbstractTreeStructureContribution(model) {
     object Folders {
-        val NAMESPACES = Folder("Namespaces", Namespace::class.java)
-        val NODES = Folder("Nodes", Node::class.java)
+        val NAMESPACES = Folder("Namespaces", NamespacesProvider.KIND)
+        val NODES = Folder("Nodes", NodesProvider.KIND)
         val WORKLOADS = Folder("Workloads", null)
-			val DEPLOYMENTS = Folder("Deployments", Deployment::class.java) //  Workloads / StatefulSets
-			val STATEFULSETS = Folder("StatefulSets", StatefulSet::class.java) //  Workloads / StatefulSets
-			val DAEMONSETS = Folder("DaemonSets", DaemonSet::class.java) //  Workloads / Pods
-			val JOBS = Folder("Jobs", Job::class.java) //  Workloads / StatefulSets
-			val CRONJOBS = Folder("CronJobs", CronJob::class.java) //  Workloads / StatefulSets
-            val PODS = Folder("Pods", Pod::class.java) //  Workloads / Pods
+			val DEPLOYMENTS = Folder("Deployments", DeploymentsProvider.KIND) //  Workloads / Deployments
+			val STATEFULSETS = Folder("StatefulSets", StatefulSetsProvider.KIND) //  Workloads / StatefulSets
+			val DAEMONSETS = Folder("DaemonSets", DaemonSetsProvider.KIND) //  Workloads / Pods
+			val JOBS = Folder("Jobs", JobsProvider.KIND) //  Workloads / StatefulSets
+			val CRONJOBS = Folder("CronJobs", CronJobsProvider.KIND) //  Workloads / StatefulSets
+            val PODS = Folder("Pods", NamespacedPodsProvider.KIND) //  Workloads / Pods
         val NETWORK = Folder("Network", null)
-            val SERVICES = Folder("Services", Service::class.java) // Network / Services
-            val ENDPOINTS = Folder("Endpoints", Endpoints::class.java) // Network / Endpoints
-			val INGRESS = Folder("Ingress", Ingress::class.java) // Network / Ingress
-		val STORAGE = Folder("Storage", Endpoints::class.java)
-			val PERSISTENT_VOLUMES = Folder("Persistent Volumes", PersistentVolume::class.java) // Storage / Persistent Volumes
-			val PERSISTENT_VOLUME_CLAIMS = Folder("Persistent Volume Claims", PersistentVolumeClaim::class.java) // Storage / Persistent Volume Claims
-			val STORAGE_CLASSES = Folder("Storage Classes", StorageClass::class.java) // Storage / Storage Classes
+            val SERVICES = Folder("Services", ServicesProvider.KIND) // Network / Services
+            val ENDPOINTS = Folder("Endpoints", EndpointsProvider.KIND) // Network / Endpoints
+			val INGRESS = Folder("Ingress", IngressProvider.KIND) // Network / Ingress
+		val STORAGE = Folder("Storage", EndpointsProvider.KIND)
+			val PERSISTENT_VOLUMES = Folder("Persistent Volumes", PersistentVolumesProvider.KIND) // Storage / Persistent Volumes
+			val PERSISTENT_VOLUME_CLAIMS = Folder("Persistent Volume Claims", PersistentVolumeClaimsProvider.KIND) // Storage / Persistent Volume Claims
+			val STORAGE_CLASSES = Folder("Storage Classes", StorageClassesProvider.KIND) // Storage / Storage Classes
 		val CONFIGURATION = Folder("Configuration", null)
-			val CONFIG_MAPS = Folder("Config Maps", ConfigMap::class.java) // Configuration / Config Maps
-			val SECRETS = Folder("Secrets", Secret::class.java) // Configuration / Secrets
-		val CUSTOM_RESOURCES_DEFINITIONS = Folder("Custom Resources", CustomResourceDefinition::class.java)
+			val CONFIG_MAPS = Folder("Config Maps", ConfigMapsProvider.KIND) // Configuration / Config Maps
+			val SECRETS = Folder("Secrets", SecretsProvider.KIND) // Configuration / Secrets
+		val CUSTOM_RESOURCES_DEFINITIONS = Folder("Custom Resources", CustomResourceDefinitionsProvider.KIND)
     }
 
 	private val elementsTree: List<ElementNode<*>> = listOf(
@@ -134,7 +153,7 @@ class KubernetesStructure(model: IResourceModel) : AbstractTreeStructureContribu
 				element<Any> {
 					anchor { it == NAMESPACES }
 					childElements {
-						model.resources(Namespace::class.java)
+						model.resources(NamespacesProvider.KIND)
 								.inNoNamespace()
 								.list()
 								.sortedBy(resourceName)
@@ -171,7 +190,7 @@ class KubernetesStructure(model: IResourceModel) : AbstractTreeStructureContribu
 				element<Any> {
 					anchor { it == NODES }
 					childElements {
-						model.resources(Node::class.java)
+						model.resources(NodesProvider.KIND)
 								.inNoNamespace()
 								.list()
 								.sortedBy(resourceName)
@@ -181,7 +200,7 @@ class KubernetesStructure(model: IResourceModel) : AbstractTreeStructureContribu
 				element<Any> {
 					anchor { it is Node }
 					childElements {
-						model.resources(Pod::class.java)
+						model.resources(AllPodsProvider.KIND)
 								.inAnyNamespace()
 								.list()
 								.sortedBy(resourceName)
@@ -208,7 +227,7 @@ class KubernetesStructure(model: IResourceModel) : AbstractTreeStructureContribu
 				element<Any> {
 					anchor { it == DEPLOYMENTS }
 					childElements {
-						model.resources(Deployment::class.java)
+						model.resources(DeploymentsProvider.KIND)
 								.inCurrentNamespace()
 								.list()
 								.sortedBy(resourceName)
@@ -218,7 +237,7 @@ class KubernetesStructure(model: IResourceModel) : AbstractTreeStructureContribu
 				element<Deployment> {
 					anchor { it is Deployment }
 					childElements {
-						model.resources(Pod::class.java)
+						model.resources(NamespacedPodsProvider.KIND)
 								.inCurrentNamespace()
 								.filtered(PodForDeployment(it))
 								.list()
@@ -229,7 +248,7 @@ class KubernetesStructure(model: IResourceModel) : AbstractTreeStructureContribu
 				element<Any> {
 					anchor { it == STATEFULSETS }
 					childElements {
-						model.resources(StatefulSet::class.java)
+						model.resources(StatefulSetsProvider.KIND)
 								.inCurrentNamespace()
 								.list()
 								.sortedBy(resourceName)
@@ -239,7 +258,7 @@ class KubernetesStructure(model: IResourceModel) : AbstractTreeStructureContribu
 				element<StatefulSet> {
 					anchor { it is StatefulSet }
 					childElements {
-						model.resources(Pod::class.java)
+						model.resources(NamespacedPodsProvider.KIND)
 								.inCurrentNamespace()
 								.filtered(PodForStatefulSet(it))
 								.list()
@@ -250,7 +269,7 @@ class KubernetesStructure(model: IResourceModel) : AbstractTreeStructureContribu
 				element<Any> {
 					anchor { it == DAEMONSETS }
 					childElements {
-						model.resources(DaemonSet::class.java)
+						model.resources(DaemonSetsProvider.KIND)
 								.inCurrentNamespace()
 								.list()
 								.sortedBy(resourceName)
@@ -260,7 +279,7 @@ class KubernetesStructure(model: IResourceModel) : AbstractTreeStructureContribu
 				element<DaemonSet> {
 					anchor { it is DaemonSet }
 					childElements {
-						model.resources(Pod::class.java)
+						model.resources(NamespacedPodsProvider.KIND)
 								.inCurrentNamespace()
 								.filtered(PodForDaemonSet(it))
 								.list()
@@ -271,7 +290,7 @@ class KubernetesStructure(model: IResourceModel) : AbstractTreeStructureContribu
 				element<Any> {
 					anchor { it == JOBS }
 					childElements {
-						model.resources(Job::class.java)
+						model.resources(JobsProvider.KIND)
 								.inCurrentNamespace()
 								.list()
 								.sortedBy(resourceName)
@@ -281,7 +300,7 @@ class KubernetesStructure(model: IResourceModel) : AbstractTreeStructureContribu
 				element<Any> {
 					anchor { it == CRONJOBS }
 					childElements {
-						model.resources(CronJob::class.java)
+						model.resources(CronJobsProvider.KIND)
 								.inCurrentNamespace()
 								.list()
 								.sortedBy(resourceName)
@@ -291,7 +310,7 @@ class KubernetesStructure(model: IResourceModel) : AbstractTreeStructureContribu
 				element<Any> {
 					anchor { it == PODS }
 					childElements {
-						model.resources(Pod::class.java)
+						model.resources(NamespacedPodsProvider.KIND)
 								.inCurrentNamespace()
 								.list()
 								.sortedBy(resourceName)
@@ -316,7 +335,7 @@ class KubernetesStructure(model: IResourceModel) : AbstractTreeStructureContribu
 				element<Any> {
 					anchor { it == SERVICES }
 					childElements {
-						model.resources(Service::class.java)
+						model.resources(ServicesProvider.KIND)
 								.inCurrentNamespace()
 								.list()
 								.sortedBy(resourceName)
@@ -326,7 +345,7 @@ class KubernetesStructure(model: IResourceModel) : AbstractTreeStructureContribu
 				element<Service> {
 					anchor { it is Service }
 					childElements {
-						model.resources(Pod::class.java)
+						model.resources(NamespacedPodsProvider.KIND)
 								.inCurrentNamespace()
 								.filtered(PodForService(it))
 								.list()
@@ -337,7 +356,7 @@ class KubernetesStructure(model: IResourceModel) : AbstractTreeStructureContribu
 				element<Any> {
 					anchor { it == ENDPOINTS }
 					childElements {
-						model.resources(Endpoints::class.java)
+						model.resources(EndpointsProvider.KIND)
 								.inCurrentNamespace()
 								.list()
 								.sortedBy(resourceName)
@@ -347,7 +366,7 @@ class KubernetesStructure(model: IResourceModel) : AbstractTreeStructureContribu
 				element<Any> {
 					anchor { it == INGRESS }
 					childElements {
-						model.resources(Ingress::class.java)
+						model.resources(IngressProvider.KIND)
 								.inCurrentNamespace()
 								.list()
 								.sortedBy(resourceName)
@@ -372,7 +391,7 @@ class KubernetesStructure(model: IResourceModel) : AbstractTreeStructureContribu
 				element<Any> {
 					anchor { it == PERSISTENT_VOLUMES }
 					childElements {
-						model.resources(PersistentVolume::class.java)
+						model.resources(PersistentVolumesProvider.KIND)
 								.inAnyNamespace()
 								.list()
 								.sortedBy(resourceName)
@@ -382,7 +401,7 @@ class KubernetesStructure(model: IResourceModel) : AbstractTreeStructureContribu
 				element<Any> {
 					anchor { it == PERSISTENT_VOLUME_CLAIMS }
 					childElements {
-						model.resources(PersistentVolumeClaim::class.java)
+						model.resources(PersistentVolumeClaimsProvider.KIND)
 								.inCurrentNamespace()
 								.list()
 								.sortedBy(resourceName)
@@ -392,7 +411,7 @@ class KubernetesStructure(model: IResourceModel) : AbstractTreeStructureContribu
 				element<Any> {
 					anchor { it == STORAGE_CLASSES }
 					childElements {
-						model.resources(StorageClass::class.java)
+						model.resources(StorageClassesProvider.KIND)
 								.inAnyNamespace()
 								.list()
 								.sortedBy(resourceName)
@@ -416,7 +435,7 @@ class KubernetesStructure(model: IResourceModel) : AbstractTreeStructureContribu
 				element<Any> {
 					anchor { it == CONFIG_MAPS }
 					childElements {
-						model.resources(ConfigMap::class.java)
+						model.resources(ConfigMapsProvider.KIND)
 								.inCurrentNamespace()
 								.list()
 								.sortedBy(resourceName)
@@ -433,7 +452,7 @@ class KubernetesStructure(model: IResourceModel) : AbstractTreeStructureContribu
 				element<Any> {
 					anchor { it == SECRETS }
 					childElements {
-						model.resources(Secret::class.java)
+						model.resources(SecretsProvider.KIND)
 								.inCurrentNamespace()
 								.list()
 								.sortedBy(resourceName)
@@ -455,7 +474,7 @@ class KubernetesStructure(model: IResourceModel) : AbstractTreeStructureContribu
 				element<Any> {
 					anchor { it == CUSTOM_RESOURCES_DEFINITIONS }
 					childElements {
-						model.resources(CustomResourceDefinition::class.java)
+						model.resources(CustomResourceDefinitionsProvider.KIND)
 								.inAnyNamespace()
 								.list()
 								.sortedBy(resourceName)

@@ -12,7 +12,7 @@ package org.jboss.tools.intellij.kubernetes.model.util
 
 import io.fabric8.kubernetes.api.model.Pod
 import org.assertj.core.api.Assertions.assertThat
-import org.jboss.tools.intellij.kubernetes.model.mocks.Mocks.resource
+import org.jboss.tools.intellij.kubernetes.model.mocks.ClientMocks.resource
 import org.jboss.tools.intellij.kubernetes.model.mocks.condition
 import org.jboss.tools.intellij.kubernetes.model.mocks.containerState
 import org.jboss.tools.intellij.kubernetes.model.mocks.containerStateRunning

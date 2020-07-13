@@ -14,15 +14,19 @@ import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.argumentCaptor
 import com.nhaarman.mockitokotlin2.clearInvocations
 import com.nhaarman.mockitokotlin2.doReturn
+import com.nhaarman.mockitokotlin2.eq
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.never
 import com.nhaarman.mockitokotlin2.spy
+import com.nhaarman.mockitokotlin2.times
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.whenever
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.Namespace
 import io.fabric8.kubernetes.api.model.Pod
-import io.fabric8.kubernetes.api.model.Service
+import io.fabric8.kubernetes.api.model.apiextensions.CustomResourceDefinition
+import io.fabric8.kubernetes.client.CustomResource
+import io.fabric8.kubernetes.client.KubernetesClient
 import io.fabric8.kubernetes.client.NamespacedKubernetesClient
 import io.fabric8.kubernetes.client.Watch
 import io.fabric8.kubernetes.client.Watcher
@@ -38,11 +42,19 @@ import org.jboss.tools.intellij.kubernetes.model.mocks.ClientMocks.POD1
 import org.jboss.tools.intellij.kubernetes.model.mocks.ClientMocks.POD2
 import org.jboss.tools.intellij.kubernetes.model.mocks.ClientMocks.POD3
 import org.jboss.tools.intellij.kubernetes.model.mocks.ClientMocks.client
+import org.jboss.tools.intellij.kubernetes.model.mocks.ClientMocks.customResourceDefinition
 import org.jboss.tools.intellij.kubernetes.model.mocks.Mocks.namespacedResourceProvider
 import org.jboss.tools.intellij.kubernetes.model.mocks.Mocks.nonNamespacedResourceProvider
-import org.jboss.tools.intellij.kubernetes.model.mocks.Mocks.resource
+import org.jboss.tools.intellij.kubernetes.model.mocks.ClientMocks.resource
 import org.jboss.tools.intellij.kubernetes.model.resource.INamespacedResourcesProvider
 import org.jboss.tools.intellij.kubernetes.model.resource.IResourcesProvider
+import org.jboss.tools.intellij.kubernetes.model.resource.IResourcesProviderFactory
+import org.jboss.tools.intellij.kubernetes.model.resource.ResourceKind
+import org.jboss.tools.intellij.kubernetes.model.resource.kubernetes.AllPodsProvider
+import org.jboss.tools.intellij.kubernetes.model.resource.kubernetes.CustomResourcesProvider
+import org.jboss.tools.intellij.kubernetes.model.resource.kubernetes.GenericCustomResource
+import org.jboss.tools.intellij.kubernetes.model.resource.kubernetes.NamespacesProvider
+import org.jboss.tools.intellij.kubernetes.model.resource.kubernetes.ServicesProvider
 import org.junit.Before
 import org.junit.Test
 
@@ -54,24 +66,35 @@ class KubernetesContextTest {
 	private val client: NamespacedKubernetesClient = client(currentNamespace.metadata.name, allNamespaces)
 	private val watchable1: Watchable<Watch, Watcher<in HasMetadata>> = mock()
 	private val watchable2: Watchable<Watch, Watcher<in HasMetadata>> = mock()
+	private val customResourceDefinition1 = customResourceDefinition(
+			"gargamel crd", "smurftown", "version1", "group1")
+	private val customResourceDefinition2 = customResourceDefinition(
+			"azrael crd", "smurfington", "version2", "group2")
 	private val observable: ModelChangeObservable = mock()
 
 	private val namespacesProvider = nonNamespacedResourceProvider(
-			Namespace::class.java,
+			NamespacesProvider.KIND,
 			allNamespaces.toSet())
 	private val namespacedPodsProvider = namespacedResourceProvider(
-			Pod::class.java,
+			AllPodsProvider.KIND,
 			allPods.toSet(),
 			currentNamespace)
 	private val allPodsProvider = nonNamespacedResourceProvider(
-			Pod::class.java,
+			AllPodsProvider.KIND,
 			allPods.toSet())
 
 	private val hasMetadata1 = resource<HasMetadata>("hasMetadata1")
 	private val hasMetadata2 = resource<HasMetadata>("hasMetadata2")
 	private val hasMetadataProvider: INamespacedResourcesProvider<HasMetadata> = namespacedResourceProvider(
-			HasMetadata::class.java,
+			ResourceKind.new(HasMetadata::class.java),
 			setOf(hasMetadata1, hasMetadata2),
+			currentNamespace)
+
+	private val customResource1 = resource<GenericCustomResource>("genericCustomResource1")
+	private val customResource2 = resource<GenericCustomResource>("genericCustomResource2")
+	private val customResourcesProvider: INamespacedResourcesProvider<GenericCustomResource> = namespacedResourceProvider(
+			ResourceKind.new(GenericCustomResource::class.java),
+			setOf(customResource1, customResource2),
 			currentNamespace)
 
 	private lateinit var context: TestableKubernetesContext
@@ -92,7 +115,8 @@ class KubernetesContextTest {
 				observable,
 				this@KubernetesContextTest.client,
 				internalResourcesProviders,
-				extensionResourceProviders))
+				extensionResourceProviders,
+				customResourcesProvider))
 		doReturn(
 				listOf { watchable1 }, // returned on 1st call
 				listOf { watchable2 }) // returned on 2nd call
@@ -206,7 +230,7 @@ class KubernetesContextTest {
 	fun `#getResources should get all resources in provider for given resource type in correct ResourcesIn type`() {
 		// given
 		// when
-		context.getResources(Namespace::class.java, ResourcesIn.NO_NAMESPACE)
+		context.getResources(NamespacesProvider.KIND, ResourcesIn.NO_NAMESPACE)
 		// then
 		verify(namespacesProvider).getAllResources()
 	}
@@ -216,7 +240,7 @@ class KubernetesContextTest {
 		// given
 		// when
 		// there are no namespaces in current namespace
-		context.getResources(Namespace::class.java, ResourcesIn.CURRENT_NAMESPACE)
+		context.getResources(NamespacesProvider.KIND, ResourcesIn.CURRENT_NAMESPACE)
 		// then
 		verify(namespacesProvider, never()).getAllResources()
 	}
@@ -226,7 +250,7 @@ class KubernetesContextTest {
 		// given
 		// when
 		// namespace provider exists but for ResourceIn.NO_NAMESPACE
-		context.getResources(Namespace::class.java, ResourcesIn.CURRENT_NAMESPACE)
+		context.getResources(NamespacesProvider.KIND, ResourcesIn.CURRENT_NAMESPACE)
 		// then
 		verify(namespacesProvider, never()).getAllResources()
 	}
@@ -235,9 +259,39 @@ class KubernetesContextTest {
 	fun `#getResources should return empty list if there's no provider of given resource type in given ResourceIn type`() {
 		// given
 		// when
-		val services = context.getResources(Service::class.java, ResourcesIn.NO_NAMESPACE)
+		val services = context.getResources(ServicesProvider.KIND, ResourcesIn.NO_NAMESPACE)
 		// then
 		assertThat(services).isEmpty()
+	}
+
+	@Test
+	fun `#getCustomResources should query CustomResourceProvider`() {
+		// given
+		// when
+		val customResources = context.getCustomResources(customResourceDefinition1, ResourcesIn.CURRENT_NAMESPACE)
+		// then
+		verify(customResourcesProvider).getAllResources()
+	}
+
+	@Test
+	fun `#getCustomResources should create CustomResourceProvider once and reuse it`() {
+		// given
+		// when
+		context.getCustomResources(customResourceDefinition1, ResourcesIn.CURRENT_NAMESPACE)
+		context.getCustomResources(customResourceDefinition1, ResourcesIn.CURRENT_NAMESPACE)
+		// then
+		verify(context, times(1)).createCustomResourcesProvider(eq(customResourceDefinition1), any())
+	}
+
+	@Test
+	fun `#getCustomResources should create CustomResourceProvider for each unique definition`() {
+		// given
+		// when
+		context.getCustomResources(customResourceDefinition1, ResourcesIn.CURRENT_NAMESPACE)
+		context.getCustomResources(customResourceDefinition2, ResourcesIn.CURRENT_NAMESPACE)
+		// then
+		verify(context, times(1)).createCustomResourcesProvider(eq(customResourceDefinition1), any())
+		verify(context, times(1)).createCustomResourcesProvider(eq(customResourceDefinition2), any())
 	}
 
 	@Test
@@ -443,7 +497,8 @@ class KubernetesContextTest {
 			observable: ModelChangeObservable,
 			client: NamespacedKubernetesClient,
 			private val internalResourceProviders: List<IResourcesProvider<out HasMetadata>>,
-			private val extensionResourcesProviders: List<IResourcesProvider<out HasMetadata>>)
+			private val extensionResourcesProviders: List<IResourcesProvider<out HasMetadata>>,
+			private val customResourcesProvider: INamespacedResourcesProvider<GenericCustomResource>)
 		: KubernetesContext(observable, client, mock()) {
 
 		public override var watch = mock<ResourceWatch>()
@@ -452,15 +507,19 @@ class KubernetesContextTest {
 			TODO("override with mocking")
 		}
 
-		public override fun getInternalResourceProviders(client: NamespacedKubernetesClient)
+		override fun getInternalResourceProviders(client: NamespacedKubernetesClient)
 				: List<IResourcesProvider<out HasMetadata>> {
 			return internalResourceProviders
 		}
 
-		public override fun getExtensionResourceProviders(client: NamespacedKubernetesClient)
+		override fun getExtensionResourceProviders(client: NamespacedKubernetesClient)
 				: List<IResourcesProvider<out HasMetadata>> {
 			return extensionResourcesProviders
 		}
 
+		public override fun createCustomResourcesProvider(definition: CustomResourceDefinition, namespace: String?)
+				: INamespacedResourcesProvider<GenericCustomResource> {
+			return customResourcesProvider
+		}
 	}
 }

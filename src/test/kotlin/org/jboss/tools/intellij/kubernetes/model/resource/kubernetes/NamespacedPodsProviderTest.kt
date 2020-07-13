@@ -34,7 +34,7 @@ import org.jboss.tools.intellij.kubernetes.model.mocks.ClientMocks.inNamespace
 import org.jboss.tools.intellij.kubernetes.model.mocks.ClientMocks.items
 import org.jboss.tools.intellij.kubernetes.model.mocks.ClientMocks.list
 import org.jboss.tools.intellij.kubernetes.model.mocks.ClientMocks.pods
-import org.jboss.tools.intellij.kubernetes.model.mocks.Mocks.resource
+import org.jboss.tools.intellij.kubernetes.model.mocks.ClientMocks.resource
 import org.junit.Before
 import org.junit.Test
 

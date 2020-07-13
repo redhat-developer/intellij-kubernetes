@@ -19,13 +19,14 @@ import io.fabric8.kubernetes.client.dsl.Watchable
 import org.jboss.tools.intellij.kubernetes.model.AdaptedClient
 import org.jboss.tools.intellij.kubernetes.model.IAdaptedClient
 import org.jboss.tools.intellij.kubernetes.model.resource.NamespacedResourcesProvider
+import org.jboss.tools.intellij.kubernetes.model.resource.ResourceKind
 
 class DaemonSetsProvider(client: KubernetesClient)
 	: NamespacedResourcesProvider<DaemonSet, KubernetesClient>(client),
 		IAdaptedClient<AppsAPIGroupClient> by AdaptedClient(client, AppsAPIGroupClient::class.java) {
 
 	companion object {
-		val KIND = DaemonSet::class.java
+		val KIND = ResourceKind.new(DaemonSet::class.java)
 	}
 
 	override val kind = KIND

@@ -16,12 +16,13 @@ import io.fabric8.kubernetes.client.Watch
 import io.fabric8.kubernetes.client.Watcher
 import io.fabric8.kubernetes.client.dsl.Watchable
 import org.jboss.tools.intellij.kubernetes.model.resource.NonNamespacedResourcesProvider
+import org.jboss.tools.intellij.kubernetes.model.resource.ResourceKind
 
 class NamespacesProvider(client: KubernetesClient)
     : NonNamespacedResourcesProvider<Namespace, KubernetesClient>(client) {
 
     companion object {
-        val KIND = Namespace::class.java
+        val KIND = ResourceKind.new(Namespace::class.java)
     }
 
     override val kind = KIND

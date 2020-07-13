@@ -12,18 +12,23 @@ package org.jboss.tools.intellij.kubernetes.model.context
 
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.NamedContext
+import io.fabric8.kubernetes.api.model.apiextensions.CustomResourceDefinition
+import io.fabric8.kubernetes.client.KubernetesClient
 import io.fabric8.openshift.api.model.Project
 import io.fabric8.openshift.client.NamespacedOpenShiftClient
 import org.jboss.tools.intellij.kubernetes.model.IModelChangeObservable
 import org.jboss.tools.intellij.kubernetes.model.context.IActiveContext.ResourcesIn
+import org.jboss.tools.intellij.kubernetes.model.resource.INamespacedResourcesProvider
 import org.jboss.tools.intellij.kubernetes.model.resource.IResourcesProvider
 import org.jboss.tools.intellij.kubernetes.model.resource.kubernetes.AllPodsProvider
 import org.jboss.tools.intellij.kubernetes.model.resource.kubernetes.ConfigMapsProvider
 import org.jboss.tools.intellij.kubernetes.model.resource.kubernetes.CronJobsProvider
 import org.jboss.tools.intellij.kubernetes.model.resource.kubernetes.CustomResourceDefinitionsProvider
+import org.jboss.tools.intellij.kubernetes.model.resource.kubernetes.CustomResourcesProvider
 import org.jboss.tools.intellij.kubernetes.model.resource.kubernetes.DaemonSetsProvider
 import org.jboss.tools.intellij.kubernetes.model.resource.kubernetes.DeploymentsProvider
 import org.jboss.tools.intellij.kubernetes.model.resource.kubernetes.EndpointsProvider
+import org.jboss.tools.intellij.kubernetes.model.resource.kubernetes.GenericCustomResource
 import org.jboss.tools.intellij.kubernetes.model.resource.kubernetes.IngressProvider
 import org.jboss.tools.intellij.kubernetes.model.resource.kubernetes.JobsProvider
 import org.jboss.tools.intellij.kubernetes.model.resource.kubernetes.NamespacedPodsProvider

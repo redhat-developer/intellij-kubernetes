@@ -209,11 +209,11 @@ class ResourceWatchTest {
             return watch
         }
 
-        override fun watch(resourceVersion: String?, watcher: Watcher<HasMetadata>?): Watch {
+        override fun watch(options: ListOptions?, watcher: Watcher<HasMetadata>?): Watch {
             return watch(watcher)
         }
 
-        override fun watch(options: ListOptions?, watcher: Watcher<HasMetadata>?): Watch {
+        override fun watch(resourceVersion: String?, watcher: Watcher<HasMetadata>): Watch {
             return watch(watcher)
         }
 

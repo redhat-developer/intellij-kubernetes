@@ -16,18 +16,21 @@ import com.nhaarman.mockitokotlin2.whenever
 import io.fabric8.kubernetes.api.model.Context
 import io.fabric8.kubernetes.api.model.DoneableNamespace
 import io.fabric8.kubernetes.api.model.DoneablePod
+import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.NamedContext
 import io.fabric8.kubernetes.api.model.Namespace
 import io.fabric8.kubernetes.api.model.NamespaceList
+import io.fabric8.kubernetes.api.model.ObjectMeta
 import io.fabric8.kubernetes.api.model.Pod
 import io.fabric8.kubernetes.api.model.PodList
+import io.fabric8.kubernetes.api.model.apiextensions.CustomResourceDefinition
+import io.fabric8.kubernetes.api.model.apiextensions.CustomResourceDefinitionSpec
 import io.fabric8.kubernetes.client.Config
 import io.fabric8.kubernetes.client.NamespacedKubernetesClient
 import io.fabric8.kubernetes.client.dsl.MixedOperation
 import io.fabric8.kubernetes.client.dsl.NonNamespaceOperation
 import io.fabric8.kubernetes.client.dsl.PodResource
 import io.fabric8.kubernetes.client.dsl.Resource
-import org.jboss.tools.intellij.kubernetes.model.mocks.Mocks.resource
 import org.mockito.ArgumentMatchers
 import java.net.URL
 typealias NamespaceListOperation =
@@ -140,4 +143,32 @@ object ClientMocks {
             on { this.user } doReturn user
         }
     }
+
+    inline fun customResourceDefinition(
+            name: String,
+            namespace: String? = null,
+            version: String,
+            group: String): CustomResourceDefinition {
+        val spec = mock<CustomResourceDefinitionSpec> {
+            on { mock.version } doReturn version
+            on { mock.group } doReturn group
+        }
+        val definition = resource<CustomResourceDefinition>(name, namespace)
+        whenever(definition.spec)
+                .doReturn(spec)
+        return definition
+    }
+
+    inline fun <reified T: HasMetadata> resource(name: String, namespace: String? = null): T {
+        val metadata = mock<ObjectMeta> {
+            on { getName() } doReturn name
+            if (namespace != null) {
+                on { getNamespace() } doReturn namespace
+            }
+        }
+        return mock {
+            on { getMetadata() } doReturn metadata
+        }
+    }
+
 }

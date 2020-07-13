@@ -47,7 +47,8 @@ open class ResourceWatch(
 
     private fun doWatch(supplier: () -> Watchable<Watch, Watcher<HasMetadata>>?) {
         val watchable = supplier.invoke() ?: return
-        val watch = watchable.watch(ResourceWatcher(addOperation, removeOperation)) ?: return
+        val watcher = ResourceWatcher<HasMetadata>(addOperation, removeOperation)
+        val watch = watchable.watch(watcher) ?: return
         watches[watchable] = watch
     }
 
@@ -61,7 +62,7 @@ open class ResourceWatch(
         }
     }
 
-    fun ignore(supplier: () -> Watchable<Watch, Watcher<HasMetadata>>?) {
+    fun ignore(supplier: () -> Watchable<Watch, out Watcher<in HasMetadata>>?) {
         try {
             val watchable = supplier.invoke() ?: return
             watches[watchable]?.close()
@@ -97,9 +98,9 @@ open class ResourceWatch(
         }
     }
 
-    private class ResourceWatcher<R : HasMetadata>(
-        private val addOperation: (R) -> Unit,
-        private val removeOperation: (R) -> Unit
+    private inner class ResourceWatcher<R: HasMetadata>(
+        private val addOperation: (HasMetadata) -> Unit,
+        private val removeOperation: (HasMetadata) -> Unit
     ) : Watcher<R> {
         override fun eventReceived(action: Watcher.Action?, resource: R) {
             when (action) {

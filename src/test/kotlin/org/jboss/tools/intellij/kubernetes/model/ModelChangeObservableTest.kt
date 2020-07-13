@@ -13,7 +13,7 @@ package org.jboss.tools.intellij.kubernetes.model
 import io.fabric8.kubernetes.api.model.Namespace
 import org.assertj.core.api.Assertions.assertThat
 import org.jboss.tools.intellij.kubernetes.model.ModelChangeObservable.IResourceChangeListener
-import org.jboss.tools.intellij.kubernetes.model.mocks.Mocks.resource
+import org.jboss.tools.intellij.kubernetes.model.mocks.ClientMocks.resource
 import org.junit.Before
 import org.junit.Test
 

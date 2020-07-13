@@ -26,6 +26,10 @@ abstract class NamespacedResourcesProvider<R : HasMetadata, C : KubernetesClient
     protected val client: C
 ) : AbstractResourcesProvider<R>(), INamespacedResourcesProvider<R> {
 
+    constructor(namespace: String?, client: C): this(client) {
+        this.namespace = namespace
+    }
+
     override var namespace: String? = null
         set(namespace) {
             invalidate()

@@ -11,17 +11,19 @@
 package org.jboss.tools.intellij.kubernetes.model.resource.kubernetes
 
 import io.fabric8.kubernetes.api.model.apiextensions.CustomResourceDefinition
+import io.fabric8.kubernetes.api.model.batch.CronJob
 import io.fabric8.kubernetes.client.KubernetesClient
 import io.fabric8.kubernetes.client.Watch
 import io.fabric8.kubernetes.client.Watcher
 import io.fabric8.kubernetes.client.dsl.Watchable
 import org.jboss.tools.intellij.kubernetes.model.resource.NonNamespacedResourcesProvider
+import org.jboss.tools.intellij.kubernetes.model.resource.ResourceKind
 
 class CustomResourceDefinitionsProvider(client: KubernetesClient)
     : NonNamespacedResourcesProvider<CustomResourceDefinition, KubernetesClient>(client) {
 
     companion object {
-        val KIND = CustomResourceDefinition::class.java
+        val KIND = ResourceKind.new(CustomResourceDefinition::class.java)
     }
 
     override val kind = KIND

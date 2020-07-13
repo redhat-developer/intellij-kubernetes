@@ -19,13 +19,14 @@ import io.fabric8.kubernetes.client.dsl.Watchable
 import org.jboss.tools.intellij.kubernetes.model.AdaptedClient
 import org.jboss.tools.intellij.kubernetes.model.IAdaptedClient
 import org.jboss.tools.intellij.kubernetes.model.resource.NamespacedResourcesProvider
+import org.jboss.tools.intellij.kubernetes.model.resource.ResourceKind
 
 class StatefulSetsProvider(client: KubernetesClient)
     : NamespacedResourcesProvider<StatefulSet, KubernetesClient>(client),
         IAdaptedClient<AppsAPIGroupClient> by AdaptedClient(client, AppsAPIGroupClient::class.java) {
 
     companion object {
-        val KIND = StatefulSet::class.java
+        val KIND = ResourceKind.new(StatefulSet::class.java)
     }
 
     override val kind = KIND

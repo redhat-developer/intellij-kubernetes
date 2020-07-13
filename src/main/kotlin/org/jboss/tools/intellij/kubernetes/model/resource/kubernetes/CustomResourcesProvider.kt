@@ -10,7 +10,6 @@
  ******************************************************************************/
 package org.jboss.tools.intellij.kubernetes.model.resource.kubernetes
 
-import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.ObjectMeta
 import io.fabric8.kubernetes.api.model.ObjectMetaBuilder
 import io.fabric8.kubernetes.api.model.apiextensions.CustomResourceDefinition
@@ -20,32 +19,34 @@ import io.fabric8.kubernetes.client.Watcher
 import io.fabric8.kubernetes.client.dsl.Watchable
 import io.fabric8.kubernetes.client.dsl.base.CustomResourceDefinitionContext
 import org.jboss.tools.intellij.kubernetes.model.resource.NamespacedResourcesProvider
+import org.jboss.tools.intellij.kubernetes.model.resource.ResourceKind
 import java.util.stream.Collectors
 
 class CustomResourcesProvider(
         private val definition: CustomResourceDefinition,
+        namespace: String?,
         client: KubernetesClient)
-    : NamespacedResourcesProvider<HasMetadata, KubernetesClient>(client) {
+    : NamespacedResourcesProvider<GenericCustomResource, KubernetesClient>(namespace, client) {
 
-    override val kind = HasMetadata::class.java
+    override val kind = ResourceKind.new(definition)
 
-    override fun loadAllResources(namespace: String): List<HasMetadata> {
+    override fun loadAllResources(namespace: String): List<GenericCustomResource> {
         val context = CustomResourceDefinitionContext.fromCrd(definition)
         val list = client.customResource(context).list(namespace)
         return createItems(list["items"] as? List<Map<String, String>> ?: emptyList())
     }
 
-    override fun getWatchable(): () -> Watchable<Watch, Watcher<HasMetadata>>? {
+    override fun getWatchable(): () -> Watchable<Watch, Watcher<GenericCustomResource>>? {
         return { null }
     }
 
-    private fun createItems(items: List<Map<String, String>>): List<HasMetadata> {
+    private fun createItems(items: List<Map<String, String>>): List<GenericCustomResource> {
         return items.stream()
                 .map { createItem(it) }
                 .collect(Collectors.toList())
     }
 
-    private fun createItem(item: Map<String, String>): HasMetadata {
+    private fun createItem(item: Map<String, String>): GenericCustomResource {
         val resource = GenericCustomResource()
         resource.apiVersion = item["apiVersion"]
         resource.kind = item["kind"]

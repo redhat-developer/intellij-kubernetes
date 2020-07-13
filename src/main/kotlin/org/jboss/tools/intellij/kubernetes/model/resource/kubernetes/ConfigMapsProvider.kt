@@ -16,12 +16,13 @@ import io.fabric8.kubernetes.client.Watch
 import io.fabric8.kubernetes.client.Watcher
 import io.fabric8.kubernetes.client.dsl.Watchable
 import org.jboss.tools.intellij.kubernetes.model.resource.NamespacedResourcesProvider
+import org.jboss.tools.intellij.kubernetes.model.resource.ResourceKind
 
 class ConfigMapsProvider(client: KubernetesClient)
     : NamespacedResourcesProvider<ConfigMap, KubernetesClient>(client) {
 
     companion object {
-        val KIND = ConfigMap::class.java
+        val KIND = ResourceKind.new(ConfigMap::class.java)
     }
 
     override val kind = KIND

@@ -16,12 +16,13 @@ import io.fabric8.kubernetes.client.dsl.Watchable
 import io.fabric8.openshift.api.model.Project
 import io.fabric8.openshift.client.OpenShiftClient
 import org.jboss.tools.intellij.kubernetes.model.resource.NonNamespacedResourcesProvider
+import org.jboss.tools.intellij.kubernetes.model.resource.ResourceKind
 
 class ProjectsProvider(client: OpenShiftClient)
     : NonNamespacedResourcesProvider<Project, OpenShiftClient>(client) {
 
     companion object {
-        val KIND = Project::class.java
+        val KIND = ResourceKind.new(Project::class.java)
     }
 
     override val kind = KIND

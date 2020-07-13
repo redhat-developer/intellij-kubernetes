@@ -49,10 +49,10 @@ class PodForDeployment(deployment: Deployment)
 class PodForStatefulSet(statefulSet: StatefulSet)
 	: PodForResource<Pod>(statefulSet.spec.selector.matchLabels)
 
-open class PodForResource<R: HasMetadata>(private val selectorLabels: Map<String, String>): Predicate<Pod> {
+open class PodForResource<R: HasMetadata>(private val selectorLabels: Map<String, String>?): Predicate<Pod> {
 
 	override fun test(pod: Pod): Boolean {
-		return selectorLabels.all { pod.metadata.labels.entries.contains(it) }
+		return selectorLabels?.all { pod.metadata.labels.entries.contains(it) } ?: false
 	}
 }
 
