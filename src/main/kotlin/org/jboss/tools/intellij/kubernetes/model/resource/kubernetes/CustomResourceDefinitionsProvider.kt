@@ -11,13 +11,10 @@
 package org.jboss.tools.intellij.kubernetes.model.resource.kubernetes
 
 import io.fabric8.kubernetes.api.model.apiextensions.CustomResourceDefinition
-import io.fabric8.kubernetes.api.model.batch.CronJob
 import io.fabric8.kubernetes.client.KubernetesClient
-import io.fabric8.kubernetes.client.Watch
-import io.fabric8.kubernetes.client.Watcher
-import io.fabric8.kubernetes.client.dsl.Watchable
 import org.jboss.tools.intellij.kubernetes.model.resource.NonNamespacedResourcesProvider
 import org.jboss.tools.intellij.kubernetes.model.resource.ResourceKind
+import org.jboss.tools.intellij.kubernetes.model.resource.WatchableAndListable
 
 class CustomResourceDefinitionsProvider(client: KubernetesClient)
     : NonNamespacedResourcesProvider<CustomResourceDefinition, KubernetesClient>(client) {
@@ -28,7 +25,7 @@ class CustomResourceDefinitionsProvider(client: KubernetesClient)
 
     override val kind = KIND
 
-    override fun getWatchable(): () -> Watchable<Watch, Watcher<CustomResourceDefinition>>? {
+    override fun getOperation(): () -> WatchableAndListable<CustomResourceDefinition>? {
         return { client.customResourceDefinitions() }
     }
 }

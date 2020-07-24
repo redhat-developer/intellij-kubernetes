@@ -17,6 +17,7 @@ import io.fabric8.kubernetes.client.Watcher
 import io.fabric8.kubernetes.client.dsl.Watchable
 import org.jboss.tools.intellij.kubernetes.model.resource.NamespacedResourcesProvider
 import org.jboss.tools.intellij.kubernetes.model.resource.ResourceKind
+import org.jboss.tools.intellij.kubernetes.model.resource.WatchableAndListable
 
 class ConfigMapsProvider(client: KubernetesClient)
     : NamespacedResourcesProvider<ConfigMap, KubernetesClient>(client) {
@@ -27,7 +28,7 @@ class ConfigMapsProvider(client: KubernetesClient)
 
     override val kind = KIND
 
-    override fun getLoadOperation(namespace: String): () -> Watchable<Watch, Watcher<ConfigMap>>? {
+    override fun getOperation(namespace: String): () -> WatchableAndListable<ConfigMap>? {
         return { client.configMaps().inNamespace(namespace) }
     }
 

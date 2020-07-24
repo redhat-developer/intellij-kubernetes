@@ -20,6 +20,7 @@ import org.jboss.tools.intellij.kubernetes.model.AdaptedClient
 import org.jboss.tools.intellij.kubernetes.model.IAdaptedClient
 import org.jboss.tools.intellij.kubernetes.model.resource.NamespacedResourcesProvider
 import org.jboss.tools.intellij.kubernetes.model.resource.ResourceKind
+import org.jboss.tools.intellij.kubernetes.model.resource.WatchableAndListable
 
 class CronJobsProvider(client: KubernetesClient)
     : NamespacedResourcesProvider<CronJob, KubernetesClient>(client),
@@ -31,7 +32,7 @@ class CronJobsProvider(client: KubernetesClient)
 
     override val kind = KIND
 
-    override fun getLoadOperation(namespace: String): () -> Watchable<Watch, Watcher<CronJob>>? {
+    override fun getOperation(namespace: String): () -> WatchableAndListable<CronJob>? {
         return { adaptedClient.cronjobs().inNamespace(namespace) }
     }
 

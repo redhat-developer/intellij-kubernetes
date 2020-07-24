@@ -51,7 +51,8 @@ class CustomResourcesProvider(
         resource.apiVersion = item["apiVersion"]
         resource.kind = item["kind"]
         resource.metadata = createObjectMetadata(item["metadata"] as? Map<String, Any> ?: emptyMap())
-        resource.spec = GenericCustomResourceSpec(item["spec"] as? Map<String, Any> ?: emptyMap())
+        val spec = item["spec"] as? Map<String, Any> ?: emptyMap()
+        resource.spec = GenericCustomResourceSpec(spec)
         return resource
     }
 

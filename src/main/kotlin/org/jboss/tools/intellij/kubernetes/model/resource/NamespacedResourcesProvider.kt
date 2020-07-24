@@ -11,11 +11,9 @@
 package org.jboss.tools.intellij.kubernetes.model.resource
 
 import io.fabric8.kubernetes.api.model.HasMetadata
-import io.fabric8.kubernetes.api.model.KubernetesResourceList
 import io.fabric8.kubernetes.client.KubernetesClient
 import io.fabric8.kubernetes.client.Watch
 import io.fabric8.kubernetes.client.Watcher
-import io.fabric8.kubernetes.client.dsl.Listable
 import io.fabric8.kubernetes.client.dsl.Watchable
 
 interface INamespacedResourcesProvider<T: HasMetadata>: IResourcesProvider<T> {
@@ -46,17 +44,17 @@ abstract class NamespacedResourcesProvider<R : HasMetadata, C : KubernetesClient
     }
 
     protected open fun loadAllResources(namespace: String): List<R> {
-        return (getLoadOperation(namespace).invoke() as? Listable<KubernetesResourceList<R>>)?.list()?.items ?: emptyList()
+        return getOperation(namespace).invoke()?.list()?.items ?: emptyList()
     }
 
     override fun getWatchable(): () -> Watchable<Watch, Watcher<R>>? {
         if (namespace == null) {
             return { null }
         }
-        return getLoadOperation (namespace!!)
+        return getOperation (namespace!!)
     }
 
-    protected open fun getLoadOperation(namespace: String): () -> Watchable<Watch, Watcher<R>>? {
+    protected open fun getOperation(namespace: String): () -> WatchableAndListable<R>? {
         return { null }
     }
 

@@ -12,11 +12,9 @@ package org.jboss.tools.intellij.kubernetes.model.resource.kubernetes
 
 import io.fabric8.kubernetes.api.model.Namespace
 import io.fabric8.kubernetes.client.KubernetesClient
-import io.fabric8.kubernetes.client.Watch
-import io.fabric8.kubernetes.client.Watcher
-import io.fabric8.kubernetes.client.dsl.Watchable
 import org.jboss.tools.intellij.kubernetes.model.resource.NonNamespacedResourcesProvider
 import org.jboss.tools.intellij.kubernetes.model.resource.ResourceKind
+import org.jboss.tools.intellij.kubernetes.model.resource.WatchableAndListable
 
 class NamespacesProvider(client: KubernetesClient)
     : NonNamespacedResourcesProvider<Namespace, KubernetesClient>(client) {
@@ -27,7 +25,7 @@ class NamespacesProvider(client: KubernetesClient)
 
     override val kind = KIND
 
-    override fun getWatchable(): () -> Watchable<Watch, Watcher<Namespace>>? {
+    override fun getOperation(): () -> WatchableAndListable<Namespace>? {
         return { client.namespaces() }
     }
 }

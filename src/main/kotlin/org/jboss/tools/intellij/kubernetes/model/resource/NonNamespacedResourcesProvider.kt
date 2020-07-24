@@ -13,11 +13,16 @@ package org.jboss.tools.intellij.kubernetes.model.resource
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.KubernetesResourceList
 import io.fabric8.kubernetes.client.KubernetesClient
-import io.fabric8.kubernetes.client.dsl.Listable
+import io.fabric8.kubernetes.client.Watch
+import io.fabric8.kubernetes.client.Watcher
+import io.fabric8.kubernetes.client.dsl.WatchListDeletable
+import io.fabric8.kubernetes.client.dsl.Watchable
+
+typealias WatchableAndListable<R> = WatchListDeletable<R, out KubernetesResourceList<R>, Boolean, Watch, Watcher<R>>?
 
 interface INonNamespacedResourcesProvider<T: HasMetadata>: IResourcesProvider<T>
 
-abstract class NonNamespacedResourcesProvider<R : HasMetadata, C: KubernetesClient>(protected val client: C)
+abstract class NonNamespacedResourcesProvider<R: HasMetadata, C: KubernetesClient>(protected val client: C)
     : AbstractResourcesProvider<R>(), INonNamespacedResourcesProvider<R> {
 
     override fun getAllResources(): Collection<R> {
@@ -28,6 +33,15 @@ abstract class NonNamespacedResourcesProvider<R : HasMetadata, C: KubernetesClie
     }
 
     protected open fun loadAllResources(): List<R> {
-        return (getWatchable().invoke() as? Listable<KubernetesResourceList<R>>)?.list()?.items ?: emptyList()
+        return (getOperation().invoke())?.list()?.items ?: emptyList()
     }
+
+    protected open fun getOperation(): () -> WatchableAndListable<R>? {
+        return { null }
+    }
+
+    override fun getWatchable(): () -> Watchable<Watch, Watcher<R>>? {
+        return getOperation()
+    }
+
 }
