@@ -35,6 +35,7 @@ import org.jboss.tools.intellij.kubernetes.model.mocks.ClientMocks.items
 import org.jboss.tools.intellij.kubernetes.model.mocks.ClientMocks.list
 import org.jboss.tools.intellij.kubernetes.model.mocks.ClientMocks.pods
 import org.jboss.tools.intellij.kubernetes.model.mocks.ClientMocks.resource
+import org.jboss.tools.intellij.kubernetes.model.resource.WatchableAndListable
 import org.junit.Before
 import org.junit.Test
 
@@ -93,7 +94,7 @@ class NamespacedPodsProviderTest {
         // when
         provider.getWatchable()
         // then
-        verify(provider, never()).getLoadOperation(any())
+        verify(provider, never()).getOperation(any())
     }
 
     @Test
@@ -118,7 +119,7 @@ class NamespacedPodsProviderTest {
         // when
         provider.getWatchable()
         // then
-        verify(provider).getLoadOperation(namespaceCaptor.capture())
+        verify(provider).getOperation(namespaceCaptor.capture())
         assertThat(namespaceCaptor.firstValue).isEqualTo(namespace)
     }
 
@@ -156,9 +157,25 @@ class NamespacedPodsProviderTest {
     }
 
     @Test
+    fun `#add(pod) does not add if different instance of same pod is already contained`() {
+        // given
+        val instance1 = resource<Pod>("gargamel", "smurfington")
+        val instance2 = resource<Pod>("gargamel", "smurfington")
+        provider.add(instance1)
+        assertThat(provider.getAllResources()).contains(instance1)
+        val size = provider.getAllResources().size
+        // when
+        provider.add(instance2)
+        // then
+        assertThat(provider.getAllResources()).doesNotContain(instance2)
+        assertThat(provider.getAllResources().size).isEqualTo(size)
+    }
+
+    @Test
     fun `#add(pod) returns true if pod was added`() {
         // given
         val pod = resource<Pod>("papa-smurf")
+        assertThat(provider.getAllResources()).doesNotContain(pod)
         // when
         val added = provider.add(pod)
         // then
@@ -235,8 +252,8 @@ class NamespacedPodsProviderTest {
             return super.loadAllResources(namespace)
         }
 
-        public override fun getLoadOperation(namespace: String): () -> Watchable<Watch, Watcher<Pod>>? {
-            return super.getLoadOperation(namespace)
+        public override fun getOperation(namespace: String): () -> WatchableAndListable<Pod>? {
+            return super.getOperation(namespace)
         }
     }
 }

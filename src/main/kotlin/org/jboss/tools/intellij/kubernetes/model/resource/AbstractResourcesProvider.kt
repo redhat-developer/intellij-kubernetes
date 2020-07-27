@@ -29,7 +29,9 @@ abstract class AbstractResourcesProvider<R : HasMetadata> : IResourcesProvider<R
         if (!kind.clazz.isAssignableFrom(resource::class.java)) {
             return false
         }
-        return allResources.add(resource as R)
+        // don't add resource if different instance of same resource is already contained
+        return allResources.find { areEqual(it, resource) } == null
+                && allResources.add(resource as R)
     }
 
     override fun remove(resource: HasMetadata): Boolean {

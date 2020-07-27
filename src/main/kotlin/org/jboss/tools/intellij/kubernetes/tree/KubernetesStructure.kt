@@ -486,7 +486,7 @@ class KubernetesStructure(model: IResourceModel) : AbstractTreeStructureContribu
 					childElements {
 						model.getCustomResources(it, IActiveContext.ResourcesIn.CURRENT_NAMESPACE)
 					}
-					parentElements { getRootElement() }
+					parentElements { CUSTOM_RESOURCES_DEFINITIONS }
 				}
 		)
 	}

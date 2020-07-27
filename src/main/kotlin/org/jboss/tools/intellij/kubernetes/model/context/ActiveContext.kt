@@ -113,7 +113,7 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
     }
 
     private fun <R: HasMetadata> getProvider(kind: ResourceKind<R>, resourcesIn: ResourcesIn): IResourcesProvider<R>? {
-        return when(resourcesIn) {
+        val provider = when(resourcesIn) {
             ResourcesIn.CURRENT_NAMESPACE -> {
                 namespacedProviders[kind] as? INamespacedResourcesProvider<R>
             }
@@ -121,6 +121,7 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
             ResourcesIn.NO_NAMESPACE ->
                 nonNamespacedProviders[kind] as? INonNamespacedResourcesProvider<R>
         }
+        return provider
     }
 
     override fun getCustomResources(definition: CustomResourceDefinition, resourcesIn: ResourcesIn)

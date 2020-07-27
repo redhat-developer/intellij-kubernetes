@@ -47,8 +47,7 @@ open class ResourceWatch(
 
     private fun doWatch(supplier: () -> Watchable<Watch, Watcher<HasMetadata>>?) {
         val watchable = supplier.invoke() ?: return
-        val watcher = ResourceWatcher<HasMetadata>(addOperation, removeOperation)
-        val watch = watchable.watch(watcher) ?: return
+        val watch = watchable.watch(ResourceWatcher(addOperation, removeOperation)) ?: return
         watches[watchable] = watch
     }
 
