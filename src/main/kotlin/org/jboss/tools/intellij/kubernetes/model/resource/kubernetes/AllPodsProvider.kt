@@ -29,7 +29,7 @@ class AllPodsProvider(client: KubernetesClient)
 
     override val kind = KIND
 
-    override fun getOperation(): () -> WatchableAndListable<Pod>? {
+    override fun getOperation(): () -> WatchableAndListable<Pod> {
         return { client.pods().inAnyNamespace() }
     }
 }

@@ -36,7 +36,7 @@ abstract class NonNamespacedResourcesProvider<R: HasMetadata, C: KubernetesClien
         return (getOperation().invoke())?.list()?.items ?: emptyList()
     }
 
-    protected open fun getOperation(): () -> WatchableAndListable<R>? {
+    protected open fun getOperation(): () -> WatchableAndListable<R> {
         return { null }
     }
 

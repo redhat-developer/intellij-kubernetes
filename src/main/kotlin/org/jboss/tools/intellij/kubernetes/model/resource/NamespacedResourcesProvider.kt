@@ -54,7 +54,7 @@ abstract class NamespacedResourcesProvider<R : HasMetadata, C : KubernetesClient
         return getOperation (namespace!!)
     }
 
-    protected open fun getOperation(namespace: String): () -> WatchableAndListable<R>? {
+    protected open fun getOperation(namespace: String): () -> WatchableAndListable<R> {
         return { null }
     }
 

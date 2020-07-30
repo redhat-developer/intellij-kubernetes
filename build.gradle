@@ -9,10 +9,10 @@ dependencies {
             "com.redhat.devtools.intellij:intellij-common:0.0.1-SNAPSHOT",
             "org.jetbrains.kotlin:kotlin-gradle-plugin",
             "org.jetbrains.kotlin:kotlin-stdlib-jdk8",
-            "io.fabric8:kubernetes-client:4.10.2",
-            "io.fabric8:kubernetes-model:4.10.2",
-            "io.fabric8:kubernetes-model-common:4.10.2",
-            "io.fabric8:openshift-client:4.10.2",
+            "io.fabric8:kubernetes-client:4.10.3",
+            "io.fabric8:kubernetes-model:4.10.3",
+            "io.fabric8:kubernetes-model-common:4.10.3",
+            "io.fabric8:openshift-client:4.10.3",
             "org.apache.commons:commons-lang3:3.10"
     )
     testImplementation(

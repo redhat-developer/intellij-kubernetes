@@ -252,7 +252,7 @@ class NamespacedPodsProviderTest {
             return super.loadAllResources(namespace)
         }
 
-        public override fun getOperation(namespace: String): () -> WatchableAndListable<Pod>? {
+        public override fun getOperation(namespace: String): () -> WatchableAndListable<Pod> {
             return super.getOperation(namespace)
         }
     }

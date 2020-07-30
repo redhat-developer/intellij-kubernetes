@@ -20,7 +20,6 @@ import io.fabric8.kubernetes.client.KubernetesClientException
 import io.fabric8.kubernetes.client.Watch
 import io.fabric8.kubernetes.client.Watcher
 import io.fabric8.kubernetes.client.dsl.Watchable
-import org.apache.commons.lang3.BooleanUtils
 import org.jboss.tools.intellij.kubernetes.model.IModelChangeObservable
 import org.jboss.tools.intellij.kubernetes.model.ResourceException
 import org.jboss.tools.intellij.kubernetes.model.ResourceWatch
@@ -112,38 +111,6 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
         return provider?.getAllResources() ?: return emptyList()
     }
 
-    private fun <R: HasMetadata> getProvider(kind: ResourceKind<R>, resourcesIn: ResourcesIn): IResourcesProvider<R>? {
-        val provider = when(resourcesIn) {
-            ResourcesIn.CURRENT_NAMESPACE -> {
-                namespacedProviders[kind] as? INamespacedResourcesProvider<R>
-            }
-            ResourcesIn.ANY_NAMESPACE,
-            ResourcesIn.NO_NAMESPACE ->
-                nonNamespacedProviders[kind] as? INonNamespacedResourcesProvider<R>
-        }
-        return provider
-    }
-
-    override fun getCustomResources(definition: CustomResourceDefinition, resourcesIn: ResourcesIn)
-            : Collection<GenericCustomResource> {
-        val kind = ResourceKind.new(definition)
-        val provider: IResourcesProvider<GenericCustomResource> = getCustomResourceProvider(kind, resourcesIn, definition)
-        return provider.getAllResources()
-    }
-
-    private fun getCustomResourceProvider(
-            kind: ResourceKind<GenericCustomResource>,
-            resourcesIn: ResourcesIn,
-            definition: CustomResourceDefinition)
-            : IResourcesProvider<GenericCustomResource> {
-        var provider: IResourcesProvider<GenericCustomResource>? = getProvider(kind, resourcesIn)
-        if (provider !is CustomResourcesProvider) {
-            provider = createCustomResourcesProvider(definition, getCurrentNamespace())
-            setResourcesProvider(provider, kind, resourcesIn)
-        }
-        return provider
-    }
-
     private fun setResourcesProvider(
             provider: IResourcesProvider<out HasMetadata>,
             kind: ResourceKind<GenericCustomResource>,
@@ -158,6 +125,39 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
         }
     }
 
+    private fun <R: HasMetadata> getProvider(kind: ResourceKind<R>, resourcesIn: ResourcesIn): IResourcesProvider<R>? {
+        return when(resourcesIn) {
+            ResourcesIn.CURRENT_NAMESPACE -> {
+                namespacedProviders[kind] as? INamespacedResourcesProvider<R>
+            }
+            ResourcesIn.ANY_NAMESPACE,
+            ResourcesIn.NO_NAMESPACE ->
+                nonNamespacedProviders[kind] as? INonNamespacedResourcesProvider<R>
+        }
+    }
+
+    override fun getCustomResources(definition: CustomResourceDefinition, resourcesIn: ResourcesIn)
+            : Collection<GenericCustomResource> {
+        val kind = ResourceKind.new(definition.spec)
+        var provider: IResourcesProvider<GenericCustomResource>? = getProvider(kind, resourcesIn)
+        if (provider == null) {
+            provider = createCustomResourcesProvider(definition, kind, resourcesIn)
+        }
+        return provider.getAllResources()
+    }
+
+    private fun createCustomResourcesProvider(
+            definition: CustomResourceDefinition,
+            kind: ResourceKind<GenericCustomResource>,
+            resourcesIn: ResourcesIn)
+            : IResourcesProvider<GenericCustomResource> {
+        val provider = createCustomResourcesProvider(definition, getCurrentNamespace())
+        val watchable = provider.getWatchable() as () -> Watchable<Watch, Watcher<HasMetadata>>?
+        watch.watch(watchable)
+        setResourcesProvider(provider, kind, resourcesIn)
+        return provider
+    }
+
     protected open fun createCustomResourcesProvider(definition: CustomResourceDefinition, namespace: String?)
             : IResourcesProvider<GenericCustomResource> {
         return CustomResourcesProvider(definition, namespace, client)
@@ -165,27 +165,25 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
 
     override fun add(resource: HasMetadata): Boolean {
         // we need to add resource to both
-        return BooleanUtils.or(
-                addToNamespacedProvider(resource),
-                addToNonNamespacedProvider(resource)
-        )
+        return addToNamespacedProvider(resource).or(
+                addToNonNamespacedProvider(resource))
     }
 
     private fun addToNonNamespacedProvider(resource: HasMetadata): Boolean {
-        val provider = getProvider(ResourceKind.new(resource::class.java), ResourcesIn.NO_NAMESPACE)
-        return add(provider, resource)
+        val provider = getProvider(ResourceKind.new(resource), ResourcesIn.NO_NAMESPACE)
+        return add(resource, provider)
     }
 
     private fun addToNamespacedProvider(resource: HasMetadata): Boolean {
         return if (getCurrentNamespace() == resource.metadata.namespace) {
-            val provider = getProvider(ResourceKind.new(resource::class.java), ResourcesIn.CURRENT_NAMESPACE)
-            add(provider, resource)
+            val provider = getProvider(ResourceKind.new(resource), ResourcesIn.CURRENT_NAMESPACE)
+            add(resource, provider)
         } else {
             false
         }
     }
 
-    private fun add(provider: IResourcesProvider<out HasMetadata>?, resource: HasMetadata): Boolean {
+    private fun add(resource: HasMetadata, provider: IResourcesProvider<out HasMetadata>?): Boolean {
         if (provider == null) {
             return false
         }
@@ -198,27 +196,25 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
 
     override fun remove(resource: HasMetadata): Boolean {
         // we need to remove resource from both
-        return BooleanUtils.or(
-                removeFromNonNamespacedProvider(resource),
-                removeFromNamespacedProvider(resource)
-        )
+        return removeFromNonNamespacedProvider(resource).or(
+                removeFromNamespacedProvider(resource))
     }
 
     private fun removeFromNonNamespacedProvider(resource: HasMetadata): Boolean {
-        val provider = getProvider(ResourceKind.new(resource::class.java), ResourcesIn.NO_NAMESPACE)
-        return remove(provider, resource)
+        val provider = getProvider(ResourceKind.new(resource), ResourcesIn.NO_NAMESPACE)
+        return remove(resource, provider)
     }
 
     private fun removeFromNamespacedProvider(resource: HasMetadata): Boolean {
         return if (getCurrentNamespace() == resource.metadata.namespace) {
-            val provider = getProvider(ResourceKind.new(resource::class.java), ResourcesIn.CURRENT_NAMESPACE)
-            remove(provider, resource)
+            val provider = getProvider(ResourceKind.new(resource), ResourcesIn.CURRENT_NAMESPACE)
+            remove(resource, provider)
         } else {
             false
         }
     }
 
-    private fun remove(provider: IResourcesProvider<out HasMetadata>?, resource: HasMetadata): Boolean {
+    private fun remove(resource: HasMetadata, provider: IResourcesProvider<out HasMetadata>?): Boolean {
         if (provider == null) {
             return false
         }
@@ -227,16 +223,6 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
             modelChange.fireRemoved(resource)
         }
         return removed
-    }
-
-    protected open fun getRetrieveOperations(namespace: String)
-            : Collection<() -> Watchable<Watch, Watcher<HasMetadata>>?> {
-        val resources: MutableList<() ->Watchable<Watch, Watcher<HasMetadata>>?> = mutableListOf()
-        resources.addAll(namespacedProviders.values
-                .map { it.getWatchable() as () -> Watchable<Watch, Watcher<HasMetadata>>? })
-        resources.addAll(nonNamespacedProviders.values
-                .map { it.getWatchable() as () -> Watchable<Watch, Watcher<HasMetadata>>? })
-        return resources
     }
 
     override fun invalidate() {
@@ -269,6 +255,16 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
 
     private fun stopWatch(namespace: String) {
         watch.ignoreAll(getRetrieveOperations(namespace))
+    }
+
+    protected open fun getRetrieveOperations(namespace: String)
+            : Collection<() -> Watchable<Watch, Watcher<HasMetadata>>?> {
+        val resources: MutableList<() ->Watchable<Watch, Watcher<HasMetadata>>?> = mutableListOf()
+        resources.addAll(namespacedProviders.values
+                .map { it.getWatchable() as () -> Watchable<Watch, Watcher<HasMetadata>>? })
+        resources.addAll(nonNamespacedProviders.values
+                .map { it.getWatchable() as () -> Watchable<Watch, Watcher<HasMetadata>>? })
+        return resources
     }
 
     override fun close() {

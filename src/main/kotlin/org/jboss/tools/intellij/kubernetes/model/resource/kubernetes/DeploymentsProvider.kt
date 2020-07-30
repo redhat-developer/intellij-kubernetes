@@ -28,7 +28,7 @@ class DeploymentsProvider(client: KubernetesClient)
 
     private val appClient = client.adapt(AppsAPIGroupClient::class.java)
 
-    override fun getOperation(namespace: String): () -> WatchableAndListable<Deployment>? {
+    override fun getOperation(namespace: String): () -> WatchableAndListable<Deployment> {
         return { appClient.deployments().inNamespace(namespace) }
     }
 

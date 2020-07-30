@@ -32,7 +32,7 @@ class CronJobsProvider(client: KubernetesClient)
 
     override val kind = KIND
 
-    override fun getOperation(namespace: String): () -> WatchableAndListable<CronJob>? {
+    override fun getOperation(namespace: String): () -> WatchableAndListable<CronJob> {
         return { adaptedClient.cronjobs().inNamespace(namespace) }
     }
 

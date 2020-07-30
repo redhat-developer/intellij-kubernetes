@@ -25,7 +25,7 @@ class DeploymentConfigsProvider(client: OpenShiftClient)
 
     override val kind = KIND
 
-    override fun getOperation(namespace: String): () -> WatchableAndListable<DeploymentConfig>? {
+    override fun getOperation(namespace: String): () -> WatchableAndListable<DeploymentConfig> {
         return { client.deploymentConfigs().inNamespace(namespace) }
     }
 

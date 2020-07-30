@@ -29,7 +29,7 @@ class DaemonSetsProvider(client: KubernetesClient)
 
 	override val kind = KIND
 
-	override fun getOperation(namespace: String): () -> WatchableAndListable<DaemonSet>? {
+	override fun getOperation(namespace: String): () -> WatchableAndListable<DaemonSet> {
 		return { adaptedClient.daemonSets().inNamespace(namespace) }
 	}
 }

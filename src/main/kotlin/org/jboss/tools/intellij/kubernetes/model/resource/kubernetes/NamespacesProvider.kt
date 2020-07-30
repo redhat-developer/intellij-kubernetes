@@ -25,7 +25,7 @@ class NamespacesProvider(client: KubernetesClient)
 
     override val kind = KIND
 
-    override fun getOperation(): () -> WatchableAndListable<Namespace>? {
+    override fun getOperation(): () -> WatchableAndListable<Namespace> {
         return { client.namespaces() }
     }
 }

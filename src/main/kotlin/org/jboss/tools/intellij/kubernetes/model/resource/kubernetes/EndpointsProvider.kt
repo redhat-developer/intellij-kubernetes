@@ -25,7 +25,7 @@ class EndpointsProvider(client: KubernetesClient)
 
     override val kind = KIND
 
-    override fun getOperation(namespace: String): () -> WatchableAndListable<Endpoints>? {
+    override fun getOperation(namespace: String): () -> WatchableAndListable<Endpoints> {
         return { client.endpoints().inNamespace(namespace) }
     }
 

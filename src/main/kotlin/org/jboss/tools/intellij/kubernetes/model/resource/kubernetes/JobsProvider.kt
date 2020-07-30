@@ -29,7 +29,7 @@ class JobsProvider(client: KubernetesClient)
 
     override val kind = KIND
 
-    override fun getOperation(namespace: String): () -> WatchableAndListable<Job>? {
+    override fun getOperation(namespace: String): () -> WatchableAndListable<Job> {
         return { adaptedClient.jobs().inNamespace(namespace) }
     }
 }

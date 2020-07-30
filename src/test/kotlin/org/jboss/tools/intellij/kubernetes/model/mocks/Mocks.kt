@@ -21,6 +21,9 @@ import io.fabric8.kubernetes.api.model.NamedContext
 import io.fabric8.kubernetes.api.model.Namespace
 import io.fabric8.kubernetes.client.KubernetesClient
 import io.fabric8.kubernetes.client.NamespacedKubernetesClient
+import io.fabric8.kubernetes.client.Watch
+import io.fabric8.kubernetes.client.Watcher
+import io.fabric8.kubernetes.client.dsl.Watchable
 import org.jboss.tools.intellij.kubernetes.model.IModelChangeObservable
 import org.jboss.tools.intellij.kubernetes.model.IResourceModel
 import org.jboss.tools.intellij.kubernetes.model.context.IActiveContext
@@ -52,7 +55,11 @@ object Mocks {
         }
     }
 
-    fun <T: HasMetadata> namespacedResourceProvider(kind: ResourceKind<T>, resources: Collection<T>, namespace: Namespace)
+    fun <T : HasMetadata> namespacedResourceProvider(
+            kind: ResourceKind<T>,
+            resources: Collection<T>,
+            namespace: Namespace,
+            watchableSupplier: () -> Watchable<Watch, Watcher<HasMetadata>>? = { null })
             : INamespacedResourcesProvider<T> {
         return mock {
             doReturn(namespace.metadata.name)
@@ -61,6 +68,8 @@ object Mocks {
                     .whenever(mock).kind
             doReturn(resources)
                     .whenever(mock).getAllResources()
+            doReturn(watchableSupplier)
+                    .whenever(mock).getWatchable()
         }
     }
 

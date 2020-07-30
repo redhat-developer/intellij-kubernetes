@@ -25,7 +25,7 @@ class ServicesProvider(client: KubernetesClient)
 
     override val kind = KIND
 
-    override fun getOperation(namespace: String): () -> WatchableAndListable<Service>? {
+    override fun getOperation(namespace: String): () -> WatchableAndListable<Service> {
         return { client.services().inNamespace(namespace) }
     }
 

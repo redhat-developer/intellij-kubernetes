@@ -25,7 +25,7 @@ class NodesProvider(client: KubernetesClient)
 
     override val kind = KIND
 
-    override fun getOperation(): () -> WatchableAndListable<Node>? {
+    override fun getOperation(): () -> WatchableAndListable<Node> {
         return { client.nodes() }
     }
 }

@@ -29,7 +29,7 @@ class IngressProvider(client: KubernetesClient)
 
     override val kind = KIND
 
-    override fun getOperation(namespace: String): () -> WatchableAndListable<Ingress>? {
+    override fun getOperation(namespace: String): () -> WatchableAndListable<Ingress> {
         return { adaptedClient.ingresses().inNamespace(namespace) }
     }
 

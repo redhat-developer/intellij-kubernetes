@@ -64,12 +64,12 @@ class KubernetesContextTest {
 	private val currentNamespace = NAMESPACE2
 	private val allPods = arrayOf(POD1, POD2, POD3)
 	private val client: NamespacedKubernetesClient = client(currentNamespace.metadata.name, allNamespaces)
-	private val watchable1: Watchable<Watch, Watcher<in HasMetadata>> = mock()
-	private val watchable2: Watchable<Watch, Watcher<in HasMetadata>> = mock()
+	private val watchable1: Watchable<Watch, Watcher<HasMetadata>> = mock()
+	private val watchable2: Watchable<Watch, Watcher<HasMetadata>> = mock()
 	private val customResourceDefinition1 = customResourceDefinition(
-			"gargamel crd", "smurftown", "version1", "group1")
+			"gargamel crd", "smurftown", "version1", "group1", "gargamel crd")
 	private val customResourceDefinition2 = customResourceDefinition(
-			"azrael crd", "smurfington", "version2", "group2")
+			"azrael crd", "smurfington", "version2", "group2", "azrael crd")
 	private val observable: ModelChangeObservable = mock()
 
 	private val namespacesProvider = nonNamespacedResourceProvider(
@@ -92,10 +92,13 @@ class KubernetesContextTest {
 
 	private val customResource1 = resource<GenericCustomResource>("genericCustomResource1")
 	private val customResource2 = resource<GenericCustomResource>("genericCustomResource2")
-	private val customResourcesProvider: INamespacedResourcesProvider<GenericCustomResource> = namespacedResourceProvider(
-			ResourceKind.new(GenericCustomResource::class.java),
-			setOf(customResource1, customResource2),
-			currentNamespace)
+	private val watchableSupplier1 = { watchable1 }
+	private val customResourcesProvider: INamespacedResourcesProvider<GenericCustomResource> =
+			namespacedResourceProvider(
+					ResourceKind.new(GenericCustomResource::class.java),
+					setOf(customResource1, customResource2),
+					currentNamespace,
+					watchableSupplier1)
 
 	private lateinit var context: TestableKubernetesContext
 
@@ -116,7 +119,9 @@ class KubernetesContextTest {
 				this@KubernetesContextTest.client,
 				internalResourcesProviders,
 				extensionResourceProviders,
-				customResourcesProvider))
+				customResourcesProvider,
+				mock()
+		))
 		doReturn(
 				listOf { watchable1 }, // returned on 1st call
 				listOf { watchable2 }) // returned on 2nd call
@@ -268,7 +273,7 @@ class KubernetesContextTest {
 	fun `#getCustomResources should query CustomResourceProvider`() {
 		// given
 		// when
-		val customResources = context.getCustomResources(customResourceDefinition1, ResourcesIn.CURRENT_NAMESPACE)
+		context.getCustomResources(customResourceDefinition1, ResourcesIn.CURRENT_NAMESPACE)
 		// then
 		verify(customResourcesProvider).getAllResources()
 	}
@@ -292,6 +297,27 @@ class KubernetesContextTest {
 		// then
 		verify(context, times(1)).createCustomResourcesProvider(eq(customResourceDefinition1), any())
 		verify(context, times(1)).createCustomResourcesProvider(eq(customResourceDefinition2), any())
+	}
+
+	@Test
+	fun `#getCustomResources should watch watchable in new resources provider`() {
+		// given
+		// when
+		context.getCustomResources(customResourceDefinition1, ResourcesIn.CURRENT_NAMESPACE)
+		// then
+		verify(context, times(1)).createCustomResourcesProvider(eq(customResourceDefinition1), any())
+		verify(customResourcesProvider, times(1)).getWatchable()
+		verify(context.watch, times(1)).watch(watchableSupplier1)
+	}
+
+	@Test
+	fun `#getCustomResources should only watch watchable when creating provider, not when reusing existing`() {
+		// given
+		// when
+		context.getCustomResources(customResourceDefinition1, ResourcesIn.CURRENT_NAMESPACE)
+		context.getCustomResources(customResourceDefinition1, ResourcesIn.CURRENT_NAMESPACE)
+		// then
+		verify(context.watch, times(1)).watch(watchableSupplier1)
 	}
 
 	@Test
@@ -498,10 +524,9 @@ class KubernetesContextTest {
 			client: NamespacedKubernetesClient,
 			private val internalResourceProviders: List<IResourcesProvider<out HasMetadata>>,
 			private val extensionResourcesProviders: List<IResourcesProvider<out HasMetadata>>,
-			private val customResourcesProvider: INamespacedResourcesProvider<GenericCustomResource>)
+			private val customResourcesProvider: INamespacedResourcesProvider<GenericCustomResource>,
+			public override var watch: ResourceWatch)
 		: KubernetesContext(observable, client, mock()) {
-
-		public override var watch = mock<ResourceWatch>()
 
 		public override fun getRetrieveOperations(namespace: String): List<() -> Watchable<Watch, Watcher<HasMetadata>>?> {
 			TODO("override with mocking")

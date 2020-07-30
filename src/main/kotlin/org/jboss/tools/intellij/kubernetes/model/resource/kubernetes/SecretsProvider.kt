@@ -25,7 +25,7 @@ class SecretsProvider(client: KubernetesClient)
 
     override val kind = KIND
 
-    override fun getOperation(namespace: String): () -> WatchableAndListable<Secret>? {
+    override fun getOperation(namespace: String): () -> WatchableAndListable<Secret> {
         return { client.secrets().inNamespace(namespace) }
     }
 

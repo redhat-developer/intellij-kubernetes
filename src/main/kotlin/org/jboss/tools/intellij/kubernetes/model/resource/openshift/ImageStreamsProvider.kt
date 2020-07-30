@@ -25,7 +25,7 @@ class ImageStreamsProvider(client: OpenShiftClient)
 
     override val kind = KIND
 
-    override fun getOperation(namespace: String): () -> WatchableAndListable<ImageStream>? {
+    override fun getOperation(namespace: String): () -> WatchableAndListable<ImageStream> {
         return { client.imageStreams().inNamespace(namespace) }
     }
 }

@@ -29,7 +29,7 @@ class StorageClassesProvider(client: KubernetesClient)
 
     override val kind = KIND
 
-    override fun getOperation(): () -> WatchableAndListable<StorageClass>? {
+    override fun getOperation(): () -> WatchableAndListable<StorageClass> {
         return { adaptedClient.storageClasses() }
     }
 }

@@ -25,7 +25,7 @@ class PersistentVolumeClaimsProvider(client: KubernetesClient)
 
     override val kind = KIND
 
-    override fun getOperation(namespace: String): () -> WatchableAndListable<PersistentVolumeClaim>? {
+    override fun getOperation(namespace: String): () -> WatchableAndListable<PersistentVolumeClaim> {
         return { client.persistentVolumeClaims().inNamespace(namespace) }
     }
 }

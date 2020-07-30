@@ -28,7 +28,7 @@ class ConfigMapsProvider(client: KubernetesClient)
 
     override val kind = KIND
 
-    override fun getOperation(namespace: String): () -> WatchableAndListable<ConfigMap>? {
+    override fun getOperation(namespace: String): () -> WatchableAndListable<ConfigMap> {
         return { client.configMaps().inNamespace(namespace) }
     }
 

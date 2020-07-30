@@ -24,6 +24,7 @@ import io.fabric8.kubernetes.api.model.ObjectMeta
 import io.fabric8.kubernetes.api.model.Pod
 import io.fabric8.kubernetes.api.model.PodList
 import io.fabric8.kubernetes.api.model.apiextensions.CustomResourceDefinition
+import io.fabric8.kubernetes.api.model.apiextensions.CustomResourceDefinitionNames
 import io.fabric8.kubernetes.api.model.apiextensions.CustomResourceDefinitionSpec
 import io.fabric8.kubernetes.client.Config
 import io.fabric8.kubernetes.client.NamespacedKubernetesClient
@@ -31,6 +32,9 @@ import io.fabric8.kubernetes.client.dsl.MixedOperation
 import io.fabric8.kubernetes.client.dsl.NonNamespaceOperation
 import io.fabric8.kubernetes.client.dsl.PodResource
 import io.fabric8.kubernetes.client.dsl.Resource
+import io.fabric8.kubernetes.model.annotation.ApiVersion
+import io.fabric8.kubernetes.model.util.Helper
+import org.jboss.tools.intellij.kubernetes.model.util.getApiVersion
 import org.mockito.ArgumentMatchers
 import java.net.URL
 typealias NamespaceListOperation =
@@ -148,10 +152,15 @@ object ClientMocks {
             name: String,
             namespace: String? = null,
             version: String,
-            group: String): CustomResourceDefinition {
+            group: String,
+            kind: String): CustomResourceDefinition {
+        val names: CustomResourceDefinitionNames = mock() {
+            on { mock.kind } doReturn kind
+        }
         val spec = mock<CustomResourceDefinitionSpec> {
             on { mock.version } doReturn version
             on { mock.group } doReturn group
+            on { mock.names } doReturn names
         }
         val definition = resource<CustomResourceDefinition>(name, namespace)
         whenever(definition.spec)
@@ -168,6 +177,8 @@ object ClientMocks {
         }
         return mock {
             on { getMetadata() } doReturn metadata
+            on { getApiVersion() } doReturn getApiVersion(T::class.java)
+            on { getKind() } doReturn T::class.java.simpleName
         }
     }
 

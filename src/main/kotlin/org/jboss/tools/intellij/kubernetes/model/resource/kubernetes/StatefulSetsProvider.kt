@@ -29,7 +29,7 @@ class StatefulSetsProvider(client: KubernetesClient)
 
     override val kind = KIND
 
-    override fun getOperation(namespace: String): () -> WatchableAndListable<StatefulSet>? {
+    override fun getOperation(namespace: String): () -> WatchableAndListable<StatefulSet> {
         return { adaptedClient.statefulSets().inNamespace(namespace) }
     }
 }

@@ -25,7 +25,7 @@ class CustomResourceDefinitionsProvider(client: KubernetesClient)
 
     override val kind = KIND
 
-    override fun getOperation(): () -> WatchableAndListable<CustomResourceDefinition>? {
+    override fun getOperation(): () -> WatchableAndListable<CustomResourceDefinition> {
         return { client.customResourceDefinitions() }
     }
 }
