@@ -78,6 +78,7 @@ object Mocks {
         return mock {
             on { this.kind } doReturn kind
             on { getAllResources() } doReturn(resources)
+            on { getWatchable() } doReturn mock()
         }
     }
 

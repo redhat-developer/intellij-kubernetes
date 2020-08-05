@@ -28,7 +28,7 @@ abstract class NamespacedResourcesProvider<R : HasMetadata, C : KubernetesClient
         this.namespace = namespace
     }
 
-    override var namespace: String? = null
+    final override var namespace: String? = null
         set(namespace) {
             invalidate()
             field = namespace
@@ -51,7 +51,7 @@ abstract class NamespacedResourcesProvider<R : HasMetadata, C : KubernetesClient
         if (namespace == null) {
             return { null }
         }
-        return getOperation (namespace!!)
+        return getOperation(namespace!!)
     }
 
     protected open fun getOperation(namespace: String): () -> WatchableAndListable<R> {

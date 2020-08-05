@@ -32,7 +32,7 @@ interface IResourceModel {
     fun setCurrentNamespace(namespace: String)
     fun getCurrentNamespace(): String?
     fun <R: HasMetadata> resources(kind: ResourceKind<R>): Namespaceable<R>
-    fun getCustomResources(definition: CustomResourceDefinition, resourcesIn: ResourcesIn): Collection<HasMetadata>
+    fun getCustomResources(definition: CustomResourceDefinition): Collection<HasMetadata>
     fun getKind(resource: HasMetadata): Class<out HasMetadata>
     fun invalidate(element: Any?)
     fun addListener(listener: ModelChangeObservable.IResourceChangeListener)
@@ -100,8 +100,12 @@ class ResourceModel(
         }
     }
 
-    override fun getCustomResources(definition: CustomResourceDefinition, resourcesIn: ResourcesIn): Collection<HasMetadata> {
-        return contexts.current?.getCustomResources(definition, resourcesIn) ?: emptyList()
+    override fun getCustomResources(definition: CustomResourceDefinition): Collection<HasMetadata> {
+        try {
+            return contexts.current?.getCustomResources(definition) ?: emptyList()
+        } catch(e: IllegalArgumentException) {
+            throw ResourceException("Could not get custom resources for ${definition.metadata}: ${e.cause}", e)
+        }
     }
 
     override fun getKind(resource: HasMetadata): Class<out HasMetadata> {

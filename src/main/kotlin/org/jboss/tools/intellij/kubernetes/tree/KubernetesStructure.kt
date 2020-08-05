@@ -12,11 +12,8 @@ package org.jboss.tools.intellij.kubernetes.tree
 
 import com.intellij.ide.util.treeView.NodeDescriptor
 import io.fabric8.kubernetes.api.model.ConfigMap
-import io.fabric8.kubernetes.api.model.Endpoints
 import io.fabric8.kubernetes.api.model.Namespace
 import io.fabric8.kubernetes.api.model.Node
-import io.fabric8.kubernetes.api.model.PersistentVolume
-import io.fabric8.kubernetes.api.model.PersistentVolumeClaim
 import io.fabric8.kubernetes.api.model.Pod
 import io.fabric8.kubernetes.api.model.Secret
 import io.fabric8.kubernetes.api.model.Service
@@ -24,18 +21,12 @@ import io.fabric8.kubernetes.api.model.apiextensions.CustomResourceDefinition
 import io.fabric8.kubernetes.api.model.apps.DaemonSet
 import io.fabric8.kubernetes.api.model.apps.Deployment
 import io.fabric8.kubernetes.api.model.apps.StatefulSet
-import io.fabric8.kubernetes.api.model.batch.CronJob
-import io.fabric8.kubernetes.api.model.batch.Job
-import io.fabric8.kubernetes.api.model.extensions.Ingress
-import io.fabric8.kubernetes.api.model.storage.StorageClass
 import org.jboss.tools.intellij.kubernetes.model.IResourceModel
 import org.jboss.tools.intellij.kubernetes.model.ResourceException
-import org.jboss.tools.intellij.kubernetes.model.context.IActiveContext
 import org.jboss.tools.intellij.kubernetes.model.resource.PodForDaemonSet
 import org.jboss.tools.intellij.kubernetes.model.resource.PodForDeployment
 import org.jboss.tools.intellij.kubernetes.model.resource.PodForService
 import org.jboss.tools.intellij.kubernetes.model.resource.PodForStatefulSet
-import org.jboss.tools.intellij.kubernetes.model.resource.ResourceKind
 import org.jboss.tools.intellij.kubernetes.model.resource.kubernetes.AllPodsProvider
 import org.jboss.tools.intellij.kubernetes.model.resource.kubernetes.ConfigMapsProvider
 import org.jboss.tools.intellij.kubernetes.model.resource.kubernetes.CronJobsProvider
@@ -484,7 +475,7 @@ class KubernetesStructure(model: IResourceModel) : AbstractTreeStructureContribu
 				element<CustomResourceDefinition> {
 					anchor { it is CustomResourceDefinition }
 					childElements {
-						model.getCustomResources(it, IActiveContext.ResourcesIn.CURRENT_NAMESPACE)
+						model.getCustomResources(it)
 					}
 					parentElements { CUSTOM_RESOURCES_DEFINITIONS }
 				}

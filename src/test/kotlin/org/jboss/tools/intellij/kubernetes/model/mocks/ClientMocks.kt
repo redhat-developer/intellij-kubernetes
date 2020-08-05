@@ -32,8 +32,6 @@ import io.fabric8.kubernetes.client.dsl.MixedOperation
 import io.fabric8.kubernetes.client.dsl.NonNamespaceOperation
 import io.fabric8.kubernetes.client.dsl.PodResource
 import io.fabric8.kubernetes.client.dsl.Resource
-import io.fabric8.kubernetes.model.annotation.ApiVersion
-import io.fabric8.kubernetes.model.util.Helper
 import org.jboss.tools.intellij.kubernetes.model.util.getApiVersion
 import org.mockito.ArgumentMatchers
 import java.net.URL
@@ -150,19 +148,20 @@ object ClientMocks {
 
     inline fun customResourceDefinition(
             name: String,
-            namespace: String? = null,
             version: String,
             group: String,
-            kind: String): CustomResourceDefinition {
-        val names: CustomResourceDefinitionNames = mock() {
+            kind: String,
+            scope: String): CustomResourceDefinition {
+        val names: CustomResourceDefinitionNames = mock {
             on { mock.kind } doReturn kind
         }
         val spec = mock<CustomResourceDefinitionSpec> {
             on { mock.version } doReturn version
             on { mock.group } doReturn group
             on { mock.names } doReturn names
+            on { mock.scope } doReturn scope
         }
-        val definition = resource<CustomResourceDefinition>(name, namespace)
+        val definition = resource<CustomResourceDefinition>(name)
         whenever(definition.spec)
                 .doReturn(spec)
         return definition

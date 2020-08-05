@@ -100,9 +100,9 @@ class ResourceModelTest {
         // given
         val definition = mock<CustomResourceDefinition>()
         // when
-        model.getCustomResources(definition, ResourcesIn.CURRENT_NAMESPACE)
+        model.getCustomResources(definition)
         // then
-        verify(context).getCustomResources(definition, ResourcesIn.CURRENT_NAMESPACE)
+        verify(context).getCustomResources(definition)
     }
 
     @Test

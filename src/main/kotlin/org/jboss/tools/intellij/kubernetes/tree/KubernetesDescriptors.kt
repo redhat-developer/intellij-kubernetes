@@ -32,7 +32,7 @@ import io.fabric8.kubernetes.api.model.extensions.Ingress
 import io.fabric8.kubernetes.api.model.storage.StorageClass
 import org.jboss.tools.intellij.kubernetes.model.IResourceModel
 import org.jboss.tools.intellij.kubernetes.model.context.KubernetesContext
-import org.jboss.tools.intellij.kubernetes.model.resource.kubernetes.GenericCustomResource
+import org.jboss.tools.intellij.kubernetes.model.resource.kubernetes.custom.GenericResource
 import org.jboss.tools.intellij.kubernetes.model.util.getContainers
 import org.jboss.tools.intellij.kubernetes.model.util.isRunning
 import org.jboss.tools.intellij.kubernetes.tree.TreeStructure.Descriptor
@@ -61,7 +61,7 @@ object KubernetesDescriptors {
 			is StorageClass,
 			is ConfigMap,
 			is Secret,
-			is GenericCustomResource ->
+			is GenericResource ->
 				ResourceDescriptor(element as HasMetadata, parent, model)
 			is CustomResourceDefinition ->
 				CustomResourceDefinitionDescriptor(element, parent, model)
@@ -70,7 +70,10 @@ object KubernetesDescriptors {
 		}
 	}
 
-	private class KubernetesContextDescriptor(element: KubernetesContext, model: IResourceModel) : TreeStructure.ContextDescriptor<KubernetesContext>(
+	private class KubernetesContextDescriptor(
+			element: KubernetesContext,
+			model: IResourceModel)
+		: TreeStructure.ContextDescriptor<KubernetesContext>(
 			context = element,
 			model = model
 	) {
@@ -79,7 +82,10 @@ object KubernetesDescriptors {
 		}
 	}
 
-	private class NamespaceDescriptor(element: Namespace, parent: NodeDescriptor<*>?, model: IResourceModel)
+	private class NamespaceDescriptor(
+			element: Namespace,
+			parent: NodeDescriptor<*>?,
+			model: IResourceModel)
 		: Descriptor<Namespace>(
 			element,
 			parent,
@@ -117,7 +123,10 @@ object KubernetesDescriptors {
 		}
 	}
 
-	private class CustomResourceDefinitionDescriptor(definition: CustomResourceDefinition, parent: NodeDescriptor<*>?, model: IResourceModel)
+	private class CustomResourceDefinitionDescriptor(
+			definition: CustomResourceDefinition,
+			parent: NodeDescriptor<*>?,
+			model: IResourceModel)
 		: Descriptor<CustomResourceDefinition>(
 			definition,
 			parent,
@@ -130,7 +139,6 @@ object KubernetesDescriptors {
 				element.metadata.name
 			}
 		}
-
 	}
 
 	fun createPodDescriptorsFactories(pod: Pod)

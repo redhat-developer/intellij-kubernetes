@@ -25,8 +25,6 @@ import io.fabric8.kubernetes.client.internal.readiness.Readiness
  * <p>
  * The logic is taken from <a href="https://github.com/openshift/origin/blob/master/vendor/k8s.io/kubernetes/pkg/printers/internalversion/printers.go#L695-L781">(kubernetes/printers.go) printPod()</a>
  * and <a href="https://github.com/openshift/origin-web-console/blob/master/app/scripts/filters/resources.js#L1012-L1088">(openshift-web-console/resources.js) podStatus()</a>
- *
- * @param pod the pod
  */
 fun Pod.isRunning(): Boolean {
 	if (this.isInState("Running")) {

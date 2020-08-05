@@ -60,7 +60,7 @@ class TreeStructureExtensionTest {
 	fun `#getChildElements returns elements even if a contribution throws`() {
 		// given
 		val contributing1 = structureContribution(true, children = RuntimeException())
-		val contributing2 = structureContribution(true, listOf<Any>(mock(), mock<Any>()))
+		val contributing2 = structureContribution(true, listOf<Any>(mock(), mock()))
 		val contributing3 = structureContribution(true, listOf<Any>(mock()))
 		mockExtensionList(contributing1, contributing2, contributing3)
 		// when

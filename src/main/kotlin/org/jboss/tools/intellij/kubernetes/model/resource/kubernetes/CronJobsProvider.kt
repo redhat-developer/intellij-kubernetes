@@ -13,9 +13,6 @@ package org.jboss.tools.intellij.kubernetes.model.resource.kubernetes
 import io.fabric8.kubernetes.api.model.batch.CronJob
 import io.fabric8.kubernetes.client.BatchAPIGroupClient
 import io.fabric8.kubernetes.client.KubernetesClient
-import io.fabric8.kubernetes.client.Watch
-import io.fabric8.kubernetes.client.Watcher
-import io.fabric8.kubernetes.client.dsl.Watchable
 import org.jboss.tools.intellij.kubernetes.model.AdaptedClient
 import org.jboss.tools.intellij.kubernetes.model.IAdaptedClient
 import org.jboss.tools.intellij.kubernetes.model.resource.NamespacedResourcesProvider

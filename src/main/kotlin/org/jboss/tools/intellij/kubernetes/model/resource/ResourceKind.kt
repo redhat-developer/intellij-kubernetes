@@ -13,7 +13,7 @@ package org.jboss.tools.intellij.kubernetes.model.resource
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.apiextensions.CustomResourceDefinition
 import io.fabric8.kubernetes.api.model.apiextensions.CustomResourceDefinitionSpec
-import org.jboss.tools.intellij.kubernetes.model.resource.kubernetes.GenericCustomResource
+import org.jboss.tools.intellij.kubernetes.model.resource.kubernetes.custom.GenericResource
 import org.jboss.tools.intellij.kubernetes.model.util.getApiVersion
 
 data class ResourceKind<R : HasMetadata> private constructor(
@@ -40,10 +40,10 @@ data class ResourceKind<R : HasMetadata> private constructor(
 		}
 
 		@JvmStatic
-		fun new(spec: CustomResourceDefinitionSpec): ResourceKind<GenericCustomResource> {
+		fun new(spec: CustomResourceDefinitionSpec): ResourceKind<GenericResource> {
 			return ResourceKind(
 					getApiVersion(spec.group, spec.version),
-					GenericCustomResource::class.java,
+					GenericResource::class.java,
 					spec.names.kind)
 		}
 

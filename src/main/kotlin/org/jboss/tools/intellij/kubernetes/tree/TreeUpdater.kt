@@ -25,7 +25,7 @@ import javax.swing.tree.TreePath
  * @see IResourceModel
  * @see StructureTreeModel
  */
-class ResourceModelAdapter<Structure: AbstractTreeStructure>(
+class TreeUpdater<Structure: AbstractTreeStructure>(
     private val treeModel: StructureTreeModel<Structure>,
     private val structure: AbstractTreeStructure,
     model: IResourceModel)
