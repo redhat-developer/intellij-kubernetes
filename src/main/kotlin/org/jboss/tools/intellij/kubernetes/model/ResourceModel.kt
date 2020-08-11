@@ -20,7 +20,7 @@ import org.jboss.tools.intellij.kubernetes.model.context.IActiveContext
 import org.jboss.tools.intellij.kubernetes.model.context.IActiveContext.ResourcesIn
 import org.jboss.tools.intellij.kubernetes.model.context.IContext
 import org.jboss.tools.intellij.kubernetes.model.resource.ResourceKind
-import org.jboss.tools.intellij.kubernetes.model.util.KubeConfigContexts
+import org.jboss.tools.intellij.kubernetes.model.util.KubeConfig
 import java.util.function.Predicate
 
 interface IResourceModel {
@@ -39,10 +39,10 @@ interface IResourceModel {
 }
 
 class ResourceModel(
-    private val observable: IModelChangeObservable = ModelChangeObservable(),
-    contextFactory: (IModelChangeObservable, NamedContext) -> IActiveContext<out HasMetadata, out KubernetesClient> =
-        ContextFactory()::create,
-    config: KubeConfigContexts = KubeConfigContexts()
+        private val observable: IModelChangeObservable = ModelChangeObservable(),
+        contextFactory: (IModelChangeObservable, NamedContext) -> IActiveContext<out HasMetadata, out KubernetesClient> =
+                ContextFactory()::create,
+        config: KubeConfig = KubeConfig()
 ) : IResourceModel {
 
     private val contexts: IContexts = Contexts(observable, contextFactory, config)
