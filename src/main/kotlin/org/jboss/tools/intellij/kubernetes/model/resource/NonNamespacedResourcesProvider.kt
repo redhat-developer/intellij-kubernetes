@@ -33,7 +33,7 @@ abstract class NonNamespacedResourcesProvider<R: HasMetadata, C: KubernetesClien
     }
 
     protected open fun loadAllResources(): List<R> {
-        return (getOperation().invoke())?.list()?.items ?: emptyList()
+        return getOperation().invoke()?.list()?.items ?: emptyList()
     }
 
     protected open fun getOperation(): () -> WatchableAndListable<R> {

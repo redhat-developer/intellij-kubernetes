@@ -34,9 +34,9 @@ import org.jboss.tools.intellij.kubernetes.model.mocks.ClientMocks.POD1
 import org.jboss.tools.intellij.kubernetes.model.mocks.ClientMocks.POD2
 import org.jboss.tools.intellij.kubernetes.model.mocks.ClientMocks.POD3
 import org.jboss.tools.intellij.kubernetes.model.mocks.ClientMocks.namedContext
+import org.jboss.tools.intellij.kubernetes.model.mocks.ClientMocks.resource
 import org.jboss.tools.intellij.kubernetes.model.mocks.Mocks.context
 import org.jboss.tools.intellij.kubernetes.model.mocks.Mocks.contextFactory
-import org.jboss.tools.intellij.kubernetes.model.mocks.ClientMocks.resource
 import org.jboss.tools.intellij.kubernetes.model.resource.ResourceKind
 import org.jboss.tools.intellij.kubernetes.model.resource.kubernetes.NamespacedPodsProvider
 import org.jboss.tools.intellij.kubernetes.model.util.KubeConfigContexts
@@ -100,7 +100,7 @@ class ResourceModelTest {
         // given
         val definition = mock<CustomResourceDefinition>()
         // when
-        model.getCustomResources(definition)
+        model.getResources(definition)
         // then
         verify(context).getCustomResources(definition)
     }

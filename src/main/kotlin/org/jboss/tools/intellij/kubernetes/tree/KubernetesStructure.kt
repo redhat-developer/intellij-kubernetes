@@ -84,7 +84,7 @@ class KubernetesStructure(model: IResourceModel) : AbstractTreeStructureContribu
             val SERVICES = Folder("Services", ServicesProvider.KIND) // Network / Services
             val ENDPOINTS = Folder("Endpoints", EndpointsProvider.KIND) // Network / Endpoints
 			val INGRESS = Folder("Ingress", IngressProvider.KIND) // Network / Ingress
-		val STORAGE = Folder("Storage", EndpointsProvider.KIND)
+		val STORAGE = Folder("Storage", null)
 			val PERSISTENT_VOLUMES = Folder("Persistent Volumes", PersistentVolumesProvider.KIND) // Storage / Persistent Volumes
 			val PERSISTENT_VOLUME_CLAIMS = Folder("Persistent Volume Claims", PersistentVolumeClaimsProvider.KIND) // Storage / Persistent Volume Claims
 			val STORAGE_CLASSES = Folder("Storage Classes", StorageClassesProvider.KIND) // Storage / Storage Classes
@@ -475,7 +475,9 @@ class KubernetesStructure(model: IResourceModel) : AbstractTreeStructureContribu
 				element<CustomResourceDefinition> {
 					anchor { it is CustomResourceDefinition }
 					childElements {
-						model.getCustomResources(it)
+						model.resources(it)
+								.list()
+								.sortedBy(resourceName)
 					}
 					parentElements { CUSTOM_RESOURCES_DEFINITIONS }
 				}

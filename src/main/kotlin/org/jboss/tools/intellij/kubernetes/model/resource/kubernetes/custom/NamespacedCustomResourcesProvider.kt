@@ -30,8 +30,7 @@ class NamespacedCustomResourcesProvider(
 
     override fun loadAllResources(namespace: String): List<GenericResource> {
         val resourcesList = client.customResource(context).list(namespace)
-        val items = resourcesList["items"] as? List<Map<String, String>> ?: return emptyList()
-        return GenericResourceFactory.createResources(items)
+        return GenericResourceFactory.createResources(resourcesList)
     }
 
     override fun getWatchable(): () -> Watchable<Watch, Watcher<GenericResource>>? {

@@ -35,6 +35,7 @@ import io.fabric8.kubernetes.client.dsl.Resource
 import org.jboss.tools.intellij.kubernetes.model.util.getApiVersion
 import org.mockito.ArgumentMatchers
 import java.net.URL
+
 typealias NamespaceListOperation =
         NonNamespaceOperation<Namespace, NamespaceList, DoneableNamespace, Resource<Namespace, DoneableNamespace>>
 

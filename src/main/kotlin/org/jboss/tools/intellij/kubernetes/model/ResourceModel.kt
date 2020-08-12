@@ -31,9 +31,9 @@ interface IResourceModel {
     fun getAllContexts(): List<IContext>
     fun setCurrentNamespace(namespace: String)
     fun getCurrentNamespace(): String?
+
     fun <R: HasMetadata> resources(kind: ResourceKind<R>): Namespaceable<R>
-    fun getCustomResources(definition: CustomResourceDefinition): Collection<HasMetadata>
-    fun getKind(resource: HasMetadata): Class<out HasMetadata>
+    fun resources(definition: CustomResourceDefinition): ListableCustomResources
     fun invalidate(element: Any?)
     fun addListener(listener: ModelChangeObservable.IResourceChangeListener)
 }
@@ -84,6 +84,10 @@ class ResourceModel(
         return Namespaceable(kind, this)
     }
 
+    override fun resources(definition: CustomResourceDefinition): ListableCustomResources {
+        return ListableCustomResources(definition,this)
+    }
+
     fun <R: HasMetadata> getResources(kind: ResourceKind<R>, namespaced: ResourcesIn, filter: Predicate<R>? = null): Collection<R> {
         try {
             val resources: Collection<R> = contexts.current?.getResources(kind, namespaced) ?: return emptyList()
@@ -100,16 +104,12 @@ class ResourceModel(
         }
     }
 
-    override fun getCustomResources(definition: CustomResourceDefinition): Collection<HasMetadata> {
+    fun getResources(definition: CustomResourceDefinition): Collection<HasMetadata> {
         try {
             return contexts.current?.getCustomResources(definition) ?: emptyList()
         } catch(e: IllegalArgumentException) {
             throw ResourceException("Could not get custom resources for ${definition.metadata}: ${e.cause}", e)
         }
-    }
-
-    override fun getKind(resource: HasMetadata): Class<out HasMetadata> {
-        return resource::class.java
     }
 
     override fun invalidate(element: Any?) {

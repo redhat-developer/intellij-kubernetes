@@ -133,8 +133,8 @@ object KubernetesDescriptors {
 			model
 	) {
 		override fun getLabel(element: CustomResourceDefinition): String {
-			return if (element.spec.names.singular.isNotBlank()) {
-				element.spec.names.singular
+			return if (element.spec.names.plural.isNotBlank()) {
+				element.spec.names.plural
 			} else {
 				element.metadata.name
 			}

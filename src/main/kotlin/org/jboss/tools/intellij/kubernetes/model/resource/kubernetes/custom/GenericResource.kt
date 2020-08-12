@@ -19,15 +19,15 @@ import io.fabric8.kubernetes.client.CustomResource
 
 class GenericResource() : CustomResource(), Namespaced {
 
-	constructor(apiVersion: String?, kind: String?, metadata: ObjectMeta?, spec: GenericCustomResourceSpec?) : this() {
+	constructor(apiVersion: String?, kind: String?, metadata: ObjectMeta?, spec: GenericResourceSpec?) : this() {
 		this.kind = kind
 		this.apiVersion = apiVersion
 		this.metadata = metadata
 		this.spec = spec
 	}
 
-	var spec: GenericCustomResourceSpec? = null
+	var spec: GenericResourceSpec? = null
 }
 
 @JsonDeserialize(using = JsonDeserializer.None::class)
-class GenericCustomResourceSpec(val values: Map<String, Any>?) : KubernetesResource
+class GenericResourceSpec(val values: Map<String, Any?>?) : KubernetesResource

@@ -19,19 +19,25 @@ import java.util.stream.Collectors
 
 object GenericResourceFactory {
 
-	private const val API_VERSION = "apiVersion"
-	private const val KIND = "kind"
-	private const val METADATA = "metadata"
-	private const val SPEC = "spec"
-	private const val CREATION_TIMESTAMP = "creationTimestamp"
-	private const val GENERATION = "generation"
-	private const val NAME = "name"
-	private const val NAMESPACE = "namespace"
-	private const val RESOURCE_VERSION = "resourceVersion"
-	private const val SELF_LINK = "selfLink"
-	private const val UID = "uid"
+	const val ITEMS = "items"
+	const val API_VERSION = "apiVersion"
+	const val KIND = "kind"
+	const val METADATA = "metadata"
+	const val SPEC = "spec"
+	const val CREATION_TIMESTAMP = "creationTimestamp"
+	const val GENERATION = "generation"
+	const val NAME = "name"
+	const val NAMESPACE = "namespace"
+	const val RESOURCE_VERSION = "resourceVersion"
+	const val SELF_LINK = "selfLink"
+	const val UID = "uid"
 
-	fun createResources(items: List<Map<String, String>>): List<GenericResource> {
+	fun createResources(resourcesList: Map<String, Any?>): List<GenericResource> {
+		val items = resourcesList[ITEMS] as? List<Map<String, Any?>> ?: return emptyList()
+		return createResources(items)
+	}
+
+	private fun createResources(items: List<Map<String, Any?>>): List<GenericResource> {
 		return items.stream()
 				.map { createResource(it) }
 				.collect(Collectors.toList())
@@ -41,11 +47,11 @@ object GenericResourceFactory {
 		return GenericResource(
 				item[API_VERSION] as? String,
 				item[KIND] as? String,
-				createObjectMetadata(item[METADATA] as? Map<String, Any>),
-				GenericCustomResourceSpec(item[SPEC] as? Map<String, Any>))
+				createObjectMetadata(item[METADATA] as? Map<String, Any?>),
+				GenericResourceSpec(item[SPEC] as? Map<String, Any?>))
 	}
 
-	private fun createObjectMetadata(metadata: Map<String, Any>?): ObjectMeta {
+	private fun createObjectMetadata(metadata: Map<String, Any?>?): ObjectMeta {
 		if (metadata == null) {
 			return ObjectMetaBuilder().build()
 		}
@@ -70,18 +76,19 @@ object GenericResourceFactory {
 
 	private fun createObjectMetadata(metadata: JsonNode): ObjectMeta {
 		return ObjectMetaBuilder()
-				.withCreationTimestamp(metadata.get(CREATION_TIMESTAMP).asText())
-				.withGeneration(metadata.get(GENERATION).asLong())
-				.withName(metadata.get(NAME).asText())
-				.withNamespace(metadata.get(NAMESPACE).asText())
-				.withResourceVersion(metadata.get(RESOURCE_VERSION).asText())
-				.withSelfLink(metadata.get(SELF_LINK).asText())
-				.withUid(metadata.get(UID).asText())
+				.withCreationTimestamp(metadata.get(CREATION_TIMESTAMP)?.asText())
+				.withGeneration(metadata.get(GENERATION)?.asLong())
+				.withName(metadata.get(NAME)?.asText())
+				.withNamespace(metadata.get(NAMESPACE)?.asText())
+				.withResourceVersion(metadata.get(RESOURCE_VERSION)?.asText())
+				.withSelfLink(metadata.get(SELF_LINK)?.asText())
+				.withUid(metadata.get(UID)?.asText())
 				.build()
 	}
 
-	private fun createSpec(node: JsonNode?): GenericCustomResourceSpec {
+	private fun createSpec(node: JsonNode?): GenericResourceSpec {
 		val specs: Map<String, Any> = ObjectMapper().convertValue(node, object : TypeReference<Map<String, Any>>() {})
-		return GenericCustomResourceSpec(specs)
+		return GenericResourceSpec(specs)
 	}
+
 }
