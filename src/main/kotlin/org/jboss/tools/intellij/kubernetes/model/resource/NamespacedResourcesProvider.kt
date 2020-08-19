@@ -11,11 +11,9 @@
 package org.jboss.tools.intellij.kubernetes.model.resource
 
 import io.fabric8.kubernetes.api.model.HasMetadata
-import io.fabric8.kubernetes.api.model.KubernetesResourceList
 import io.fabric8.kubernetes.client.KubernetesClient
 import io.fabric8.kubernetes.client.Watch
 import io.fabric8.kubernetes.client.Watcher
-import io.fabric8.kubernetes.client.dsl.Listable
 import io.fabric8.kubernetes.client.dsl.Watchable
 
 interface INamespacedResourcesProvider<T: HasMetadata>: IResourcesProvider<T> {
@@ -26,7 +24,11 @@ abstract class NamespacedResourcesProvider<R : HasMetadata, C : KubernetesClient
     protected val client: C
 ) : AbstractResourcesProvider<R>(), INamespacedResourcesProvider<R> {
 
-    override var namespace: String? = null
+    constructor(namespace: String?, client: C): this(client) {
+        this.namespace = namespace
+    }
+
+    final override var namespace: String? = null
         set(namespace) {
             invalidate()
             field = namespace
@@ -42,16 +44,18 @@ abstract class NamespacedResourcesProvider<R : HasMetadata, C : KubernetesClient
     }
 
     protected open fun loadAllResources(namespace: String): List<R> {
-        return (getRetrieveOperation(namespace).invoke() as? Listable<KubernetesResourceList<R>>)?.list()?.items ?: emptyList()
+        return getOperation(namespace).invoke()?.list()?.items ?: emptyList()
     }
 
-    override fun getRetrieveOperation(): () -> Watchable<Watch, Watcher<R>>? {
+    override fun getWatchable(): () -> Watchable<Watch, Watcher<R>>? {
         if (namespace == null) {
             return { null }
         }
-        return getRetrieveOperation (namespace!!)
+        return getOperation(namespace!!)
     }
 
-    protected abstract fun getRetrieveOperation(namespace: String): () -> Watchable<Watch, Watcher<R>>?
+    protected open fun getOperation(namespace: String): () -> WatchableAndListable<R> {
+        return { null }
+    }
 
 }

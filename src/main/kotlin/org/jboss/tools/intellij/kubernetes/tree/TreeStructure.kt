@@ -21,7 +21,8 @@ import com.intellij.openapi.util.IconLoader
 import io.fabric8.kubernetes.api.model.HasMetadata
 import org.jboss.tools.intellij.kubernetes.model.IResourceModel
 import org.jboss.tools.intellij.kubernetes.model.context.IContext
-import java.util.Optional
+import org.jboss.tools.intellij.kubernetes.model.resource.ResourceKind
+import java.util.*
 import javax.swing.Icon
 
 /**
@@ -204,12 +205,10 @@ open class TreeStructure(
     }
 
     open class Descriptor<T>(
-            element: T,
+            private val element: T,
             parent: NodeDescriptor<*>?,
             protected val model: IResourceModel
     ) : PresentableNodeDescriptor<T>(null, parent) {
-
-        private val element = element
 
         override fun update(presentation: PresentationData) {
             presentation.presentableText = getLabel(element)
@@ -221,7 +220,7 @@ open class TreeStructure(
         }
 
         override fun getElement(): T? {
-            return element;
+            return element
         }
 
         open fun invalidate() {
@@ -243,11 +242,7 @@ open class TreeStructure(
         }
     }
 
-    data class Folder(val label: String, val kind: Class<out HasMetadata>?)
-
-    abstract class DescriptorFactory<R : HasMetadata>(protected val resource: R) {
-        abstract fun create(parent: NodeDescriptor<*>?, model: IResourceModel): NodeDescriptor<R>?
-    }
+    data class Folder(val label: String, val kind: ResourceKind<out HasMetadata>?)
 }
 
 

@@ -21,7 +21,7 @@ import io.fabric8.kubernetes.client.utils.Utils
 import java.io.File
 import java.io.FileReader
 import java.io.IOException
-import java.util.Locale
+import java.util.*
 
 class KubeConfigContexts {
 
@@ -30,9 +30,8 @@ class KubeConfigContexts {
 		val context = KubeConfigUtils.getCurrentContext(config) ?: null
 		if (context != null) {
 			currentContext = contexts.find {
-				it.context.user == context.user
-						&& it.context.user == context.user
-						&& it.context.cluster == context.cluster
+				it.context.user == context.context.user
+						&& it.context.cluster == context.context.cluster
 			}
 		}
 		currentContext
@@ -79,11 +78,11 @@ class KubeConfigContexts {
 
 	private fun getKubeConfigFilename(): String? {
 		val fileName = Utils.getSystemPropertyOrEnvVar(KUBERNETES_KUBECONFIG_FILE,
-				File(getHomeDir(),".kube" + File.separator + "config").toString());
+				File(getHomeDir(),".kube" + File.separator + "config").toString())
 
 		// if system property/env var contains multiple files take the first one based on the environment
 		// we are running in (eg. : for Linux, ; for Windows)
-		val fileNames: List<String> = fileName.split(File.pathSeparator);
+		val fileNames: List<String> = fileName.split(File.pathSeparator)
 
 		if (fileNames.isEmpty()) {
 			return null
@@ -91,8 +90,8 @@ class KubeConfigContexts {
 		logger<KubeConfigContexts>().warn(
 				"Found multiple Kubernetes config files [$fileNames], using the first one: [$fileNames[0]]. " +
 						"If not desired file, please change it by doing `export KUBECONFIG=/path/to/kubeconfig` " +
-						"on Unix systems or `\$Env:KUBECONFIG=/path/to/kubeconfig` on Windows.");
-		return fileNames[0];
+						"on Unix systems or `\$Env:KUBECONFIG=/path/to/kubeconfig` on Windows.")
+		return fileNames[0]
 	}
 
 	private	fun getHomeDir(): String? {

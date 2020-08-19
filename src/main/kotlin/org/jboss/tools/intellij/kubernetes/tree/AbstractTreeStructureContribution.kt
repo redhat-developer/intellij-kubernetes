@@ -10,6 +10,8 @@
  ******************************************************************************/
 package org.jboss.tools.intellij.kubernetes.tree
 
+import com.intellij.ide.util.treeView.NodeDescriptor
+import io.fabric8.kubernetes.api.model.HasMetadata
 import org.jboss.tools.intellij.kubernetes.model.IResourceModel
 
 abstract class AbstractTreeStructureContribution(override val model: IResourceModel): ITreeStructureContribution {
@@ -56,5 +58,9 @@ abstract class AbstractTreeStructureContribution(override val model: IResourceMo
             return parentElementsProvider?.invoke(typedElement) ?: return null
         }
 
+    }
+
+    abstract class DescriptorFactory<R : HasMetadata>(protected val resource: R) {
+        abstract fun create(parent: NodeDescriptor<*>?, model: IResourceModel): NodeDescriptor<R>?
     }
 }

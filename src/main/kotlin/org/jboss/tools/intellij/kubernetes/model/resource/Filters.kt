@@ -14,10 +14,9 @@ import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.Pod
 import io.fabric8.kubernetes.api.model.ReplicationController
 import io.fabric8.kubernetes.api.model.Service
+import io.fabric8.kubernetes.api.model.apps.DaemonSet
 import io.fabric8.kubernetes.api.model.apps.Deployment
 import io.fabric8.kubernetes.api.model.apps.StatefulSet
-import io.fabric8.kubernetes.api.model.apps.DaemonSet
-import io.fabric8.kubernetes.api.model.batch.Job
 import io.fabric8.openshift.api.model.DeploymentConfig
 import java.util.function.Predicate
 
@@ -30,7 +29,7 @@ class ReplicationControllerFor(private val dc: DeploymentConfig) : Predicate<Rep
 	}
 }
 
-class DeploymentConfigFor(private val dc: ReplicationController) : Predicate<DeploymentConfig> {
+class DeploymentConfigFor(dc: ReplicationController) : Predicate<DeploymentConfig> {
 
 	private val deploymentConfigAnnotation = "openshift.io/deployment-config.name"
 	private val dcName: String? = dc.metadata.annotations[deploymentConfigAnnotation]
@@ -47,13 +46,13 @@ class PodForService(service: Service)
 class PodForDeployment(deployment: Deployment)
 	: PodForResource<Pod>(deployment.spec.selector.matchLabels)
 
-class PodForStatefulSet(private val statefulSet: StatefulSet)
+class PodForStatefulSet(statefulSet: StatefulSet)
 	: PodForResource<Pod>(statefulSet.spec.selector.matchLabels)
 
-open class PodForResource<R: HasMetadata>(private val selectorLabels: Map<String, String>): Predicate<Pod> {
+open class PodForResource<R: HasMetadata>(private val selectorLabels: Map<String, String>?): Predicate<Pod> {
 
 	override fun test(pod: Pod): Boolean {
-		return selectorLabels.all { pod.metadata.labels.entries.contains(it) }
+		return selectorLabels?.all { pod.metadata.labels.entries.contains(it) } ?: false
 	}
 }
 

@@ -12,12 +12,14 @@ package org.jboss.tools.intellij.kubernetes.model
 
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.NamedContext
+import io.fabric8.kubernetes.api.model.apiextensions.CustomResourceDefinition
 import io.fabric8.kubernetes.client.KubernetesClient
 import io.fabric8.kubernetes.client.KubernetesClientException
 import org.jboss.tools.intellij.kubernetes.model.context.ContextFactory
 import org.jboss.tools.intellij.kubernetes.model.context.IActiveContext
+import org.jboss.tools.intellij.kubernetes.model.context.IActiveContext.ResourcesIn
 import org.jboss.tools.intellij.kubernetes.model.context.IContext
-import org.jboss.tools.intellij.kubernetes.model.context.IActiveContext.*
+import org.jboss.tools.intellij.kubernetes.model.resource.ResourceKind
 import org.jboss.tools.intellij.kubernetes.model.util.KubeConfigContexts
 import java.util.function.Predicate
 
@@ -29,8 +31,9 @@ interface IResourceModel {
     fun getAllContexts(): List<IContext>
     fun setCurrentNamespace(namespace: String)
     fun getCurrentNamespace(): String?
-    fun <R: HasMetadata> resources(kind: Class<R>): Namespaceable<R>
-    fun getKind(resource: HasMetadata): Class<out HasMetadata>
+
+    fun <R: HasMetadata> resources(kind: ResourceKind<R>): Namespaceable<R>
+    fun resources(definition: CustomResourceDefinition): ListableCustomResources
     fun invalidate(element: Any?)
     fun addListener(listener: ModelChangeObservable.IResourceChangeListener)
 }
@@ -77,13 +80,17 @@ class ResourceModel(
         }
     }
 
-    override fun <R: HasMetadata> resources(kind: Class<R>): Namespaceable<R> {
+    override fun <R: HasMetadata> resources(kind: ResourceKind<R>): Namespaceable<R> {
         return Namespaceable(kind, this)
     }
 
-    fun <R: HasMetadata> getResources(kind: Class<R>, namespaced: ResourcesIn, filter: Predicate<R>? = null): Collection<R> {
+    override fun resources(definition: CustomResourceDefinition): ListableCustomResources {
+        return ListableCustomResources(definition,this)
+    }
+
+    fun <R: HasMetadata> getResources(kind: ResourceKind<R>, namespaced: ResourcesIn, filter: Predicate<R>? = null): Collection<R> {
         try {
-            val resources = contexts.current?.getResources(kind, namespaced) ?: return emptyList()
+            val resources: Collection<R> = contexts.current?.getResources(kind, namespaced) ?: return emptyList()
             return if (filter == null) {
                 resources
             } else {
@@ -93,19 +100,23 @@ class ResourceModel(
             if (isNotFound(e)) {
                 return emptyList()
             }
-            throw ResourceException("Could not get ${kind.simpleName}s for server ${contexts.current?.client?.masterUrl}", e)
+            throw ResourceException("Could not get ${kind.kind}s for server ${contexts.current?.client?.masterUrl}", e)
         }
     }
 
-    override fun getKind(resource: HasMetadata): Class<out HasMetadata> {
-        return resource::class.java
+    fun getResources(definition: CustomResourceDefinition): Collection<HasMetadata> {
+        try {
+            return contexts.current?.getCustomResources(definition) ?: emptyList()
+        } catch(e: IllegalArgumentException) {
+            throw ResourceException("Could not get custom resources for ${definition.metadata}: ${e.cause}", e)
+        }
     }
 
     override fun invalidate(element: Any?) {
         when(element) {
             is ResourceModel -> invalidate()
             is IActiveContext<*, *> -> invalidate(element)
-            is Class<*> -> invalidate(element)
+            is ResourceKind<*> -> invalidate(element)
             is HasMetadata -> invalidate(element)
         }
     }
@@ -121,10 +132,9 @@ class ResourceModel(
         observable.fireModified(context)
     }
 
-    private fun invalidate(kind: Class<*>) {
-        val hasMetadataClass = kind as? Class<HasMetadata> ?: return
-        contexts.current?.invalidate(hasMetadataClass) ?: return
-        observable.fireModified(hasMetadataClass)
+    private fun invalidate(kind: ResourceKind<*>) {
+        contexts.current?.invalidate(kind) ?: return
+        observable.fireModified(kind)
     }
 
     private fun invalidate(resource: HasMetadata) {

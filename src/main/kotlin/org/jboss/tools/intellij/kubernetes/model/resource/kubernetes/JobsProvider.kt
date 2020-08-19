@@ -13,22 +13,23 @@ package org.jboss.tools.intellij.kubernetes.model.resource.kubernetes
 import io.fabric8.kubernetes.api.model.batch.Job
 import io.fabric8.kubernetes.client.BatchAPIGroupClient
 import io.fabric8.kubernetes.client.KubernetesClient
-import io.fabric8.kubernetes.client.Watch
-import io.fabric8.kubernetes.client.Watcher
-import io.fabric8.kubernetes.client.dsl.Watchable
+import org.jboss.tools.intellij.kubernetes.model.AdaptedClient
+import org.jboss.tools.intellij.kubernetes.model.IAdaptedClient
 import org.jboss.tools.intellij.kubernetes.model.resource.NamespacedResourcesProvider
+import org.jboss.tools.intellij.kubernetes.model.resource.ResourceKind
+import org.jboss.tools.intellij.kubernetes.model.resource.WatchableAndListable
 
 class JobsProvider(client: KubernetesClient)
     : NamespacedResourcesProvider<Job, KubernetesClient>(client),
         IAdaptedClient<BatchAPIGroupClient> by AdaptedClient(client, BatchAPIGroupClient::class.java) {
 
     companion object {
-        val KIND = Job::class.java;
+        val KIND = ResourceKind.new(Job::class.java)
     }
 
     override val kind = KIND
 
-    override fun getRetrieveOperation(namespace: String): () -> Watchable<Watch, Watcher<Job>>? {
+    override fun getOperation(namespace: String): () -> WatchableAndListable<Job> {
         return { adaptedClient.jobs().inNamespace(namespace) }
     }
 }

@@ -12,25 +12,20 @@ package org.jboss.tools.intellij.kubernetes.model.resource.kubernetes
 
 import io.fabric8.kubernetes.api.model.Node
 import io.fabric8.kubernetes.client.KubernetesClient
-import io.fabric8.kubernetes.client.Watch
-import io.fabric8.kubernetes.client.Watcher
-import io.fabric8.kubernetes.client.dsl.Watchable
 import org.jboss.tools.intellij.kubernetes.model.resource.NonNamespacedResourcesProvider
+import org.jboss.tools.intellij.kubernetes.model.resource.ResourceKind
+import org.jboss.tools.intellij.kubernetes.model.resource.WatchableAndListable
 
 class NodesProvider(client: KubernetesClient)
     : NonNamespacedResourcesProvider<Node, KubernetesClient>(client) {
 
     companion object {
-        val KIND = Node::class.java;
+        val KIND = ResourceKind.new(Node::class.java)
     }
 
     override val kind = KIND
 
-    override fun loadAllResources(): List<Node> {
-        return client.nodes().list().items
-    }
-
-    override fun getRetrieveOperation(): () -> Watchable<Watch, Watcher<Node>>? {
+    override fun getOperation(): () -> WatchableAndListable<Node> {
         return { client.nodes() }
     }
 }

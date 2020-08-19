@@ -13,7 +13,6 @@ package org.jboss.tools.intellij.kubernetes.tree
 import com.intellij.ide.util.treeView.AbstractTreeStructure
 import com.intellij.ide.util.treeView.NodeDescriptor
 import com.intellij.ui.tree.StructureTreeModel
-import io.fabric8.kubernetes.api.model.HasMetadata
 import org.jboss.tools.intellij.kubernetes.model.IResourceModel
 import org.jboss.tools.intellij.kubernetes.model.ModelChangeObservable
 import javax.swing.tree.DefaultMutableTreeNode
@@ -26,7 +25,7 @@ import javax.swing.tree.TreePath
  * @see IResourceModel
  * @see StructureTreeModel
  */
-class ResourceModelAdapter<Structure: AbstractTreeStructure>(
+class TreeUpdater<Structure: AbstractTreeStructure>(
     private val treeModel: StructureTreeModel<Structure>,
     private val structure: AbstractTreeStructure,
     model: IResourceModel)
@@ -105,21 +104,21 @@ class ResourceModelAdapter<Structure: AbstractTreeStructure>(
     private fun findTreePath(element: Any?, start: DefaultMutableTreeNode?): TreePath? {
         if (element == null
             || start == null) {
-            return null;
+            return null
         }
         for (child in start.children()) {
             if (child !is DefaultMutableTreeNode) {
                 continue
             }
             if (hasElement(element, child)) {
-                return TreePath(child.path);
+                return TreePath(child.path)
             }
-            val path = findTreePath(element, child);
+            val path = findTreePath(element, child)
             if (path != null) {
-                return path;
+                return path
             }
         }
-        return null;
+        return null
     }
 
     private fun hasElement(element: Any?, node: DefaultMutableTreeNode): Boolean {

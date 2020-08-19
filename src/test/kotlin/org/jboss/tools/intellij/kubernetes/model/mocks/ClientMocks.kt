@@ -16,20 +16,26 @@ import com.nhaarman.mockitokotlin2.whenever
 import io.fabric8.kubernetes.api.model.Context
 import io.fabric8.kubernetes.api.model.DoneableNamespace
 import io.fabric8.kubernetes.api.model.DoneablePod
+import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.NamedContext
 import io.fabric8.kubernetes.api.model.Namespace
 import io.fabric8.kubernetes.api.model.NamespaceList
+import io.fabric8.kubernetes.api.model.ObjectMeta
 import io.fabric8.kubernetes.api.model.Pod
 import io.fabric8.kubernetes.api.model.PodList
+import io.fabric8.kubernetes.api.model.apiextensions.CustomResourceDefinition
+import io.fabric8.kubernetes.api.model.apiextensions.CustomResourceDefinitionNames
+import io.fabric8.kubernetes.api.model.apiextensions.CustomResourceDefinitionSpec
 import io.fabric8.kubernetes.client.Config
 import io.fabric8.kubernetes.client.NamespacedKubernetesClient
 import io.fabric8.kubernetes.client.dsl.MixedOperation
 import io.fabric8.kubernetes.client.dsl.NonNamespaceOperation
 import io.fabric8.kubernetes.client.dsl.PodResource
 import io.fabric8.kubernetes.client.dsl.Resource
-import org.jboss.tools.intellij.kubernetes.model.mocks.Mocks.resource
+import org.jboss.tools.intellij.kubernetes.model.util.getApiVersion
 import org.mockito.ArgumentMatchers
 import java.net.URL
+
 typealias NamespaceListOperation =
         NonNamespaceOperation<Namespace, NamespaceList, DoneableNamespace, Resource<Namespace, DoneableNamespace>>
 
@@ -46,7 +52,7 @@ object ClientMocks {
     fun client(currentNamespace: String?, namespaces: Array<Namespace>, masterUrl: URL = URL("http://localhost"))
             : NamespacedKubernetesClient {
         val namespacesMock = namespaceListOperation(namespaces)
-        val config = mock<Config>() {
+        val config = mock<Config> {
             on { namespace } doReturn currentNamespace
         }
 
@@ -133,11 +139,47 @@ object ClientMocks {
         }
     }
 
-    fun kubeconfigContext(namespace: String, cluster: String, user: String): Context {
+    private fun kubeconfigContext(namespace: String, cluster: String, user: String): Context {
         return mock {
             on { this.namespace } doReturn namespace
             on { this.cluster } doReturn cluster
             on { this.user } doReturn user
         }
     }
+
+    inline fun customResourceDefinition(
+            name: String,
+            version: String,
+            group: String,
+            kind: String,
+            scope: String): CustomResourceDefinition {
+        val names: CustomResourceDefinitionNames = mock {
+            on { mock.kind } doReturn kind
+        }
+        val spec = mock<CustomResourceDefinitionSpec> {
+            on { mock.version } doReturn version
+            on { mock.group } doReturn group
+            on { mock.names } doReturn names
+            on { mock.scope } doReturn scope
+        }
+        val definition = resource<CustomResourceDefinition>(name)
+        whenever(definition.spec)
+                .doReturn(spec)
+        return definition
+    }
+
+    inline fun <reified T: HasMetadata> resource(name: String, namespace: String? = null): T {
+        val metadata = mock<ObjectMeta> {
+            on { getName() } doReturn name
+            if (namespace != null) {
+                on { getNamespace() } doReturn namespace
+            }
+        }
+        return mock {
+            on { getMetadata() } doReturn metadata
+            on { getApiVersion() } doReturn getApiVersion(T::class.java)
+            on { getKind() } doReturn T::class.java.simpleName
+        }
+    }
+
 }

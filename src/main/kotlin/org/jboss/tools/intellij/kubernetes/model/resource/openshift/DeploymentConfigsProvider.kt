@@ -10,23 +10,22 @@
  ******************************************************************************/
 package org.jboss.tools.intellij.kubernetes.model.resource.openshift
 
-import io.fabric8.kubernetes.client.Watch
-import io.fabric8.kubernetes.client.Watcher
-import io.fabric8.kubernetes.client.dsl.Watchable
 import io.fabric8.openshift.api.model.DeploymentConfig
 import io.fabric8.openshift.client.OpenShiftClient
 import org.jboss.tools.intellij.kubernetes.model.resource.NamespacedResourcesProvider
+import org.jboss.tools.intellij.kubernetes.model.resource.ResourceKind
+import org.jboss.tools.intellij.kubernetes.model.resource.WatchableAndListable
 
 class DeploymentConfigsProvider(client: OpenShiftClient)
     : NamespacedResourcesProvider<DeploymentConfig, OpenShiftClient>(client) {
 
     companion object {
-        val KIND = DeploymentConfig::class.java;
+        val KIND = ResourceKind.new(DeploymentConfig::class.java)
     }
 
     override val kind = KIND
 
-    override fun getRetrieveOperation(namespace: String): () -> Watchable<Watch, Watcher<DeploymentConfig>>? {
+    override fun getOperation(namespace: String): () -> WatchableAndListable<DeploymentConfig> {
         return { client.deploymentConfigs().inNamespace(namespace) }
     }
 

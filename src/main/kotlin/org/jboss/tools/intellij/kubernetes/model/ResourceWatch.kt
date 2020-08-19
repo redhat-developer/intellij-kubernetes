@@ -16,7 +16,6 @@ import io.fabric8.kubernetes.client.KubernetesClientException
 import io.fabric8.kubernetes.client.Watch
 import io.fabric8.kubernetes.client.Watcher
 import io.fabric8.kubernetes.client.dsl.Watchable
-import java.lang.RuntimeException
 
 /**
  * A watch that listens for changes on the kubernetes cluster and operates actions on a model accordingly.
@@ -62,7 +61,7 @@ open class ResourceWatch(
         }
     }
 
-    fun ignore(supplier: () -> Watchable<Watch, Watcher<HasMetadata>>?) {
+    fun ignore(supplier: () -> Watchable<Watch, out Watcher<in HasMetadata>>?) {
         try {
             val watchable = supplier.invoke() ?: return
             watches[watchable]?.close()
@@ -98,9 +97,9 @@ open class ResourceWatch(
         }
     }
 
-    private class ResourceWatcher<R : HasMetadata>(
-        private val addOperation: (R) -> Unit,
-        private val removeOperation: (R) -> Unit
+    private inner class ResourceWatcher<R: HasMetadata>(
+        private val addOperation: (HasMetadata) -> Unit,
+        private val removeOperation: (HasMetadata) -> Unit
     ) : Watcher<R> {
         override fun eventReceived(action: Watcher.Action?, resource: R) {
             when (action) {

@@ -20,22 +20,26 @@ import io.fabric8.openshift.api.model.ImageStream
 import io.fabric8.openshift.api.model.Project
 import org.jboss.tools.intellij.kubernetes.model.IResourceModel
 import org.jboss.tools.intellij.kubernetes.model.ResourceException
-import org.jboss.tools.intellij.kubernetes.model.resourceName
 import org.jboss.tools.intellij.kubernetes.model.context.OpenShiftContext
 import org.jboss.tools.intellij.kubernetes.model.resource.DeploymentConfigFor
 import org.jboss.tools.intellij.kubernetes.model.resource.ReplicationControllerFor
-import org.jboss.tools.intellij.kubernetes.tree.TreeStructure.Folder
-import org.jboss.tools.intellij.kubernetes.tree.TreeStructure.ResourceDescriptor
+import org.jboss.tools.intellij.kubernetes.model.resource.openshift.DeploymentConfigsProvider
+import org.jboss.tools.intellij.kubernetes.model.resource.openshift.ImageStreamsProvider
+import org.jboss.tools.intellij.kubernetes.model.resource.openshift.ProjectsProvider
+import org.jboss.tools.intellij.kubernetes.model.resource.openshift.ReplicationControllersProvider
+import org.jboss.tools.intellij.kubernetes.model.resourceName
 import org.jboss.tools.intellij.kubernetes.tree.KubernetesStructure.Folders.NODES
 import org.jboss.tools.intellij.kubernetes.tree.KubernetesStructure.Folders.WORKLOADS
+import org.jboss.tools.intellij.kubernetes.tree.TreeStructure.Folder
+import org.jboss.tools.intellij.kubernetes.tree.TreeStructure.ResourceDescriptor
 import javax.swing.Icon
 
 class OpenShiftStructure(model: IResourceModel): AbstractTreeStructureContribution(model) {
 
     companion object Folders {
-        val PROJECTS = Folder("Projects", Project::class.java)
-        val IMAGESTREAMS = Folder("ImageStreams", ImageStream::class.java)
-        val DEPLOYMENTCONFIGS = Folder("DeploymentConfigs", DeploymentConfig::class.java)
+        val PROJECTS = Folder("Projects", ProjectsProvider.KIND)
+        val IMAGESTREAMS = Folder("ImageStreams", ImageStreamsProvider.KIND)
+        val DEPLOYMENTCONFIGS = Folder("DeploymentConfigs", DeploymentConfigsProvider.KIND)
     }
 
     override fun canContribute(): Boolean {
@@ -51,22 +55,22 @@ class OpenShiftStructure(model: IResourceModel): AbstractTreeStructureContributi
                         IMAGESTREAMS,
                         DEPLOYMENTCONFIGS)
             is DeploymentConfig ->
-                model.resources(ReplicationController::class.java)
+                model.resources(ReplicationControllersProvider.KIND)
                         .inCurrentNamespace()
                         .filtered(ReplicationControllerFor(element))
                         .list()
                         .sortedBy(resourceName)
             PROJECTS ->
-                model.resources(Project::class.java)
+                model.resources(ProjectsProvider.KIND)
                         .inNoNamespace()
                         .list()
                         .sortedBy(resourceName)
             IMAGESTREAMS ->
-                model.resources(ImageStream::class.java)
+                model.resources(ImageStreamsProvider.KIND)
                         .inCurrentNamespace()
                         .list()
             DEPLOYMENTCONFIGS ->
-                model.resources(DeploymentConfig::class.java)
+                model.resources(DeploymentConfigsProvider.KIND)
                         .inCurrentNamespace()
                         .list()
                         .sortedBy(resourceName)
@@ -96,7 +100,7 @@ class OpenShiftStructure(model: IResourceModel): AbstractTreeStructureContributi
                 DEPLOYMENTCONFIGS ->
                     WORKLOADS
                 is ReplicationController ->
-                    model.resources(DeploymentConfig::class.java)
+                    model.resources(DeploymentConfigsProvider.KIND)
                             .inCurrentNamespace()
                             .filtered(DeploymentConfigFor(element))
                             .list()

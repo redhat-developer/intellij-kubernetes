@@ -87,9 +87,7 @@ fun containerStateRunning(): ContainerStateRunning {
 class PodMockBuilder(private val pod: Pod) {
 
 	/**
-	 * Sets the given pod to initializing. This is achieve by mocking an initContainerStatus that is terminated with an exit code that's not 0
-	 *
-	 * @param pod the pod to set to initializing
+	 * Sets the given pod to initializing. This is achieved by mocking an initContainerStatus that is terminated with an exit code that's not 0
 	 */
 	fun setInitializing(): PodMockBuilder {
 		status(podStatus(

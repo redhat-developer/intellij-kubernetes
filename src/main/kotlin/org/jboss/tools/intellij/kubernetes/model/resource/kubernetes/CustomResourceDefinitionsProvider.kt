@@ -10,26 +10,22 @@
  ******************************************************************************/
 package org.jboss.tools.intellij.kubernetes.model.resource.kubernetes
 
-import io.fabric8.kubernetes.api.model.apps.DaemonSet
-import io.fabric8.kubernetes.client.AppsAPIGroupClient
+import io.fabric8.kubernetes.api.model.apiextensions.CustomResourceDefinition
 import io.fabric8.kubernetes.client.KubernetesClient
-import org.jboss.tools.intellij.kubernetes.model.AdaptedClient
-import org.jboss.tools.intellij.kubernetes.model.IAdaptedClient
-import org.jboss.tools.intellij.kubernetes.model.resource.NamespacedResourcesProvider
+import org.jboss.tools.intellij.kubernetes.model.resource.NonNamespacedResourcesProvider
 import org.jboss.tools.intellij.kubernetes.model.resource.ResourceKind
 import org.jboss.tools.intellij.kubernetes.model.resource.WatchableAndListable
 
-class DaemonSetsProvider(client: KubernetesClient)
-	: NamespacedResourcesProvider<DaemonSet, KubernetesClient>(client),
-		IAdaptedClient<AppsAPIGroupClient> by AdaptedClient(client, AppsAPIGroupClient::class.java) {
+class CustomResourceDefinitionsProvider(client: KubernetesClient)
+    : NonNamespacedResourcesProvider<CustomResourceDefinition, KubernetesClient>(client) {
 
-	companion object {
-		val KIND = ResourceKind.new(DaemonSet::class.java)
-	}
+    companion object {
+        val KIND = ResourceKind.new(CustomResourceDefinition::class.java)
+    }
 
-	override val kind = KIND
+    override val kind = KIND
 
-	override fun getOperation(namespace: String): () -> WatchableAndListable<DaemonSet> {
-		return { adaptedClient.daemonSets().inNamespace(namespace) }
-	}
+    override fun getOperation(): () -> WatchableAndListable<CustomResourceDefinition> {
+        return { client.customResourceDefinitions() }
+    }
 }

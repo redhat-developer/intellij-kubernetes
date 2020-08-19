@@ -12,21 +12,20 @@ package org.jboss.tools.intellij.kubernetes.model.resource.kubernetes
 
 import io.fabric8.kubernetes.api.model.PersistentVolume
 import io.fabric8.kubernetes.client.KubernetesClient
-import io.fabric8.kubernetes.client.Watch
-import io.fabric8.kubernetes.client.Watcher
-import io.fabric8.kubernetes.client.dsl.Watchable
 import org.jboss.tools.intellij.kubernetes.model.resource.NonNamespacedResourcesProvider
+import org.jboss.tools.intellij.kubernetes.model.resource.ResourceKind
+import org.jboss.tools.intellij.kubernetes.model.resource.WatchableAndListable
 
 class PersistentVolumesProvider(client: KubernetesClient)
     : NonNamespacedResourcesProvider<PersistentVolume, KubernetesClient>(client) {
 
     companion object {
-        val KIND = PersistentVolume::class.java
+        val KIND = ResourceKind.new(PersistentVolume::class.java)
     }
 
     override val kind = KIND
 
-    override fun getRetrieveOperation(): () -> Watchable<Watch, Watcher<PersistentVolume>>? {
+    override fun getOperation(): () -> WatchableAndListable<PersistentVolume> {
         return { client.persistentVolumes() }
     }
 }

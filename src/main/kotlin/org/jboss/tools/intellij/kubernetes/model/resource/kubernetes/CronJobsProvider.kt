@@ -13,22 +13,23 @@ package org.jboss.tools.intellij.kubernetes.model.resource.kubernetes
 import io.fabric8.kubernetes.api.model.batch.CronJob
 import io.fabric8.kubernetes.client.BatchAPIGroupClient
 import io.fabric8.kubernetes.client.KubernetesClient
-import io.fabric8.kubernetes.client.Watch
-import io.fabric8.kubernetes.client.Watcher
-import io.fabric8.kubernetes.client.dsl.Watchable
+import org.jboss.tools.intellij.kubernetes.model.AdaptedClient
+import org.jboss.tools.intellij.kubernetes.model.IAdaptedClient
 import org.jboss.tools.intellij.kubernetes.model.resource.NamespacedResourcesProvider
+import org.jboss.tools.intellij.kubernetes.model.resource.ResourceKind
+import org.jboss.tools.intellij.kubernetes.model.resource.WatchableAndListable
 
 class CronJobsProvider(client: KubernetesClient)
     : NamespacedResourcesProvider<CronJob, KubernetesClient>(client),
         IAdaptedClient<BatchAPIGroupClient> by AdaptedClient(client, BatchAPIGroupClient::class.java) {
 
     companion object {
-        val KIND = CronJob::class.java;
+        val KIND = ResourceKind.new(CronJob::class.java)
     }
 
     override val kind = KIND
 
-    override fun getRetrieveOperation(namespace: String): () -> Watchable<Watch, Watcher<CronJob>>? {
+    override fun getOperation(namespace: String): () -> WatchableAndListable<CronJob> {
         return { adaptedClient.cronjobs().inNamespace(namespace) }
     }
 

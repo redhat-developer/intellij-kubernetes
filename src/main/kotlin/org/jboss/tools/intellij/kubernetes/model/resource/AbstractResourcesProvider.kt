@@ -11,7 +11,6 @@
 package org.jboss.tools.intellij.kubernetes.model.resource
 
 import io.fabric8.kubernetes.api.model.HasMetadata
-import io.fabric8.kubernetes.client.KubernetesClient
 import org.jboss.tools.intellij.kubernetes.model.util.areEqual
 
 abstract class AbstractResourcesProvider<R : HasMetadata> : IResourcesProvider<R> {
@@ -27,14 +26,17 @@ abstract class AbstractResourcesProvider<R : HasMetadata> : IResourcesProvider<R
     }
 
     override fun add(resource: HasMetadata): Boolean {
-        if (!kind.isAssignableFrom(resource::class.java)) {
+        if (!kind.clazz.isAssignableFrom(resource::class.java)) {
             return false
         }
-        return allResources.add(resource as R)
+        // don't add resource if different instance of same resource is already contained
+        return allResources.find { areEqual(it, resource) } == null
+                && allResources.add(resource as R)
     }
 
     override fun remove(resource: HasMetadata): Boolean {
-        if (!kind.isAssignableFrom(resource::class.java)) {
+        val resourceClass = resource::class.java
+        if (!kind.clazz.isAssignableFrom(resourceClass)) {
             return false
         }
         // do not remove by instance equality bcs instance to be removed can be different

@@ -10,7 +10,7 @@
  ******************************************************************************/
 package org.jboss.tools.intellij.kubernetes.tree
 
-import org.jboss.tools.intellij.kubernetes.model.IResourceModel;
+import org.jboss.tools.intellij.kubernetes.model.IResourceModel
 
 interface ITreeStructureContributionFactory {
     fun create(model:IResourceModel): ITreeStructureContribution
