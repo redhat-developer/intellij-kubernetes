@@ -23,7 +23,6 @@ import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.whenever
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.Namespace
-import io.fabric8.kubernetes.api.model.Node
 import io.fabric8.kubernetes.api.model.Pod
 import io.fabric8.kubernetes.api.model.apiextensions.CustomResourceDefinition
 import io.fabric8.kubernetes.client.NamespacedKubernetesClient
@@ -239,14 +238,14 @@ class KubernetesContextTest {
 	}
 
 	@Test
-	fun `#getCurrentNamespace should use 1st existing namespace if no namespace set in client`() {
+	fun `#getCurrentNamespace should use null if no namespace set in client`() {
 		// given
 		whenever(client.configuration.namespace)
 				.thenReturn(null)
 		// when
 		val namespace = context.getCurrentNamespace()
 		// then
-		assertThat(namespace).isEqualTo(allNamespaces[0].metadata.name)
+		assertThat(namespace).isNull()
 	}
 
 	@Test
@@ -258,7 +257,7 @@ class KubernetesContextTest {
 		// when
 		val namespace = context.getCurrentNamespace()
 		// then
-		assertThat(namespace).isEqualTo(null)
+		assertThat(namespace).isNull()
 	}
 
 	@Test
@@ -464,26 +463,35 @@ class KubernetesContextTest {
 	@Test
 	fun `#add(CustomResourceDefinition) should create namespaced custom resources provider if definition was added`() {
 		// given
-		setNamespace(context.getCurrentNamespace(), namespacedDefinition)
+		val currentNamespace = currentNamespace.metadata.name
+		setNamespaceForResource(currentNamespace, namespacedDefinition)
 		whenever(customResourceDefinitionsProvider.add(namespacedDefinition))
 				.doReturn(true)
+		clearInvocations(context)
 		// when
 		context.add(namespacedDefinition)
 		// then
-		verify(context, times(1))
-				.createCustomResourcesProvider(eq(namespacedDefinition), any(), eq(ResourcesIn.CURRENT_NAMESPACE))
+		verify(context)
+				.createCustomResourcesProvider(
+						eq(namespacedDefinition),
+						eq(currentNamespace),
+						eq(ResourcesIn.CURRENT_NAMESPACE))
 	}
 
 	@Test
 	fun `#add(CustomResourceDefinition) should create clusterwide custom resources provider if definition was added`() {
 		// given
+		val currentNamespace = currentNamespace.metadata.name
 		whenever(customResourceDefinitionsProvider.add(clusterwideDefinition))
 				.doReturn(true)
 		// when
 		context.add(clusterwideDefinition)
 		// then
 		verify(context, times(1))
-				.createCustomResourcesProvider(eq(clusterwideDefinition), any(), eq(ResourcesIn.NO_NAMESPACE))
+				.createCustomResourcesProvider(
+						eq(clusterwideDefinition),
+						eq(currentNamespace),
+						eq(ResourcesIn.NO_NAMESPACE))
 	}
 
 	@Test
@@ -650,12 +658,12 @@ class KubernetesContextTest {
 		}
 	}
 
-	private fun setNamespace(namespace: String?, resource: HasMetadata) {
+	private fun setNamespaceForResource(namespace: String?, resource: HasMetadata) {
 		whenever(resource.metadata.namespace)
 				.doReturn(namespace)
 	}
 
-	inner class TestableKubernetesContext(
+	class TestableKubernetesContext(
 			observable: ModelChangeObservable,
 			client: NamespacedKubernetesClient,
 			private val internalResourceProviders: List<IResourcesProvider<out HasMetadata>>,

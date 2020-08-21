@@ -27,13 +27,14 @@ import io.fabric8.kubernetes.client.dsl.Watchable
 import org.jboss.tools.intellij.kubernetes.model.IModelChangeObservable
 import org.jboss.tools.intellij.kubernetes.model.IResourceModel
 import org.jboss.tools.intellij.kubernetes.model.context.IActiveContext
+import org.jboss.tools.intellij.kubernetes.model.context.IContext
 import org.jboss.tools.intellij.kubernetes.model.resource.INamespacedResourcesProvider
 import org.jboss.tools.intellij.kubernetes.model.resource.INonNamespacedResourcesProvider
 import org.jboss.tools.intellij.kubernetes.model.resource.ResourceKind
 
 object Mocks {
 
-    fun contextFactory(context: IActiveContext<HasMetadata, KubernetesClient>)
+    fun contextFactory(context: IActiveContext<HasMetadata, KubernetesClient>?)
             : (IModelChangeObservable, NamedContext?) -> IActiveContext<HasMetadata, KubernetesClient> {
         return mock {
             doReturn(context)
@@ -41,7 +42,15 @@ object Mocks {
         }
     }
 
-    fun context(client: NamespacedKubernetesClient, currentNamespace: Namespace, context: NamedContext? = null)
+    fun context(namedContext: NamedContext)
+            : IContext {
+        return mock {
+            doReturn(namedContext)
+                    .whenever(mock).context
+        }
+    }
+
+    fun activeContext(client: NamespacedKubernetesClient, currentNamespace: Namespace, context: NamedContext? = null)
             : IActiveContext<HasMetadata, KubernetesClient> {
         return mock {
             doNothing()

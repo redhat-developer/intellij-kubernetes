@@ -98,22 +98,17 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
 
     override fun getCurrentNamespace(): String? {
         var name: String? = client.configuration.namespace
-        if (name == null) {
-            try {
-                name = getNamespaces().firstOrNull()?.metadata?.name
-            } catch (e: KubernetesClientException) {
-                logger<ActiveContext<N, C>>().warn("Could not determine current namespace: loading all namespaces failed.", e)
-            }
-        } else if (!exists(name)) {
+        if (!exists(name)) {
             name = null
         }
         return name
     }
 
-    private fun exists(namespace: String): Boolean {
-        return getNamespaces()
-                .map { it.metadata.name }
-                .contains(namespace)
+    private fun exists(namespace: String?): Boolean {
+        return namespace == null
+                || getNamespaces()
+                    .map { it.metadata.name }
+                    .contains(namespace)
     }
 
     protected abstract fun getNamespaces(): Collection<N>
@@ -215,8 +210,8 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
     private fun addResource(resource: HasMetadata): Boolean {
         // we need to add resource to both providers (ex. all pods & only namespaced pods)
         val addedToNonNamespaced = add(resource, nonNamespacedProviders[ResourceKind.new(resource)])
-        val addedToNamespaced = (getCurrentNamespace() == resource.metadata?.namespace) &&
-                add(resource, namespacedProviders[ResourceKind.new(resource)])
+        val addedToNamespaced = getCurrentNamespace() == resource.metadata?.namespace
+                && add(resource, namespacedProviders[ResourceKind.new(resource)])
         return addedToNonNamespaced.or(
                 addedToNamespaced)
     }
