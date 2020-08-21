@@ -39,7 +39,7 @@ import org.jboss.tools.intellij.kubernetes.model.mocks.Mocks.context
 import org.jboss.tools.intellij.kubernetes.model.mocks.Mocks.contextFactory
 import org.jboss.tools.intellij.kubernetes.model.resource.ResourceKind
 import org.jboss.tools.intellij.kubernetes.model.resource.kubernetes.NamespacedPodsProvider
-import org.jboss.tools.intellij.kubernetes.model.util.KubeConfigContexts
+import org.jboss.tools.intellij.kubernetes.model.util.KubeConfig
 import org.junit.Test
 import java.util.function.Predicate
 
@@ -55,7 +55,7 @@ class ResourceModelTest {
     private val context1 = namedContext("ctx1", "namespace1", "cluster1", "user1")
     private val context2 = namedContext("ctx2", "namespace2", "cluster2", "user2")
     private val context3 = namedContext("ctx3", "namespace3", "cluster3", "user3")
-    private val config: KubeConfigContexts = createKubeConfigContexts(
+    private val config: KubeConfig = createKubeConfigContexts(
             context2,
             listOf(context1, context2, context3)
     )
@@ -256,7 +256,7 @@ class ResourceModelTest {
     @Test
     fun `#getCurrentContext() should not create new active context if there's no current context in kubeconfig`() {
         // given
-        val config: KubeConfigContexts = createKubeConfigContexts(
+        val config: KubeConfig = createKubeConfigContexts(
                 null,
                 listOf(context1, context2, context3)
         )
@@ -306,10 +306,10 @@ class ResourceModelTest {
         assertThat(model.getAllContexts()).contains(newCurrentContext)
     }
 
-    private fun createKubeConfigContexts(currentContext: NamedContext?, allContexts: List<NamedContext>): KubeConfigContexts {
+    private fun createKubeConfigContexts(currentContext: NamedContext?, allContexts: List<NamedContext>): KubeConfig {
         return mock {
             on { contexts } doReturn allContexts
-            on { current } doReturn currentContext
+            on { this.currentContext } doReturn currentContext
             if (currentContext != null) {
                 on { isCurrent(eq(currentContext)) } doReturn true
             }

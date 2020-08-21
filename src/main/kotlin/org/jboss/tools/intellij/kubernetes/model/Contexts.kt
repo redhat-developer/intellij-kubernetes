@@ -16,7 +16,7 @@ import io.fabric8.kubernetes.client.KubernetesClient
 import org.jboss.tools.intellij.kubernetes.model.context.Context
 import org.jboss.tools.intellij.kubernetes.model.context.IActiveContext
 import org.jboss.tools.intellij.kubernetes.model.context.IContext
-import org.jboss.tools.intellij.kubernetes.model.util.KubeConfigContexts
+import org.jboss.tools.intellij.kubernetes.model.util.KubeConfig
 
 interface IContexts {
 	val current: IActiveContext<out HasMetadata, out KubernetesClient>?
@@ -28,14 +28,14 @@ interface IContexts {
 class Contexts(
 		private val observable: IModelChangeObservable = ModelChangeObservable(),
 		private val factory: (IModelChangeObservable, NamedContext) -> IActiveContext<out HasMetadata, out KubernetesClient>,
-		private val config: KubeConfigContexts
+		private val config: KubeConfig = KubeConfig()
 ) : IContexts {
 	override var current: IActiveContext<out HasMetadata, out KubernetesClient>? = null
 		get() {
 			synchronized(this) {
 				if (field == null
-						&& config.current != null) {
-					field = create(config.current!!)
+						&& config.currentContext != null) {
+					field = create(config.currentContext!!)
 				}
 				return field
 			}

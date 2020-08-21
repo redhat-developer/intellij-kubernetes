@@ -104,8 +104,16 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
             } catch (e: KubernetesClientException) {
                 logger<ActiveContext<N, C>>().warn("Could not determine current namespace: loading all namespaces failed.", e)
             }
+        } else if (!exists(name)) {
+            name = null
         }
         return name
+    }
+
+    private fun exists(namespace: String): Boolean {
+        return getNamespaces()
+                .map { it.metadata.name }
+                .contains(namespace)
     }
 
     protected abstract fun getNamespaces(): Collection<N>

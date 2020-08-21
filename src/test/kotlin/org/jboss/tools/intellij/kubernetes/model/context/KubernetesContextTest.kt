@@ -23,6 +23,7 @@ import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.whenever
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.Namespace
+import io.fabric8.kubernetes.api.model.Node
 import io.fabric8.kubernetes.api.model.Pod
 import io.fabric8.kubernetes.api.model.apiextensions.CustomResourceDefinition
 import io.fabric8.kubernetes.client.NamespacedKubernetesClient
@@ -50,6 +51,7 @@ import org.jboss.tools.intellij.kubernetes.model.resource.IResourcesProvider
 import org.jboss.tools.intellij.kubernetes.model.resource.ResourceKind
 import org.jboss.tools.intellij.kubernetes.model.resource.kubernetes.AllPodsProvider
 import org.jboss.tools.intellij.kubernetes.model.resource.kubernetes.NamespacesProvider
+import org.jboss.tools.intellij.kubernetes.model.resource.kubernetes.NodesProvider
 import org.jboss.tools.intellij.kubernetes.model.resource.kubernetes.ServicesProvider
 import org.jboss.tools.intellij.kubernetes.model.resource.kubernetes.custom.GenericResource
 
@@ -60,7 +62,6 @@ class KubernetesContextTest {
 
 	private val allNamespaces = arrayOf(NAMESPACE1, NAMESPACE2, NAMESPACE3)
 	private val currentNamespace = NAMESPACE2
-	private val allPods = arrayOf(POD1, POD2, POD3)
 	private val client: NamespacedKubernetesClient = client(currentNamespace.metadata.name, allNamespaces)
 	private val watchable1: Watchable<Watch, Watcher<HasMetadata>> = mock()
 	private val watchable2: Watchable<Watch, Watcher<HasMetadata>> = mock()
@@ -78,13 +79,19 @@ class KubernetesContextTest {
 	private val namespacesProvider = nonNamespacedResourceProvider(
 			NamespacesProvider.KIND,
 			allNamespaces.toSet())
+	private val nodesProvider = nonNamespacedResourceProvider(
+			NodesProvider.KIND,
+			listOf(resource("node1"),
+					resource("node2"),
+					resource("node3")))
+	private val allPods = arrayOf(POD1, POD2, POD3)
 	private val namespacedPodsProvider = namespacedResourceProvider(
 			AllPodsProvider.KIND,
-			allPods.toSet(),
+			allPods.toList(),
 			currentNamespace)
 	private val allPodsProvider = nonNamespacedResourceProvider(
 			AllPodsProvider.KIND,
-			allPods.toSet())
+			allPods.toList())
 
 	private val hasMetadata1 = resource<HasMetadata>("hasMetadata1")
 	private val hasMetadata2 = resource<HasMetadata>("hasMetadata2")
@@ -119,6 +126,7 @@ class KubernetesContextTest {
 	private fun createContext(): TestableKubernetesContext {
 		val internalResourcesProviders = mutableListOf(
 				namespacesProvider,
+				nodesProvider,
 				namespacedPodsProvider,
 				allPodsProvider,
 				customResourceDefinitionsProvider)
@@ -242,12 +250,24 @@ class KubernetesContextTest {
 	}
 
 	@Test
+	fun `#getCurrentNamespace should return null if current namespace is set but doesnt exist`() {
+		// given
+		whenever(client.configuration.namespace)
+				.thenReturn("inexistent")
+
+		// when
+		val namespace = context.getCurrentNamespace()
+		// then
+		assertThat(namespace).isEqualTo(null)
+	}
+
+	@Test
 	fun `#getResources should get all resources in provider for given resource type in correct ResourcesIn type`() {
 		// given
 		// when
-		context.getResources(NamespacesProvider.KIND, ResourcesIn.NO_NAMESPACE)
+		context.getResources(NodesProvider.KIND, ResourcesIn.NO_NAMESPACE)
 		// then
-		verify(namespacesProvider).getAllResources()
+		verify(nodesProvider).getAllResources()
 	}
 
 	@Test
@@ -255,9 +275,9 @@ class KubernetesContextTest {
 		// given
 		// when
 		// there are no namespaces in current namespace
-		context.getResources(NamespacesProvider.KIND, ResourcesIn.CURRENT_NAMESPACE)
+		context.getResources(NodesProvider.KIND, ResourcesIn.CURRENT_NAMESPACE)
 		// then
-		verify(namespacesProvider, never()).getAllResources()
+		verify(nodesProvider, never()).getAllResources()
 	}
 
 	@Test
@@ -265,9 +285,9 @@ class KubernetesContextTest {
 		// given
 		// when
 		// namespace provider exists but for ResourceIn.NO_NAMESPACE
-		context.getResources(NamespacesProvider.KIND, ResourcesIn.CURRENT_NAMESPACE)
+		context.getResources(NodesProvider.KIND, ResourcesIn.CURRENT_NAMESPACE)
 		// then
-		verify(namespacesProvider, never()).getAllResources()
+		verify(nodesProvider, never()).getAllResources()
 	}
 
 	@Test
