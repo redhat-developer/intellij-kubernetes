@@ -11,7 +11,6 @@
 package org.jboss.tools.intellij.kubernetes.model
 
 import io.fabric8.kubernetes.api.model.HasMetadata
-import io.fabric8.kubernetes.api.model.NamedContext
 import io.fabric8.kubernetes.api.model.apiextensions.CustomResourceDefinition
 import io.fabric8.kubernetes.client.KubernetesClient
 import io.fabric8.kubernetes.client.KubernetesClientException
@@ -20,7 +19,6 @@ import org.jboss.tools.intellij.kubernetes.model.context.IActiveContext
 import org.jboss.tools.intellij.kubernetes.model.context.IActiveContext.ResourcesIn
 import org.jboss.tools.intellij.kubernetes.model.context.IContext
 import org.jboss.tools.intellij.kubernetes.model.resource.ResourceKind
-import org.jboss.tools.intellij.kubernetes.model.util.KubeConfig
 import java.util.function.Predicate
 
 interface IResourceModel {
@@ -31,21 +29,16 @@ interface IResourceModel {
     fun getAllContexts(): List<IContext>
     fun setCurrentNamespace(namespace: String)
     fun getCurrentNamespace(): String?
-
     fun <R: HasMetadata> resources(kind: ResourceKind<R>): Namespaceable<R>
     fun resources(definition: CustomResourceDefinition): ListableCustomResources
     fun invalidate(element: Any?)
     fun addListener(listener: ModelChangeObservable.IResourceChangeListener)
 }
 
-class ResourceModel(
+open class ResourceModel(
         private val observable: IModelChangeObservable = ModelChangeObservable(),
-        contextFactory: (IModelChangeObservable, NamedContext) -> IActiveContext<out HasMetadata, out KubernetesClient> =
-                ContextFactory()::create,
-        config: KubeConfig = KubeConfig()
+        private val contexts: IContexts = Contexts(observable, ContextFactory()::create)
 ) : IResourceModel {
-
-    private val contexts: IContexts = Contexts(observable, contextFactory, config)
 
     override fun setCurrentContext(context: IContext) {
         contexts.setCurrent(context)
@@ -56,7 +49,7 @@ class ResourceModel(
     }
 
     override fun getAllContexts(): List<IContext> {
-        return contexts.allContexts
+        return contexts.all
     }
 
     override fun getClient(): KubernetesClient? {
@@ -122,8 +115,7 @@ class ResourceModel(
     }
 
     private fun invalidate() {
-        contexts.closeCurrent()
-        contexts.allContexts.clear()
+        contexts.clear()
         observable.fireModified(this)
     }
 
@@ -145,5 +137,4 @@ class ResourceModel(
     private fun isNotFound(e: KubernetesClientException): Boolean {
         return e.code == 404
     }
-
 }

@@ -16,20 +16,19 @@ import io.fabric8.kubernetes.client.KubernetesClient
 import org.jboss.tools.intellij.kubernetes.model.context.Context
 import org.jboss.tools.intellij.kubernetes.model.context.IActiveContext
 import org.jboss.tools.intellij.kubernetes.model.context.IContext
-import org.jboss.tools.intellij.kubernetes.model.util.KubeConfig
 
 interface IContexts {
 	val current: IActiveContext<out HasMetadata, out KubernetesClient>?
-	val allContexts: MutableList<IContext>
+	val all: List<IContext>
 	fun setCurrent(context: IContext)
-	fun closeCurrent()
+	fun clear()
 }
 
-class Contexts(
+open class Contexts(
 		private val observable: IModelChangeObservable = ModelChangeObservable(),
-		private val factory: (IModelChangeObservable, NamedContext) -> IActiveContext<out HasMetadata, out KubernetesClient>,
-		private val config: KubeConfig = KubeConfig()
+		private val factory: (IModelChangeObservable, NamedContext) -> IActiveContext<out HasMetadata, out KubernetesClient>
 ) : IContexts {
+
 	override var current: IActiveContext<out HasMetadata, out KubernetesClient>? = null
 		get() {
 			synchronized(this) {
@@ -41,7 +40,7 @@ class Contexts(
 			}
 		}
 
-	override val allContexts: MutableList<IContext> = mutableListOf()
+	override val all: MutableList<IContext> = mutableListOf()
 		get() {
 			synchronized(this) {
 				if (field.isEmpty()) {
@@ -56,6 +55,10 @@ class Contexts(
 			}
 			return field
 		}
+
+	protected open val config: KubeConfig by lazy {
+		KubeConfig(::refresh)
+	}
 
 	override fun setCurrent(context: IContext) {
 		if (context == current) {
@@ -73,10 +76,33 @@ class Contexts(
 		}
 	}
 
-	override fun closeCurrent() {
+	override fun clear() {
+		clear(true)
+	}
+
+	private fun clear(notify: Boolean) {
+		synchronized(this) {
+			all.clear()
+			closeCurrent(notify)
+		}
+	}
+
+	protected open fun refresh() {
+		clear(false)
+		observable.fireModified(this) // invalidates root bcs there's no tree node for this
+	}
+
+	private fun closeCurrent() {
+		closeCurrent(true)
+	}
+
+	private fun closeCurrent(notify: Boolean) {
+		val current = this.current
 		current?.close() ?: return
-		observable.fireModified(current!!)
-		current = null
+		this.current = null
+		if (notify) {
+			observable.fireModified(current)
+		}
 	}
 
 	private fun create(namedContext: NamedContext): IActiveContext<out HasMetadata, out KubernetesClient> {
@@ -86,11 +112,11 @@ class Contexts(
 	}
 
 	private fun replaceInAllContexts(activeContext: IActiveContext<*, *>) {
-		val contextInAll = allContexts.find { it.context == activeContext.context } ?: return
-		val indexOf = allContexts.indexOf(contextInAll)
+		val contextInAll = all.find { it.context == activeContext.context } ?: return
+		val indexOf = all.indexOf(contextInAll)
 		if (indexOf < 0) {
 			return
 		}
-		allContexts[indexOf] = activeContext
+		all[indexOf] = activeContext
 	}
 }

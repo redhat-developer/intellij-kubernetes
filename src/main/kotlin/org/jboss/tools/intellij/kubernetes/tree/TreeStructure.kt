@@ -166,7 +166,7 @@ open class TreeStructure(
             model = model
     ) {
         override fun isMatching(element: Any?): Boolean {
-            // change in resource cathegory is notified as change of resource kind
+            // change in resource category is notified as change of resource kind
             return this.element?.kind == element
         }
 
