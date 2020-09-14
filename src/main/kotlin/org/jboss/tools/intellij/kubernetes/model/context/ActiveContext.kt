@@ -17,7 +17,6 @@ import io.fabric8.kubernetes.api.model.NamedContext
 import io.fabric8.kubernetes.api.model.apiextensions.CustomResourceDefinition
 import io.fabric8.kubernetes.api.model.apiextensions.CustomResourceDefinitionSpec
 import io.fabric8.kubernetes.client.KubernetesClient
-import io.fabric8.kubernetes.client.KubernetesClientException
 import io.fabric8.kubernetes.client.Watch
 import io.fabric8.kubernetes.client.Watcher
 import io.fabric8.kubernetes.client.dsl.Watchable
@@ -88,10 +87,7 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
             stopWatch(currentNamespace)
         }
         client.configuration.namespace = namespace
-        namespacedProviders.forEach {
-            it.value.invalidate()
-            it.value.namespace = namespace
-        }
+        namespacedProviders.forEach { it.value.namespace = namespace }
         startWatch(namespace)
         modelChange.fireCurrentNamespace(namespace)
     }
@@ -158,8 +154,8 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
             : IResourcesProvider<GenericResource> {
         val resourceIn = toResourcesIn(definition.spec)
         val provider = createCustomResourcesProvider(definition, getCurrentNamespace(), resourceIn)
-        val watchable = provider.getWatchable() as () -> Watchable<Watch, Watcher<HasMetadata>>?
-        watch.watch(watchable)
+        val watchable = provider.getWatchable() as () -> Watchable<Watch, Watcher<in HasMetadata>>?
+        //watch.watch(watchable)
         setProvider(provider, kind, resourceIn)
         return provider
     }
@@ -209,9 +205,9 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
 
     private fun addResource(resource: HasMetadata): Boolean {
         // we need to add resource to both providers (ex. all pods & only namespaced pods)
-        val addedToNonNamespaced = add(resource, nonNamespacedProviders[ResourceKind.new(resource)])
+        val addedToNonNamespaced = addResource(resource, nonNamespacedProviders[ResourceKind.new(resource)])
         val addedToNamespaced = getCurrentNamespace() == resource.metadata?.namespace
-                && add(resource, namespacedProviders[ResourceKind.new(resource)])
+                && addResource(resource, namespacedProviders[ResourceKind.new(resource)])
         return addedToNonNamespaced.or(
                 addedToNamespaced)
     }
@@ -224,7 +220,7 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
         return added
     }
 
-    private fun add(resource: HasMetadata, provider: IResourcesProvider<out HasMetadata>?): Boolean {
+    private fun addResource(resource: HasMetadata, provider: IResourcesProvider<out HasMetadata>?): Boolean {
         if (provider == null) {
             return false
         }
@@ -300,31 +296,58 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
         nonNamespacedProviders[kind]?.invalidate()
     }
 
+    /**
+     * Starts watching all watchables.
+     */
     override fun startWatch() {
-        val namespace = getCurrentNamespace() ?: return
-        startWatch(namespace)
-    }
-
-    private fun startWatch(namespace: String) {
         try {
-            watch.watchAll(getRetrieveOperations(namespace))
+            watch.watchAll(getAllWatchables())
         } catch (e: ResourceException) {
-            logger<ActiveContext<N, C>>().warn("Could not start watching resources on server ${client.masterUrl}", e)
+            logger<ActiveContext<N, C>>()
+                    .warn("Could not start watching resources on server ${client.masterUrl}", e)
         }
     }
 
-    private fun stopWatch(namespace: String) {
-        watch.ignoreAll(getRetrieveOperations(namespace))
+    /**
+     * Starts watching all watchables for the given namespace. Doesn't start the cluster wide watchables nor
+     * the ones for a different namespace.
+     *
+     * @param namespace stops watchables for the given namespace.
+     */
+    private fun startWatch(namespace: String) {
+        try {
+            watch.watchAll(getWatchables(namespace))
+        } catch (e: ResourceException) {
+            logger<ActiveContext<N, C>>()
+                    .warn("Could not start watching resources on server ${client.masterUrl}", e)
+        }
     }
 
-    protected open fun getRetrieveOperations(namespace: String)
-            : Collection<() -> Watchable<Watch, Watcher<HasMetadata>>?> {
-        val resources: MutableList<() ->Watchable<Watch, Watcher<HasMetadata>>?> = mutableListOf()
-        resources.addAll(namespacedProviders.values
-                .map { it.getWatchable() as () -> Watchable<Watch, Watcher<HasMetadata>>? })
-        resources.addAll(nonNamespacedProviders.values
-                .map { it.getWatchable() as () -> Watchable<Watch, Watcher<HasMetadata>>? })
-        return resources
+    /**
+     * Stops watching all watchables for the given namespace. Doesn't stop the cluster wide watchables nor
+     * the ones for a different namespace.
+     *
+     * @param namespace stops watchables for the given namespace.
+     */
+    private fun stopWatch(namespace: String) {
+        watch.ignoreAll(getWatchables(namespace))
+    }
+
+    protected open fun getWatchables(namespace: String)
+            : Collection<() -> Watchable<Watch, Watcher<in HasMetadata>>?> {
+        return namespacedProviders.values
+                .filter { it.namespace == namespace }
+                .map { it.getWatchable() as () -> Watchable<Watch, Watcher<in HasMetadata>>? }
+    }
+
+    protected open fun getAllWatchables()
+            : Collection<() -> Watchable<Watch, Watcher<in HasMetadata>>?> {
+        val watchables: MutableList<() ->Watchable<Watch, Watcher<in HasMetadata>>?> = mutableListOf()
+        watchables.addAll(namespacedProviders.values
+                .map { it.getWatchable() as () -> Watchable<Watch, Watcher<in HasMetadata>>? })
+        watchables.addAll(nonNamespacedProviders.values
+                .map { it.getWatchable() as () -> Watchable<Watch, Watcher<in HasMetadata>>? })
+        return watchables
     }
 
     override fun close() {

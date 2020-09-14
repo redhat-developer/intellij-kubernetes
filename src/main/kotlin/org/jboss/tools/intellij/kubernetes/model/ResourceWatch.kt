@@ -25,9 +25,9 @@ open class ResourceWatch(
     private val addOperation: (HasMetadata) -> Unit,
     private val removeOperation: (HasMetadata) -> Unit
 ) {
-    private var watches: MutableMap<Watchable<Watch, Watcher<HasMetadata>>, Watch?> = mutableMapOf()
+    private var watches: MutableMap<Watchable<Watch, Watcher<in HasMetadata>>, Watch?> = mutableMapOf()
 
-    fun watchAll(suppliers: Collection<() -> Watchable<Watch, Watcher<HasMetadata>>?>) {
+    fun watchAll(suppliers: Collection<() -> Watchable<Watch, Watcher<in HasMetadata>>?>) {
         suppliers.forEach {
             try {
                 doWatch(it)
@@ -37,7 +37,7 @@ open class ResourceWatch(
         }
     }
 
-    fun watch(supplier: () -> Watchable<Watch, Watcher<HasMetadata>>?) {
+    fun watch(supplier: () -> Watchable<Watch, Watcher<in HasMetadata>>?) {
         try {
             doWatch(supplier)
         } catch(e: Exception){
@@ -45,23 +45,24 @@ open class ResourceWatch(
         }
     }
 
-    private fun doWatch(supplier: () -> Watchable<Watch, Watcher<HasMetadata>>?) {
+    private fun doWatch(supplier: () -> Watchable<Watch, Watcher<in HasMetadata>>?) {
         val watchable = supplier.invoke() ?: return
-        val watch = watchable.watch(ResourceWatcher(addOperation, removeOperation)) ?: return
-        watches[watchable] = watch
+        watches.computeIfAbsent(watchable) { watchable ->
+            watchable.watch(ResourceWatcher(addOperation, removeOperation))
+        }
     }
 
-    fun getAll(): List<Watchable<Watch, Watcher<HasMetadata>>> {
+    fun getAll(): List<Watchable<Watch, Watcher<in HasMetadata>>> {
         return watches.keys.toList()
     }
 
-    fun ignoreAll(suppliers: Collection<() -> Watchable<Watch, Watcher<HasMetadata>>?>) {
+    fun ignoreAll(suppliers: Collection<() -> Watchable<Watch, Watcher<in HasMetadata>>?>) {
         suppliers.forEach {
             ignore(it)
         }
     }
 
-    fun ignore(supplier: () -> Watchable<Watch, out Watcher<in HasMetadata>>?) {
+    fun ignore(supplier: () -> Watchable<Watch, Watcher<in HasMetadata>>?) {
         try {
             val watchable = supplier.invoke() ?: return
             watches[watchable]?.close()

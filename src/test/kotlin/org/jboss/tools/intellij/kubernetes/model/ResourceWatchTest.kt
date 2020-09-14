@@ -17,10 +17,13 @@ import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.whenever
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.ListOptions
+import io.fabric8.kubernetes.api.model.Pod
 import io.fabric8.kubernetes.client.Watch
 import io.fabric8.kubernetes.client.Watcher
 import io.fabric8.kubernetes.client.dsl.Watchable
 import org.assertj.core.api.Assertions.assertThat
+import org.jboss.tools.intellij.kubernetes.model.mocks.ClientMocks
+import org.jboss.tools.intellij.kubernetes.model.mocks.Mocks
 import org.junit.Before
 import org.junit.Test
 
@@ -166,7 +169,7 @@ class ResourceWatchTest {
     @Test
     fun `should not invoke any operation if watch notifies action that is not ADD or REMOVE`() {
         // given
-        val resource: HasMetadata = mock()
+        val resource = mock<HasMetadata>()
         // when
         watchable1.watcher?.eventReceived(Watcher.Action.ERROR, resource)
         // then
@@ -200,20 +203,20 @@ class ResourceWatchTest {
         }
     }
 
-    private class WatchableFake(var watch: WatchFake = WatchFake()) : Watchable<Watch, Watcher<HasMetadata>> {
+    private class WatchableFake(var watch: WatchFake = WatchFake()) : Watchable<Watch, Watcher<in HasMetadata>> {
 
         var watcher: Watcher<in HasMetadata>? = null
 
-        override fun watch(watcher: Watcher<HasMetadata>?): Watch {
+        override fun watch(watcher: Watcher<in HasMetadata>?): Watch {
             this.watcher = watcher
             return watch
         }
 
-        override fun watch(options: ListOptions?, watcher: Watcher<HasMetadata>?): Watch {
+        override fun watch(options: ListOptions?, watcher: Watcher<in HasMetadata>?): Watch {
             return watch(watcher)
         }
 
-        override fun watch(resourceVersion: String?, watcher: Watcher<HasMetadata>): Watch {
+        override fun watch(resourceVersion: String?, watcher: Watcher<in HasMetadata>): Watch {
             return watch(watcher)
         }
 

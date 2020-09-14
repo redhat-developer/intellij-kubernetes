@@ -62,8 +62,6 @@ class KubernetesContextTest {
 	private val allNamespaces = arrayOf(NAMESPACE1, NAMESPACE2, NAMESPACE3)
 	private val currentNamespace = NAMESPACE2
 	private val client: NamespacedKubernetesClient = client(currentNamespace.metadata.name, allNamespaces)
-	private val watchable1: Watchable<Watch, Watcher<HasMetadata>> = mock()
-	private val watchable2: Watchable<Watch, Watcher<HasMetadata>> = mock()
 	private val namespacedDefinition = customResourceDefinition(
 			"namespaced crd","version1", "group1", "namespaced-crd", "Namespaced")
 	private val clusterwideDefinition = customResourceDefinition(
@@ -99,21 +97,38 @@ class KubernetesContextTest {
 			setOf(hasMetadata1, hasMetadata2),
 			currentNamespace)
 
-	private val watchableSupplier1 = { watchable1 }
 	private val namespacedCustomResource1 = resource<GenericResource>("genericCustomResource1")
 	private val namespacedCustomResource2 = resource<GenericResource>("genericCustomResource2")
+	private val watchable1: Watchable<Watch, Watcher<GenericResource>> = mock()
+	private val watchableSupplier1: () -> Watchable<Watch, Watcher<GenericResource>>? = { watchable1 }
 	private val namespacedResourcesProvider: INamespacedResourcesProvider<GenericResource> =
 			namespacedResourceProvider(
 					ResourceKind.new(GenericResource::class.java),
 					setOf(namespacedCustomResource1, namespacedCustomResource2),
 					currentNamespace,
-					watchableSupplier1)
+					watchableSupplier1
+			)
 	private val nonNamespacedCustomResource1 = resource<GenericResource>(
 			"genericCustomResource1", "smurfington")
+	private val watchable2: Watchable<Watch, Watcher<GenericResource>> = mock()
+	private val watchableSupplier2: () -> Watchable<Watch, Watcher<GenericResource>>? = { watchable2 }
 	private val nonNamespacedResourcesProvider: INonNamespacedResourcesProvider<GenericResource> =
 			nonNamespacedResourceProvider(
 					ResourceKind.new(GenericResource::class.java),
-					setOf(nonNamespacedCustomResource1))
+					setOf(nonNamespacedCustomResource1),
+					watchableSupplier2
+			)
+
+	private val watchable3: Watchable<Watch, Watcher<in HasMetadata>> = mock()
+	private val watchableSupplier3: () -> Watchable<Watch, Watcher<in HasMetadata>>? = { watchable3 }
+
+	val allWatchables = listOf(
+			watchableSupplier1,
+			watchableSupplier2,
+			watchableSupplier3) as List<() -> Watchable<Watch, Watcher<in HasMetadata>>?>
+	val namespacedWatchables = listOf(
+			watchableSupplier1,
+			watchableSupplier3) as List<() -> Watchable<Watch, Watcher<in HasMetadata>>>
 
 	private lateinit var context: TestableKubernetesContext
 
@@ -139,10 +154,11 @@ class KubernetesContextTest {
 				Pair(namespacedResourcesProvider, nonNamespacedResourcesProvider),
 				mock()
 		))
-		doReturn(
-				listOf { watchable1 }, // returned on 1st call
-				listOf { watchable2 }) // returned on 2nd call
-				.whenever(context).getRetrieveOperations(any())
+		doReturn(allWatchables)
+				.whenever(context).getAllWatchables()
+		doReturn(namespacedWatchables)
+				.whenever(context).getWatchables(any())
+
 		return context
 	}
 
@@ -158,35 +174,25 @@ class KubernetesContextTest {
 	@Test
 	fun `#setCurrentNamespace should remove watched resources for current namespace`() {
 		// given
+		val captor =
+				argumentCaptor<List<() -> Watchable<Watch, Watcher<in HasMetadata>>>>()
 		// when
 		context.setCurrentNamespace(NAMESPACE1.metadata.name)
 		// then
-		val captor = argumentCaptor<List<() -> Watchable<Watch, Watcher<HasMetadata>>>>()
 		verify(context.watch).ignoreAll(captor.capture())
-		val suppliers = captor.firstValue
-		assertThat(suppliers.first().invoke()).isEqualTo(watchable1)
+		assertThat(captor.firstValue).containsOnly(*namespacedWatchables.toTypedArray())
 	}
 
 	@Test
-	fun `#setCurrentNamespace should add new watched resources for new current namespace`() {
+	fun `#setCurrentNamespace should watch new watchables for new current namespace`() {
 		// given
+		val captor =
+				argumentCaptor<List<() -> Watchable<Watch, Watcher<in HasMetadata>>?>>()
 		// when
 		context.setCurrentNamespace(NAMESPACE1.metadata.name)
 		// then
-		val captor = argumentCaptor<List<() -> Watchable<Watch, Watcher<HasMetadata>>>>()
 		verify(context.watch).watchAll(captor.capture())
-		val suppliers = captor.firstValue
-		assertThat(suppliers.first().invoke()).isEqualTo(watchable2)
-	}
-
-	@Test
-	fun `#setCurrentNamespace should invalidate namespaced resource providers`() {
-		// given
-		val namespace = NAMESPACE1.metadata.name
-		// when
-		context.setCurrentNamespace(namespace)
-		// then
-		verify(namespacedPodsProvider).invalidate()
+		assertThat(captor.firstValue).containsOnly(*namespacedWatchables.toTypedArray())
 	}
 
 	@Test
@@ -336,7 +342,7 @@ class KubernetesContextTest {
 		// then
 		verify(context, times(1)).createCustomResourcesProvider(eq(namespacedDefinition), any(), any())
 		verify(namespacedResourcesProvider, times(1)).getWatchable()
-		verify(context.watch, times(1)).watch(watchableSupplier1)
+		verify(context.watch, times(1)).watch(watchableSupplier1 as () -> Watchable<Watch, Watcher<in HasMetadata>>?)
 	}
 
 	@Test
@@ -346,7 +352,7 @@ class KubernetesContextTest {
 		context.getCustomResources(namespacedDefinition)
 		context.getCustomResources(namespacedDefinition)
 		// then
-		verify(context.watch, times(1)).watch(watchableSupplier1)
+		verify(context.watch, times(1)).watch(watchableSupplier1 as () -> Watchable<Watch, Watcher<in HasMetadata>>?)
 	}
 
 	@Test(expected = IllegalArgumentException::class)
@@ -644,6 +650,18 @@ class KubernetesContextTest {
 		verify(client).close()
 	}
 
+	@Test
+	fun `#startWatch() should start watch for all providers`() {
+		// given
+		val providersCaptor =
+				argumentCaptor<Collection<() -> Watchable<Watch, Watcher<in HasMetadata>>?>>()
+		// when
+		context.startWatch()
+		// then
+		verify(context.watch).watchAll(providersCaptor.capture())
+		assertThat(providersCaptor.firstValue).containsOnly(*allWatchables.toTypedArray())
+	}
+
 	private fun givenCustomResourceProvider(
 			definition: CustomResourceDefinition,
 			definitionProvider: IResourcesProvider<CustomResourceDefinition>,
@@ -668,7 +686,8 @@ class KubernetesContextTest {
 			client: NamespacedKubernetesClient,
 			private val internalResourceProviders: List<IResourcesProvider<out HasMetadata>>,
 			private val extensionResourcesProviders: List<IResourcesProvider<out HasMetadata>>,
-			private val resourcesProviders: Pair<INamespacedResourcesProvider<GenericResource>,
+			private val customResourcesProviders: Pair<
+					INamespacedResourcesProvider<GenericResource>,
 					INonNamespacedResourcesProvider<GenericResource>>,
 			public override var watch: ResourceWatch)
 		: KubernetesContext(observable, client, mock()) {
@@ -685,8 +704,12 @@ class KubernetesContextTest {
 				return super.nonNamespacedProviders
 			}
 
-		public override fun getRetrieveOperations(namespace: String): List<() -> Watchable<Watch, Watcher<HasMetadata>>?> {
-			TODO("override with mocking")
+		public override fun getWatchables(namespace: String): Collection<() -> Watchable<Watch, Watcher<in HasMetadata>>?> {
+			return super.getWatchables(namespace)
+		}
+
+		public override fun getAllWatchables(): Collection<() -> Watchable<Watch, Watcher<in HasMetadata>>?> {
+			return super.getAllWatchables()
 		}
 
 		override fun getInternalResourceProviders(client: NamespacedKubernetesClient)
@@ -706,11 +729,19 @@ class KubernetesContextTest {
 				: IResourcesProvider<GenericResource> {
 			return when(resourceIn) {
 				ResourcesIn.CURRENT_NAMESPACE ->
-					resourcesProviders.first
+					customResourcesProviders.first
 				ResourcesIn.NO_NAMESPACE,
 				ResourcesIn.ANY_NAMESPACE ->
-					resourcesProviders.second
+					customResourcesProviders.second
 			}
+		}
+
+		fun getNonNamespacedWatchables(): List<() -> Watchable<Watch, Watcher<in HasMetadata>>> {
+			return nonNamespacedProviders.values.map { it.getWatchable() as () -> Watchable<Watch, Watcher<in HasMetadata>> }
+		}
+
+		fun getNamespacedWatchables(): List<() -> Watchable<Watch, Watcher<in HasMetadata>>> {
+			return namespacedProviders.values.map { it.getWatchable() as () -> Watchable<Watch, Watcher<in HasMetadata>> }
 		}
 
 	}
