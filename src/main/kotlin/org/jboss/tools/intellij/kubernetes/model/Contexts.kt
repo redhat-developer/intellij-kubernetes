@@ -106,9 +106,7 @@ open class Contexts(
 	}
 
 	private fun create(namedContext: NamedContext): IActiveContext<out HasMetadata, out KubernetesClient> {
-		val context = factory(observable, namedContext)
-		context.startWatch()
-		return context
+		return factory(observable, namedContext)
 	}
 
 	private fun replaceInAllContexts(activeContext: IActiveContext<*, *>) {

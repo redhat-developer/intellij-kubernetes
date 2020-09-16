@@ -147,7 +147,7 @@ object ClientMocks {
         }
     }
 
-    inline fun customResourceDefinition(
+    fun customResourceDefinition(
             name: String,
             version: String,
             group: String,

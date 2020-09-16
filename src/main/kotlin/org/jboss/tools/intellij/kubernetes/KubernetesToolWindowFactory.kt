@@ -21,7 +21,6 @@ import com.intellij.ui.ScrollPaneFactory
 import com.intellij.ui.content.ContentFactory
 import com.intellij.ui.tree.AsyncTreeModel
 import com.intellij.ui.treeStructure.Tree
-import com.redhat.devtools.intellij.common.tree.StructureTreeModelFactory
 import org.jboss.tools.intellij.kubernetes.model.IResourceModel
 import org.jboss.tools.intellij.kubernetes.tree.TreeStructure
 import org.jboss.tools.intellij.kubernetes.tree.TreeUpdater

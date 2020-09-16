@@ -26,22 +26,22 @@ abstract class NonNamespacedResourcesProvider<R: HasMetadata, C: KubernetesClien
     : AbstractResourcesProvider<R>(), INonNamespacedResourcesProvider<R> {
 
     override fun getAllResources(): Collection<R> {
-        if (allResources.isEmpty()) {
-            allResources.addAll(loadAllResources())
+        synchronized(this) {
+            if (allResources.isEmpty()) {
+                allResources.addAll(loadAllResources())
+            }
+            return allResources
         }
-        return allResources
     }
 
     protected open fun loadAllResources(): List<R> {
         return getOperation().invoke()?.list()?.items ?: emptyList()
     }
 
-    protected open fun getOperation(): () -> WatchableAndListable<R> {
-        return { null }
-    }
-
     override fun getWatchable(): () -> Watchable<Watch, Watcher<R>>? {
         return getOperation()
     }
+
+    protected abstract fun getOperation(): () -> WatchableAndListable<R>
 
 }

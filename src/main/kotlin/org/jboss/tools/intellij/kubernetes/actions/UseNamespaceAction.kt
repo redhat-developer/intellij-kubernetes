@@ -27,10 +27,8 @@ class UseNamespaceAction: StructureTreeAction(Namespace::class.java) {
         val manager = ProgressManager.getInstance()
         manager.run(object : Task.Backgroundable(null, "Switching Namespace...", true) {
 
-            override fun run(@NotNull pi: ProgressIndicator) {
-                manager.executeProcessUnderProgress({
+            override fun run(@NotNull progress: ProgressIndicator) {
                     model.setCurrentNamespace(namespace.metadata.name)
-                }, manager.progressIndicator)
             }
         })
     }

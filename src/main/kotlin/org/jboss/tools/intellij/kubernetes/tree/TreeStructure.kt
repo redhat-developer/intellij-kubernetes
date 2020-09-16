@@ -18,12 +18,19 @@ import com.intellij.ide.util.treeView.PresentableNodeDescriptor
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.extensions.ExtensionPointName
 import com.intellij.openapi.util.IconLoader
+import com.intellij.ui.LoadingNode
+import com.intellij.ui.tree.LeafState
 import io.fabric8.kubernetes.api.model.HasMetadata
 import org.jboss.tools.intellij.kubernetes.model.IResourceModel
 import org.jboss.tools.intellij.kubernetes.model.context.IContext
 import org.jboss.tools.intellij.kubernetes.model.resource.ResourceKind
+import java.beans.PropertyChangeListener
 import java.util.*
 import javax.swing.Icon
+import javax.swing.SwingWorker
+import javax.swing.tree.DefaultMutableTreeNode
+import javax.swing.tree.DefaultTreeModel
+
 
 /**
  * A factory that creates nodes (PresentableNodeDescriptor) for a (tree-) model.

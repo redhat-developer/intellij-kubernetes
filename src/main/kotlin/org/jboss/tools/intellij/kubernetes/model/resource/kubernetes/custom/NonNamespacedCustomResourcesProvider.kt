@@ -18,6 +18,7 @@ import io.fabric8.kubernetes.client.dsl.Watchable
 import io.fabric8.kubernetes.client.dsl.base.CustomResourceDefinitionContext
 import org.jboss.tools.intellij.kubernetes.model.resource.NonNamespacedResourcesProvider
 import org.jboss.tools.intellij.kubernetes.model.resource.ResourceKind
+import org.jboss.tools.intellij.kubernetes.model.resource.WatchableAndListable
 
 class NonNamespacedCustomResourcesProvider(
         definition: CustomResourceDefinition,
@@ -40,4 +41,9 @@ class NonNamespacedCustomResourcesProvider(
             }
         }
     }
+
+    override fun getOperation(): () -> WatchableAndListable<GenericResource> {
+        return { null }
+    }
+
 }
