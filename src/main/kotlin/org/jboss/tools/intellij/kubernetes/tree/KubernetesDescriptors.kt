@@ -10,8 +10,10 @@
  ******************************************************************************/
 package org.jboss.tools.intellij.kubernetes.tree
 
+import com.intellij.ide.projectView.PresentationData
 import com.intellij.ide.util.treeView.NodeDescriptor
 import com.intellij.openapi.util.IconLoader
+import com.intellij.ui.SimpleTextAttributes
 import io.fabric8.kubernetes.api.model.ConfigMap
 import io.fabric8.kubernetes.api.model.Endpoints
 import io.fabric8.kubernetes.api.model.HasMetadata
@@ -124,7 +126,7 @@ object KubernetesDescriptors {
 	}
 
 	private class CustomResourceDefinitionDescriptor(
-			definition: CustomResourceDefinition,
+			private val definition: CustomResourceDefinition,
 			parent: NodeDescriptor<*>?,
 			model: IResourceModel)
 		: Descriptor<CustomResourceDefinition>(
@@ -132,12 +134,17 @@ object KubernetesDescriptors {
 			parent,
 			model
 	) {
-		override fun getLabel(element: CustomResourceDefinition): String {
-			return if (element.spec.names.plural.isNotBlank()) {
-				element.spec.names.plural
+		override fun getLabel(element: CustomResourceDefinition): String? {
+			return if (definition.spec.names.plural.isNotBlank()) {
+				definition.spec.names.plural
 			} else {
-				element.metadata.name
+				definition.metadata.name
 			}
+		}
+
+		override fun postprocess(presentation: PresentationData) {
+			presentation.addText(getLabel(definition), SimpleTextAttributes.REGULAR_ATTRIBUTES);
+			presentation.addText(" (${definition.spec.group}/${definition.spec.version})", SimpleTextAttributes.GRAYED_SMALL_ATTRIBUTES);
 		}
 	}
 
@@ -186,7 +193,7 @@ object KubernetesDescriptors {
 		}
 	}
 
-	fun <R: HasMetadata> createDataDescriptorFactories(data: Map<String, String>?, element: R)
+	fun <R : HasMetadata> createDataDescriptorFactories(data: Map<String, String>?, element: R)
 			: List<AbstractTreeStructureContribution.DescriptorFactory<R>> {
 		return if (data == null
 				|| data.isEmpty()) {
@@ -196,7 +203,7 @@ object KubernetesDescriptors {
 		}
 	}
 
-	private class DataEntryDescriptorFactory<R: HasMetadata>(private val key: String, resource: R)
+	private class DataEntryDescriptorFactory<R : HasMetadata>(private val key: String, resource: R)
 		: AbstractTreeStructureContribution.DescriptorFactory<R>(resource) {
 
 
@@ -204,7 +211,7 @@ object KubernetesDescriptors {
 			return ConfigMapDataDescriptor(key, resource, parent, model)
 		}
 
-		private class ConfigMapDataDescriptor<R: HasMetadata>(
+		private class ConfigMapDataDescriptor<R : HasMetadata>(
 				private val key: String,
 				element: R,
 				parent: NodeDescriptor<*>?,
@@ -220,14 +227,14 @@ object KubernetesDescriptors {
 		}
 	}
 
-	private class EmptyDataDescriptorFactory<R: HasMetadata>(resource: R)
+	private class EmptyDataDescriptorFactory<R : HasMetadata>(resource: R)
 		: AbstractTreeStructureContribution.DescriptorFactory<R>(resource) {
 
 		override fun create(parent: NodeDescriptor<*>?, model: IResourceModel): NodeDescriptor<R>? {
 			return ConfigMapDataDescriptor(resource, parent, model)
 		}
 
-		private class ConfigMapDataDescriptor<R: HasMetadata>(
+		private class ConfigMapDataDescriptor<R : HasMetadata>(
 				element: R,
 				parent: NodeDescriptor<*>?,
 				model: IResourceModel

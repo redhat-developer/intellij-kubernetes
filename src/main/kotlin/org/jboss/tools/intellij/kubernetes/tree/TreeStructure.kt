@@ -227,7 +227,7 @@ open class TreeStructure(
             model.invalidate(element)
         }
 
-        protected open fun getLabel(element: T): String {
+        protected open fun getLabel(element: T): String? {
             return element.toString()
         }
 
