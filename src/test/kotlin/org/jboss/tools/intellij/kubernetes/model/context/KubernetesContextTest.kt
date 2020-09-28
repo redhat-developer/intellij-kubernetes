@@ -41,6 +41,7 @@ import org.jboss.tools.intellij.kubernetes.model.mocks.ClientMocks.POD2
 import org.jboss.tools.intellij.kubernetes.model.mocks.ClientMocks.POD3
 import org.jboss.tools.intellij.kubernetes.model.mocks.ClientMocks.client
 import org.jboss.tools.intellij.kubernetes.model.mocks.ClientMocks.customResourceDefinition
+import org.jboss.tools.intellij.kubernetes.model.mocks.ClientMocks.customResource
 import org.jboss.tools.intellij.kubernetes.model.mocks.ClientMocks.resource
 import org.jboss.tools.intellij.kubernetes.model.mocks.Mocks.namespacedResourceProvider
 import org.jboss.tools.intellij.kubernetes.model.mocks.Mocks.nonNamespacedResourceProvider
@@ -102,8 +103,8 @@ class KubernetesContextTest {
 			setOf(hasMetadata1, hasMetadata2),
 			currentNamespace)
 
-	private val namespacedCustomResource1 = resource<GenericResource>("genericCustomResource1")
-	private val namespacedCustomResource2 = resource<GenericResource>("genericCustomResource2")
+	private val namespacedCustomResource1 = customResource("genericCustomResource1", "namespace1", namespacedDefinition)
+	private val namespacedCustomResource2 = customResource("genericCustomResource2", "namespace1", namespacedDefinition)
 	private val watchable1: Watchable<Watch, Watcher<GenericResource>> = mock()
 	private val watchableSupplier1: () -> Watchable<Watch, Watcher<GenericResource>>? = { watchable1 }
 	private val namespacedCustomResourcesProvider: INamespacedResourcesProvider<GenericResource> =
@@ -631,14 +632,37 @@ class KubernetesContextTest {
 	}
 
 	@Test
-	fun `#invalidate(resource) should invalidate resource provider`() {
+	fun `#invalidate(resource) should invalidate namespaced resource provider`() {
 		// given
-		val pod = resource<Pod>("pod", NAMESPACE2.metadata.name)
+		val pod = allPods[0]
 		// when
 		context.invalidate(pod)
 		// then
-		verify(namespacesProvider, never()).invalidate(any())
-		verify(namespacedPodsProvider).invalidate()
+		verify(namespacesProvider, never()).invalidate(pod)
+		verify(namespacedPodsProvider).invalidate(pod)
+	}
+
+	@Test
+	fun `#invalidate(resource) should invalidate non-namespaced resource provider`() {
+		// given
+		val namespace = allNamespaces[0]
+		// when
+		context.invalidate(namespace)
+		// then
+		verify(namespacesProvider).invalidate(namespace)
+		verify(namespacedPodsProvider, never()).invalidate(namespace)
+	}
+
+	@Test
+	fun `#invalidate(customResource) should invalidate custom resource provider`() {
+		// given
+		givenCustomResourceProvider(namespacedDefinition,
+				customResourceDefinitionsProvider,
+				namespacedCustomResourcesProvider)
+		// when
+		context.invalidate(namespacedCustomResource1)
+		// then
+		verify(namespacedCustomResourcesProvider).invalidate(namespacedCustomResource1)
 	}
 
 	@Test

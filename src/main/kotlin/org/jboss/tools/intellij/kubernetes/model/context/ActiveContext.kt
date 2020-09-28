@@ -272,28 +272,35 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
         nonNamespacedProviders.values.forEach { it.invalidate() }
     }
 
-    override fun invalidate(kind: Any) {
-        when(kind) {
+    override fun invalidate(resource: Any) {
+        when(resource) {
             is ResourceKind<*> ->
-                invalidate(kind)
-            is HasMetadata ->
-                invalidate(kind)
+                invalidate(resource)
             is CustomResourceDefinition ->
-                invalidate(kind)
+                invalidate(resource)
+            is HasMetadata ->
+                invalidate(resource)
         }
-    }
-
-    private fun invalidate(resource: HasMetadata) {
-        invalidate(ResourceKind.new(resource))
-    }
-
-    private fun invalidate(definition: CustomResourceDefinition) {
-        invalidate(ResourceKind.new(definition.spec))
     }
 
     private fun invalidate(kind: ResourceKind<*>) {
         namespacedProviders[kind]?.invalidate()
         nonNamespacedProviders[kind]?.invalidate()
+    }
+
+    private fun invalidate(resource: HasMetadata) {
+        val kind = ResourceKind.new(resource)
+        invalidateProviders(kind, resource)
+    }
+
+    private fun invalidate(resource: CustomResourceDefinition) {
+        val kind = ResourceKind.new(resource.spec)
+        invalidateProviders(kind, resource)
+    }
+
+    private fun invalidateProviders(kind: ResourceKind<out HasMetadata>, resource: HasMetadata) {
+        namespacedProviders[kind]?.invalidate(resource)
+        nonNamespacedProviders[kind]?.invalidate(resource)
     }
 
     /**

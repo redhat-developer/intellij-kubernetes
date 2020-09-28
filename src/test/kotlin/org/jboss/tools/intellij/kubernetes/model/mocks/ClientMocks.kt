@@ -32,6 +32,7 @@ import io.fabric8.kubernetes.client.dsl.MixedOperation
 import io.fabric8.kubernetes.client.dsl.NonNamespaceOperation
 import io.fabric8.kubernetes.client.dsl.PodResource
 import io.fabric8.kubernetes.client.dsl.Resource
+import org.jboss.tools.intellij.kubernetes.model.resource.kubernetes.custom.GenericResource
 import org.jboss.tools.intellij.kubernetes.model.util.getApiVersion
 import org.mockito.ArgumentMatchers
 import java.net.URL
@@ -169,17 +170,33 @@ object ClientMocks {
     }
 
     inline fun <reified T: HasMetadata> resource(name: String, namespace: String? = null): T {
+        val metadata = objectMeta(name, namespace)
+        return mock {
+            on { getMetadata() } doReturn metadata
+            on { getApiVersion() } doReturn getApiVersion(T::class.java)
+            on { getKind() } doReturn T::class.java.simpleName
+        }
+    }
+
+    fun customResource(name: String, namespace: String, definition: CustomResourceDefinition): GenericResource {
+        val metadata = objectMeta(name, namespace)
+        val apiVersion = getApiVersion(definition.spec.group, definition.spec.version)
+        val kind = definition.spec.names.kind
+        return mock {
+            on { getMetadata() } doReturn metadata
+            on { getApiVersion() } doReturn apiVersion
+            on { getKind() } doReturn kind
+        }
+    }
+
+    fun objectMeta(name: String, namespace: String?): ObjectMeta {
         val metadata = mock<ObjectMeta> {
             on { getName() } doReturn name
             if (namespace != null) {
                 on { getNamespace() } doReturn namespace
             }
         }
-        return mock {
-            on { getMetadata() } doReturn metadata
-            on { getApiVersion() } doReturn getApiVersion(T::class.java)
-            on { getKind() } doReturn T::class.java.simpleName
-        }
+        return metadata
     }
 
 }
