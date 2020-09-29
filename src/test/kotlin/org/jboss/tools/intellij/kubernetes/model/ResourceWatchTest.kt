@@ -26,14 +26,12 @@ import io.fabric8.kubernetes.client.Watch
 import io.fabric8.kubernetes.client.Watcher
 import io.fabric8.kubernetes.client.dsl.Watchable
 import org.assertj.core.api.Assertions.assertThat
+import org.jboss.tools.intellij.kubernetes.model.mocks.ClientMocks.resource
 import org.jboss.tools.intellij.kubernetes.model.resource.ResourceKind
 import org.junit.Before
 import org.junit.Test
 import java.util.concurrent.BlockingDeque
 import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.ExecutorService
-import java.util.concurrent.Executors
-import java.util.concurrent.Future
 import java.util.concurrent.LinkedBlockingDeque
 import java.util.concurrent.TimeUnit
 
@@ -73,7 +71,7 @@ class ResourceWatchTest {
     @Test
     fun `#watch() should add watch`() {
         // given
-        val kind = mock<ResourceKind<Pod>>()
+        val kind: ResourceKind<Pod> = mock()
         val watchable = WatchableFake()
         assertThat(resourceWatch.watches.keys).doesNotContain(kind)
         // when
@@ -159,7 +157,7 @@ class ResourceWatchTest {
     @Test
     fun `#addOperation should get called if watch notifies ADDED`() {
         // given
-        val resource: HasMetadata = mock()
+        val resource: HasMetadata = resource("some HasMetadata")
         // when
         watchable1.watcher?.eventReceived(Watcher.Action.ADDED, resource)
         // then
@@ -170,7 +168,7 @@ class ResourceWatchTest {
     @Test
     fun `#removeOperation should get invoked if watch notifies REMOVED`() {
         // given
-        val resource: HasMetadata = mock()
+        val resource: HasMetadata = resource("some HasMetadata")
         // when
         watchable1.watcher?.eventReceived(Watcher.Action.DELETED, resource)
         // then
@@ -181,7 +179,7 @@ class ResourceWatchTest {
     @Test
     fun `should not invoke any operation if watch notifies action that is not ADD or REMOVE`() {
         // given
-        val resource = mock<HasMetadata>()
+        val resource: HasMetadata = resource("some HasMetadata")
         // when
         watchable1.watcher?.eventReceived(Watcher.Action.ERROR, resource)
         // then

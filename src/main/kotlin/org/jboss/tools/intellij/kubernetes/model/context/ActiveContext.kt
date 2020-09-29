@@ -204,9 +204,10 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
 
     private fun addResource(resource: HasMetadata): Boolean {
         // we need to add resource to both providers (ex. all pods & only namespaced pods)
-        val addedToNonNamespaced = addResource(resource, nonNamespacedProviders[ResourceKind.new(resource)])
+        val kind = ResourceKind.new(resource)
+        val addedToNonNamespaced = addResource(resource, nonNamespacedProviders[kind])
         val addedToNamespaced = getCurrentNamespace() == resource.metadata?.namespace
-                && addResource(resource, namespacedProviders[ResourceKind.new(resource)])
+                && addResource(resource, namespacedProviders[kind])
         return addedToNonNamespaced ||
                 addedToNamespaced
     }

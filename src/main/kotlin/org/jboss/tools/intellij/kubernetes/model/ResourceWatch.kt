@@ -28,26 +28,26 @@ import java.util.concurrent.LinkedBlockingDeque
  * The model is only visible to this watcher by operations that the former provides (addOperation, removeOperation).
  */
 open class ResourceWatch(
-        private val addOperation: (HasMetadata) -> Unit,
-        private val removeOperation: (HasMetadata) -> Unit,
-        watchOperations: BlockingDeque<Runnable> = LinkedBlockingDeque(),
+        addOperation: (HasMetadata) -> Unit,
+        removeOperation: (HasMetadata) -> Unit,
+        protected val watchOperations: BlockingDeque<Runnable> = LinkedBlockingDeque(),
         watchOperationsRunner: Runnable = WatchOperationsRunner(watchOperations)
 ) {
     companion object {
-        @JvmField val WATCH_OPERATION_ENQUED: Watch = Watch {  }
+        @JvmField val WATCH_OPERATION_ENQUEUED: Watch = Watch {  }
     }
 
     protected open val watches: ConcurrentHashMap<ResourceKind<*>, Watch?> = ConcurrentHashMap()
-    protected val watchOperations: BlockingDeque<Runnable> = watchOperations
     private val executor: ExecutorService = Executors.newSingleThreadExecutor()
     private val watchOperationsRunner = executor.submit(watchOperationsRunner)
+    private val watcher = ResourceWatcher(addOperation, removeOperation)
 
     open fun watch(kind: ResourceKind<out HasMetadata>, supplier: () -> Watchable<Watch, Watcher<in HasMetadata>>?) {
+        logger<ResourceWatcher>().info("Watching $kind resources.")
         watches.computeIfAbsent(kind) {
-            val watcher = ResourceWatcher(addOperation, removeOperation)
             val watchOperation = WatchOperation(kind, supplier, watches, watcher)
             watchOperations.add(watchOperation) // enqueue watch operation
-            WATCH_OPERATION_ENQUED // Marker: watch operation submitted
+            WATCH_OPERATION_ENQUEUED // Marker: watch operation submitted
         }
     }
 
@@ -57,6 +57,7 @@ open class ResourceWatch(
 
     fun ignore(kind: ResourceKind<*>) {
         try {
+            logger<ResourceWatcher>().info("Closing watch for $kind resources.")
             val watch = watches[kind] ?: return
             watch.close()
             watches.remove(kind)
@@ -104,7 +105,7 @@ open class ResourceWatch(
             private val kind: ResourceKind<out R>,
             private val watchableSupplier: () -> Watchable<Watch, Watcher<in R>>?,
             private val watches: MutableMap<ResourceKind<*>, Watch?>,
-            private val watcher: ResourceWatcher<R>
+            private val watcher: ResourceWatcher
     ) : Runnable {
         override fun run() {
             try {
@@ -121,11 +122,12 @@ open class ResourceWatch(
         }
     }
 
-    class ResourceWatcher<R : HasMetadata>(
-            private val addOperation: (R) -> Unit,
-            private val removeOperation: (R) -> Unit
-    ) : Watcher<R> {
-        override fun eventReceived(action: Watcher.Action?, resource: R) {
+    class ResourceWatcher(
+            private val addOperation: (HasMetadata) -> Unit,
+            private val removeOperation: (HasMetadata) -> Unit
+    ) : Watcher<HasMetadata> {
+        override fun eventReceived(action: Watcher.Action?, resource: HasMetadata) {
+            logger<ResourceWatcher>().debug("Event: resource ${resource.metadata.name} in namespace ${resource.metadata.namespace} was $action.")
             when (action) {
                 Watcher.Action.ADDED ->
                     addOperation(resource)
