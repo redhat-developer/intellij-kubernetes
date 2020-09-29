@@ -35,7 +35,7 @@ abstract class NamespacedResourcesProvider<R : HasMetadata, C : KubernetesClient
         }
 
     override fun getAllResources(): Collection<R> {
-        synchronized(this) {
+        synchronized(allResources) {
             if (allResources.isEmpty()) {
                 if (namespace != null) {
                     allResources.addAll(loadAllResources(namespace!!))

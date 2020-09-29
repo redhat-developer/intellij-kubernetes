@@ -26,7 +26,7 @@ abstract class NonNamespacedResourcesProvider<R: HasMetadata, C: KubernetesClien
     : AbstractResourcesProvider<R>(), INonNamespacedResourcesProvider<R> {
 
     override fun getAllResources(): Collection<R> {
-        synchronized(this) {
+        synchronized(allResources) {
             if (allResources.isEmpty()) {
                 allResources.addAll(loadAllResources())
             }

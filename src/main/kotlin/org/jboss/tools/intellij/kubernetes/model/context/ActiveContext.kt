@@ -110,7 +110,7 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
         watch.watch(
                 provider.kind,
                 provider.getWatchable() as () -> Watchable<Watch, Watcher<in HasMetadata>>?)
-        return provider?.getAllResources()
+        return provider.getAllResources()
     }
 
     private fun setProvider(
@@ -138,25 +138,30 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
         }
     }
 
-    override fun getCustomResources(definition: CustomResourceDefinition)
-            : Collection<GenericResource> {
-        val kind = ResourceKind.new(definition.spec)
-        val resourcesIn = toResourcesIn(definition.spec)
-        val provider: IResourcesProvider<GenericResource> = getProvider(kind, resourcesIn)
-                ?: createCustomResourcesProvider(definition, kind)
-        return provider.getAllResources()
+    override fun getCustomResources(definition: CustomResourceDefinition): Collection<GenericResource> {
+            val kind = ResourceKind.new(definition.spec)
+            val resourcesIn = toResourcesIn(definition.spec)
+        synchronized(this) {
+            var provider: IResourcesProvider<GenericResource>? = getProvider(kind, resourcesIn)
+            if (provider == null) {
+                provider = createCustomResourcesProvider(definition, kind)
+            }
+            return provider.getAllResources()
+        }
     }
 
     private fun createCustomResourcesProvider(
             definition: CustomResourceDefinition,
             kind: ResourceKind<GenericResource>)
             : IResourcesProvider<GenericResource> {
-        val resourceIn = toResourcesIn(definition.spec)
-        val provider =
-                createCustomResourcesProvider(definition, getCurrentNamespace(), resourceIn)
-        watch.watch(kind, provider.getWatchable() as () -> Watchable<Watch, Watcher<in HasMetadata>>?)
-        setProvider(provider, kind, resourceIn)
-        return provider
+        synchronized(this) {
+            val resourceIn = toResourcesIn(definition.spec)
+            val provider =
+                    createCustomResourcesProvider(definition, getCurrentNamespace(), resourceIn)
+            watch.watch(kind, provider.getWatchable() as () -> Watchable<Watch, Watcher<in HasMetadata>>?)
+            setProvider(provider, kind, resourceIn)
+            return provider
+        }
     }
 
     protected open fun createCustomResourcesProvider(
