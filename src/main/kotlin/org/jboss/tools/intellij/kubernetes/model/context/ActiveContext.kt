@@ -48,7 +48,8 @@ interface IActiveContext<N: HasMetadata, C: KubernetesClient>: IContext {
     fun getCustomResources(definition: CustomResourceDefinition): Collection<GenericResource>
     fun add(resource: HasMetadata): Boolean
     fun remove(resource: HasMetadata): Boolean
-    fun invalidate(kind: Any)
+    fun invalidate(kind: ResourceKind<*>)
+    fun invalidate(resource: HasMetadata)
     fun close()
 }
 
@@ -278,30 +279,18 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
         nonNamespacedProviders.values.forEach { it.invalidate() }
     }
 
-    override fun invalidate(resource: Any) {
+    override fun invalidate(resource: HasMetadata) {
         when(resource) {
-            is ResourceKind<*> ->
-                invalidate(resource)
             is CustomResourceDefinition ->
-                invalidate(resource)
-            is HasMetadata ->
-                invalidate(resource)
+                invalidateProviders(ResourceKind.new(resource.spec), resource)
+            else ->
+                invalidateProviders(ResourceKind.new(resource), resource)
         }
     }
 
-    private fun invalidate(kind: ResourceKind<*>) {
+    override fun invalidate(kind: ResourceKind<*>) {
         namespacedProviders[kind]?.invalidate()
         nonNamespacedProviders[kind]?.invalidate()
-    }
-
-    private fun invalidate(resource: HasMetadata) {
-        val kind = ResourceKind.new(resource)
-        invalidateProviders(kind, resource)
-    }
-
-    private fun invalidate(resource: CustomResourceDefinition) {
-        val kind = ResourceKind.new(resource.spec)
-        invalidateProviders(kind, resource)
     }
 
     private fun invalidateProviders(kind: ResourceKind<out HasMetadata>, resource: HasMetadata) {
