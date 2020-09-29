@@ -38,7 +38,7 @@ open class ResourceWatch(
     }
 
     protected open val watches: ConcurrentHashMap<ResourceKind<*>, Watch?> = ConcurrentHashMap()
-    private val executor: ExecutorService = Executors.newSingleThreadExecutor()
+    private val executor: ExecutorService = Executors.newWorkStealingPool(10)
     private val watchOperationsRunner = executor.submit(watchOperationsRunner)
     private val watcher = ResourceWatcher(addOperation, removeOperation)
 
@@ -117,7 +117,7 @@ open class ResourceWatch(
                     watches[kind] = watch // replace placeholder
                 }
             } catch (e: Exception) {
-                throw ResourceException("Could not watch resource ${kind.kind}.", e)
+                logger<ResourceWatcher>().error("Could not watch resource ${kind.kind}.", e)
             }
         }
     }
