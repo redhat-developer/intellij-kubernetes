@@ -293,7 +293,7 @@ class KubernetesContextTest {
 	fun `#getCustomResources should query CustomResourceProvider`() {
 		// given
 		// when
-		context.getCustomResources(namespacedDefinition)
+		context.getResources(namespacedDefinition)
 		// then
 		verify(namespacedCustomResourcesProvider).getAllResources()
 	}
@@ -302,8 +302,8 @@ class KubernetesContextTest {
 	fun `#getCustomResources should create CustomResourceProvider once and reuse it`() {
 		// given
 		// when
-		context.getCustomResources(namespacedDefinition)
-		context.getCustomResources(namespacedDefinition)
+		context.getResources(namespacedDefinition)
+		context.getResources(namespacedDefinition)
 		// then
 		verify(context, times(1)).createCustomResourcesProvider(eq(namespacedDefinition), any(), any())
 	}
@@ -312,8 +312,8 @@ class KubernetesContextTest {
 	fun `#getCustomResources should create CustomResourceProvider for each unique definition`() {
 		// given
 		// when
-		context.getCustomResources(namespacedDefinition)
-		context.getCustomResources(clusterwideDefinition)
+		context.getResources(namespacedDefinition)
+		context.getResources(clusterwideDefinition)
 		// then
 		verify(context, times(1)).createCustomResourcesProvider(eq(namespacedDefinition), any(), any())
 		verify(context, times(1)).createCustomResourcesProvider(eq(clusterwideDefinition), any(), any())
@@ -323,7 +323,7 @@ class KubernetesContextTest {
 	fun `#getCustomResources should watch watchable provided by new resources provider`() {
 		// given
 		// when
-		context.getCustomResources(namespacedDefinition)
+		context.getResources(namespacedDefinition)
 		// then
 		verify(context, times(1)).createCustomResourcesProvider(eq(namespacedDefinition), any(), any())
 		verify(namespacedCustomResourcesProvider, times(1)).getWatchable()
@@ -336,8 +336,8 @@ class KubernetesContextTest {
 	fun `#getCustomResources should only watch when creating new provider, not when reusing existing one`() {
 		// given
 		// when
-		context.getCustomResources(namespacedDefinition)
-		context.getCustomResources(namespacedDefinition)
+		context.getResources(namespacedDefinition)
+		context.getResources(namespacedDefinition)
 		// then
 		verify(context.watch, times(1)).watch(namespacedCustomResourcesProvider.kind, watchableSupplier1
 				as () -> Watchable<Watch, Watcher<in HasMetadata>>?)
@@ -349,7 +349,7 @@ class KubernetesContextTest {
 		val bogusScope = customResourceDefinition(
 				"bogus scope","version1", "group1", "bogus-scope-crd", "Bogus")
 		// when
-		context.getCustomResources(bogusScope)
+		context.getResources(bogusScope)
 		// then
 	}
 

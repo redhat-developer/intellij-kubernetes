@@ -112,7 +112,7 @@ class ResourceModelTest {
         // when
         model.getResources(definition)
         // then
-        verify(activeContext).getCustomResources(definition)
+        verify(activeContext).getResources(definition)
     }
 
     @Test

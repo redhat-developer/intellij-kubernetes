@@ -99,7 +99,7 @@ open class ResourceModel(
 
     fun getResources(definition: CustomResourceDefinition): Collection<HasMetadata> {
         try {
-            return contexts.current?.getCustomResources(definition) ?: emptyList()
+            return contexts.current?.getResources(definition) ?: emptyList()
         } catch(e: IllegalArgumentException) {
             throw ResourceException("Could not get custom resources for ${definition.metadata}: ${e.cause}", e)
         }

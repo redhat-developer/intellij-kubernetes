@@ -45,7 +45,7 @@ interface IActiveContext<N: HasMetadata, C: KubernetesClient>: IContext {
     fun setCurrentNamespace(namespace: String)
     fun getCurrentNamespace(): String?
     fun <R: HasMetadata> getResources(kind: ResourceKind<R>, resourcesIn: ResourcesIn): Collection<R>
-    fun getCustomResources(definition: CustomResourceDefinition): Collection<GenericResource>
+    fun getResources(definition: CustomResourceDefinition): Collection<GenericResource>
     fun add(resource: HasMetadata): Boolean
     fun remove(resource: HasMetadata): Boolean
     fun invalidate(kind: ResourceKind<*>)
@@ -139,7 +139,7 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
         }
     }
 
-    override fun getCustomResources(definition: CustomResourceDefinition): Collection<GenericResource> {
+    override fun getResources(definition: CustomResourceDefinition): Collection<GenericResource> {
             val kind = ResourceKind.new(definition.spec)
             val resourcesIn = toResourcesIn(definition.spec)
         synchronized(this) {
