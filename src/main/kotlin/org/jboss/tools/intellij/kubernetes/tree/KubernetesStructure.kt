@@ -11,7 +11,9 @@
 package org.jboss.tools.intellij.kubernetes.tree
 
 import com.intellij.ide.util.treeView.NodeDescriptor
+import com.intellij.ui.tree.LeafState
 import io.fabric8.kubernetes.api.model.ConfigMap
+import io.fabric8.kubernetes.api.model.Endpoints
 import io.fabric8.kubernetes.api.model.Namespace
 import io.fabric8.kubernetes.api.model.Node
 import io.fabric8.kubernetes.api.model.Pod
@@ -21,6 +23,8 @@ import io.fabric8.kubernetes.api.model.apiextensions.CustomResourceDefinition
 import io.fabric8.kubernetes.api.model.apps.DaemonSet
 import io.fabric8.kubernetes.api.model.apps.Deployment
 import io.fabric8.kubernetes.api.model.apps.StatefulSet
+import io.fabric8.kubernetes.api.model.discovery.Endpoint
+import io.fabric8.kubernetes.api.model.storage.StorageClass
 import org.jboss.tools.intellij.kubernetes.model.IResourceModel
 import org.jboss.tools.intellij.kubernetes.model.ResourceException
 import org.jboss.tools.intellij.kubernetes.model.resource.PodForDaemonSet
@@ -45,6 +49,7 @@ import org.jboss.tools.intellij.kubernetes.model.resource.kubernetes.SecretsProv
 import org.jboss.tools.intellij.kubernetes.model.resource.kubernetes.ServicesProvider
 import org.jboss.tools.intellij.kubernetes.model.resource.kubernetes.StatefulSetsProvider
 import org.jboss.tools.intellij.kubernetes.model.resource.kubernetes.StorageClassesProvider
+import org.jboss.tools.intellij.kubernetes.model.resource.kubernetes.custom.GenericResource
 import org.jboss.tools.intellij.kubernetes.model.resourceName
 import org.jboss.tools.intellij.kubernetes.tree.KubernetesStructure.Folders.CONFIGURATION
 import org.jboss.tools.intellij.kubernetes.tree.KubernetesStructure.Folders.CONFIG_MAPS
@@ -482,5 +487,15 @@ class KubernetesStructure(model: IResourceModel) : AbstractTreeStructureContribu
 					parentElements { CUSTOM_RESOURCES_DEFINITIONS }
 				}
 		)
+	}
+
+	override fun getLeafState(element: Any): LeafState? {
+		return when(element) {
+			is Namespace,
+			is Endpoint,
+			is StorageClass,
+			is GenericResource -> LeafState.ALWAYS
+			else -> null
+		}
 	}
 }

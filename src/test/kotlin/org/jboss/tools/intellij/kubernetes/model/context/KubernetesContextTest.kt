@@ -166,7 +166,7 @@ class KubernetesContextTest {
 	}
 
 	@Test
-	fun `#setCurrentNamespace should remove all kinds of namespaced providers`() {
+	fun `#setCurrentNamespace should remove all namespaced providers`() {
 		// given
 		val captor =
 				argumentCaptor<List<ResourceKind<out HasMetadata>>>()
@@ -319,30 +319,6 @@ class KubernetesContextTest {
 		verify(context, times(1)).createCustomResourcesProvider(eq(clusterwideDefinition), any(), any())
 	}
 
-	@Test
-	fun `#getCustomResources should watch watchable provided by new resources provider`() {
-		// given
-		// when
-		context.getResources(namespacedDefinition)
-		// then
-		verify(context, times(1)).createCustomResourcesProvider(eq(namespacedDefinition), any(), any())
-		verify(namespacedCustomResourcesProvider, times(1)).getWatchable()
-		verify(context.watch, times(1)).watch(namespacedCustomResourcesProvider.kind, watchableSupplier1
-				as () -> Watchable<Watch, Watcher<in HasMetadata>>?)
-	}
-
-
-	@Test
-	fun `#getCustomResources should only watch when creating new provider, not when reusing existing one`() {
-		// given
-		// when
-		context.getResources(namespacedDefinition)
-		context.getResources(namespacedDefinition)
-		// then
-		verify(context.watch, times(1)).watch(namespacedCustomResourcesProvider.kind, watchableSupplier1
-				as () -> Watchable<Watch, Watcher<in HasMetadata>>?)
-	}
-
 	@Test(expected = IllegalArgumentException::class)
 	fun `#getCustomResources should throw if scope is unknown`() {
 		// given
@@ -351,6 +327,32 @@ class KubernetesContextTest {
 		// when
 		context.getResources(bogusScope)
 		// then
+	}
+
+	@Test
+	fun `#watch should watch watchable provided by namespaced resource provider`() {
+		// given
+		givenCustomResourceProvider(namespacedDefinition,
+				customResourceDefinitionsProvider,
+				namespacedCustomResourcesProvider)
+		// when
+		context.watch(ResourceKind.new(namespacedDefinition.spec))
+		// then
+		verify(context.watch, times(1)).watch(namespacedCustomResourcesProvider.kind, watchableSupplier1
+				as () -> Watchable<Watch, Watcher<in HasMetadata>>?)
+	}
+
+	@Test
+	fun `#watch should watch watchable provided by non-namespaced resource provider`() {
+		// given
+		givenCustomResourceProvider(clusterwideDefinition,
+				customResourceDefinitionsProvider,
+				nonNamespacedCustomResourcesProvider)
+		// when
+		context.watch(ResourceKind.new(clusterwideDefinition.spec))
+		// then
+		verify(context.watch, times(1)).watch(nonNamespacedCustomResourcesProvider.kind, watchableSupplier2
+				as () -> Watchable<Watch, Watcher<in HasMetadata>>?)
 	}
 
 	@Test

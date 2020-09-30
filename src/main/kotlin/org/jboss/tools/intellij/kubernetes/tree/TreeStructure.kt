@@ -18,18 +18,14 @@ import com.intellij.ide.util.treeView.PresentableNodeDescriptor
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.extensions.ExtensionPointName
 import com.intellij.openapi.util.IconLoader
-import com.intellij.ui.LoadingNode
 import com.intellij.ui.tree.LeafState
 import io.fabric8.kubernetes.api.model.HasMetadata
 import org.jboss.tools.intellij.kubernetes.model.IResourceModel
+import org.jboss.tools.intellij.kubernetes.model.context.IActiveContext
 import org.jboss.tools.intellij.kubernetes.model.context.IContext
 import org.jboss.tools.intellij.kubernetes.model.resource.ResourceKind
-import java.beans.PropertyChangeListener
 import java.util.*
 import javax.swing.Icon
-import javax.swing.SwingWorker
-import javax.swing.tree.DefaultMutableTreeNode
-import javax.swing.tree.DefaultTreeModel
 
 
 /**
@@ -89,10 +85,6 @@ open class TreeStructure(
         }
     }
 
-    override fun isAlwaysLeaf(element: Any): Boolean {
-        return false
-    }
-
     override fun createDescriptor(element: Any, parent: NodeDescriptor<*>?): NodeDescriptor<*> {
         val descriptor: NodeDescriptor<*>? =
                 getValidContributions()
@@ -131,6 +123,20 @@ open class TreeStructure(
 
     override fun isToBuildChildrenInBackground(element: Any) = true
 
+    override fun isAlwaysLeaf(element: Any): Boolean {
+        return false
+    }
+
+    override fun getLeafState(element: Any): LeafState {
+        return if (element is IContext
+                && element !is IActiveContext<*, *>) {
+            LeafState.ALWAYS
+        } else {
+            val leafState = contributions.find { it.getLeafState(element) != null }?.getLeafState(element)
+            return leafState ?: LeafState.NEVER
+        }
+    }
+
     open class ContextDescriptor<C : IContext>(
             context: C,
             parent: NodeDescriptor<*>? = null,
@@ -167,9 +173,10 @@ open class TreeStructure(
         }
     }
 
-    private class FolderDescriptor(category: Folder, parent: NodeDescriptor<*>?, model: IResourceModel)
+    private class FolderDescriptor(element: Folder, parent: NodeDescriptor<*>?, model: IResourceModel)
         : Descriptor<Folder>(
-            category, parent,
+            element,
+            parent,
             model = model
     ) {
         override fun isMatching(element: Any?): Boolean {
@@ -183,6 +190,11 @@ open class TreeStructure(
 
         override fun getLabel(element: Folder): String {
             return element.label
+        }
+
+        override fun watchResources() {
+            val kind = element?.kind ?: return
+            model.watch(kind)
         }
     }
 
@@ -247,6 +259,9 @@ open class TreeStructure(
                 presentation.setIcon(icon)
             }
         }
+
+        open fun watchResources() {}
+
     }
 
     data class Folder(val label: String, val kind: ResourceKind<out HasMetadata>?)

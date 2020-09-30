@@ -34,6 +34,7 @@ import io.fabric8.kubernetes.api.model.extensions.Ingress
 import io.fabric8.kubernetes.api.model.storage.StorageClass
 import org.jboss.tools.intellij.kubernetes.model.IResourceModel
 import org.jboss.tools.intellij.kubernetes.model.context.KubernetesContext
+import org.jboss.tools.intellij.kubernetes.model.resource.ResourceKind
 import org.jboss.tools.intellij.kubernetes.model.resource.kubernetes.custom.GenericResource
 import org.jboss.tools.intellij.kubernetes.model.util.getContainers
 import org.jboss.tools.intellij.kubernetes.model.util.isRunning
@@ -126,7 +127,7 @@ object KubernetesDescriptors {
 	}
 
 	private class CustomResourceDefinitionDescriptor(
-			private val definition: CustomResourceDefinition,
+			definition: CustomResourceDefinition,
 			parent: NodeDescriptor<*>?,
 			model: IResourceModel)
 		: Descriptor<CustomResourceDefinition>(
@@ -135,17 +136,27 @@ object KubernetesDescriptors {
 			model
 	) {
 		override fun getLabel(element: CustomResourceDefinition): String? {
-			return if (definition.spec.names.plural.isNotBlank()) {
-				definition.spec.names.plural
-			} else {
-				definition.metadata.name
+			return when {
+				element.spec.names.plural.isNotBlank() -> element.spec.names.plural
+				else -> element.metadata.name
 			}
 		}
 
 		override fun postprocess(presentation: PresentationData) {
-			presentation.addText(getLabel(definition), SimpleTextAttributes.REGULAR_ATTRIBUTES);
-			presentation.addText(" (${definition.spec.group}/${definition.spec.version})", SimpleTextAttributes.GRAYED_SMALL_ATTRIBUTES);
+			if (element == null) {
+				return
+			}
+			presentation.addText(getLabel(element!!), SimpleTextAttributes.REGULAR_ATTRIBUTES)
+			presentation.addText(" (${element!!.spec.group}/${element!!.spec.version})", SimpleTextAttributes.GRAYED_SMALL_ATTRIBUTES)
 		}
+
+		override fun watchResources() {
+			if (element == null) {
+				return
+			}
+			model.watch(ResourceKind.new(element!!.spec))
+		}
+
 	}
 
 	fun createPodDescriptorsFactories(pod: Pod)

@@ -46,6 +46,7 @@ interface IActiveContext<N: HasMetadata, C: KubernetesClient>: IContext {
     fun getCurrentNamespace(): String?
     fun <R: HasMetadata> getResources(kind: ResourceKind<R>, resourcesIn: ResourcesIn): Collection<R>
     fun getResources(definition: CustomResourceDefinition): Collection<GenericResource>
+    fun watch(kind: ResourceKind<out HasMetadata>)
     fun add(resource: HasMetadata): Boolean
     fun remove(resource: HasMetadata): Boolean
     fun invalidate(kind: ResourceKind<*>)
@@ -108,9 +109,6 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
 
     override fun <R: HasMetadata> getResources(kind: ResourceKind<R>, resourcesIn: ResourcesIn): Collection<R> {
         val provider = getProvider(kind, resourcesIn) ?: return emptyList()
-        watch.watch(
-                provider.kind,
-                provider.getWatchable() as () -> Watchable<Watch, Watcher<in HasMetadata>>?)
         return provider.getAllResources()
     }
 
@@ -159,7 +157,6 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
             val resourceIn = toResourcesIn(definition.spec)
             val provider =
                     createCustomResourcesProvider(definition, getCurrentNamespace(), resourceIn)
-            watch.watch(kind, provider.getWatchable() as () -> Watchable<Watch, Watcher<in HasMetadata>>?)
             setProvider(provider, kind, resourceIn)
             return provider
         }
@@ -197,6 +194,18 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
             else -> throw IllegalArgumentException(
                     "Could not determine scope in spec for custom resource definition ${spec.names.kind}")
         }
+    }
+
+    override fun watch(kind: ResourceKind<out HasMetadata>) {
+        watch(namespacedProviders[kind])
+        watch(nonNamespacedProviders[kind])
+    }
+
+    private fun watch(provider: IResourcesProvider<*>?) {
+        if (provider == null) {
+            return
+        }
+        watch.watch(provider.kind, provider.getWatchable() as () -> Watchable<Watch, Watcher<in HasMetadata>>?)
     }
 
     override fun add(resource: HasMetadata): Boolean {

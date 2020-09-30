@@ -31,6 +31,7 @@ interface IResourceModel {
     fun getCurrentNamespace(): String?
     fun <R: HasMetadata> resources(kind: ResourceKind<R>): Namespaceable<R>
     fun resources(definition: CustomResourceDefinition): ListableCustomResources
+    fun watch(kind: ResourceKind<out HasMetadata>)
     fun invalidate(element: Any?)
     fun addListener(listener: ModelChangeObservable.IResourceChangeListener)
 }
@@ -103,6 +104,10 @@ open class ResourceModel(
         } catch(e: IllegalArgumentException) {
             throw ResourceException("Could not get custom resources for ${definition.metadata}: ${e.cause}", e)
         }
+    }
+
+    override fun watch(kind: ResourceKind<out HasMetadata>) {
+        contexts.current?.watch(kind)
     }
 
     override fun invalidate(element: Any?) {

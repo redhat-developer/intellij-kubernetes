@@ -11,6 +11,7 @@
 package org.jboss.tools.intellij.kubernetes.tree
 
 import com.intellij.ide.util.treeView.NodeDescriptor
+import com.intellij.ui.tree.LeafState
 import io.fabric8.kubernetes.api.model.HasMetadata
 import org.jboss.tools.intellij.kubernetes.model.IResourceModel
 
@@ -24,7 +25,12 @@ abstract class AbstractTreeStructureContribution(override val model: IResourceMo
         return ElementNode<T>().apply(initializer)
     }
 
+    override fun getLeafState(element: Any): LeafState? {
+        return null
+    }
+
     class ElementNode<T> {
+
         private var parentElementsProvider: ((element: T) -> Any?)? = null
         private var childElementsProvider: ((element: T) -> Collection<Any>)? = null
         private lateinit var anchorProvider: (element: Any) -> Boolean
