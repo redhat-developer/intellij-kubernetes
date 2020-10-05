@@ -1,0 +1,1883 @@
+    {
+      "apiVersion": "v1",
+      "kind": "Pod",
+      "metadata": {
+        "annotations": {
+          "cluster-autoscaler.kubernetes.io/safe-to-evict": "false",
+          "k8s.v1.cni.cncf.io/network-status": "[{\n    \"name\": \"openshift-sdn\",\n    \"interface\": \"eth0\",\n    \"ips\": [\n        \"10.116.0.59\"\n    ],\n    \"default\": true,\n    \"dns\": {}\n}]",
+          "k8s.v1.cni.cncf.io/networks-status": "[{\n    \"name\": \"openshift-sdn\",\n    \"interface\": \"eth0\",\n    \"ips\": [\n        \"10.116.0.59\"\n    ],\n    \"default\": true,\n    \"dns\": {}\n}]",
+          "openshift.io/scc": "restricted"
+        },
+        "creationTimestamp": "2020-10-01T15:33:22Z",
+        "generateName": "tekton-pipelines-controller-54b4f8b94d-",
+        "labels": {
+          "app": "tekton-pipelines-controller",
+          "app.kubernetes.io/component": "controller",
+          "app.kubernetes.io/name": "tekton-pipelines",
+          "pipeline.tekton.dev/release": "v0.11.3",
+          "pod-template-hash": "54b4f8b94d",
+          "version": "v0.11.3"
+        },
+        "managedFields": [
+          {
+            "apiVersion": "v1",
+            "fieldsType": "FieldsV1",
+            "fieldsV1": {
+              "f:metadata": {
+                "f:annotations": {
+                  ".": {
+                  },
+                  "f:cluster-autoscaler.kubernetes.io/safe-to-evict": {
+                  }
+                },
+                "f:generateName": {
+                },
+                "f:labels": {
+                  ".": {
+                  },
+                  "f:app": {
+                  },
+                  "f:app.kubernetes.io/component": {
+                  },
+                  "f:app.kubernetes.io/name": {
+                  },
+                  "f:pipeline.tekton.dev/release": {
+                  },
+                  "f:pod-template-hash": {
+                  },
+                  "f:version": {
+                  }
+                },
+                "f:ownerReferences": {
+                  ".": {
+                  },
+                  "k:{\"uid\":\"e3017e68-4218-4b39-8b8a-9c69e54fd03b\"}": {
+                    ".": {
+                    },
+                    "f:apiVersion": {
+                    },
+                    "f:blockOwnerDeletion": {
+                    },
+                    "f:controller": {
+                    },
+                    "f:kind": {
+                    },
+                    "f:name": {
+                    },
+                    "f:uid": {
+                    }
+                  }
+                }
+              },
+              "f:spec": {
+                "f:containers": {
+                  "k:{\"name\":\"tekton-pipelines-controller\"}": {
+                    ".": {
+                    },
+                    "f:args": {
+                    },
+                    "f:env": {
+                      ".": {
+                      },
+                      "k:{\"name\":\"CONFIG_ARTIFACT_BUCKET_NAME\"}": {
+                        ".": {
+                        },
+                        "f:name": {
+                        },
+                        "f:value": {
+                        }
+                      },
+                      "k:{\"name\":\"CONFIG_ARTIFACT_PVC_NAME\"}": {
+                        ".": {
+                        },
+                        "f:name": {
+                        },
+                        "f:value": {
+                        }
+                      },
+                      "k:{\"name\":\"CONFIG_LOGGING_NAME\"}": {
+                        ".": {
+                        },
+                        "f:name": {
+                        },
+                        "f:value": {
+                        }
+                      },
+                      "k:{\"name\":\"CONFIG_OBSERVABILITY_NAME\"}": {
+                        ".": {
+                        },
+                        "f:name": {
+                        },
+                        "f:value": {
+                        }
+                      },
+                      "k:{\"name\":\"METRICS_DOMAIN\"}": {
+                        ".": {
+                        },
+                        "f:name": {
+                        },
+                        "f:value": {
+                        }
+                      },
+                      "k:{\"name\":\"SYSTEM_NAMESPACE\"}": {
+                        ".": {
+                        },
+                        "f:name": {
+                        },
+                        "f:valueFrom": {
+                          ".": {
+                          },
+                          "f:fieldRef": {
+                            ".": {
+                            },
+                            "f:apiVersion": {
+                            },
+                            "f:fieldPath": {
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "f:image": {
+                    },
+                    "f:imagePullPolicy": {
+                    },
+                    "f:name": {
+                    },
+                    "f:resources": {
+                    },
+                    "f:terminationMessagePath": {
+                    },
+                    "f:terminationMessagePolicy": {
+                    },
+                    "f:volumeMounts": {
+                      ".": {
+                      },
+                      "k:{\"mountPath\":\"/etc/config-logging\"}": {
+                        ".": {
+                        },
+                        "f:mountPath": {
+                        },
+                        "f:name": {
+                        }
+                      }
+                    }
+                  }
+                },
+                "f:dnsPolicy": {
+                },
+                "f:enableServiceLinks": {
+                },
+                "f:restartPolicy": {
+                },
+                "f:schedulerName": {
+                },
+                "f:securityContext": {
+                },
+                "f:serviceAccount": {
+                },
+                "f:serviceAccountName": {
+                },
+                "f:terminationGracePeriodSeconds": {
+                },
+                "f:volumes": {
+                  ".": {
+                  },
+                  "k:{\"name\":\"config-logging\"}": {
+                    ".": {
+                    },
+                    "f:configMap": {
+                      ".": {
+                      },
+                      "f:defaultMode": {
+                      },
+                      "f:name": {
+                      }
+                    },
+                    "f:name": {
+                    }
+                  }
+                }
+              }
+            },
+            "manager": "kube-controller-manager",
+            "operation": "Update",
+            "time": "2020-10-01T15:33:22Z"
+          },
+          {
+            "apiVersion": "v1",
+            "fieldsType": "FieldsV1",
+            "fieldsV1": {
+              "f:metadata": {
+                "f:annotations": {
+                  "f:k8s.v1.cni.cncf.io/network-status": {
+                  },
+                  "f:k8s.v1.cni.cncf.io/networks-status": {
+                  }
+                }
+              }
+            },
+            "manager": "multus",
+            "operation": "Update",
+            "time": "2020-10-01T15:33:25Z"
+          },
+          {
+            "apiVersion": "v1",
+            "fieldsType": "FieldsV1",
+            "fieldsV1": {
+              "f:status": {
+                "f:conditions": {
+                  "k:{\"type\":\"ContainersReady\"}": {
+                    ".": {
+                    },
+                    "f:lastProbeTime": {
+                    },
+                    "f:lastTransitionTime": {
+                    },
+                    "f:status": {
+                    },
+                    "f:type": {
+                    }
+                  },
+                  "k:{\"type\":\"Initialized\"}": {
+                    ".": {
+                    },
+                    "f:lastProbeTime": {
+                    },
+                    "f:lastTransitionTime": {
+                    },
+                    "f:status": {
+                    },
+                    "f:type": {
+                    }
+                  },
+                  "k:{\"type\":\"Ready\"}": {
+                    ".": {
+                    },
+                    "f:lastProbeTime": {
+                    },
+                    "f:lastTransitionTime": {
+                    },
+                    "f:status": {
+                    },
+                    "f:type": {
+                    }
+                  }
+                },
+                "f:containerStatuses": {
+                },
+                "f:hostIP": {
+                },
+                "f:phase": {
+                },
+                "f:podIP": {
+                },
+                "f:podIPs": {
+                  ".": {
+                  },
+                  "k:{\"ip\":\"10.116.0.59\"}": {
+                    ".": {
+                    },
+                    "f:ip": {
+                    }
+                  }
+                },
+                "f:startTime": {
+                }
+              }
+            },
+            "manager": "kubelet",
+            "operation": "Update",
+            "time": "2020-10-01T15:33:28Z"
+          }
+        ],
+        "name": "tekton-pipelines-controller-54b4f8b94d-rh89s",
+        "namespace": "openshift-pipelines",
+        "ownerReferences": [
+          {
+            "apiVersion": "apps/v1",
+            "blockOwnerDeletion": true,
+            "controller": true,
+            "kind": "ReplicaSet",
+            "name": "tekton-pipelines-controller-54b4f8b94d",
+            "uid": "e3017e68-4218-4b39-8b8a-9c69e54fd03b"
+          }
+        ],
+        "resourceVersion": "265379",
+        "selfLink": "/api/v1/namespaces/openshift-pipelines/pods/tekton-pipelines-controller-54b4f8b94d-rh89s",
+        "uid": "6be39eeb-7c8e-455d-b1b9-b77421fdc45e"
+      },
+      "spec": {
+        "containers": [
+          {
+            "args": [
+              "-kubeconfig-writer-image",
+              "registry.redhat.io/openshift-pipelines-tech-preview/pipelines-kubeconfigwriter-rhel8@sha256:2b20a5e91963e12d1eb386e3d45606eaa74c9b2db88140ca9e36d7dc9c143216",
+              "-creds-image",
+              "registry.redhat.io/openshift-pipelines-tech-preview/pipelines-creds-init-rhel8@sha256:f5cd703289d2df8bc8ae822b91491b0f47427a068456fcaff6cdd30bf34e4aea",
+              "-git-image",
+              "registry.redhat.io/openshift-pipelines-tech-preview/pipelines-git-init-rhel8@sha256:bb744988e87cc556873098885ee1a7fc1ef7b6c1ea24e3a4d7a5e518edb22838",
+              "-nop-image",
+              "registry.redhat.io/openshift-pipelines-tech-preview/pipelines-nop-rhel8@sha256:156f7a72ac21705d830c0d359fa32a6420a3ab58f1994438932d707969748ad1",
+              "-shell-image",
+              "registry.access.redhat.com/ubi8/ubi-minimal:latest",
+              "-entrypoint-image",
+              "registry.redhat.io/openshift-pipelines-tech-preview/pipelines-entrypoint-rhel8@sha256:09e65d4ebdca39769a9e6dadb57f9a51ec6ac3cd6b0b1261d37183e00d5681c0",
+              "-imagedigest-exporter-image",
+              "registry.redhat.io/openshift-pipelines-tech-preview/pipelines-imagedigestexporter-rhel8@sha256:77f27990bbc1bdc7fb1fe0bb997c7c1f715e43aa4ba361521b20466614a714f9",
+              "-pr-image",
+              "registry.redhat.io/openshift-pipelines-tech-preview/pipelines-pullrequest-init-rhel8@sha256:5d8520a6309fa2b14fbd153d17ef312a37c48816e3dc7aee52fd5a0b88535a29",
+              "-build-gcs-fetcher-image",
+              "registry.redhat.io/openshift-pipelines-tech-preview/pipelines-gcs-fetcher-rhel8@sha256:bcb6174c01c01060f341407eac1cf3059f31c850e0a45b3954370c204a51e4cc"
+            ],
+            "env": [
+              {
+                "name": "SYSTEM_NAMESPACE",
+                "valueFrom": {
+                  "fieldRef": {
+                    "apiVersion": "v1",
+                    "fieldPath": "metadata.namespace"
+                  }
+                }
+              },
+              {
+                "name": "CONFIG_LOGGING_NAME",
+                "value": "config-logging"
+              },
+              {
+                "name": "CONFIG_OBSERVABILITY_NAME",
+                "value": "config-observability"
+              },
+              {
+                "name": "CONFIG_ARTIFACT_BUCKET_NAME",
+                "value": "config-artifact-bucket"
+              },
+              {
+                "name": "CONFIG_ARTIFACT_PVC_NAME",
+                "value": "config-artifact-pvc"
+              },
+              {
+                "name": "METRICS_DOMAIN",
+                "value": "tekton.dev/pipeline"
+              }
+            ],
+            "image": "registry.redhat.io/openshift-pipelines-tech-preview/pipelines-controller-rhel8@sha256:a6863246b9dbf7ea1b5142b519331962203a3fa92fe1fb2fa7a110816e88f17f",
+            "imagePullPolicy": "IfNotPresent",
+            "name": "tekton-pipelines-controller",
+            "resources": {
+            },
+            "securityContext": {
+              "capabilities": {
+                "drop": [
+                  "KILL",
+                  "MKNOD",
+                  "SETGID",
+                  "SETUID"
+                ]
+              },
+              "runAsUser": 1000570000
+            },
+            "terminationMessagePath": "/dev/termination-log",
+            "terminationMessagePolicy": "File",
+            "volumeMounts": [
+              {
+                "mountPath": "/etc/config-logging",
+                "name": "config-logging"
+              },
+              {
+                "mountPath": "/var/run/secrets/kubernetes.io/serviceaccount",
+                "name": "tekton-pipelines-controller-token-2tjnz",
+                "readOnly": true
+              }
+            ]
+          }
+        ],
+        "dnsPolicy": "ClusterFirst",
+        "enableServiceLinks": true,
+        "imagePullSecrets": [
+          {
+            "name": "tekton-pipelines-controller-dockercfg-lzclj"
+          }
+        ],
+        "nodeName": "crc-zqfk6-master-0",
+        "priority": 0,
+        "restartPolicy": "Always",
+        "schedulerName": "default-scheduler",
+        "securityContext": {
+          "fsGroup": 1000570000,
+          "seLinuxOptions": {
+            "level": "s0:c24,c9"
+          }
+        },
+        "serviceAccount": "tekton-pipelines-controller",
+        "serviceAccountName": "tekton-pipelines-controller",
+        "terminationGracePeriodSeconds": 30,
+        "tolerations": [
+          {
+            "effect": "NoExecute",
+            "key": "node.kubernetes.io/not-ready",
+            "operator": "Exists",
+            "tolerationSeconds": 300
+          },
+          {
+            "effect": "NoExecute",
+            "key": "node.kubernetes.io/unreachable",
+            "operator": "Exists",
+            "tolerationSeconds": 300
+          }
+        ],
+        "volumes": [
+          {
+            "configMap": {
+              "defaultMode": 420,
+              "name": "config-logging"
+            },
+            "name": "config-logging"
+          },
+      {
+        "name": "tekton-pipelines-controller-token-2tjnz",
+        "secret": {
+          "defaultMode": 420,
+          "secretName": "tekton-pipelines-controller-token-2tjnz"
+        }
+      }
+    ]
+  },
+  "status": {
+    "conditions": [
+      {
+        "lastProbeTime": null,
+        "lastTransitionTime": "2020-10-01T15:33:22Z",
+        "status": "True",
+        "type": "Initialized"
+      },
+      {
+        "lastProbeTime": null,
+        "lastTransitionTime": "2020-10-01T15:33:28Z",
+        "status": "True",
+        "type": "Ready"
+      },
+      {
+        "lastProbeTime": null,
+        "lastTransitionTime": "2020-10-01T15:33:28Z",
+        "status": "True",
+        "type": "ContainersReady"
+      },
+      {
+        "lastProbeTime": null,
+        "lastTransitionTime": "2020-10-01T15:33:22Z",
+        "status": "True",
+        "type": "PodScheduled"
+      }
+    ],
+    "containerStatuses": [
+      {
+        "containerID": "cri-o://7145c538d8e9f8f47d843300b653cc7d351be1643e984f1602ff362dc210f179",
+        "image": "registry.redhat.io/openshift-pipelines-tech-preview/pipelines-controller-rhel8@sha256:a6863246b9dbf7ea1b5142b519331962203a3fa92fe1fb2fa7a110816e88f17f",
+        "imageID": "registry.redhat.io/openshift-pipelines-tech-preview/pipelines-controller-rhel8@sha256:a6863246b9dbf7ea1b5142b519331962203a3fa92fe1fb2fa7a110816e88f17f",
+        "lastState": {
+        },
+        "name": "tekton-pipelines-controller",
+        "ready": true,
+        "restartCount": 0,
+        "started": true,
+        "state": {
+          "running": {
+            "startedAt": "2020-10-01T15:33:27Z"
+          }
+        }
+      }
+    ],
+    "hostIP": "192.168.126.11",
+    "phase": "Running",
+    "podIP": "10.116.0.59",
+    "podIPs": [
+      {
+        "ip": "10.116.0.59"
+      }
+    ],
+    "qosClass": "BestEffort",
+    "startTime": "2020-10-01T15:33:22Z"
+  }
+},
+{
+  "apiVersion": "v1",
+  "kind": "Pod",
+  "metadata": {
+    "annotations": {
+      "cluster-autoscaler.kubernetes.io/safe-to-evict": "false",
+      "k8s.v1.cni.cncf.io/network-status": "[{\n    \"name\": \"openshift-sdn\",\n    \"interface\": \"eth0\",\n    \"ips\": [\n        \"10.116.0.56\"\n    ],\n    \"default\": true,\n    \"dns\": {}\n}]",
+      "k8s.v1.cni.cncf.io/networks-status": "[{\n    \"name\": \"openshift-sdn\",\n    \"interface\": \"eth0\",\n    \"ips\": [\n        \"10.116.0.56\"\n    ],\n    \"default\": true,\n    \"dns\": {}\n}]",
+      "openshift.io/scc": "restricted"
+    },
+    "creationTimestamp": "2020-10-01T15:27:58Z",
+    "generateName": "tekton-pipelines-webhook-7476c96589-",
+    "labels": {
+      "app": "tekton-pipelines-webhook",
+      "app.kubernetes.io/component": "webhook-controller",
+      "app.kubernetes.io/name": "tekton-pipelines",
+      "pipeline.tekton.dev/release": "v0.11.3",
+      "pod-template-hash": "7476c96589",
+      "role": "webhook",
+      "version": "v0.11.3"
+    },
+    "managedFields": [
+      {
+        "apiVersion": "v1",
+        "fieldsType": "FieldsV1",
+        "fieldsV1": {
+          "f:metadata": {
+            "f:annotations": {
+              ".": {
+              },
+              "f:cluster-autoscaler.kubernetes.io/safe-to-evict": {
+              }
+            },
+            "f:generateName": {
+            },
+            "f:labels": {
+              ".": {
+              },
+              "f:app": {
+              },
+              "f:app.kubernetes.io/component": {
+              },
+              "f:app.kubernetes.io/name": {
+              },
+              "f:pipeline.tekton.dev/release": {
+              },
+              "f:pod-template-hash": {
+              },
+              "f:role": {
+              },
+              "f:version": {
+              }
+            },
+            "f:ownerReferences": {
+              ".": {
+              },
+              "k:{\"uid\":\"100e9081-3793-4d2d-955d-89801c632d9b\"}": {
+                ".": {
+                },
+                "f:apiVersion": {
+                },
+                "f:blockOwnerDeletion": {
+                },
+                "f:controller": {
+                },
+                "f:kind": {
+                },
+                "f:name": {
+                },
+                "f:uid": {
+                }
+              }
+            }
+          },
+          "f:spec": {
+            "f:containers": {
+              "k:{\"name\":\"webhook\"}": {
+                ".": {
+                },
+                "f:env": {
+                  ".": {
+                  },
+                  "k:{\"name\":\"CONFIG_LOGGING_NAME\"}": {
+                    ".": {
+                    },
+                    "f:name": {
+                    },
+                    "f:value": {
+                    }
+                  },
+                  "k:{\"name\":\"CONFIG_OBSERVABILITY_NAME\"}": {
+                    ".": {
+                    },
+                    "f:name": {
+                    },
+                    "f:value": {
+                    }
+                  },
+                  "k:{\"name\":\"METRICS_DOMAIN\"}": {
+                    ".": {
+                    },
+                    "f:name": {
+                    },
+                    "f:value": {
+                    }
+                  },
+                  "k:{\"name\":\"SYSTEM_NAMESPACE\"}": {
+                    ".": {
+                    },
+                    "f:name": {
+                    },
+                    "f:valueFrom": {
+                      ".": {
+                      },
+                      "f:fieldRef": {
+                        ".": {
+                        },
+                        "f:apiVersion": {
+                        },
+                        "f:fieldPath": {
+                        }
+                      }
+                    }
+                  },
+                  "k:{\"name\":\"WEBHOOK_SERVICE_NAME\"}": {
+                    ".": {
+                    },
+                    "f:name": {
+                    },
+                    "f:value": {
+                    }
+                  }
+                },
+                "f:image": {
+                },
+                "f:imagePullPolicy": {
+                },
+                "f:name": {
+                },
+                "f:ports": {
+                  ".": {
+                  },
+                  "k:{\"containerPort\":8008,\"protocol\":\"TCP\"}": {
+                    ".": {
+                    },
+                    "f:containerPort": {
+                    },
+                    "f:name": {
+                    },
+                    "f:protocol": {
+                    }
+                  },
+                  "k:{\"containerPort\":8443,\"protocol\":\"TCP\"}": {
+                    ".": {
+                    },
+                    "f:containerPort": {
+                    },
+                    "f:name": {
+                    },
+                    "f:protocol": {
+                    }
+                  },
+                  "k:{\"containerPort\":9090,\"protocol\":\"TCP\"}": {
+                    ".": {
+                    },
+                    "f:containerPort": {
+                    },
+                    "f:name": {
+                    },
+                    "f:protocol": {
+                    }
+                  }
+                },
+                "f:resources": {
+                },
+                "f:securityContext": {
+                  ".": {
+                  },
+                  "f:allowPrivilegeEscalation": {
+                  }
+                },
+                "f:terminationMessagePath": {
+                },
+                "f:terminationMessagePolicy": {
+                }
+              }
+            },
+            "f:dnsPolicy": {
+            },
+            "f:enableServiceLinks": {
+            },
+            "f:restartPolicy": {
+            },
+            "f:schedulerName": {
+            },
+            "f:securityContext": {
+            },
+            "f:serviceAccount": {
+            },
+            "f:serviceAccountName": {
+            },
+            "f:terminationGracePeriodSeconds": {
+            }
+          }
+        },
+        "manager": "kube-controller-manager",
+        "operation": "Update",
+        "time": "2020-10-01T15:27:58Z"
+      },
+      {
+        "apiVersion": "v1",
+        "fieldsType": "FieldsV1",
+        "fieldsV1": {
+          "f:metadata": {
+            "f:annotations": {
+              "f:k8s.v1.cni.cncf.io/network-status": {
+              },
+              "f:k8s.v1.cni.cncf.io/networks-status": {
+              }
+            }
+          }
+        },
+        "manager": "multus",
+        "operation": "Update",
+        "time": "2020-10-01T15:28:04Z"
+      },
+      {
+        "apiVersion": "v1",
+        "fieldsType": "FieldsV1",
+        "fieldsV1": {
+          "f:status": {
+            "f:conditions": {
+              "k:{\"type\":\"ContainersReady\"}": {
+                ".": {
+                },
+                "f:lastProbeTime": {
+                },
+                "f:lastTransitionTime": {
+                },
+                "f:status": {
+                },
+                "f:type": {
+                }
+              },
+              "k:{\"type\":\"Initialized\"}": {
+                ".": {
+                },
+                "f:lastProbeTime": {
+                },
+                "f:lastTransitionTime": {
+                },
+                "f:status": {
+                },
+                "f:type": {
+                }
+              },
+              "k:{\"type\":\"Ready\"}": {
+                ".": {
+                },
+                "f:lastProbeTime": {
+                },
+                "f:lastTransitionTime": {
+                },
+                "f:status": {
+                },
+                "f:type": {
+                }
+              }
+            },
+            "f:containerStatuses": {
+            },
+            "f:hostIP": {
+            },
+            "f:phase": {
+            },
+            "f:podIP": {
+            },
+            "f:podIPs": {
+              ".": {
+              },
+              "k:{\"ip\":\"10.116.0.56\"}": {
+                ".": {
+                },
+                "f:ip": {
+                }
+              }
+            },
+            "f:startTime": {
+            }
+          }
+        },
+        "manager": "kubelet",
+        "operation": "Update",
+        "time": "2020-10-01T15:29:37Z"
+      }
+    ],
+    "name": "tekton-pipelines-webhook-7476c96589-mwq2g",
+    "namespace": "openshift-pipelines",
+    "ownerReferences": [
+      {
+        "apiVersion": "apps/v1",
+        "blockOwnerDeletion": true,
+        "controller": true,
+        "kind": "ReplicaSet",
+        "name": "tekton-pipelines-webhook-7476c96589",
+        "uid": "100e9081-3793-4d2d-955d-89801c632d9b"
+      }
+    ],
+    "resourceVersion": "264357",
+    "selfLink": "/api/v1/namespaces/openshift-pipelines/pods/tekton-pipelines-webhook-7476c96589-mwq2g",
+    "uid": "b996c16e-7e45-4222-b68d-8c237d5d1d90"
+  },
+  "spec": {
+    "containers": [
+      {
+        "env": [
+          {
+            "name": "SYSTEM_NAMESPACE",
+            "valueFrom": {
+              "fieldRef": {
+                "apiVersion": "v1",
+                "fieldPath": "metadata.namespace"
+              }
+            }
+          },
+          {
+            "name": "CONFIG_LOGGING_NAME",
+            "value": "config-logging"
+          },
+          {
+            "name": "CONFIG_OBSERVABILITY_NAME",
+            "value": "config-observability"
+          },
+          {
+            "name": "WEBHOOK_SERVICE_NAME",
+            "value": "tekton-pipelines-webhook"
+          },
+          {
+            "name": "METRICS_DOMAIN",
+            "value": "tekton.dev/pipeline"
+          }
+        ],
+        "image": "registry.redhat.io/openshift-pipelines-tech-preview/pipelines-webhook-rhel8@sha256:22d63a1c3be32c0fa4cb872f16592d53fbe9912373ea49363bbc004f66e1955a",
+        "imagePullPolicy": "IfNotPresent",
+        "name": "webhook",
+        "ports": [
+          {
+            "containerPort": 9090,
+            "name": "metrics",
+            "protocol": "TCP"
+          },
+          {
+            "containerPort": 8008,
+            "name": "profiling",
+            "protocol": "TCP"
+          },
+          {
+            "containerPort": 8443,
+            "name": "https-webhook",
+            "protocol": "TCP"
+          }
+        ],
+        "resources": {
+        },
+        "securityContext": {
+          "allowPrivilegeEscalation": false,
+          "capabilities": {
+            "drop": [
+              "KILL",
+              "MKNOD",
+              "SETGID",
+              "SETUID"
+            ]
+          },
+          "runAsUser": 1000570000
+        },
+        "terminationMessagePath": "/dev/termination-log",
+        "terminationMessagePolicy": "File",
+        "volumeMounts": [
+          {
+            "mountPath": "/var/run/secrets/kubernetes.io/serviceaccount",
+            "name": "tekton-pipelines-controller-token-2tjnz",
+            "readOnly": true
+          }
+        ]
+      }
+    ],
+    "dnsPolicy": "ClusterFirst",
+    "enableServiceLinks": true,
+    "imagePullSecrets": [
+      {
+        "name": "tekton-pipelines-controller-dockercfg-lzclj"
+      }
+    ],
+    "nodeName": "crc-zqfk6-master-0",
+    "priority": 0,
+    "restartPolicy": "Always",
+    "schedulerName": "default-scheduler",
+    "securityContext": {
+      "fsGroup": 1000570000,
+      "seLinuxOptions": {
+        "level": "s0:c24,c9"
+      }
+    },
+    "serviceAccount": "tekton-pipelines-controller",
+    "serviceAccountName": "tekton-pipelines-controller",
+    "terminationGracePeriodSeconds": 30,
+    "tolerations": [
+      {
+        "effect": "NoExecute",
+        "key": "node.kubernetes.io/not-ready",
+        "operator": "Exists",
+        "tolerationSeconds": 300
+      },
+      {
+        "effect": "NoExecute",
+        "key": "node.kubernetes.io/unreachable",
+        "operator": "Exists",
+        "tolerationSeconds": 300
+      }
+    ],
+    "volumes": [
+      {
+        "name": "tekton-pipelines-controller-token-2tjnz",
+        "secret": {
+          "defaultMode": 420,
+          "secretName": "tekton-pipelines-controller-token-2tjnz"
+        }
+      }
+    ]
+  },
+  "status": {
+    "conditions": [
+      {
+        "lastProbeTime": null,
+        "lastTransitionTime": "2020-10-01T15:27:59Z",
+        "status": "True",
+        "type": "Initialized"
+      },
+      {
+        "lastProbeTime": null,
+        "lastTransitionTime": "2020-10-01T15:29:37Z",
+        "status": "True",
+        "type": "Ready"
+      },
+      {
+        "lastProbeTime": null,
+        "lastTransitionTime": "2020-10-01T15:29:37Z",
+        "status": "True",
+        "type": "ContainersReady"
+      },
+      {
+        "lastProbeTime": null,
+        "lastTransitionTime": "2020-10-01T15:27:58Z",
+        "status": "True",
+        "type": "PodScheduled"
+      }
+    ],
+    "containerStatuses": [
+      {
+        "containerID": "cri-o://2e7b6b862afcb8efa13e4e1f9a0cc29cf441fc8f0b56409e666947cecb2f437e",
+        "image": "registry.redhat.io/openshift-pipelines-tech-preview/pipelines-webhook-rhel8@sha256:22d63a1c3be32c0fa4cb872f16592d53fbe9912373ea49363bbc004f66e1955a",
+        "imageID": "registry.redhat.io/openshift-pipelines-tech-preview/pipelines-webhook-rhel8@sha256:22d63a1c3be32c0fa4cb872f16592d53fbe9912373ea49363bbc004f66e1955a",
+        "lastState": {
+        },
+        "name": "webhook",
+        "ready": true,
+        "restartCount": 0,
+        "started": true,
+        "state": {
+          "running": {
+            "startedAt": "2020-10-01T15:29:36Z"
+          }
+        }
+      }
+    ],
+    "hostIP": "192.168.126.11",
+    "phase": "Running",
+    "podIP": "10.116.0.56",
+    "podIPs": [
+      {
+        "ip": "10.116.0.56"
+      }
+    ],
+    "qosClass": "BestEffort",
+    "startTime": "2020-10-01T15:27:59Z"
+  }
+},
+{
+  "apiVersion": "v1",
+  "kind": "Pod",
+  "metadata": {
+    "annotations": {
+      "cluster-autoscaler.kubernetes.io/safe-to-evict": "false",
+      "k8s.v1.cni.cncf.io/network-status": "[{\n    \"name\": \"openshift-sdn\",\n    \"interface\": \"eth0\",\n    \"ips\": [\n        \"10.116.0.57\"\n    ],\n    \"default\": true,\n    \"dns\": {}\n}]",
+      "k8s.v1.cni.cncf.io/networks-status": "[{\n    \"name\": \"openshift-sdn\",\n    \"interface\": \"eth0\",\n    \"ips\": [\n        \"10.116.0.57\"\n    ],\n    \"default\": true,\n    \"dns\": {}\n}]",
+      "openshift.io/scc": "restricted"
+    },
+    "creationTimestamp": "2020-10-01T15:29:49Z",
+    "generateName": "tekton-triggers-controller-799554b7cb-",
+    "labels": {
+      "app": "tekton-triggers-controller",
+      "pod-template-hash": "799554b7cb",
+      "triggers.tekton.dev/release": "v0.4.0",
+      "version": "v0.4.0"
+    },
+    "managedFields": [
+      {
+        "apiVersion": "v1",
+        "fieldsType": "FieldsV1",
+        "fieldsV1": {
+          "f:metadata": {
+            "f:annotations": {
+              ".": {
+              },
+              "f:cluster-autoscaler.kubernetes.io/safe-to-evict": {
+              }
+            },
+            "f:generateName": {
+            },
+            "f:labels": {
+              ".": {
+              },
+              "f:app": {
+              },
+              "f:pod-template-hash": {
+              },
+              "f:triggers.tekton.dev/release": {
+              },
+              "f:version": {
+              }
+            },
+            "f:ownerReferences": {
+              ".": {
+              },
+              "k:{\"uid\":\"99344c62-3b0a-4eeb-b062-e0ddba65f97b\"}": {
+                ".": {
+                },
+                "f:apiVersion": {
+                },
+                "f:blockOwnerDeletion": {
+                },
+                "f:controller": {
+                },
+                "f:kind": {
+                },
+                "f:name": {
+                },
+                "f:uid": {
+                }
+              }
+            }
+          },
+          "f:spec": {
+            "f:containers": {
+              "k:{\"name\":\"tekton-triggers-controller\"}": {
+                ".": {
+                },
+                "f:args": {
+                },
+                "f:env": {
+                  ".": {
+                  },
+                  "k:{\"name\":\"CONFIG_LOGGING_NAME\"}": {
+                    ".": {
+                    },
+                    "f:name": {
+                    },
+                    "f:value": {
+                    }
+                  },
+                  "k:{\"name\":\"CONFIG_OBSERVABILITY_NAME\"}": {
+                    ".": {
+                    },
+                    "f:name": {
+                    },
+                    "f:value": {
+                    }
+                  },
+                  "k:{\"name\":\"METRICS_DOMAIN\"}": {
+                    ".": {
+                    },
+                    "f:name": {
+                    },
+                    "f:value": {
+                    }
+                  },
+                  "k:{\"name\":\"SYSTEM_NAMESPACE\"}": {
+                    ".": {
+                    },
+                    "f:name": {
+                    },
+                    "f:valueFrom": {
+                      ".": {
+                      },
+                      "f:fieldRef": {
+                        ".": {
+                        },
+                        "f:apiVersion": {
+                        },
+                        "f:fieldPath": {
+                        }
+                      }
+                    }
+                  }
+                },
+                "f:image": {
+                },
+                "f:imagePullPolicy": {
+                },
+                "f:name": {
+                },
+                "f:resources": {
+                },
+                "f:terminationMessagePath": {
+                },
+                "f:terminationMessagePolicy": {
+                }
+              }
+            },
+            "f:dnsPolicy": {
+            },
+            "f:enableServiceLinks": {
+            },
+            "f:restartPolicy": {
+            },
+            "f:schedulerName": {
+            },
+            "f:securityContext": {
+            },
+            "f:serviceAccount": {
+            },
+            "f:serviceAccountName": {
+            },
+            "f:terminationGracePeriodSeconds": {
+            }
+          }
+        },
+        "manager": "kube-controller-manager",
+        "operation": "Update",
+        "time": "2020-10-01T15:29:49Z"
+      },
+      {
+        "apiVersion": "v1",
+        "fieldsType": "FieldsV1",
+        "fieldsV1": {
+          "f:metadata": {
+            "f:annotations": {
+              "f:k8s.v1.cni.cncf.io/network-status": {
+              },
+              "f:k8s.v1.cni.cncf.io/networks-status": {
+              }
+            }
+          }
+        },
+        "manager": "multus",
+        "operation": "Update",
+        "time": "2020-10-01T15:29:55Z"
+      },
+      {
+        "apiVersion": "v1",
+        "fieldsType": "FieldsV1",
+        "fieldsV1": {
+          "f:status": {
+            "f:conditions": {
+              "k:{\"type\":\"ContainersReady\"}": {
+                ".": {
+                },
+                "f:lastProbeTime": {
+                },
+                "f:lastTransitionTime": {
+                },
+                "f:status": {
+                },
+                "f:type": {
+                }
+              },
+              "k:{\"type\":\"Initialized\"}": {
+                ".": {
+                },
+                "f:lastProbeTime": {
+                },
+                "f:lastTransitionTime": {
+                },
+                "f:status": {
+                },
+                "f:type": {
+                }
+              },
+              "k:{\"type\":\"Ready\"}": {
+                ".": {
+                },
+                "f:lastProbeTime": {
+                },
+                "f:lastTransitionTime": {
+                },
+                "f:status": {
+                },
+                "f:type": {
+                }
+              }
+            },
+            "f:containerStatuses": {
+            },
+            "f:hostIP": {
+            },
+            "f:phase": {
+            },
+            "f:podIP": {
+            },
+            "f:podIPs": {
+              ".": {
+              },
+              "k:{\"ip\":\"10.116.0.57\"}": {
+                ".": {
+                },
+                "f:ip": {
+                }
+              }
+            },
+            "f:startTime": {
+            }
+          }
+        },
+        "manager": "kubelet",
+        "operation": "Update",
+        "time": "2020-10-01T15:31:21Z"
+      }
+    ],
+    "name": "tekton-triggers-controller-799554b7cb-6xx9h",
+    "namespace": "openshift-pipelines",
+    "ownerReferences": [
+      {
+        "apiVersion": "apps/v1",
+        "blockOwnerDeletion": true,
+        "controller": true,
+        "kind": "ReplicaSet",
+        "name": "tekton-triggers-controller-799554b7cb",
+        "uid": "99344c62-3b0a-4eeb-b062-e0ddba65f97b"
+      }
+    ],
+    "resourceVersion": "264982",
+    "selfLink": "/api/v1/namespaces/openshift-pipelines/pods/tekton-triggers-controller-799554b7cb-6xx9h",
+    "uid": "365a812e-6141-4390-ae75-c249772f86ea"
+  },
+  "spec": {
+    "containers": [
+      {
+        "args": [
+          "-logtostderr",
+          "-stderrthreshold",
+          "INFO",
+          "-el-image",
+          "registry.redhat.io/openshift-pipelines-tech-preview/pipelines-triggers-eventlistenersink-rhel8@sha256:6e406871e052aa3b143b23c831d279d309b3d429411ac9575a64b05323be6bc2",
+          "-el-port",
+          "8080",
+          "-period-seconds",
+          "10",
+          "-failure-threshold",
+          "1"
+        ],
+        "env": [
+          {
+            "name": "SYSTEM_NAMESPACE",
+            "valueFrom": {
+              "fieldRef": {
+                "apiVersion": "v1",
+                "fieldPath": "metadata.namespace"
+              }
+            }
+          },
+          {
+            "name": "CONFIG_LOGGING_NAME",
+            "value": "config-logging-triggers"
+          },
+          {
+            "name": "CONFIG_OBSERVABILITY_NAME",
+            "value": "config-observability-triggers"
+          },
+          {
+            "name": "METRICS_DOMAIN",
+            "value": "tekton.dev/triggers"
+          }
+        ],
+        "image": "registry.redhat.io/openshift-pipelines-tech-preview/pipelines-triggers-controller-rhel8@sha256:dd50937fc6d607f47eeced5e739ac21257b4e696dfd819c1cfd6d6508c0fe66a",
+        "imagePullPolicy": "IfNotPresent",
+        "name": "tekton-triggers-controller",
+        "resources": {
+        },
+        "securityContext": {
+          "capabilities": {
+            "drop": [
+              "KILL",
+              "MKNOD",
+              "SETGID",
+              "SETUID"
+            ]
+          },
+          "runAsUser": 1000570000
+        },
+        "terminationMessagePath": "/dev/termination-log",
+        "terminationMessagePolicy": "File",
+        "volumeMounts": [
+          {
+            "mountPath": "/var/run/secrets/kubernetes.io/serviceaccount",
+            "name": "tekton-triggers-controller-token-ctzhx",
+            "readOnly": true
+          }
+        ]
+      }
+    ],
+    "dnsPolicy": "ClusterFirst",
+    "enableServiceLinks": true,
+    "imagePullSecrets": [
+      {
+        "name": "tekton-triggers-controller-dockercfg-qgqsb"
+      }
+    ],
+    "nodeName": "crc-zqfk6-master-0",
+    "priority": 0,
+    "restartPolicy": "Always",
+    "schedulerName": "default-scheduler",
+    "securityContext": {
+      "fsGroup": 1000570000,
+      "seLinuxOptions": {
+        "level": "s0:c24,c9"
+      }
+    },
+    "serviceAccount": "tekton-triggers-controller",
+    "serviceAccountName": "tekton-triggers-controller",
+    "terminationGracePeriodSeconds": 30,
+    "tolerations": [
+      {
+        "effect": "NoExecute",
+        "key": "node.kubernetes.io/not-ready",
+        "operator": "Exists",
+        "tolerationSeconds": 300
+      },
+      {
+        "effect": "NoExecute",
+        "key": "node.kubernetes.io/unreachable",
+        "operator": "Exists",
+        "tolerationSeconds": 300
+      }
+    ],
+    "volumes": [
+      {
+        "name": "tekton-triggers-controller-token-ctzhx",
+        "secret": {
+          "defaultMode": 420,
+          "secretName": "tekton-triggers-controller-token-ctzhx"
+        }
+      }
+    ]
+  },
+  "status": {
+    "conditions": [
+      {
+        "lastProbeTime": null,
+        "lastTransitionTime": "2020-10-01T15:29:50Z",
+        "status": "True",
+        "type": "Initialized"
+      },
+      {
+        "lastProbeTime": null,
+        "lastTransitionTime": "2020-10-01T15:31:21Z",
+        "status": "True",
+        "type": "Ready"
+      },
+      {
+        "lastProbeTime": null,
+        "lastTransitionTime": "2020-10-01T15:31:21Z",
+        "status": "True",
+        "type": "ContainersReady"
+      },
+      {
+        "lastProbeTime": null,
+        "lastTransitionTime": "2020-10-01T15:29:49Z",
+        "status": "True",
+        "type": "PodScheduled"
+      }
+    ],
+    "containerStatuses": [
+      {
+        "containerID": "cri-o://9793410dbb4e34ee87961c27d42f2709b821643a2fedc22df2f5e7a8ab5bc8a6",
+        "image": "registry.redhat.io/openshift-pipelines-tech-preview/pipelines-triggers-controller-rhel8@sha256:dd50937fc6d607f47eeced5e739ac21257b4e696dfd819c1cfd6d6508c0fe66a",
+        "imageID": "registry.redhat.io/openshift-pipelines-tech-preview/pipelines-triggers-controller-rhel8@sha256:dd50937fc6d607f47eeced5e739ac21257b4e696dfd819c1cfd6d6508c0fe66a",
+        "lastState": {
+        },
+        "name": "tekton-triggers-controller",
+        "ready": true,
+        "restartCount": 0,
+        "started": true,
+        "state": {
+          "running": {
+            "startedAt": "2020-10-01T15:31:20Z"
+          }
+        }
+      }
+    ],
+    "hostIP": "192.168.126.11",
+    "phase": "Running",
+    "podIP": "10.116.0.57",
+    "podIPs": [
+      {
+        "ip": "10.116.0.57"
+      }
+    ],
+    "qosClass": "BestEffort",
+    "startTime": "2020-10-01T15:29:50Z"
+  }
+},
+{
+  "apiVersion": "v1",
+  "kind": "Pod",
+  "metadata": {
+    "annotations": {
+      "cluster-autoscaler.kubernetes.io/safe-to-evict": "false",
+      "k8s.v1.cni.cncf.io/network-status": "[{\n    \"name\": \"openshift-sdn\",\n    \"interface\": \"eth0\",\n    \"ips\": [\n        \"10.116.0.58\"\n    ],\n    \"default\": true,\n    \"dns\": {}\n}]",
+      "k8s.v1.cni.cncf.io/networks-status": "[{\n    \"name\": \"openshift-sdn\",\n    \"interface\": \"eth0\",\n    \"ips\": [\n        \"10.116.0.58\"\n    ],\n    \"default\": true,\n    \"dns\": {}\n}]",
+      "openshift.io/scc": "restricted"
+    },
+    "creationTimestamp": "2020-10-01T15:29:56Z",
+    "generateName": "tekton-triggers-webhook-5bc8b8db78-",
+    "labels": {
+      "app": "tekton-triggers-webhook",
+      "app.kubernetes.io/component": "webhook-controller",
+      "app.kubernetes.io/name": "tekton-triggers",
+      "pod-template-hash": "5bc8b8db78",
+      "role": "webhook",
+      "triggers.tekton.dev/release": "v0.4.0",
+      "version": "v0.4.0"
+    },
+    "managedFields": [
+      {
+        "apiVersion": "v1",
+        "fieldsType": "FieldsV1",
+        "fieldsV1": {
+          "f:metadata": {
+            "f:annotations": {
+              ".": {
+              },
+              "f:cluster-autoscaler.kubernetes.io/safe-to-evict": {
+              }
+            },
+            "f:generateName": {
+            },
+            "f:labels": {
+              ".": {
+              },
+              "f:app": {
+              },
+              "f:app.kubernetes.io/component": {
+              },
+              "f:app.kubernetes.io/name": {
+              },
+              "f:pod-template-hash": {
+              },
+              "f:role": {
+              },
+              "f:triggers.tekton.dev/release": {
+              },
+              "f:version": {
+              }
+            },
+            "f:ownerReferences": {
+              ".": {
+              },
+              "k:{\"uid\":\"6f730778-eb4e-426a-b1d9-cb74faa8a4f1\"}": {
+                ".": {
+                },
+                "f:apiVersion": {
+                },
+                "f:blockOwnerDeletion": {
+                },
+                "f:controller": {
+                },
+                "f:kind": {
+                },
+                "f:name": {
+                },
+                "f:uid": {
+                }
+              }
+            }
+          },
+          "f:spec": {
+            "f:containers": {
+              "k:{\"name\":\"webhook\"}": {
+                ".": {
+                },
+                "f:env": {
+                  ".": {
+                  },
+                  "k:{\"name\":\"CONFIG_LOGGING_NAME\"}": {
+                    ".": {
+                    },
+                    "f:name": {
+                    },
+                    "f:value": {
+                    }
+                  },
+                  "k:{\"name\":\"METRICS_DOMAIN\"}": {
+                    ".": {
+                    },
+                    "f:name": {
+                    },
+                    "f:value": {
+                    }
+                  },
+                  "k:{\"name\":\"SYSTEM_NAMESPACE\"}": {
+                    ".": {
+                    },
+                    "f:name": {
+                    },
+                    "f:valueFrom": {
+                      ".": {
+                      },
+                      "f:fieldRef": {
+                        ".": {
+                        },
+                        "f:apiVersion": {
+                        },
+                        "f:fieldPath": {
+                        }
+                      }
+                    }
+                  },
+                  "k:{\"name\":\"WEBHOOK_SERVICE_NAME\"}": {
+                    ".": {
+                    },
+                    "f:name": {
+                    },
+                    "f:value": {
+                    }
+                  }
+                },
+                "f:image": {
+                },
+                "f:imagePullPolicy": {
+                },
+                "f:name": {
+                },
+                "f:ports": {
+                  ".": {
+                  },
+                  "k:{\"containerPort\":8008,\"protocol\":\"TCP\"}": {
+                    ".": {
+                    },
+                    "f:containerPort": {
+                    },
+                    "f:name": {
+                    },
+                    "f:protocol": {
+                    }
+                  },
+                  "k:{\"containerPort\":8443,\"protocol\":\"TCP\"}": {
+                    ".": {
+                    },
+                    "f:containerPort": {
+                    },
+                    "f:name": {
+                    },
+                    "f:protocol": {
+                    }
+                  },
+                  "k:{\"containerPort\":9090,\"protocol\":\"TCP\"}": {
+                    ".": {
+                    },
+                    "f:containerPort": {
+                    },
+                    "f:name": {
+                    },
+                    "f:protocol": {
+                    }
+                  }
+                },
+                "f:resources": {
+                },
+                "f:terminationMessagePath": {
+                },
+                "f:terminationMessagePolicy": {
+                }
+              }
+            },
+            "f:dnsPolicy": {
+            },
+            "f:enableServiceLinks": {
+            },
+            "f:restartPolicy": {
+            },
+            "f:schedulerName": {
+            },
+            "f:securityContext": {
+            },
+            "f:serviceAccount": {
+            },
+            "f:serviceAccountName": {
+            },
+            "f:terminationGracePeriodSeconds": {
+            }
+          }
+        },
+        "manager": "kube-controller-manager",
+        "operation": "Update",
+        "time": "2020-10-01T15:29:56Z"
+      },
+      {
+        "apiVersion": "v1",
+        "fieldsType": "FieldsV1",
+        "fieldsV1": {
+          "f:metadata": {
+            "f:annotations": {
+              "f:k8s.v1.cni.cncf.io/network-status": {
+              },
+              "f:k8s.v1.cni.cncf.io/networks-status": {
+              }
+            }
+          }
+        },
+        "manager": "multus",
+        "operation": "Update",
+        "time": "2020-10-01T15:30:01Z"
+      },
+      {
+        "apiVersion": "v1",
+        "fieldsType": "FieldsV1",
+        "fieldsV1": {
+          "f:status": {
+            "f:conditions": {
+              "k:{\"type\":\"ContainersReady\"}": {
+                ".": {
+                },
+                "f:lastProbeTime": {
+                },
+                "f:lastTransitionTime": {
+                },
+                "f:status": {
+                },
+                "f:type": {
+                }
+              },
+              "k:{\"type\":\"Initialized\"}": {
+                ".": {
+                },
+                "f:lastProbeTime": {
+                },
+                "f:lastTransitionTime": {
+                },
+                "f:status": {
+                },
+                "f:type": {
+                }
+              },
+              "k:{\"type\":\"Ready\"}": {
+                ".": {
+                },
+                "f:lastProbeTime": {
+                },
+                "f:lastTransitionTime": {
+                },
+                "f:status": {
+                },
+                "f:type": {
+                }
+              }
+            },
+            "f:containerStatuses": {
+            },
+            "f:hostIP": {
+            },
+            "f:phase": {
+            },
+            "f:podIP": {
+            },
+            "f:podIPs": {
+              ".": {
+              },
+              "k:{\"ip\":\"10.116.0.58\"}": {
+                ".": {
+                },
+                "f:ip": {
+                }
+              }
+            },
+            "f:startTime": {
+            }
+          }
+        },
+        "manager": "kubelet",
+        "operation": "Update",
+        "time": "2020-10-01T15:31:21Z"
+      }
+    ],
+    "name": "tekton-triggers-webhook-5bc8b8db78-hfk6p",
+    "namespace": "openshift-pipelines",
+    "ownerReferences": [
+      {
+        "apiVersion": "apps/v1",
+        "blockOwnerDeletion": true,
+        "controller": true,
+        "kind": "ReplicaSet",
+        "name": "tekton-triggers-webhook-5bc8b8db78",
+        "uid": "6f730778-eb4e-426a-b1d9-cb74faa8a4f1"
+      }
+    ],
+    "resourceVersion": "264984",
+    "selfLink": "/api/v1/namespaces/openshift-pipelines/pods/tekton-triggers-webhook-5bc8b8db78-hfk6p",
+    "uid": "8cf62200-e0c7-44b6-bb5e-2f323c70d415"
+  },
+  "spec": {
+    "containers": [
+      {
+        "env": [
+          {
+            "name": "SYSTEM_NAMESPACE",
+            "valueFrom": {
+              "fieldRef": {
+                "apiVersion": "v1",
+                "fieldPath": "metadata.namespace"
+              }
+            }
+          },
+          {
+            "name": "CONFIG_LOGGING_NAME",
+            "value": "config-logging-triggers"
+          },
+          {
+            "name": "WEBHOOK_SERVICE_NAME",
+            "value": "tekton-triggers-webhook"
+          },
+          {
+            "name": "METRICS_DOMAIN",
+            "value": "tekton.dev/triggers"
+          }
+        ],
+        "image": "registry.redhat.io/openshift-pipelines-tech-preview/pipelines-triggers-webhook-rhel8@sha256:d278633fc3c1cb13ce6c5706e25d89e2d0de89e5a0b4c0ae92c3b3f61c0c8a78",
+        "imagePullPolicy": "IfNotPresent",
+        "name": "webhook",
+        "ports": [
+          {
+            "containerPort": 9090,
+            "name": "metrics",
+            "protocol": "TCP"
+          },
+          {
+            "containerPort": 8008,
+            "name": "profiling",
+            "protocol": "TCP"
+          },
+          {
+            "containerPort": 8443,
+            "name": "https-webhook",
+            "protocol": "TCP"
+          }
+        ],
+        "resources": {
+        },
+        "securityContext": {
+          "capabilities": {
+            "drop": [
+              "KILL",
+              "MKNOD",
+              "SETGID",
+              "SETUID"
+            ]
+          },
+          "runAsUser": 1000570000
+        },
+        "terminationMessagePath": "/dev/termination-log",
+        "terminationMessagePolicy": "File",
+        "volumeMounts": [
+          {
+            "mountPath": "/var/run/secrets/kubernetes.io/serviceaccount",
+            "name": "tekton-triggers-controller-token-ctzhx",
+            "readOnly": true
+          }
+        ]
+      }
+    ],
+    "dnsPolicy": "ClusterFirst",
+    "enableServiceLinks": true,
+    "imagePullSecrets": [
+      {
+        "name": "tekton-triggers-controller-dockercfg-qgqsb"
+      }
+    ],
+    "nodeName": "crc-zqfk6-master-0",
+    "priority": 0,
+    "restartPolicy": "Always",
+    "schedulerName": "default-scheduler",
+    "securityContext": {
+      "fsGroup": 1000570000,
+      "seLinuxOptions": {
+        "level": "s0:c24,c9"
+      }
+    },
+    "serviceAccount": "tekton-triggers-controller",
+    "serviceAccountName": "tekton-triggers-controller",
+    "terminationGracePeriodSeconds": 30,
+    "tolerations": [
+      {
+        "effect": "NoExecute",
+        "key": "node.kubernetes.io/not-ready",
+        "operator": "Exists",
+        "tolerationSeconds": 300
+      },
+      {
+        "effect": "NoExecute",
+        "key": "node.kubernetes.io/unreachable",
+        "operator": "Exists",
+        "tolerationSeconds": 300
+      }
+    ],
+    "volumes": [
+      {
+        "name": "tekton-triggers-controller-token-ctzhx",
+        "secret": {
+          "defaultMode": 420,
+          "secretName": "tekton-triggers-controller-token-ctzhx"
+        }
+      }
+    ]
+  },
+  "status": {
+    "conditions": [
+      {
+        "lastProbeTime": null,
+        "lastTransitionTime": "2020-10-01T15:29:56Z",
+        "status": "True",
+        "type": "Initialized"
+      },
+      {
+        "lastProbeTime": null,
+        "lastTransitionTime": "2020-10-01T15:31:21Z",
+        "status": "True",
+        "type": "Ready"
+      },
+      {
+        "lastProbeTime": null,
+        "lastTransitionTime": "2020-10-01T15:31:21Z",
+        "status": "True",
+        "type": "ContainersReady"
+      },
+      {
+        "lastProbeTime": null,
+        "lastTransitionTime": "2020-10-01T15:29:56Z",
+        "status": "True",
+        "type": "PodScheduled"
+      }
+    ],
+    "containerStatuses": [
+      {
+        "containerID": "cri-o://7580106cecdf29ed4d22e4580e57fbbe5b2b70dd06544fb5f2b6fe45f897219c",
+        "image": "registry.redhat.io/openshift-pipelines-tech-preview/pipelines-triggers-webhook-rhel8@sha256:d278633fc3c1cb13ce6c5706e25d89e2d0de89e5a0b4c0ae92c3b3f61c0c8a78",
+        "imageID": "registry.redhat.io/openshift-pipelines-tech-preview/pipelines-triggers-webhook-rhel8@sha256:d278633fc3c1cb13ce6c5706e25d89e2d0de89e5a0b4c0ae92c3b3f61c0c8a78",
+        "lastState": {
+        },
+        "name": "webhook",
+        "ready": true,
+        "restartCount": 0,
+        "started": true,
+        "state": {
+          "running": {
+            "startedAt": "2020-10-01T15:31:20Z"
+          }
+        }
+      }
+    ],
+    "hostIP": "192.168.126.11",
+    "phase": "Running",
+    "podIP": "10.116.0.58",
+    "podIPs": [
+      {
+        "ip": "10.116.0.58"
+      }
+    ],
+    "qosClass": "BestEffort",
+    "startTime": "2020-10-01T15:29:56Z"
+  }
+}
