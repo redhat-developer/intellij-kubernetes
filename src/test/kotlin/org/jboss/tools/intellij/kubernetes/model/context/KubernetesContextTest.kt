@@ -678,6 +678,30 @@ class KubernetesContextTest {
 	}
 
 	@Test
+	fun `#replace(pod) should fire if provider replaced pod`() {
+		// given
+		val pod = resource<Pod>("gargamel")
+		doReturn(true)
+				.whenever(namespacedPodsProvider).replace(pod)
+		// when
+		context.replace(pod)
+		// then
+		verify(observable).fireModified(pod)
+	}
+
+	@Test
+	fun `#replace(pod) should not fire if provider did NOT replace pod`() {
+		// given
+		val pod = resource<Pod>("gargamel")
+		doReturn(false)
+				.whenever(namespacedPodsProvider).replace(pod)
+		// when
+		context.replace(pod)
+		// then
+		verify(observable, never()).fireModified(pod)
+	}
+
+	@Test
 	fun `#close should close client`() {
 		// given
 		// when

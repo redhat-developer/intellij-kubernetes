@@ -115,7 +115,7 @@ open class ResourceModel(
             is ResourceModel -> invalidate()
             is IActiveContext<*, *> -> invalidate(element)
             is ResourceKind<*> -> invalidate(element)
-            is HasMetadata -> invalidate(element)
+            is HasMetadata -> replace(element)
         }
     }
 
@@ -126,17 +126,14 @@ open class ResourceModel(
 
     private fun invalidate(context: IActiveContext<out HasMetadata, out KubernetesClient>) {
         context.invalidate()
-        observable.fireModified(context)
     }
 
     private fun invalidate(kind: ResourceKind<*>) {
-        contexts.current?.invalidate(kind) ?: return
-        observable.fireModified(kind)
+        contexts.current?.invalidate(kind)
     }
 
-    private fun invalidate(resource: HasMetadata) {
-        contexts.current?.replace(resource) ?: return
-        observable.fireModified(resource)
+    private fun replace(resource: HasMetadata) {
+        contexts.current?.replace(resource)
     }
 
     private fun isNotFound(e: KubernetesClientException): Boolean {

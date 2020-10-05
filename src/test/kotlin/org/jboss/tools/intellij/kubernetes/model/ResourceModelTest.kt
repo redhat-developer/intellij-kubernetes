@@ -143,6 +143,15 @@ class ResourceModelTest {
     }
 
     @Test
+    fun `#invalidate(model) should fire model moidified`() {
+        // given
+        // when
+        model.invalidate(model)
+        // then
+        verify(modelChange).fireModified(model)
+    }
+
+    @Test
     fun `#invalidate(model) should cause #allContexts to (drop cache and) load again`() {
         // given
         model.getAllContexts()
@@ -156,21 +165,12 @@ class ResourceModelTest {
     }
 
     @Test
-    fun `#invalidate(class) should call context#invalidate(class)`() {
+    fun `#invalidate(kind) should call context#invalidate(class)`() {
         // given
         // when
         model.invalidate(NamespacedPodsProvider.KIND)
         // then
         verify(activeContext).invalidate(NamespacedPodsProvider.KIND)
-    }
-
-    @Test
-    fun `#invalidate(class) should fire class change`() {
-        // given
-        // when
-        model.invalidate(NamespacedPodsProvider.KIND)
-        // then
-        verify(modelChange).fireModified(NamespacedPodsProvider.KIND)
     }
 
     @Test
@@ -181,16 +181,6 @@ class ResourceModelTest {
         model.invalidate(resource)
         // then
         verify(activeContext).replace(resource)
-    }
-
-    @Test
-    fun `#invalidate(resource) should fire resource change`() {
-        // given
-        // when
-        val resource = mock<HasMetadata>()
-        model.invalidate(resource)
-        // then
-        verify(modelChange).fireModified(resource)
     }
 
     @Test

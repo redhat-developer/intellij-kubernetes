@@ -211,12 +211,16 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
     }
 
     override fun add(resource: HasMetadata): Boolean {
-        return when (resource) {
+        val added = when (resource) {
             is CustomResourceDefinition ->
                 addResource(resource)
             else ->
                 addResource(resource)
         }
+        if (added) {
+            modelChange.fireAdded(resource)
+        }
+        return added
     }
 
     private fun addResource(resource: HasMetadata): Boolean {
@@ -241,19 +245,19 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
         if (provider == null) {
             return false
         }
-        val added = provider.add(resource)
-        if (added) {
-            modelChange.fireAdded(resource)
-        }
-        return added
+        return provider.add(resource)
     }
 
     override fun remove(resource: HasMetadata): Boolean {
-        return if (resource is CustomResourceDefinition) {
+        val removed = if (resource is CustomResourceDefinition) {
             removeResource(resource)
         } else {
             removeResource(resource)
         }
+        if (removed) {
+            modelChange.fireRemoved(resource)
+        }
+        return removed
     }
 
     private fun removeResource(resource: HasMetadata): Boolean {
@@ -278,25 +282,26 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
         if (provider == null) {
             return false
         }
-        val removed = provider.remove(resource)
-        if (removed) {
-            modelChange.fireRemoved(resource)
-        }
-        return removed
+        return provider.remove(resource)
     }
 
     override fun invalidate() {
         namespacedProviders.values.forEach { it.invalidate() }
         nonNamespacedProviders.values.forEach { it.invalidate() }
+        modelChange.fireModified(this)
     }
 
     override fun replace(resource: HasMetadata): Boolean {
-        return when(resource) {
+        val replaced = when(resource) {
             is CustomResourceDefinition ->
                 replace(ResourceKind.new(resource.spec), resource)
             else ->
                 replace(ResourceKind.new(resource), resource)
         }
+        if (replaced) {
+            modelChange.fireModified(resource)
+        }
+        return replaced
     }
 
     private fun replace(kind: ResourceKind<out HasMetadata>, resource: HasMetadata): Boolean {
@@ -309,7 +314,8 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
     override fun invalidate(kind: ResourceKind<*>) {
         namespacedProviders[kind]?.invalidate()
         nonNamespacedProviders[kind]?.invalidate()
-    }
+        modelChange.fireModified(kind)
+        }
 
     /**
      * Stops watching all watchables for the given namespace. Doesn't stop the cluster wide watchables nor
