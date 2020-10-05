@@ -10,7 +10,9 @@
  ******************************************************************************/
 package org.jboss.tools.intellij.kubernetes.model.util
 
+import com.fasterxml.jackson.databind.MappingJsonFactory
 import io.fabric8.kubernetes.api.model.Pod
+import io.fabric8.kubernetes.internal.KubernetesDeserializer
 import org.assertj.core.api.Assertions.assertThat
 import org.jboss.tools.intellij.kubernetes.model.mocks.ClientMocks.resource
 import org.jboss.tools.intellij.kubernetes.model.mocks.condition
@@ -43,7 +45,7 @@ class PodStatusTest {
 	fun `#isRunning should return true if pod is in phase "Running"`() {
 		// given
 		forMock(pod)
-				.status(podStatus("Running", "<Darth Vader is silly>"))
+				.status(podStatus("Running", "<Darth Vader has lost its sabre>"))
 		// when
 		val running = pod.isRunning()
 		// then
@@ -112,9 +114,9 @@ class PodStatusTest {
 		// given
 		forMock(pod)
 				.status(podStatus(
-					initContainerStatuses = listOf(
-							containerStatus(
-							state = containerState()))))
+						initContainerStatuses = listOf(
+								containerStatus(
+										state = containerState()))))
 		// when
 		val initializing = pod.isInitializing()
 		// then
@@ -205,7 +207,7 @@ class PodStatusTest {
 										state = containerState(
 												terminated = containerStateTerminated(
 														reason = "Completed")))),
-				conditions = listOf(condition("Ready", "true"))))
+						conditions = listOf(condition("Ready", "true"))))
 		// when
 		val running = pod.isRunning()
 		// then
@@ -243,6 +245,18 @@ class PodStatusTest {
 										state = containerState(
 												terminated = containerStateTerminated(
 														reason = "I was bored"))))))
+		// when
+		val running = pod.isRunning()
+		// then
+		assertThat(running).isTrue()
+	}
+
+	@Test
+	fun `#isRunning is true for tekton-pipeline-controller (#89)`() {
+		// given
+		val json = PodStatusTest::class.java.getResource("/tekton-pipeline-controller.json")
+		val parser = MappingJsonFactory().createParser(json)
+		val pod: Pod = KubernetesDeserializer().deserialize(parser, null) as Pod
 		// when
 		val running = pod.isRunning()
 		// then
