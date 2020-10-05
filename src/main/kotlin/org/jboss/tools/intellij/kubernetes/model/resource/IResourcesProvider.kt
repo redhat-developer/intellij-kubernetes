@@ -20,7 +20,7 @@ interface IResourcesProvider<R: HasMetadata> {
     fun getAllResources(): Collection<R>
     fun getWatchable(): () -> Watchable<Watch, Watcher<R>>?
     fun invalidate()
-    fun invalidate(resource: HasMetadata)
+    fun replace(resource: HasMetadata): Boolean
     fun add(resource: HasMetadata): Boolean
     fun remove(resource: HasMetadata): Boolean
 }

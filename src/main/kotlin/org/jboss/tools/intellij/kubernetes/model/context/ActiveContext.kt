@@ -50,7 +50,7 @@ interface IActiveContext<N: HasMetadata, C: KubernetesClient>: IContext {
     fun add(resource: HasMetadata): Boolean
     fun remove(resource: HasMetadata): Boolean
     fun invalidate(kind: ResourceKind<*>)
-    fun invalidate(resource: HasMetadata)
+    fun replace(resource: HasMetadata): Boolean
     fun close()
 }
 
@@ -74,7 +74,9 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
     protected var namespace: String? = client.configuration.namespace
     protected open var watch: ResourceWatch = ResourceWatch(
             addOperation = { add(it) },
-            removeOperation = { remove(it) })
+            removeOperation = { remove(it) },
+            replaceOperation = { replace(it) }
+    )
 
     override fun setCurrentNamespace(namespace: String) {
         val currentNamespace = getCurrentNamespace()
@@ -288,23 +290,25 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
         nonNamespacedProviders.values.forEach { it.invalidate() }
     }
 
-    override fun invalidate(resource: HasMetadata) {
-        when(resource) {
+    override fun replace(resource: HasMetadata): Boolean {
+        return when(resource) {
             is CustomResourceDefinition ->
-                invalidateProviders(ResourceKind.new(resource.spec), resource)
+                replace(ResourceKind.new(resource.spec), resource)
             else ->
-                invalidateProviders(ResourceKind.new(resource), resource)
+                replace(ResourceKind.new(resource), resource)
         }
+    }
+
+    private fun replace(kind: ResourceKind<out HasMetadata>, resource: HasMetadata): Boolean {
+        val replaceNamespaced = namespacedProviders[kind]?.replace(resource) ?: false
+        val replaceNonNamespaced = nonNamespacedProviders[kind]?.replace(resource) ?: false
+        return replaceNamespaced
+                || replaceNonNamespaced
     }
 
     override fun invalidate(kind: ResourceKind<*>) {
         namespacedProviders[kind]?.invalidate()
         nonNamespacedProviders[kind]?.invalidate()
-    }
-
-    private fun invalidateProviders(kind: ResourceKind<out HasMetadata>, resource: HasMetadata) {
-        namespacedProviders[kind]?.invalidate(resource)
-        nonNamespacedProviders[kind]?.invalidate(resource)
     }
 
     /**

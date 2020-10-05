@@ -634,37 +634,47 @@ class KubernetesContextTest {
 	}
 
 	@Test
-	fun `#invalidate(resource) should invalidate namespaced resource provider`() {
+	fun `#invalidate(kind) should invalidate resource provider for this kind`() {
+		// given
+		// when
+		context.invalidate(namespacedPodsProvider.kind)
+		// then
+		verify(namespacesProvider, never()).invalidate()
+		verify(namespacedPodsProvider).invalidate()
+	}
+
+	@Test
+	fun `#replace(resource) should replace in namespaced resource provider`() {
 		// given
 		val pod = allPods[0]
 		// when
-		context.invalidate(pod)
+		context.replace(pod)
 		// then
-		verify(namespacesProvider, never()).invalidate(pod)
-		verify(namespacedPodsProvider).invalidate(pod)
+		verify(namespacesProvider, never()).replace(pod)
+		verify(namespacedPodsProvider).replace(pod)
 	}
 
 	@Test
-	fun `#invalidate(resource) should invalidate non-namespaced resource provider`() {
+	fun `#replace(resource) should replace in non-namespaced resource provider`() {
 		// given
 		val namespace = allNamespaces[0]
 		// when
-		context.invalidate(namespace)
+		context.replace(namespace)
 		// then
-		verify(namespacesProvider).invalidate(namespace)
-		verify(namespacedPodsProvider, never()).invalidate(namespace)
+		verify(namespacesProvider).replace(namespace)
+		verify(namespacedPodsProvider, never()).replace(namespace)
 	}
 
 	@Test
-	fun `#invalidate(customResource) should invalidate custom resource provider`() {
+	fun `#replace(customResource) should replace in custom resource provider`() {
 		// given
 		givenCustomResourceProvider(namespacedDefinition,
 				customResourceDefinitionsProvider,
 				namespacedCustomResourcesProvider)
 		// when
-		context.invalidate(namespacedCustomResource1)
+		context.replace(namespacedCustomResource1)
 		// then
-		verify(namespacedCustomResourcesProvider).invalidate(namespacedCustomResource1)
+		verify(namespacedCustomResourcesProvider).replace(namespacedCustomResource1)
 	}
 
 	@Test

@@ -18,6 +18,7 @@ import com.nhaarman.mockitokotlin2.spy
 import com.nhaarman.mockitokotlin2.times
 import com.nhaarman.mockitokotlin2.verify
 import io.fabric8.kubernetes.api.model.Pod
+import io.fabric8.kubernetes.api.model.apps.Deployment
 import io.fabric8.kubernetes.client.KubernetesClient
 import org.assertj.core.api.Assertions.assertThat
 import org.jboss.tools.intellij.kubernetes.model.mocks.ClientMocks.NAMESPACE1
@@ -128,6 +129,46 @@ class NamespacedPodsProviderTest {
         provider.namespace =  "skywalker"
         // then
         verify(provider).invalidate()
+    }
+
+    @Test
+    fun `#replace(pod) replaces pod if pod with same name, namespace, kind already exist`() {
+        // given
+        val name = POD2.metadata.name
+        val namespace = POD2.metadata.namespace
+        val pod = resource<Pod>(name, namespace)
+        assertThat(provider.getAllResources()).doesNotContain(pod)
+        // when
+        val replaced = provider.replace(pod)
+        // then
+        assertThat(replaced).isTrue()
+        assertThat(provider.getAllResources()).contains(pod)
+    }
+
+    @Test
+    fun `#replace(pod) does NOT replace pod if pod has different name`() {
+        // given
+        val namespace = POD2.metadata.namespace
+        val pod = resource<Pod>("darth vader", namespace)
+        assertThat(provider.getAllResources()).doesNotContain(pod)
+        // when
+        val replaced = provider.replace(pod)
+        // then
+        assertThat(replaced).isFalse()
+        assertThat(provider.getAllResources()).doesNotContain(pod)
+    }
+
+    @Test
+    fun `#replace(pod) does NOT replace pod if pod has different namespace`() {
+        // given
+        val name = POD2.metadata.name
+        val pod = resource<Pod>(name, "sith")
+        assertThat(provider.getAllResources()).doesNotContain(pod)
+        // when
+        val replaced = provider.replace(pod)
+        // then
+        assertThat(replaced).isFalse()
+        assertThat(provider.getAllResources()).doesNotContain(pod)
     }
 
     @Test

@@ -30,6 +30,7 @@ import java.util.concurrent.LinkedBlockingDeque
 open class ResourceWatch(
         private val addOperation: (HasMetadata) -> Unit,
         private val removeOperation: (HasMetadata) -> Unit,
+        private val replaceOperation: (HasMetadata) -> Unit,
         protected val watchOperations: BlockingDeque<Runnable> = LinkedBlockingDeque(),
         watchOperationsRunner: Runnable = WatchOperationsRunner(watchOperations)
 ) {
@@ -48,7 +49,8 @@ open class ResourceWatch(
                     supplier.invoke(),
                     watches,
                     addOperation,
-                    removeOperation)
+                    removeOperation,
+                    replaceOperation)
             watchOperations.add(watchOperation) // enqueue watch operation
             WATCH_OPERATION_ENQUEUED // Marker: watch operation submitted
         }
@@ -110,12 +112,13 @@ open class ResourceWatch(
             private val watchable: Watchable<Watch, Watcher<in R>>?,
             private val watches: MutableMap<ResourceKind<*>, Watch?>,
             private val addOperation: (HasMetadata) -> Unit,
-            private val removeOperation: (HasMetadata) -> Unit
+            private val removeOperation: (HasMetadata) -> Unit,
+            private val replaceOperation: (HasMetadata) -> Unit
     ) : Runnable {
         override fun run() {
             try {
                 logger<ResourceWatcher>().debug("Trying to watch $kind resources.")
-                val watch: Watch? = watchable?.watch(ResourceWatcher(addOperation, removeOperation))
+                val watch: Watch? = watchable?.watch(ResourceWatcher(addOperation, removeOperation, replaceOperation))
                 if (watch == null) {
                     watches.remove(kind) // remove placeholder
                 } else {
@@ -131,7 +134,8 @@ open class ResourceWatch(
 
     class ResourceWatcher(
             private val addOperation: (HasMetadata) -> Unit,
-            private val removeOperation: (HasMetadata) -> Unit
+            private val removeOperation: (HasMetadata) -> Unit,
+            private val replaceOperation: (HasMetadata) -> Unit
     ) : Watcher<HasMetadata> {
         override fun eventReceived(action: Watcher.Action?, resource: HasMetadata) {
             logger<ResourceWatcher>().debug("Watcher event: resource ${resource.metadata.name} in namespace ${resource.metadata.namespace} was $action.")
@@ -140,6 +144,8 @@ open class ResourceWatch(
                     addOperation(resource)
                 Watcher.Action.DELETED ->
                     removeOperation(resource)
+                Watcher.Action.MODIFIED ->
+                    replaceOperation(resource)
                 else -> Unit
             }
         }

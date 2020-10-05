@@ -180,7 +180,7 @@ class ResourceModelTest {
         // when
         model.invalidate(resource)
         // then
-        verify(activeContext).invalidate(resource)
+        verify(activeContext).replace(resource)
     }
 
     @Test

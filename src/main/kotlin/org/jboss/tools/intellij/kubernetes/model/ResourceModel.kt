@@ -135,7 +135,7 @@ open class ResourceModel(
     }
 
     private fun invalidate(resource: HasMetadata) {
-        contexts.current?.invalidate(resource) ?: return
+        contexts.current?.replace(resource) ?: return
         observable.fireModified(resource)
     }
 

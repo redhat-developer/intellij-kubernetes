@@ -15,7 +15,7 @@ import org.jboss.tools.intellij.kubernetes.model.util.areEqual
 
 abstract class AbstractResourcesProvider<R : HasMetadata> : IResourcesProvider<R> {
 
-    protected val allResources = mutableSetOf<R>()
+    protected val allResources = mutableListOf<R>()
 
     override fun invalidate() {
         synchronized(allResources) {
@@ -23,14 +23,8 @@ abstract class AbstractResourcesProvider<R : HasMetadata> : IResourcesProvider<R
         }
     }
 
-    override fun invalidate(resource: HasMetadata) {
-        synchronized(allResources) {
-            allResources.remove(resource)
-        }
-    }
-
     override fun add(resource: HasMetadata): Boolean {
-        if (!kind.clazz.isAssignableFrom(resource::class.java)) {
+        if (!isOfCorrectKind(resource)) {
             return false
         }
         // don't add resource if different instance of same resource is already contained
@@ -41,8 +35,7 @@ abstract class AbstractResourcesProvider<R : HasMetadata> : IResourcesProvider<R
     }
 
     override fun remove(resource: HasMetadata): Boolean {
-        val resourceClass = resource::class.java
-        if (!kind.clazz.isAssignableFrom(resourceClass)) {
+        if (!isOfCorrectKind(resource)) {
             return false
         }
         // do not remove by instance equality bcs instance to be removed can be different
@@ -50,5 +43,24 @@ abstract class AbstractResourcesProvider<R : HasMetadata> : IResourcesProvider<R
         synchronized(allResources) {
             return allResources.removeIf { areEqual(it, resource) }
         }
+    }
+
+    override fun replace(resource: HasMetadata): Boolean {
+        if (!isOfCorrectKind(resource)) {
+            return false
+        }
+        synchronized(allResources) {
+            val toReplace = allResources.find { areEqual(it, resource) } ?: return false
+            val indexOf = allResources.indexOf(toReplace)
+            if (indexOf < 0) {
+                return false
+            }
+            allResources[indexOf] = resource as R
+            return true
+        }
+    }
+
+    private fun isOfCorrectKind(resource: HasMetadata): Boolean {
+        return kind.clazz.isAssignableFrom(resource::class.java)
     }
 }
