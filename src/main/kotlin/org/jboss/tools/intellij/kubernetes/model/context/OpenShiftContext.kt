@@ -35,6 +35,8 @@ import org.jboss.tools.intellij.kubernetes.model.resource.kubernetes.SecretsProv
 import org.jboss.tools.intellij.kubernetes.model.resource.kubernetes.ServicesProvider
 import org.jboss.tools.intellij.kubernetes.model.resource.kubernetes.StatefulSetsProvider
 import org.jboss.tools.intellij.kubernetes.model.resource.kubernetes.StorageClassesProvider
+import org.jboss.tools.intellij.kubernetes.model.resource.openshift.BuildConfigsProvider
+import org.jboss.tools.intellij.kubernetes.model.resource.openshift.BuildsProvider
 import org.jboss.tools.intellij.kubernetes.model.resource.openshift.DeploymentConfigsProvider
 import org.jboss.tools.intellij.kubernetes.model.resource.openshift.ImageStreamsProvider
 import org.jboss.tools.intellij.kubernetes.model.resource.openshift.ProjectsProvider
@@ -61,6 +63,8 @@ open class OpenShiftContext(
 				ProjectsProvider(client),
 				ImageStreamsProvider(client),
 				DeploymentConfigsProvider(client),
+				BuildsProvider(client),
+				BuildConfigsProvider(client),
 				ReplicationControllersProvider(client),
 				ServicesProvider(client),
 				EndpointsProvider(client),

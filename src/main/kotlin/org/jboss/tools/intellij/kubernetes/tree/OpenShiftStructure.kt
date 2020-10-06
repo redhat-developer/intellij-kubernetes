@@ -15,14 +15,20 @@ import com.intellij.openapi.util.IconLoader
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.Node
 import io.fabric8.kubernetes.api.model.ReplicationController
+import io.fabric8.openshift.api.model.Build
+import io.fabric8.openshift.api.model.BuildConfig
 import io.fabric8.openshift.api.model.DeploymentConfig
 import io.fabric8.openshift.api.model.ImageStream
 import io.fabric8.openshift.api.model.Project
 import org.jboss.tools.intellij.kubernetes.model.IResourceModel
 import org.jboss.tools.intellij.kubernetes.model.ResourceException
 import org.jboss.tools.intellij.kubernetes.model.context.OpenShiftContext
+import org.jboss.tools.intellij.kubernetes.model.resource.BuildConfigFor
+import org.jboss.tools.intellij.kubernetes.model.resource.BuildFor
 import org.jboss.tools.intellij.kubernetes.model.resource.DeploymentConfigFor
 import org.jboss.tools.intellij.kubernetes.model.resource.ReplicationControllerFor
+import org.jboss.tools.intellij.kubernetes.model.resource.openshift.BuildConfigsProvider
+import org.jboss.tools.intellij.kubernetes.model.resource.openshift.BuildsProvider
 import org.jboss.tools.intellij.kubernetes.model.resource.openshift.DeploymentConfigsProvider
 import org.jboss.tools.intellij.kubernetes.model.resource.openshift.ImageStreamsProvider
 import org.jboss.tools.intellij.kubernetes.model.resource.openshift.ProjectsProvider
@@ -40,6 +46,7 @@ class OpenShiftStructure(model: IResourceModel): AbstractTreeStructureContributi
         val PROJECTS = Folder("Projects", ProjectsProvider.KIND)
         val IMAGESTREAMS = Folder("ImageStreams", ImageStreamsProvider.KIND)
         val DEPLOYMENTCONFIGS = Folder("DeploymentConfigs", DeploymentConfigsProvider.KIND)
+        val BUILDCONFIGS = Folder("BuildConfigs", BuildConfigsProvider.KIND)
     }
 
     override fun canContribute(): Boolean {
@@ -53,11 +60,18 @@ class OpenShiftStructure(model: IResourceModel): AbstractTreeStructureContributi
             WORKLOADS ->
                 listOf<Any>(
                         IMAGESTREAMS,
-                        DEPLOYMENTCONFIGS)
+                        DEPLOYMENTCONFIGS,
+                        BUILDCONFIGS)
             is DeploymentConfig ->
                 model.resources(ReplicationControllersProvider.KIND)
                         .inCurrentNamespace()
                         .filtered(ReplicationControllerFor(element))
+                        .list()
+                        .sortedBy(resourceName)
+            is BuildConfig ->
+                model.resources(BuildsProvider.KIND)
+                        .inCurrentNamespace()
+                        .filtered(BuildFor(element))
                         .list()
                         .sortedBy(resourceName)
             PROJECTS ->
@@ -71,6 +85,11 @@ class OpenShiftStructure(model: IResourceModel): AbstractTreeStructureContributi
                         .list()
             DEPLOYMENTCONFIGS ->
                 model.resources(DeploymentConfigsProvider.KIND)
+                        .inCurrentNamespace()
+                        .list()
+                        .sortedBy(resourceName)
+            BUILDCONFIGS ->
+                model.resources(BuildConfigsProvider.KIND)
                         .inCurrentNamespace()
                         .list()
                         .sortedBy(resourceName)
@@ -105,6 +124,16 @@ class OpenShiftStructure(model: IResourceModel): AbstractTreeStructureContributi
                             .filtered(DeploymentConfigFor(element))
                             .list()
                             .sortedBy(resourceName)
+                is BuildConfig ->
+                    BuildConfigsProvider
+                BUILDCONFIGS ->
+                    WORKLOADS
+                is Build ->
+                    model.resources(BuildConfigsProvider.KIND)
+                            .inCurrentNamespace()
+                            .filtered(BuildConfigFor(element))
+                            .list()
+                            .sortedBy(resourceName)
                 else ->
                     getRootElement()
             }
@@ -119,7 +148,9 @@ class OpenShiftStructure(model: IResourceModel): AbstractTreeStructureContributi
             is Project -> ProjectDescriptor(element, parent, model)
             is ImageStream,
             is DeploymentConfig,
-            is ReplicationController -> ResourceDescriptor(element as HasMetadata, parent, model)
+            is ReplicationController,
+            is BuildConfig,
+            is Build -> ResourceDescriptor(element as HasMetadata, parent, model)
             else -> null
         }
     }
