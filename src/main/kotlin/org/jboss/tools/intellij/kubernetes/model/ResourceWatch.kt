@@ -124,7 +124,7 @@ open class ResourceWatch(
                 }
             } catch (e: Exception) {
                 watches.remove(kind) // remove placeholder
-                logger<ResourceWatcher>().error("Could not watch resource $kind.", e)
+                logger<ResourceWatcher>().warn("Could not watch resource $kind.", e)
             }
         }
     }
