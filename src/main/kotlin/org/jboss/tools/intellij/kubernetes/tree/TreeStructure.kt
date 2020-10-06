@@ -131,6 +131,8 @@ open class TreeStructure(
         return if (element is IContext
                 && element !is IActiveContext<*, *>) {
             LeafState.ALWAYS
+        } else if (element is Exception) {
+            LeafState.ALWAYS
         } else {
             val leafState = contributions.find { it.getLeafState(element) != null }?.getLeafState(element)
             return leafState ?: LeafState.NEVER
@@ -177,7 +179,7 @@ open class TreeStructure(
         : Descriptor<Folder>(
             element,
             parent,
-            model = model
+            model
     ) {
         override fun isMatching(element: Any?): Boolean {
             // change in resource category is notified as change of resource kind
