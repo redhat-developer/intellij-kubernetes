@@ -17,6 +17,8 @@ import io.fabric8.kubernetes.api.model.Service
 import io.fabric8.kubernetes.api.model.apps.DaemonSet
 import io.fabric8.kubernetes.api.model.apps.Deployment
 import io.fabric8.kubernetes.api.model.apps.StatefulSet
+import io.fabric8.openshift.api.model.Build
+import io.fabric8.openshift.api.model.BuildConfig
 import io.fabric8.openshift.api.model.DeploymentConfig
 import java.util.function.Predicate
 
@@ -29,14 +31,35 @@ class ReplicationControllerFor(private val dc: DeploymentConfig) : Predicate<Rep
 	}
 }
 
-class DeploymentConfigFor(dc: ReplicationController) : Predicate<DeploymentConfig> {
+class DeploymentConfigFor(rc: ReplicationController) : Predicate<DeploymentConfig> {
 
-	private val deploymentConfigAnnotation = "openshift.io/deployment-config.name"
-	private val dcName: String? = dc.metadata.annotations[deploymentConfigAnnotation]
+	private val dcConfigAnnotation = "openshift.io/deployment-config.name"
+	private val dcName: String? = rc.metadata.annotations[dcConfigAnnotation]
 
 	override fun test(dc: DeploymentConfig): Boolean {
 		return dcName != null
-				&& dcName == dc.metadata.annotations[deploymentConfigAnnotation]
+				&& dcName == dc.metadata.annotations[dcConfigAnnotation]
+	}
+}
+
+class BuildFor(private val bc: BuildConfig) : Predicate<Build> {
+
+	private val buildConfigLabel = "buildconfig"
+
+	override fun test(build: Build): Boolean {
+		return build.metadata.labels[buildConfigLabel] == bc.metadata.name
+	}
+}
+
+class BuildConfigFor(build: Build) : Predicate<BuildConfig> {
+
+	private val bcKey = "openshift.io/build-config.name"
+	private val bcName: String? = build.metadata.annotations[bcKey]
+			?: build.metadata.labels[bcKey]
+
+	override fun test(bc: BuildConfig): Boolean {
+		return bcName != null
+				&& bcName == bc.metadata.name
 	}
 }
 
