@@ -21,9 +21,20 @@ import io.fabric8.kubernetes.model.util.Helper
  * These are considered equal if their name, namespace and kind are equal.
  */
 fun areEqual(thisResource: HasMetadata, thatResource: HasMetadata): Boolean {
-	return KubernetesResourceUtil.getName(thisResource) == KubernetesResourceUtil.getName(thatResource)
-			&& KubernetesResourceUtil.getNamespace(thisResource) == KubernetesResourceUtil.getNamespace(thatResource)
-			&& KubernetesResourceUtil.getKind(thisResource) == KubernetesResourceUtil.getKind(thatResource)
+	return thisResource.metadata.uid == thatResource.metadata.uid
+//	return KubernetesResourceUtil.getName(thisResource) == KubernetesResourceUtil.getName(thatResource)
+//			&& KubernetesResourceUtil.getNamespace(thisResource) == KubernetesResourceUtil.getNamespace(thatResource)
+//			&& KubernetesResourceUtil.getKind(thisResource) == KubernetesResourceUtil.getKind(thatResource)
+}
+
+fun HasMetadata.isUpdated(resource: HasMetadata): Boolean {
+	return try {
+		val thisVersion = this.metadata.resourceVersion.toInt()
+		val thatVersion = resource.metadata.resourceVersion.toInt()
+		thisVersion < thatVersion
+	} catch(e: NumberFormatException) {
+		false
+	}
 }
 
 /**

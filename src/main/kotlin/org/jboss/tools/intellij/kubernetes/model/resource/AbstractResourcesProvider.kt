@@ -10,6 +10,7 @@
  ******************************************************************************/
 package org.jboss.tools.intellij.kubernetes.model.resource
 
+import com.intellij.openapi.diagnostic.logger
 import io.fabric8.kubernetes.api.model.HasMetadata
 import org.jboss.tools.intellij.kubernetes.model.util.areEqual
 
@@ -18,6 +19,7 @@ abstract class AbstractResourcesProvider<R : HasMetadata> : IResourcesProvider<R
     protected val allResources = mutableListOf<R>()
 
     override fun invalidate() {
+        logger<AbstractResourcesProvider<*>>().debug("Invalidating all $kind resources.")
         synchronized(allResources) {
             allResources.clear()
         }
@@ -27,10 +29,15 @@ abstract class AbstractResourcesProvider<R : HasMetadata> : IResourcesProvider<R
         if (!isOfCorrectKind(resource)) {
             return false
         }
+        logger<AbstractResourcesProvider<*>>().debug("Adding resource ${resource.metadata.name}.")
         // don't add resource if different instance of same resource is already contained
         synchronized(allResources) {
-            return allResources.find { areEqual(it, resource) } == null
-                    && allResources.add(resource as R)
+            val existing = allResources.find { areEqual(it, resource) }
+            return if (existing == null) {
+                allResources.add(resource as R)
+            } else {
+                replaceBy(existing, resource)
+            }
         }
     }
 
@@ -40,6 +47,7 @@ abstract class AbstractResourcesProvider<R : HasMetadata> : IResourcesProvider<R
         }
         // do not remove by instance equality bcs instance to be removed can be different
         // ex. when removal is triggered by resource watch
+        logger<AbstractResourcesProvider<*>>().debug("Removing resource ${resource.metadata.name}.")
         synchronized(allResources) {
             return allResources.removeIf { areEqual(it, resource) }
         }
@@ -49,15 +57,20 @@ abstract class AbstractResourcesProvider<R : HasMetadata> : IResourcesProvider<R
         if (!isOfCorrectKind(resource)) {
             return false
         }
+        logger<AbstractResourcesProvider<*>>().debug("Replacing resource ${resource.metadata.name}.")
         synchronized(allResources) {
             val toReplace = allResources.find { areEqual(it, resource) } ?: return false
-            val indexOf = allResources.indexOf(toReplace)
-            if (indexOf < 0) {
-                return false
-            }
-            allResources[indexOf] = resource as R
-            return true
+            return replaceBy(toReplace, resource)
         }
+    }
+
+    private fun replaceBy(toReplace: R, replaceBy: HasMetadata): Boolean {
+        val indexOf = allResources.indexOf(toReplace)
+        if (indexOf < 0) {
+            return false
+        }
+        allResources[indexOf] = replaceBy as R
+        return true
     }
 
     private fun isOfCorrectKind(resource: HasMetadata): Boolean {

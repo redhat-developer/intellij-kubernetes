@@ -10,10 +10,12 @@
  ******************************************************************************/
 package org.jboss.tools.intellij.kubernetes.model
 
+import com.intellij.openapi.diagnostic.logger
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.apiextensions.CustomResourceDefinition
 import io.fabric8.kubernetes.client.KubernetesClient
 import io.fabric8.kubernetes.client.KubernetesClientException
+import org.jboss.tools.intellij.kubernetes.model.context.ActiveContext
 import org.jboss.tools.intellij.kubernetes.model.context.ContextFactory
 import org.jboss.tools.intellij.kubernetes.model.context.IActiveContext
 import org.jboss.tools.intellij.kubernetes.model.context.IActiveContext.ResourcesIn
@@ -120,6 +122,7 @@ open class ResourceModel(
     }
 
     private fun invalidate() {
+        logger<ResourceModel>().debug("Invalidating all contexts.")
         contexts.clear()
         observable.fireModified(this)
     }

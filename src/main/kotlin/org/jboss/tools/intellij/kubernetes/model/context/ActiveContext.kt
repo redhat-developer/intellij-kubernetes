@@ -10,6 +10,7 @@
  ******************************************************************************/
 package org.jboss.tools.intellij.kubernetes.model.context
 
+import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.extensions.ExtensionPointName
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.NamedContext
@@ -25,6 +26,7 @@ import org.jboss.tools.intellij.kubernetes.model.context.IActiveContext.Resource
 import org.jboss.tools.intellij.kubernetes.model.context.IActiveContext.ResourcesIn.ANY_NAMESPACE
 import org.jboss.tools.intellij.kubernetes.model.context.IActiveContext.ResourcesIn.CURRENT_NAMESPACE
 import org.jboss.tools.intellij.kubernetes.model.context.IActiveContext.ResourcesIn.NO_NAMESPACE
+import org.jboss.tools.intellij.kubernetes.model.resource.AbstractResourcesProvider
 import org.jboss.tools.intellij.kubernetes.model.resource.INamespacedResourcesProvider
 import org.jboss.tools.intellij.kubernetes.model.resource.INonNamespacedResourcesProvider
 import org.jboss.tools.intellij.kubernetes.model.resource.IResourcesProvider
@@ -84,6 +86,7 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
             return
         }
 
+        logger<ActiveContext<*, *>>().debug("Setting current namespace to $namespace.")
         if (currentNamespace != null) {
             stopWatch(currentNamespace)
         }
@@ -110,6 +113,7 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
     protected abstract fun getNamespaces(): Collection<N>
 
     override fun <R: HasMetadata> getResources(kind: ResourceKind<R>, resourcesIn: ResourcesIn): Collection<R> {
+        logger<ActiveContext<*,*>>().debug("Resources $kind requested.")
         val provider = getProvider(kind, resourcesIn) ?: return emptyList()
         return provider.getAllResources()
     }
@@ -199,6 +203,7 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
     }
 
     override fun watch(kind: ResourceKind<out HasMetadata>) {
+        logger<ActiveContext<*, *>>().debug("Watching $kind resources.")
         watch(namespacedProviders[kind])
         watch(nonNamespacedProviders[kind])
     }
@@ -227,7 +232,7 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
         // we need to add resource to both providers (ex. all pods & only namespaced pods)
         val kind = ResourceKind.new(resource)
         val addedToNonNamespaced = addResource(resource, nonNamespacedProviders[kind])
-        val addedToNamespaced = getCurrentNamespace() == resource.metadata?.namespace
+        val addedToNamespaced = getCurrentNamespace() == resource.metadata.namespace
                 && addResource(resource, namespacedProviders[kind])
         return addedToNonNamespaced ||
                 addedToNamespaced
@@ -286,6 +291,7 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
     }
 
     override fun invalidate() {
+        logger<ActiveContext<*, *>>().debug("Invalidating all providers.")
         namespacedProviders.values.forEach { it.invalidate() }
         nonNamespacedProviders.values.forEach { it.invalidate() }
         modelChange.fireModified(this)
@@ -312,10 +318,11 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
     }
 
     override fun invalidate(kind: ResourceKind<*>) {
+        logger<ActiveContext<*, *>>().debug("Invalidating resource providers for $kind resources.")
         namespacedProviders[kind]?.invalidate()
         nonNamespacedProviders[kind]?.invalidate()
         modelChange.fireModified(kind)
-        }
+    }
 
     /**
      * Stops watching all watchables for the given namespace. Doesn't stop the cluster wide watchables nor
@@ -324,6 +331,7 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
      * @param namespace stops watchables for the given namespace.
      */
     private fun stopWatch(namespace: String) {
+        logger<ActiveContext<*, *>>().debug("Stopping all watches for namespace $namespace.")
         watch.ignoreAll(namespacedProviders(namespace).map { it.kind })
     }
 
@@ -333,6 +341,7 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
     }
 
     override fun close() {
+        logger<ActiveContext<*, *>>().debug("Closing context")
         client.close()
     }
 
