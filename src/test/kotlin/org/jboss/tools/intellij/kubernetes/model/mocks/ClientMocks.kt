@@ -169,8 +169,8 @@ object ClientMocks {
         return definition
     }
 
-    inline fun <reified T: HasMetadata> resource(name: String, namespace: String? = null): T {
-        val metadata = objectMeta(name, namespace)
+    inline fun <reified T: HasMetadata> resource(name: String, namespace: String? = null, uid: String = System.currentTimeMillis().toString()): T {
+        val metadata = objectMeta(name, namespace, uid)
         return mock {
             on { getMetadata() } doReturn metadata
             on { getApiVersion() } doReturn getApiVersion(T::class.java)
@@ -178,8 +178,8 @@ object ClientMocks {
         }
     }
 
-    fun customResource(name: String, namespace: String, definition: CustomResourceDefinition): GenericResource {
-        val metadata = objectMeta(name, namespace)
+    fun customResource(name: String, namespace: String, definition: CustomResourceDefinition, uid: String = System.currentTimeMillis().toString()): GenericResource {
+        val metadata = objectMeta(name, namespace, uid)
         val apiVersion = getApiVersion(definition.spec.group, definition.spec.version)
         val kind = definition.spec.names.kind
         return mock {
@@ -189,8 +189,9 @@ object ClientMocks {
         }
     }
 
-    fun objectMeta(name: String, namespace: String?): ObjectMeta {
+    fun objectMeta(name: String, namespace: String?, uid: String): ObjectMeta {
         val metadata = mock<ObjectMeta> {
+            on { getUid() } doReturn uid
             on { getName() } doReturn name
             if (namespace != null) {
                 on { getNamespace() } doReturn namespace

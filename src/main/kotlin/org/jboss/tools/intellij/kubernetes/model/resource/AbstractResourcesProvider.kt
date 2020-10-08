@@ -12,7 +12,7 @@ package org.jboss.tools.intellij.kubernetes.model.resource
 
 import com.intellij.openapi.diagnostic.logger
 import io.fabric8.kubernetes.api.model.HasMetadata
-import org.jboss.tools.intellij.kubernetes.model.util.areEqual
+import org.jboss.tools.intellij.kubernetes.model.util.sameUid
 
 abstract class AbstractResourcesProvider<R : HasMetadata> : IResourcesProvider<R> {
 
@@ -32,11 +32,11 @@ abstract class AbstractResourcesProvider<R : HasMetadata> : IResourcesProvider<R
         logger<AbstractResourcesProvider<*>>().debug("Adding resource ${resource.metadata.name}.")
         // don't add resource if different instance of same resource is already contained
         synchronized(allResources) {
-            val existing = allResources.find { areEqual(it, resource) }
-            return if (existing == null) {
-                allResources.add(resource as R)
-            } else {
-                replaceBy(existing, resource)
+            val existing = allResources.find { resource.sameUid(it) }
+            return when (existing) {
+                resource -> false
+                null -> allResources.add(resource as R)
+                else -> replaceBy(existing, resource)
             }
         }
     }
@@ -49,7 +49,7 @@ abstract class AbstractResourcesProvider<R : HasMetadata> : IResourcesProvider<R
         // ex. when removal is triggered by resource watch
         logger<AbstractResourcesProvider<*>>().debug("Removing resource ${resource.metadata.name}.")
         synchronized(allResources) {
-            return allResources.removeIf { areEqual(it, resource) }
+            return allResources.removeIf { resource.sameUid(it) }
         }
     }
 
@@ -59,7 +59,7 @@ abstract class AbstractResourcesProvider<R : HasMetadata> : IResourcesProvider<R
         }
         logger<AbstractResourcesProvider<*>>().debug("Replacing resource ${resource.metadata.name}.")
         synchronized(allResources) {
-            val toReplace = allResources.find { areEqual(it, resource) } ?: return false
+            val toReplace = allResources.find { resource.sameUid(it) } ?: return false
             return replaceBy(toReplace, resource)
         }
     }

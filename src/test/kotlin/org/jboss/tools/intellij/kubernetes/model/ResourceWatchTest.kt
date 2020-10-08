@@ -47,7 +47,7 @@ class ResourceWatchTest {
         addOperation = addOperation,
         removeOperation = removeOperation,
         replaceOperation = replaceOperation,
-        watchOperations = LinkedBlockingDeque<Runnable>(),
+        watchOperations = LinkedBlockingDeque<ResourceWatch.WatchOperation<*>>(),
         watchOperationsRunner = mock()
     ))
     private val podKind = ResourceKind.new(Pod::class.java)
@@ -217,7 +217,7 @@ class ResourceWatchTest {
             addOperation: (HasMetadata) -> Unit,
             removeOperation: (HasMetadata) -> Unit,
             replaceOperation: (HasMetadata) -> Unit,
-            watchOperations: BlockingDeque<Runnable>,
+            watchOperations: BlockingDeque<WatchOperation<*>>,
             watchOperationsRunner: Runnable = mock()
     ): ResourceWatch(addOperation, removeOperation, replaceOperation, watchOperations, watchOperationsRunner) {
         public override val watches: ConcurrentHashMap<ResourceKind<*>, Watch?> = spy(super.watches)

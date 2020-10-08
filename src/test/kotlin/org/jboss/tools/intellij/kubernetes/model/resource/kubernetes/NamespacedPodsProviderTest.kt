@@ -132,11 +132,10 @@ class NamespacedPodsProviderTest {
     }
 
     @Test
-    fun `#replace(pod) replaces pod if pod with same name, namespace, kind already exist`() {
+    fun `#replace(pod) replaces pod if pod with same uid already exist`() {
         // given
-        val name = POD2.metadata.name
-        val namespace = POD2.metadata.namespace
-        val pod = resource<Pod>(name, namespace)
+        val uid = POD2.metadata.uid
+        val pod = resource<Pod>("lord vader", "sith", uid)
         assertThat(provider.getAllResources()).doesNotContain(pod)
         // when
         val replaced = provider.replace(pod)
@@ -195,18 +194,16 @@ class NamespacedPodsProviderTest {
     }
 
     @Test
-    fun `#add(pod) does not add if different instance of same pod is already contained`() {
+    fun `#add(pod) is replacing if different instance of same pod is already contained`() {
         // given
-        val instance1 = resource<Pod>("gargamel", "smurfington")
-        val instance2 = resource<Pod>("gargamel", "smurfington")
+        val instance1 = resource<Pod>("gargamel", "smurfington", "uid-1-2-3")
+        val instance2 = resource<Pod>("gargamel", "smurfington", "uid-1-2-3")
         provider.add(instance1)
         assertThat(provider.getAllResources()).contains(instance1)
-        val size = provider.getAllResources().size
         // when
         provider.add(instance2)
         // then
-        assertThat(provider.getAllResources()).doesNotContain(instance2)
-        assertThat(provider.getAllResources().size).isEqualTo(size)
+        assertThat(provider.getAllResources()).containsExactly(instance2)
     }
 
     @Test
@@ -241,10 +238,10 @@ class NamespacedPodsProviderTest {
     }
 
     @Test
-    fun `#remove(pod) removes the given pod if it isn't the same instance but matches in name and namespace`() {
+    fun `#remove(pod) removes the given pod if it isn't the same instance but matches in uid`() {
         // given
         val pod1 = provider.getAllResources().elementAt(0)
-        val pod2 = resource<Pod>(pod1.metadata.name, pod1.metadata.namespace)
+        val pod2 = resource<Pod>("skywalker", "jedi", pod1.metadata.uid)
         // when
         provider.remove(pod2)
         // then
