@@ -18,11 +18,15 @@ abstract class AbstractResourcesProvider<R : HasMetadata> : IResourcesProvider<R
     protected val allResources = mutableSetOf<R>()
 
     override fun invalidate() {
-        allResources.clear()
+        synchronized(allResources) {
+            allResources.clear()
+        }
     }
 
     override fun invalidate(resource: HasMetadata) {
-        allResources.remove(resource)
+        synchronized(allResources) {
+            allResources.remove(resource)
+        }
     }
 
     override fun add(resource: HasMetadata): Boolean {
@@ -30,8 +34,10 @@ abstract class AbstractResourcesProvider<R : HasMetadata> : IResourcesProvider<R
             return false
         }
         // don't add resource if different instance of same resource is already contained
-        return allResources.find { areEqual(it, resource) } == null
-                && allResources.add(resource as R)
+        synchronized(allResources) {
+            return allResources.find { areEqual(it, resource) } == null
+                    && allResources.add(resource as R)
+        }
     }
 
     override fun remove(resource: HasMetadata): Boolean {
@@ -41,6 +47,8 @@ abstract class AbstractResourcesProvider<R : HasMetadata> : IResourcesProvider<R
         }
         // do not remove by instance equality bcs instance to be removed can be different
         // ex. when removal is triggered by resource watch
-        return allResources.removeIf { areEqual(it, resource) }
+        synchronized(allResources) {
+            return allResources.removeIf { areEqual(it, resource) }
+        }
     }
 }

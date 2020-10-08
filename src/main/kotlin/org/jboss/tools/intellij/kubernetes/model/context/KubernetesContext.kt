@@ -66,7 +66,7 @@ open class KubernetesContext(
 		)
 	}
 
-	override fun getNamespaces(): Collection<Namespace> {
+	public override fun getNamespaces(): Collection<Namespace> {
 		return getResources(NamespacesProvider.KIND, ResourcesIn.NO_NAMESPACE)
 	}
 

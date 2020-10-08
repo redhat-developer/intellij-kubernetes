@@ -53,8 +53,6 @@ object Mocks {
     fun activeContext(client: NamespacedKubernetesClient, currentNamespace: Namespace, context: NamedContext? = null)
             : IActiveContext<HasMetadata, KubernetesClient> {
         return mock {
-            doNothing()
-                .whenever(mock).startWatch()
             doReturn(client)
                 .whenever(mock).client
             doReturn(currentNamespace.metadata.name)
@@ -68,7 +66,7 @@ object Mocks {
             kind: ResourceKind<T>,
             resources: Collection<T>,
             namespace: Namespace,
-            watchableSupplier: () -> Watchable<Watch, Watcher<HasMetadata>>? = { null })
+            watchableSupplier: () -> Watchable<Watch, Watcher<T>>? = { null })
             : INamespacedResourcesProvider<T> {
         return mock {
             doReturn(namespace.metadata.name)
@@ -82,12 +80,15 @@ object Mocks {
         }
     }
 
-    fun <T: HasMetadata> nonNamespacedResourceProvider(kind: ResourceKind<T>, resources: Collection<T>)
+    fun <T : HasMetadata> nonNamespacedResourceProvider(
+            kind: ResourceKind<T>,
+            resources: Collection<T>,
+            watchableSupplier: () -> Watchable<Watch, Watcher<T>>? = { null })
             : INonNamespacedResourcesProvider<T> {
         return mock {
             on { this.kind } doReturn kind
-            on { getAllResources() } doReturn(resources)
-            on { getWatchable() } doReturn mock()
+            on { getAllResources() } doReturn resources
+            on { getWatchable() } doReturn watchableSupplier
         }
     }
 

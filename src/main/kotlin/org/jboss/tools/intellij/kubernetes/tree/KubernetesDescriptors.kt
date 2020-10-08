@@ -10,8 +10,10 @@
  ******************************************************************************/
 package org.jboss.tools.intellij.kubernetes.tree
 
+import com.intellij.ide.projectView.PresentationData
 import com.intellij.ide.util.treeView.NodeDescriptor
 import com.intellij.openapi.util.IconLoader
+import com.intellij.ui.SimpleTextAttributes
 import io.fabric8.kubernetes.api.model.ConfigMap
 import io.fabric8.kubernetes.api.model.Endpoints
 import io.fabric8.kubernetes.api.model.HasMetadata
@@ -32,6 +34,7 @@ import io.fabric8.kubernetes.api.model.extensions.Ingress
 import io.fabric8.kubernetes.api.model.storage.StorageClass
 import org.jboss.tools.intellij.kubernetes.model.IResourceModel
 import org.jboss.tools.intellij.kubernetes.model.context.KubernetesContext
+import org.jboss.tools.intellij.kubernetes.model.resource.ResourceKind
 import org.jboss.tools.intellij.kubernetes.model.resource.kubernetes.custom.GenericResource
 import org.jboss.tools.intellij.kubernetes.model.util.getContainers
 import org.jboss.tools.intellij.kubernetes.model.util.isRunning
@@ -132,13 +135,28 @@ object KubernetesDescriptors {
 			parent,
 			model
 	) {
-		override fun getLabel(element: CustomResourceDefinition): String {
-			return if (element.spec.names.plural.isNotBlank()) {
-				element.spec.names.plural
-			} else {
-				element.metadata.name
+		override fun getLabel(element: CustomResourceDefinition): String? {
+			return when {
+				element.spec.names.plural.isNotBlank() -> element.spec.names.plural
+				else -> element.metadata.name
 			}
 		}
+
+		override fun postprocess(presentation: PresentationData) {
+			if (element == null) {
+				return
+			}
+			presentation.addText(getLabel(element!!), SimpleTextAttributes.REGULAR_ATTRIBUTES)
+			presentation.addText(" (${element!!.spec.group}/${element!!.spec.version})", SimpleTextAttributes.GRAYED_SMALL_ATTRIBUTES)
+		}
+
+		override fun watchResources() {
+			if (element == null) {
+				return
+			}
+			model.watch(ResourceKind.new(element!!.spec))
+		}
+
 	}
 
 	fun createPodDescriptorsFactories(pod: Pod)
@@ -186,7 +204,7 @@ object KubernetesDescriptors {
 		}
 	}
 
-	fun <R: HasMetadata> createDataDescriptorFactories(data: Map<String, String>?, element: R)
+	fun <R : HasMetadata> createDataDescriptorFactories(data: Map<String, String>?, element: R)
 			: List<AbstractTreeStructureContribution.DescriptorFactory<R>> {
 		return if (data == null
 				|| data.isEmpty()) {
@@ -196,7 +214,7 @@ object KubernetesDescriptors {
 		}
 	}
 
-	private class DataEntryDescriptorFactory<R: HasMetadata>(private val key: String, resource: R)
+	private class DataEntryDescriptorFactory<R : HasMetadata>(private val key: String, resource: R)
 		: AbstractTreeStructureContribution.DescriptorFactory<R>(resource) {
 
 
@@ -204,7 +222,7 @@ object KubernetesDescriptors {
 			return ConfigMapDataDescriptor(key, resource, parent, model)
 		}
 
-		private class ConfigMapDataDescriptor<R: HasMetadata>(
+		private class ConfigMapDataDescriptor<R : HasMetadata>(
 				private val key: String,
 				element: R,
 				parent: NodeDescriptor<*>?,
@@ -220,14 +238,14 @@ object KubernetesDescriptors {
 		}
 	}
 
-	private class EmptyDataDescriptorFactory<R: HasMetadata>(resource: R)
+	private class EmptyDataDescriptorFactory<R : HasMetadata>(resource: R)
 		: AbstractTreeStructureContribution.DescriptorFactory<R>(resource) {
 
 		override fun create(parent: NodeDescriptor<*>?, model: IResourceModel): NodeDescriptor<R>? {
 			return ConfigMapDataDescriptor(resource, parent, model)
 		}
 
-		private class ConfigMapDataDescriptor<R: HasMetadata>(
+		private class ConfigMapDataDescriptor<R : HasMetadata>(
 				element: R,
 				parent: NodeDescriptor<*>?,
 				model: IResourceModel

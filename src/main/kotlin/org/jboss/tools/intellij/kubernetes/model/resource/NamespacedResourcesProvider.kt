@@ -35,12 +35,14 @@ abstract class NamespacedResourcesProvider<R : HasMetadata, C : KubernetesClient
         }
 
     override fun getAllResources(): Collection<R> {
-        if (allResources.isEmpty()) {
-            if (namespace != null) {
-                allResources.addAll(loadAllResources(namespace!!))
+        synchronized(allResources) {
+            if (allResources.isEmpty()) {
+                if (namespace != null) {
+                    allResources.addAll(loadAllResources(namespace!!))
+                }
             }
+            return allResources
         }
-        return allResources
     }
 
     protected open fun loadAllResources(namespace: String): List<R> {

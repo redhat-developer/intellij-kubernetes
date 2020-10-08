@@ -11,6 +11,7 @@
 package org.jboss.tools.intellij.kubernetes.tree
 
 import com.intellij.ide.util.treeView.NodeDescriptor
+import com.intellij.ui.tree.LeafState
 import org.jboss.tools.intellij.kubernetes.model.IResourceModel
 
 interface ITreeStructureContribution {
@@ -21,4 +22,9 @@ interface ITreeStructureContribution {
     fun getParentElement(element: Any): Any?
     fun createDescriptor(element: Any, parent: NodeDescriptor<*>?): NodeDescriptor<*>?
 
+    /**
+     * Returns the leaf state for the given element.
+     * Returns {@code null} if this contribution has no answer for the given element.
+     */
+    fun getLeafState(element: Any): LeafState?
 }

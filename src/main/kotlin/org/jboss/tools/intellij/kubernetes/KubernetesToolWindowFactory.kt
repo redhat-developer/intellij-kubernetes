@@ -23,12 +23,21 @@ import com.intellij.ui.tree.AsyncTreeModel
 import com.intellij.ui.treeStructure.Tree
 import com.redhat.devtools.intellij.common.tree.StructureTreeModelFactory
 import org.jboss.tools.intellij.kubernetes.model.IResourceModel
+import org.jboss.tools.intellij.kubernetes.tree.ResourceWatchController
 import org.jboss.tools.intellij.kubernetes.tree.TreeStructure
 import org.jboss.tools.intellij.kubernetes.tree.TreeUpdater
 
 class KubernetesToolWindowFactory: ToolWindowFactory {
 
     override fun createToolWindowContent(project: Project, toolWindow: ToolWindow) {
+        val tree = createTree(project)
+        val panel = ScrollPaneFactory.createScrollPane(tree)
+        PopupHandler.installPopupHandler(tree, "org.jboss.tools.intellij.kubernetes.tree", ActionPlaces.UNKNOWN)
+        val contentFactory = ContentFactory.SERVICE.getInstance()
+        toolWindow.contentManager.addContent(contentFactory.createContent(panel, "", false))
+    }
+
+    private fun createTree(project: Project): Tree {
         val resourceModel = ServiceManager.getService(IResourceModel::class.java)
         val structure = TreeStructure(resourceModel)
         val treeModel = StructureTreeModelFactory.create(structure, project)
@@ -36,9 +45,7 @@ class KubernetesToolWindowFactory: ToolWindowFactory {
         val tree = Tree(AsyncTreeModel(treeModel))
         tree.isRootVisible = false
         tree.cellRenderer = NodeRenderer()
-        val panel = ScrollPaneFactory.createScrollPane(tree)
-        PopupHandler.installPopupHandler(tree, "org.jboss.tools.intellij.kubernetes.tree", ActionPlaces.UNKNOWN)
-        val contentFactory = ContentFactory.SERVICE.getInstance()
-        toolWindow.contentManager.addContent(contentFactory.createContent(panel, "", false))
+        ResourceWatchController.install(tree)
+        return tree
     }
 }

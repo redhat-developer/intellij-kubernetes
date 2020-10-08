@@ -12,6 +12,7 @@ package org.jboss.tools.intellij.kubernetes.tree
 
 import com.intellij.ide.util.treeView.NodeDescriptor
 import com.intellij.openapi.util.IconLoader
+import com.intellij.ui.tree.LeafState
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.Node
 import io.fabric8.kubernetes.api.model.ReplicationController
@@ -148,4 +149,12 @@ class OpenShiftStructure(model: IResourceModel): AbstractTreeStructureContributi
             return label
         }
     }
+
+    override fun getLeafState(element: Any): LeafState? {
+        return when(element) {
+            is Project -> LeafState.ALWAYS
+            else -> null
+        }
+    }
+
 }

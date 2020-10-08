@@ -35,11 +35,14 @@ fun areEqual(thisResource: HasMetadata, thatResource: HasMetadata): Boolean {
  * @see io.fabric8.kubernetes.model.annotation.ApiGroup (annotation)
  */
 fun getApiVersion(clazz: Class<out HasMetadata>): String {
-	val apiGroup = Helper.getAnnotationValue(clazz, ApiGroup::class.java)
 	val apiVersion = Helper.getAnnotationValue(clazz, ApiVersion::class.java)
-	return if (apiGroup != null && apiGroup.isNotBlank()
-			&& apiVersion != null && apiVersion.isNotBlank()) {
-		getApiVersion(apiGroup, apiVersion)
+	return if (!apiVersion.isNullOrBlank()) {
+		val apiGroup = Helper.getAnnotationValue(clazz, ApiGroup::class.java)
+		if (!apiGroup.isNullOrBlank()) {
+			getApiVersion(apiGroup, apiVersion)
+		} else {
+			apiVersion
+		}
 	} else {
 		clazz.simpleName
 	}

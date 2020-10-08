@@ -41,6 +41,7 @@ import org.jboss.tools.intellij.kubernetes.model.mocks.ClientMocks.POD2
 import org.jboss.tools.intellij.kubernetes.model.mocks.ClientMocks.POD3
 import org.jboss.tools.intellij.kubernetes.model.mocks.ClientMocks.client
 import org.jboss.tools.intellij.kubernetes.model.mocks.ClientMocks.customResourceDefinition
+import org.jboss.tools.intellij.kubernetes.model.mocks.ClientMocks.customResource
 import org.jboss.tools.intellij.kubernetes.model.mocks.ClientMocks.resource
 import org.jboss.tools.intellij.kubernetes.model.mocks.Mocks.namespacedResourceProvider
 import org.jboss.tools.intellij.kubernetes.model.mocks.Mocks.nonNamespacedResourceProvider
@@ -62,8 +63,6 @@ class KubernetesContextTest {
 	private val allNamespaces = arrayOf(NAMESPACE1, NAMESPACE2, NAMESPACE3)
 	private val currentNamespace = NAMESPACE2
 	private val client: NamespacedKubernetesClient = client(currentNamespace.metadata.name, allNamespaces)
-	private val watchable1: Watchable<Watch, Watcher<HasMetadata>> = mock()
-	private val watchable2: Watchable<Watch, Watcher<HasMetadata>> = mock()
 	private val namespacedDefinition = customResourceDefinition(
 			"namespaced crd","version1", "group1", "namespaced-crd", "Namespaced")
 	private val clusterwideDefinition = customResourceDefinition(
@@ -75,22 +74,27 @@ class KubernetesContextTest {
 
 	private val observable: ModelChangeObservable = mock()
 
+	private val namespacesWatchSupplier: () -> Watchable<Watch, Watcher<Namespace>>? = { mock() }
 	private val namespacesProvider = nonNamespacedResourceProvider(
 			NamespacesProvider.KIND,
-			allNamespaces.toSet())
+			allNamespaces.toSet(),
+			namespacesWatchSupplier)
+
 	private val nodesProvider = nonNamespacedResourceProvider(
 			NodesProvider.KIND,
 			listOf(resource("node1"),
 					resource("node2"),
 					resource("node3")))
+
 	private val allPods = arrayOf(POD1, POD2, POD3)
+	private val allPodsProvider = nonNamespacedResourceProvider(
+			AllPodsProvider.KIND,
+			allPods.toList())
+
 	private val namespacedPodsProvider = namespacedResourceProvider(
 			AllPodsProvider.KIND,
 			allPods.toList(),
 			currentNamespace)
-	private val allPodsProvider = nonNamespacedResourceProvider(
-			AllPodsProvider.KIND,
-			allPods.toList())
 
 	private val hasMetadata1 = resource<HasMetadata>("hasMetadata1")
 	private val hasMetadata2 = resource<HasMetadata>("hasMetadata2")
@@ -99,22 +103,32 @@ class KubernetesContextTest {
 			setOf(hasMetadata1, hasMetadata2),
 			currentNamespace)
 
-	private val watchableSupplier1 = { watchable1 }
-	private val namespacedCustomResource1 = resource<GenericResource>("genericCustomResource1")
-	private val namespacedCustomResource2 = resource<GenericResource>("genericCustomResource2")
-	private val namespacedResourcesProvider: INamespacedResourcesProvider<GenericResource> =
+	private val namespacedCustomResource1 = customResource("genericCustomResource1", "namespace1", namespacedDefinition)
+	private val namespacedCustomResource2 = customResource("genericCustomResource2", "namespace1", namespacedDefinition)
+	private val watchable1: Watchable<Watch, Watcher<GenericResource>> = mock()
+	private val watchableSupplier1: () -> Watchable<Watch, Watcher<GenericResource>>? = { watchable1 }
+	private val namespacedCustomResourcesProvider: INamespacedResourcesProvider<GenericResource> =
 			namespacedResourceProvider(
-					ResourceKind.new(GenericResource::class.java),
+					ResourceKind.new(namespacedDefinition.spec),
 					setOf(namespacedCustomResource1, namespacedCustomResource2),
 					currentNamespace,
-					watchableSupplier1)
+					watchableSupplier1
+			)
 	private val nonNamespacedCustomResource1 = resource<GenericResource>(
 			"genericCustomResource1", "smurfington")
-	private val nonNamespacedResourcesProvider: INonNamespacedResourcesProvider<GenericResource> =
+	private val watchable2: Watchable<Watch, Watcher<GenericResource>> = mock()
+	private val watchableSupplier2: () -> Watchable<Watch, Watcher<GenericResource>>? = { watchable2 }
+	private val nonNamespacedCustomResourcesProvider: INonNamespacedResourcesProvider<GenericResource> =
 			nonNamespacedResourceProvider(
 					ResourceKind.new(GenericResource::class.java),
-					setOf(nonNamespacedCustomResource1))
+					setOf(nonNamespacedCustomResource1),
+					watchableSupplier2
+			)
 
+	private val watchable3: Watchable<Watch, Watcher<in HasMetadata>> = mock()
+	private val watchableSupplier3: () -> Watchable<Watch, Watcher<in HasMetadata>>? = { watchable3 }
+
+	private val resourceWatch: ResourceWatch = mock()
 	private lateinit var context: TestableKubernetesContext
 
 	@Before
@@ -136,13 +150,9 @@ class KubernetesContextTest {
 				this@KubernetesContextTest.client,
 				internalResourcesProviders,
 				extensionResourceProviders,
-				Pair(namespacedResourcesProvider, nonNamespacedResourcesProvider),
-				mock()
+				Pair(namespacedCustomResourcesProvider, nonNamespacedCustomResourcesProvider),
+				resourceWatch
 		))
-		doReturn(
-				listOf { watchable1 }, // returned on 1st call
-				listOf { watchable2 }) // returned on 2nd call
-				.whenever(context).getRetrieveOperations(any())
 		return context
 	}
 
@@ -156,37 +166,18 @@ class KubernetesContextTest {
 	}
 
 	@Test
-	fun `#setCurrentNamespace should remove watched resources for current namespace`() {
+	fun `#setCurrentNamespace should remove all namespaced providers`() {
 		// given
+		val captor =
+				argumentCaptor<List<ResourceKind<out HasMetadata>>>()
+		val toRemove = context.namespacedProviders
+				.map { it.value.kind }
+				.toTypedArray()
 		// when
 		context.setCurrentNamespace(NAMESPACE1.metadata.name)
 		// then
-		val captor = argumentCaptor<List<() -> Watchable<Watch, Watcher<HasMetadata>>>>()
 		verify(context.watch).ignoreAll(captor.capture())
-		val suppliers = captor.firstValue
-		assertThat(suppliers.first().invoke()).isEqualTo(watchable1)
-	}
-
-	@Test
-	fun `#setCurrentNamespace should add new watched resources for new current namespace`() {
-		// given
-		// when
-		context.setCurrentNamespace(NAMESPACE1.metadata.name)
-		// then
-		val captor = argumentCaptor<List<() -> Watchable<Watch, Watcher<HasMetadata>>>>()
-		verify(context.watch).watchAll(captor.capture())
-		val suppliers = captor.firstValue
-		assertThat(suppliers.first().invoke()).isEqualTo(watchable2)
-	}
-
-	@Test
-	fun `#setCurrentNamespace should invalidate namespaced resource providers`() {
-		// given
-		val namespace = NAMESPACE1.metadata.name
-		// when
-		context.setCurrentNamespace(namespace)
-		// then
-		verify(namespacedPodsProvider).invalidate()
+		assertThat(captor.firstValue).containsOnly(*toRemove)
 	}
 
 	@Test
@@ -302,17 +293,17 @@ class KubernetesContextTest {
 	fun `#getCustomResources should query CustomResourceProvider`() {
 		// given
 		// when
-		context.getCustomResources(namespacedDefinition)
+		context.getResources(namespacedDefinition)
 		// then
-		verify(namespacedResourcesProvider).getAllResources()
+		verify(namespacedCustomResourcesProvider).getAllResources()
 	}
 
 	@Test
 	fun `#getCustomResources should create CustomResourceProvider once and reuse it`() {
 		// given
 		// when
-		context.getCustomResources(namespacedDefinition)
-		context.getCustomResources(namespacedDefinition)
+		context.getResources(namespacedDefinition)
+		context.getResources(namespacedDefinition)
 		// then
 		verify(context, times(1)).createCustomResourcesProvider(eq(namespacedDefinition), any(), any())
 	}
@@ -321,32 +312,11 @@ class KubernetesContextTest {
 	fun `#getCustomResources should create CustomResourceProvider for each unique definition`() {
 		// given
 		// when
-		context.getCustomResources(namespacedDefinition)
-		context.getCustomResources(clusterwideDefinition)
+		context.getResources(namespacedDefinition)
+		context.getResources(clusterwideDefinition)
 		// then
 		verify(context, times(1)).createCustomResourcesProvider(eq(namespacedDefinition), any(), any())
 		verify(context, times(1)).createCustomResourcesProvider(eq(clusterwideDefinition), any(), any())
-	}
-
-	@Test
-	fun `#getCustomResources should watch watchable in new resources provider`() {
-		// given
-		// when
-		context.getCustomResources(namespacedDefinition)
-		// then
-		verify(context, times(1)).createCustomResourcesProvider(eq(namespacedDefinition), any(), any())
-		verify(namespacedResourcesProvider, times(1)).getWatchable()
-		verify(context.watch, times(1)).watch(watchableSupplier1)
-	}
-
-	@Test
-	fun `#getCustomResources should only watch watchable when creating provider, not when reusing existing`() {
-		// given
-		// when
-		context.getCustomResources(namespacedDefinition)
-		context.getCustomResources(namespacedDefinition)
-		// then
-		verify(context.watch, times(1)).watch(watchableSupplier1)
 	}
 
 	@Test(expected = IllegalArgumentException::class)
@@ -355,8 +325,34 @@ class KubernetesContextTest {
 		val bogusScope = customResourceDefinition(
 				"bogus scope","version1", "group1", "bogus-scope-crd", "Bogus")
 		// when
-		context.getCustomResources(bogusScope)
+		context.getResources(bogusScope)
 		// then
+	}
+
+	@Test
+	fun `#watch should watch watchable provided by namespaced resource provider`() {
+		// given
+		givenCustomResourceProvider(namespacedDefinition,
+				customResourceDefinitionsProvider,
+				namespacedCustomResourcesProvider)
+		// when
+		context.watch(ResourceKind.new(namespacedDefinition.spec))
+		// then
+		verify(context.watch, times(1)).watch(namespacedCustomResourcesProvider.kind, watchableSupplier1
+				as () -> Watchable<Watch, Watcher<in HasMetadata>>?)
+	}
+
+	@Test
+	fun `#watch should watch watchable provided by non-namespaced resource provider`() {
+		// given
+		givenCustomResourceProvider(clusterwideDefinition,
+				customResourceDefinitionsProvider,
+				nonNamespacedCustomResourcesProvider)
+		// when
+		context.watch(ResourceKind.new(clusterwideDefinition.spec))
+		// then
+		verify(context.watch, times(1)).watch(nonNamespacedCustomResourcesProvider.kind, watchableSupplier2
+				as () -> Watchable<Watch, Watcher<in HasMetadata>>?)
 	}
 
 	@Test
@@ -497,7 +493,7 @@ class KubernetesContextTest {
 	@Test
 	fun `#add(CustomResourceDefinition) should NOT create custom resources provider if definition was NOT added`() {
 		// given
-		whenever(namespacedResourcesProvider.add(clusterwideDefinition))
+		whenever(namespacedCustomResourcesProvider.add(clusterwideDefinition))
 				.doReturn(false)
 		// when
 		context.add(clusterwideDefinition)
@@ -578,12 +574,25 @@ class KubernetesContextTest {
 		// given
 		givenCustomResourceProvider(clusterwideDefinition,
 				customResourceDefinitionsProvider,
-				nonNamespacedResourcesProvider)
+				nonNamespacedCustomResourcesProvider)
 		// when
 		context.remove(clusterwideDefinition)
 		// then
 		assertThat(context.nonNamespacedProviders)
-				.doesNotContainValue(nonNamespacedResourcesProvider)
+				.doesNotContainValue(nonNamespacedCustomResourcesProvider)
+	}
+
+	@Test
+	fun `#remove(CustomResourceDefinition) should stop watch when definition is removed `() {
+		// given
+		givenCustomResourceProvider(clusterwideDefinition,
+				customResourceDefinitionsProvider,
+				nonNamespacedCustomResourcesProvider)
+		clearInvocations(resourceWatch)
+		// when
+		context.remove(clusterwideDefinition)
+		// then
+		verify(resourceWatch).ignore(nonNamespacedCustomResourcesProvider.kind)
 	}
 
 	@Test
@@ -591,12 +600,12 @@ class KubernetesContextTest {
 		// given
 		givenCustomResourceProvider(namespacedDefinition,
 				customResourceDefinitionsProvider,
-				namespacedResourcesProvider)
+				namespacedCustomResourcesProvider)
 		// when
 		context.remove(namespacedDefinition)
 		// then
 		assertThat(context.namespacedProviders)
-				.doesNotContainValue(namespacedResourcesProvider)
+				.doesNotContainValue(namespacedCustomResourcesProvider)
 	}
 
 	@Test
@@ -604,14 +613,14 @@ class KubernetesContextTest {
 		// given
 		givenCustomResourceProvider(clusterwideDefinition,
 				customResourceDefinitionsProvider,
-				namespacedResourcesProvider)
+				namespacedCustomResourcesProvider)
 		whenever(customResourceDefinitionsProvider.remove(clusterwideDefinition))
-				.doReturn(false)
+				.doReturn(false) // was not removed
 		// when
 		context.remove(clusterwideDefinition)
 		// then
 		assertThat(context.namespacedProviders)
-				.containsValue(namespacedResourcesProvider)
+				.containsValue(namespacedCustomResourcesProvider)
 	}
 
 	@Test
@@ -625,14 +634,37 @@ class KubernetesContextTest {
 	}
 
 	@Test
-	fun `#invalidate(resource) should invalidate resource provider`() {
+	fun `#invalidate(resource) should invalidate namespaced resource provider`() {
 		// given
-		val pod = resource<Pod>("pod", NAMESPACE2.metadata.name)
+		val pod = allPods[0]
 		// when
 		context.invalidate(pod)
 		// then
-		verify(namespacesProvider, never()).invalidate(any())
-		verify(namespacedPodsProvider).invalidate()
+		verify(namespacesProvider, never()).invalidate(pod)
+		verify(namespacedPodsProvider).invalidate(pod)
+	}
+
+	@Test
+	fun `#invalidate(resource) should invalidate non-namespaced resource provider`() {
+		// given
+		val namespace = allNamespaces[0]
+		// when
+		context.invalidate(namespace)
+		// then
+		verify(namespacesProvider).invalidate(namespace)
+		verify(namespacedPodsProvider, never()).invalidate(namespace)
+	}
+
+	@Test
+	fun `#invalidate(customResource) should invalidate custom resource provider`() {
+		// given
+		givenCustomResourceProvider(namespacedDefinition,
+				customResourceDefinitionsProvider,
+				namespacedCustomResourcesProvider)
+		// when
+		context.invalidate(namespacedCustomResource1)
+		// then
+		verify(namespacedCustomResourcesProvider).invalidate(namespacedCustomResource1)
 	}
 
 	@Test
@@ -651,6 +683,9 @@ class KubernetesContextTest {
 		whenever(definitionProvider.remove(definition))
 				.doReturn(true)
 		val kind = ResourceKind.new(definition.spec)
+
+		whenever(resourceProvider.kind).thenReturn(kind)
+
 		if (resourceProvider is INamespacedResourcesProvider<*>) {
 			context.namespacedProviders[kind] = resourceProvider
 		} else if (resourceProvider is INonNamespacedResourcesProvider<*>) {
@@ -668,7 +703,8 @@ class KubernetesContextTest {
 			client: NamespacedKubernetesClient,
 			private val internalResourceProviders: List<IResourcesProvider<out HasMetadata>>,
 			private val extensionResourcesProviders: List<IResourcesProvider<out HasMetadata>>,
-			private val resourcesProviders: Pair<INamespacedResourcesProvider<GenericResource>,
+			private val customResourcesProviders: Pair<
+					INamespacedResourcesProvider<GenericResource>,
 					INonNamespacedResourcesProvider<GenericResource>>,
 			public override var watch: ResourceWatch)
 		: KubernetesContext(observable, client, mock()) {
@@ -684,10 +720,6 @@ class KubernetesContextTest {
 			get() {
 				return super.nonNamespacedProviders
 			}
-
-		public override fun getRetrieveOperations(namespace: String): List<() -> Watchable<Watch, Watcher<HasMetadata>>?> {
-			TODO("override with mocking")
-		}
 
 		override fun getInternalResourceProviders(client: NamespacedKubernetesClient)
 				: List<IResourcesProvider<out HasMetadata>> {
@@ -706,10 +738,10 @@ class KubernetesContextTest {
 				: IResourcesProvider<GenericResource> {
 			return when(resourceIn) {
 				ResourcesIn.CURRENT_NAMESPACE ->
-					resourcesProviders.first
+					customResourcesProviders.first
 				ResourcesIn.NO_NAMESPACE,
 				ResourcesIn.ANY_NAMESPACE ->
-					resourcesProviders.second
+					customResourcesProviders.second
 			}
 		}
 

@@ -45,7 +45,7 @@ class ResourceKindTest {
         val instanceKind = ResourceKind.new(Pod())
         // when
         // then
-        assertThat(classKind).isNotEqualTo(instanceKind)
+        assertThat(classKind).isEqualTo(instanceKind)
     }
 
     @Test
