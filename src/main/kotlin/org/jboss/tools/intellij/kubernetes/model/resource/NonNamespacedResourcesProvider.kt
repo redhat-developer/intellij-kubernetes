@@ -19,8 +19,6 @@ import io.fabric8.kubernetes.client.Watcher
 import io.fabric8.kubernetes.client.dsl.WatchListDeletable
 import io.fabric8.kubernetes.client.dsl.Watchable
 
-typealias WatchableAndListable<R> = WatchListDeletable<R, out KubernetesResourceList<R>, Boolean, Watch, Watcher<R>>?
-
 interface INonNamespacedResourcesProvider<T: HasMetadata>: IResourcesProvider<T>
 
 abstract class NonNamespacedResourcesProvider<R: HasMetadata, C: KubernetesClient>(protected val client: C)

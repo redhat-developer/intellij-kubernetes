@@ -16,7 +16,6 @@ import io.fabric8.kubernetes.client.KubernetesClient
 import io.fabric8.kubernetes.client.Watch
 import io.fabric8.kubernetes.client.Watcher
 import io.fabric8.kubernetes.client.dsl.Watchable
-import org.jboss.tools.intellij.kubernetes.model.ResourceWatch
 
 interface INamespacedResourcesProvider<T: HasMetadata>: IResourcesProvider<T> {
     var namespace: String?

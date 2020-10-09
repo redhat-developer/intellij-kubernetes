@@ -11,9 +11,13 @@
 package org.jboss.tools.intellij.kubernetes.model.resource
 
 import io.fabric8.kubernetes.api.model.HasMetadata
+import io.fabric8.kubernetes.api.model.KubernetesResourceList
 import io.fabric8.kubernetes.client.Watch
 import io.fabric8.kubernetes.client.Watcher
+import io.fabric8.kubernetes.client.dsl.WatchListDeletable
 import io.fabric8.kubernetes.client.dsl.Watchable
+
+typealias WatchableAndListable<R> = WatchListDeletable<R, out KubernetesResourceList<R>, Boolean, Watch, Watcher<R>>?
 
 interface IResourcesProvider<R: HasMetadata> {
     val kind: ResourceKind<R>
