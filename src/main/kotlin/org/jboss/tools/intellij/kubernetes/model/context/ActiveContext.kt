@@ -63,16 +63,15 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
 
     private val extensionName: ExtensionPointName<IResourcesProviderFactory<HasMetadata, C, IResourcesProvider<HasMetadata>>> =
             ExtensionPointName.create("org.jboss.tools.intellij.kubernetes.resourceProvider")
-    protected open val namespacedProviders: MutableMap<ResourceKind<out HasMetadata>, INamespacedResourcesProvider<out HasMetadata>> by lazy {
-        val providers = getAllResourceProviders(INamespacedResourcesProvider::class.java)
-        val namespace = getCurrentNamespace()
-        providers.forEach { it.value.namespace = namespace }
-        providers
-    }
     protected open val nonNamespacedProviders: MutableMap<ResourceKind<out HasMetadata>, INonNamespacedResourcesProvider<out HasMetadata>> by lazy {
         getAllResourceProviders(INonNamespacedResourcesProvider::class.java)
     }
-    protected var namespace: String? = client.configuration.namespace
+    protected open val namespacedProviders: MutableMap<ResourceKind<out HasMetadata>, INamespacedResourcesProvider<out HasMetadata>> by lazy {
+        val providers = getAllResourceProviders(INamespacedResourcesProvider::class.java)
+        val namespace = getCurrentNamespace(getNamespaces(nonNamespacedProviders))
+        setCurrentNamespace(namespace, providers.values)
+        providers
+    }
     protected open var watch: ResourceWatch = ResourceWatch(
             addOperation = { add(it) },
             removeOperation = { remove(it) },
@@ -88,27 +87,38 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
 
         val stopped = stopWatch(currentNamespace)
         client.configuration.namespace = namespace
-        namespacedProviders.forEach { it.value.namespace = namespace }
+        setCurrentNamespace(namespace, namespacedProviders.values)
         watch(stopped)
         modelChange.fireCurrentNamespace(namespace)
     }
 
+    private fun setCurrentNamespace(namespace: String?, providers: Collection<INamespacedResourcesProvider<*>>) {
+        if (namespace == null) {
+            return
+        }
+        providers.forEach { it.namespace = namespace }
+    }
+
     override fun getCurrentNamespace(): String? {
+        return getCurrentNamespace(getNamespaces(nonNamespacedProviders))
+    }
+
+    private fun getCurrentNamespace(namespaces: Collection<N>): String? {
         var name: String? = client.configuration.namespace
-        if (!exists(name)) {
+        if (!exists(name, namespaces)) {
             name = null
         }
         return name
     }
 
-    private fun exists(namespace: String?): Boolean {
+    private fun exists(namespace: String?, namespaces: Collection<N>): Boolean {
         return namespace == null
-                || getNamespaces()
+                || namespaces
                 .map { it.metadata.name }
                 .contains(namespace)
     }
 
-    protected abstract fun getNamespaces(): Collection<N>
+    protected abstract fun getNamespaces(providers: Map<ResourceKind<out HasMetadata>, INonNamespacedResourcesProvider<out HasMetadata>>): Collection<N>
 
     override fun <R: HasMetadata> getResources(kind: ResourceKind<R>, resourcesIn: ResourcesIn): Collection<R> {
         logger<ActiveContext<*,*>>().debug("Resources $kind requested.")

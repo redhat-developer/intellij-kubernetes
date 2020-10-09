@@ -14,9 +14,12 @@ import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.NamedContext
 import io.fabric8.kubernetes.api.model.Namespace
 import io.fabric8.kubernetes.client.NamespacedKubernetesClient
+import io.fabric8.openshift.api.model.Project
 import org.jboss.tools.intellij.kubernetes.model.IModelChangeObservable
 import org.jboss.tools.intellij.kubernetes.model.context.IActiveContext.ResourcesIn
+import org.jboss.tools.intellij.kubernetes.model.resource.INonNamespacedResourcesProvider
 import org.jboss.tools.intellij.kubernetes.model.resource.IResourcesProvider
+import org.jboss.tools.intellij.kubernetes.model.resource.ResourceKind
 import org.jboss.tools.intellij.kubernetes.model.resource.kubernetes.AllPodsProvider
 import org.jboss.tools.intellij.kubernetes.model.resource.kubernetes.ConfigMapsProvider
 import org.jboss.tools.intellij.kubernetes.model.resource.kubernetes.CronJobsProvider
@@ -35,6 +38,7 @@ import org.jboss.tools.intellij.kubernetes.model.resource.kubernetes.SecretsProv
 import org.jboss.tools.intellij.kubernetes.model.resource.kubernetes.ServicesProvider
 import org.jboss.tools.intellij.kubernetes.model.resource.kubernetes.StatefulSetsProvider
 import org.jboss.tools.intellij.kubernetes.model.resource.kubernetes.StorageClassesProvider
+import org.jboss.tools.intellij.kubernetes.model.resource.openshift.ProjectsProvider
 
 open class KubernetesContext(
 		modelChange: IModelChangeObservable,
@@ -66,8 +70,9 @@ open class KubernetesContext(
 		)
 	}
 
-	public override fun getNamespaces(): Collection<Namespace> {
-		return getResources(NamespacesProvider.KIND, ResourcesIn.NO_NAMESPACE)
+	override fun getNamespaces(providers: Map<ResourceKind<out HasMetadata>, INonNamespacedResourcesProvider<out HasMetadata>>): Collection<Namespace> {
+		return providers[NamespacesProvider.KIND]?.getAllResources() as Collection<Namespace>?
+				?: emptyList()
 	}
 
 	override fun isOpenShift() = false
