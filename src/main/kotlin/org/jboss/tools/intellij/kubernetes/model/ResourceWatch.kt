@@ -36,6 +36,7 @@ open class ResourceWatch(
 ) {
     companion object {
         @JvmField val WATCH_OPERATION_ENQUEUED: Watch = Watch {  }
+        @JvmField val NULL_WATCHABLE: Watch = Watch {  }
     }
 
     protected open val watches: ConcurrentHashMap<ResourceKind<*>, Watch?> = ConcurrentHashMap()
@@ -58,8 +59,10 @@ open class ResourceWatch(
         }
     }
 
-    fun ignoreAll(kinds: Collection<ResourceKind<*>>) {
-        closeAll(watches.entries.filter { kinds.contains(it.key) })
+    fun ignoreAll(kinds: Collection<ResourceKind<*>>): Collection<ResourceKind<*>> {
+        val existing = watches.entries.filter { kinds.contains(it.key) }
+        closeAll(existing)
+        return existing.map { it.key }
     }
 
     fun ignore(kind: ResourceKind<*>) {
@@ -121,17 +124,28 @@ open class ResourceWatch(
         override fun run() {
             try {
                 logger<ResourceWatcher>().debug("Watching $kind resources.")
-                val watch: Watch? = watchable?.watch(ResourceWatcher(addOperation, removeOperation, replaceOperation))
-                if (watch == null) {
-                    logger<ResourceWatcher>().debug("Removed watch for $kind resources.")
-                    watches.remove(kind) // remove placeholder
-                } else {
-                    logger<ResourceWatcher>().debug("Created watch for $kind resources.")
-                    watches[kind] = watch // replace placeholder
-                }
+                val watch: Watch = createWatch()
+                saveWatch(watch)
             } catch (e: Exception) {
                 watches.remove(kind) // remove placeholder
                 logger<ResourceWatcher>().warn("Could not watch resource $kind.", e)
+            }
+        }
+
+        private fun createWatch(): Watch {
+            return if (watchable == null) {
+                NULL_WATCHABLE
+            } else {
+                watchable?.watch(ResourceWatcher(addOperation, removeOperation, replaceOperation))
+            }
+        }
+
+        private fun saveWatch(watch: Watch) {
+            if (watch == null) {
+                watches.remove(kind) // remove placeholder
+            } else {
+                logger<ResourceWatcher>().debug("Created watch for $kind resources.")
+                watches[kind] = watch // replace placeholder
             }
         }
     }
