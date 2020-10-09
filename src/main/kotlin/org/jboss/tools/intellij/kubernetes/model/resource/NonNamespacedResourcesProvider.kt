@@ -10,6 +10,7 @@
  ******************************************************************************/
 package org.jboss.tools.intellij.kubernetes.model.resource
 
+import com.intellij.openapi.diagnostic.logger
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.KubernetesResourceList
 import io.fabric8.kubernetes.client.KubernetesClient
@@ -35,6 +36,7 @@ abstract class NonNamespacedResourcesProvider<R: HasMetadata, C: KubernetesClien
     }
 
     protected open fun loadAllResources(): List<R> {
+        logger<NamespacedResourcesProvider<*,*>>().debug("Loading all $kind resources.")
         return getOperation().invoke()?.list()?.items ?: emptyList()
     }
 
