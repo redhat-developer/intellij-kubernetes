@@ -24,6 +24,7 @@ import com.nhaarman.mockitokotlin2.whenever
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.Namespace
 import io.fabric8.kubernetes.api.model.Pod
+import io.fabric8.kubernetes.api.model.Secret
 import io.fabric8.kubernetes.api.model.apiextensions.CustomResourceDefinition
 import io.fabric8.kubernetes.client.NamespacedKubernetesClient
 import io.fabric8.kubernetes.client.Watch
@@ -103,6 +104,11 @@ class KubernetesContextTest {
 			setOf(hasMetadata1, hasMetadata2),
 			currentNamespace)
 
+	private val danglingSecretsProvider: INamespacedResourcesProvider<Secret> = namespacedResourceProvider(
+		ResourceKind.new(Secret::class.java),
+		setOf(resource("secret1")),
+		currentNamespace)
+
 	private val namespacedCustomResource1 = customResource("genericCustomResource1", "namespace1", namespacedDefinition)
 	private val namespacedCustomResource2 = customResource("genericCustomResource2", "namespace1", namespacedDefinition)
 	private val watchable1: Watchable<Watch, Watcher<GenericResource>> = mock()
@@ -168,6 +174,43 @@ class KubernetesContextTest {
 		// then
 		verify(context.watch).ignoreAll(captor.capture())
 		assertThat(captor.firstValue).containsOnly(*toRemove)
+	}
+
+	@Test
+	fun `#setCurrentNamespace should watch all namespaced providers that it stopped before`() {
+		// given
+		val captor =
+			argumentCaptor<Collection<Pair<ResourceKind<out HasMetadata>, () -> Watchable<Watch, Watcher<in HasMetadata>>?>>>()
+		val removed: Collection<ResourceKind<out HasMetadata>> =
+			context.namespacedProviders.values
+				.map { it.kind }
+		whenever(context.watch.ignoreAll(any()))
+			.doReturn(removed)
+		val reWatched: Array<Pair<ResourceKind<out HasMetadata>, () -> Watchable<Watch, Watcher<in HasMetadata>>?>> =
+			context.namespacedProviders.values
+				.filter { removed.contains(it.kind) }
+				.map { Pair(it.kind, it.getWatchable()) }
+				.toTypedArray() as Array<Pair<ResourceKind<out HasMetadata>, () -> Watchable<Watch, Watcher<in HasMetadata>>?>>
+		// when
+		context.setCurrentNamespace(NAMESPACE1.metadata.name)
+		// then
+		verify(context.watch).watchAll(captor.capture())
+		assertThat(captor.firstValue).containsOnly(*reWatched)
+	}
+
+	@Test
+	fun `#setCurrentNamespace should NOT watch provider that is not contained it stopped`() {
+		// given
+		val captor =
+			argumentCaptor<Collection<Pair<ResourceKind<out HasMetadata>, () -> Watchable<Watch, Watcher<in HasMetadata>>?>>>()
+		val stopped: Collection<ResourceKind<*>> = listOf(danglingSecretsProvider.kind)
+		whenever(context.watch.ignoreAll(any()))
+			.thenReturn(stopped)
+		// when
+		context.setCurrentNamespace(NAMESPACE1.metadata.name)
+		// then
+		verify(context.watch).watchAll(captor.capture())
+		assertThat(captor.firstValue).isEmpty()
 	}
 
 	@Test

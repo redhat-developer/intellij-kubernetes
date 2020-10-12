@@ -42,6 +42,10 @@ open class ResourceWatch(
     private val executor: ExecutorService = Executors.newWorkStealingPool(10)
     private val watchOperationsRunner = executor.submit(watchOperationsRunner)
 
+    open fun watchAll(toWatch: Collection<Pair<ResourceKind<out HasMetadata>, () -> Watchable<Watch, Watcher<in HasMetadata>>?>>) {
+        toWatch.forEach { watch(it.first, it.second) }
+    }
+
     open fun watch(kind: ResourceKind<out HasMetadata>, supplier: () -> Watchable<Watch, Watcher<in HasMetadata>>?) {
         val watchable = supplier.invoke() ?: return
         watches.computeIfAbsent(kind) {

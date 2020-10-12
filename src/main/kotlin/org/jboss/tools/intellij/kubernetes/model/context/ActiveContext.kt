@@ -90,7 +90,7 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
         val stopped = stopWatch(currentNamespace)
         client.configuration.namespace = namespace
         setCurrentNamespace(namespace, namespacedProviders.values)
-        watch(stopped)
+        watchAll(stopped)
         modelChange.fireCurrentNamespace(namespace)
     }
 
@@ -223,11 +223,11 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
         watch(nonNamespacedProviders[kind])
     }
 
-    private fun watch(kinds: Collection<ResourceKind<out HasMetadata>>) {
-        val providers = namespacedProviders.entries.toList()
-                .filter { kinds.contains(it.key) }
-                .map { it.value }
-        providers.forEach { watch(it) }
+    private fun watchAll(kinds: Collection<ResourceKind<out HasMetadata>>) {
+        val watchables = namespacedProviders.entries.toList()
+            .filter { kinds.contains(it.key) }
+            .mapNotNull { Pair(it.value.kind, it.value.getWatchable()) }
+        watch.watchAll(watchables as Collection<Pair<ResourceKind<out HasMetadata>, () -> Watchable<Watch, Watcher<in HasMetadata>>?>>)
     }
 
     private fun watch(provider: IResourcesProvider<*>?) {
