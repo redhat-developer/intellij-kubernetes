@@ -36,7 +36,6 @@ open class ResourceWatch(
 ) {
     companion object {
         @JvmField val WATCH_OPERATION_ENQUEUED: Watch = Watch {  }
-        @JvmField val NULL_WATCHABLE: Watch = Watch {  }
     }
 
     protected open val watches: ConcurrentHashMap<ResourceKind<*>, Watch?> = ConcurrentHashMap()
@@ -124,7 +123,7 @@ open class ResourceWatch(
         override fun run() {
             try {
                 logger<ResourceWatcher>().debug("Watching $kind resources.")
-                val watch: Watch = createWatch()
+                val watch: Watch? = createWatch()
                 saveWatch(watch)
             } catch (e: Exception) {
                 watches.remove(kind) // remove placeholder
@@ -132,15 +131,15 @@ open class ResourceWatch(
             }
         }
 
-        private fun createWatch(): Watch {
+        private fun createWatch(): Watch? {
             return if (watchable == null) {
-                NULL_WATCHABLE
+              return null
             } else {
                 watchable.watch(ResourceWatcher(addOperation, removeOperation, replaceOperation))
             }
         }
 
-        private fun saveWatch(watch: Watch) {
+        private fun saveWatch(watch: Watch?) {
             if (watch == null) {
                 watches.remove(kind) // remove placeholder
             } else {
