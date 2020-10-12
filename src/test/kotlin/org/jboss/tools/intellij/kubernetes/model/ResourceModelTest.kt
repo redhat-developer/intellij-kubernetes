@@ -48,7 +48,7 @@ class ResourceModelTest {
     private val client: NamespacedKubernetesClient = mock()
     private val modelChange: IModelChangeObservable = mock()
     private val namespace: Namespace = resource("papa smurf")
-    private val activeContext: IActiveContext<HasMetadata, KubernetesClient> = activeContext(client, namespace)
+    private val activeContext: IActiveContext<HasMetadata, KubernetesClient> = activeContext(client, namespace, mock())
     private val contextFactory: (IModelChangeObservable, NamedContext?) -> IActiveContext<HasMetadata, KubernetesClient> =
             contextFactory(activeContext)
 
@@ -70,7 +70,7 @@ class ResourceModelTest {
     fun `#getResources(kind, CURRENT_NAMESPACE) should call context#getResources(kind, CURRENT_NAMESPACE)`() {
         // given
         // when
-        model.getResources(NamespacedPodsProvider.KIND, ResourcesIn.CURRENT_NAMESPACE)
+        model.getAllResources(NamespacedPodsProvider.KIND, ResourcesIn.CURRENT_NAMESPACE)
         // then
         verify(activeContext).getAllResources(NamespacedPodsProvider.KIND, ResourcesIn.CURRENT_NAMESPACE)
     }
@@ -79,7 +79,7 @@ class ResourceModelTest {
     fun `#getResources(kind, NO_NAMESPACE) should call context#getResources(kind, NO_NAMESPACE)`() {
         // given
         // when
-        model.getResources(NamespacedPodsProvider.KIND, ResourcesIn.NO_NAMESPACE)
+        model.getAllResources(NamespacedPodsProvider.KIND, ResourcesIn.NO_NAMESPACE)
         // then
         verify(activeContext).getAllResources(NamespacedPodsProvider.KIND, ResourcesIn.NO_NAMESPACE)
     }
@@ -94,7 +94,7 @@ class ResourceModelTest {
                         POD2,
                         POD3))
         // when
-        model.getResources(NamespacedPodsProvider.KIND, ResourcesIn.NO_NAMESPACE, filter)
+        model.getAllResources(NamespacedPodsProvider.KIND, ResourcesIn.NO_NAMESPACE, filter)
         // then
         verify(filter, times(3)).test(any())
     }
@@ -104,7 +104,7 @@ class ResourceModelTest {
         // given
         val definition = mock<CustomResourceDefinition>()
         // when
-        model.getResources(definition)
+        model.getAllResources(definition)
         // then
         verify(activeContext).getResources(definition)
     }
@@ -137,12 +137,25 @@ class ResourceModelTest {
     }
 
     @Test
-    fun `#invalidate(model) should fire model moidified`() {
+    fun `#invalidate(model) should fire 1x model modified if contexts was cleared`() {
         // given
+        whenever(contexts.clear())
+            .doReturn(true)
         // when
         model.invalidate(model)
         // then
-        verify(modelChange).fireModified(model)
+        verify(modelChange, times(1)).fireModified(model)
+    }
+
+    @Test
+    fun `#invalidate(model) should NOT fire model modified if contexts were cleared`() {
+        // given
+        whenever(contexts.clear())
+            .doReturn(false)
+        // when
+        model.invalidate(model)
+        // then
+        verify(modelChange, never()).fireModified(model)
     }
 
     @Test
@@ -216,6 +229,30 @@ class ResourceModelTest {
         model.setCurrentContext(currentContext!!)
         // then
         verify(contextFactory, never()).invoke(any(), anyOrNull())
+    }
+
+    @Test
+    fun `#setCurrentContext(context) should fire if 'contexts' was successfully set new context`() {
+        // given
+        whenever(contexts.setCurrent(any()))
+            .doReturn(true)
+        // when
+        model.setCurrentContext(mock())
+        // then
+        verify(modelChange, times(1))
+            .fireModified(model)
+    }
+
+    @Test
+    fun `#setCurrentContext(context) should NOT fire if 'contexts' failed to set new context`() {
+        // given
+        whenever(contexts.setCurrent(any()))
+            .doReturn(false)
+        // when
+        model.setCurrentContext(mock())
+        // then
+        verify(modelChange, never())
+            .fireModified(model)
     }
 
     private fun createContexts(currentContext: IActiveContext<*,*>?, allContexts: List<IContext>): IContexts {

@@ -79,7 +79,7 @@ open class ResourceWatch(
         }
     }
 
-    fun clear() {
+    fun close() {
         closeAll(watches.entries.toList())
     }
 

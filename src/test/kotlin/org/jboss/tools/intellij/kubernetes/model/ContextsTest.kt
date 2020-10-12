@@ -10,37 +10,26 @@
  ******************************************************************************/
 package org.jboss.tools.intellij.kubernetes.model
 
-import com.nhaarman.mockitokotlin2.any
-import com.nhaarman.mockitokotlin2.anyOrNull
-import com.nhaarman.mockitokotlin2.clearInvocations
-import com.nhaarman.mockitokotlin2.doReturn
-import com.nhaarman.mockitokotlin2.eq
-import com.nhaarman.mockitokotlin2.mock
-import com.nhaarman.mockitokotlin2.never
-import com.nhaarman.mockitokotlin2.spy
-import com.nhaarman.mockitokotlin2.times
-import com.nhaarman.mockitokotlin2.verify
-import com.nhaarman.mockitokotlin2.whenever
+import com.nhaarman.mockitokotlin2.*
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.NamedContext
 import io.fabric8.kubernetes.api.model.Namespace
 import io.fabric8.kubernetes.client.KubernetesClient
 import io.fabric8.kubernetes.client.NamespacedKubernetesClient
-import org.assertj.core.api.Assertions
+import org.assertj.core.api.Assertions.assertThat
 import org.jboss.tools.intellij.kubernetes.model.context.IActiveContext
 import org.jboss.tools.intellij.kubernetes.model.context.IContext
 import org.jboss.tools.intellij.kubernetes.model.mocks.ClientMocks
 import org.jboss.tools.intellij.kubernetes.model.mocks.Mocks
+import org.jboss.tools.intellij.kubernetes.model.mocks.Mocks.activeContext
+import org.jboss.tools.intellij.kubernetes.model.mocks.Mocks.context
 import org.junit.Test
 
 class ContextsTest {
 
 	private val client: NamespacedKubernetesClient = mock()
-	private val observable: IModelChangeObservable = mock()
+	private val modelChange: IModelChangeObservable = mock()
 	private val namespace: Namespace = ClientMocks.resource("papa smurf")
-	private val currentContext: IActiveContext<HasMetadata, KubernetesClient> = Mocks.activeContext(client, namespace)
-	private val contextFactory: (IModelChangeObservable, NamedContext?) -> IActiveContext<HasMetadata, KubernetesClient> =
-			Mocks.contextFactory(currentContext)
 	private val namedContext1 =
 			ClientMocks.namedContext("ctx1", "namespace1", "cluster1", "user1")
 	private val namedContext2 =
@@ -48,7 +37,10 @@ class ContextsTest {
 	private val namedContext3 =
 			ClientMocks.namedContext("ctx3", "namespace3", "cluster3", "user3")
 	private val config = createKubeConfig(namedContext2, listOf(namedContext1, namedContext2, namedContext3))
-	private val contexts = spy(TestableContext(observable, contextFactory, config))
+	private val currentContext: IActiveContext<HasMetadata, KubernetesClient> = activeContext(client, namespace, namedContext2)
+	private val contextFactory: (IModelChangeObservable, NamedContext?) -> IActiveContext<HasMetadata, KubernetesClient> =
+		Mocks.contextFactory(currentContext)
+	private val contexts = spy(TestableContext(modelChange, contextFactory, config))
 
 	@Test
 	fun `#clear() should close existing context`() {
@@ -57,26 +49,6 @@ class ContextsTest {
 		contexts.clear()
 		// then
 		verify(currentContext).close()
-	}
-
-	@Test
-	fun `#clear() should notify change of current context`() {
-		// given
-		// when
-		contexts.clear()
-		// then
-		verify(observable).fireModified(currentContext)
-	}
-
-	@Test
-	fun `#clear() should NOT notify change of current context if context is null`() {
-		// given
-		val config = createKubeConfig(null, listOf(namedContext1, namedContext2, namedContext3))
-		val contexts = spy(TestableContext(observable, contextFactory, config))
-		// when
-		contexts.clear()
-		// then
-		verify(observable, never()).fireModified(any())
 	}
 
 	@Test
@@ -112,7 +84,7 @@ class ContextsTest {
 		// when
 		contexts.refresh()
 		// then
-		verify(observable).fireModified(contexts)
+		verify(modelChange).fireModified(contexts)
 	}
 
 	@Test
@@ -166,12 +138,23 @@ class ContextsTest {
     }
 
 	@Test
-	fun `#setCurrentContext(context) should create new active context for given context`() {
+	fun `#setCurrentContext(context) should NOT create new active context if existing context is set`() {
 		// given
-		contexts.current
-		clearInvocations(contextFactory)
+		contexts.current // create current context
+		clearInvocations(contextFactory) // clear invocation so that it's not counted
 		// when
-		contexts.setCurrent(mock())
+		contexts.setCurrent(currentContext)
+		// then
+		verify(contextFactory, never()).invoke(any(), anyOrNull())
+	}
+
+	@Test
+	fun `#setCurrentContext(context) should create new active context if new context is set`() {
+		// given
+		contexts.current // create current context
+		clearInvocations(contextFactory) // clear invocation so that it's not counted
+		// when
+		contexts.setCurrent(context(namedContext3))
 		// then
 		verify(contextFactory).invoke(any(), anyOrNull())
 	}
@@ -179,18 +162,81 @@ class ContextsTest {
 	@Test
 	fun `#setCurrentContext(context) should replace context in #allContexts`() {
 		// given
-		val newCurrentContext = Mocks.activeContext(client, namespace, namedContext3)
+		val newCurrentContext = activeContext(client, namespace, namedContext3)
 		contexts.all // create all contexts
 		val currentContext = contexts.current
-		Assertions.assertThat(currentContext).isNotEqualTo(newCurrentContext)
-		Assertions.assertThat(contexts.all).contains(currentContext)
-		Assertions.assertThat(contexts.all).doesNotContain(newCurrentContext)
+		assertThat(currentContext).isNotEqualTo(newCurrentContext)
+		assertThat(contexts.all).contains(currentContext)
+		assertThat(contexts.all).doesNotContain(newCurrentContext)
 		doReturn(newCurrentContext)
 				.whenever(contextFactory).invoke(any(), anyOrNull()) // returned on 2nd call
 		// when
 		contexts.setCurrent(newCurrentContext)
 		// then
-		Assertions.assertThat(contexts.all).contains(newCurrentContext)
+		assertThat(contexts.all).contains(newCurrentContext)
+	}
+
+	@Test
+	fun `#setCurrentContext(context) should set new current context in #allContexts`() {
+		// given
+		val newCurrentContext = activeContext(client, namespace, namedContext3)
+		contexts.all // create all contexts
+		val currentContext = contexts.current
+		assertThat(currentContext).isNotEqualTo(newCurrentContext)
+		assertThat(contexts.all).contains(currentContext)
+		assertThat(contexts.all).doesNotContain(newCurrentContext)
+		doReturn(newCurrentContext)
+			.whenever(contextFactory).invoke(any(), anyOrNull()) // returned on 2nd call
+		// when
+		contexts.setCurrent(newCurrentContext)
+		// then
+		assertThat(contexts.all).contains(newCurrentContext)
+	}
+
+	@Test
+	fun `#setCurrentContext(context) should remove current context in #allContexts`() {
+		// given
+		val newCurrentContext = activeContext(client, namespace, namedContext3)
+		contexts.all // create all contexts
+		val currentContext = contexts.current
+		assertThat(currentContext).isNotEqualTo(newCurrentContext)
+		assertThat(contexts.all).contains(currentContext)
+		assertThat(contexts.all).doesNotContain(newCurrentContext)
+		doReturn(newCurrentContext)
+			.whenever(contextFactory).invoke(any(), anyOrNull()) // returned on 2nd call
+		// when
+		contexts.setCurrent(newCurrentContext)
+		// then
+		assertThat(contexts.all).doesNotContain(currentContext)
+	}
+
+	@Test
+	fun `#setCurrentContext(context) should close current context`() {
+		// given
+		val newCurrentContext = activeContext(client, namespace, namedContext3)
+		contexts.all // create all contexts
+		val currentContext = contexts.current!!
+		doReturn(newCurrentContext)
+			.whenever(contextFactory).invoke(any(), anyOrNull()) // returned on 2nd call
+		// when
+		contexts.setCurrent(newCurrentContext)
+		// then
+		verify(currentContext).close()
+	}
+
+	@Test
+	fun `#setCurrentContext(context) should return 'true' if new context was set`() {
+		// given
+		val newCurrentContext = activeContext(client, namespace, namedContext3)
+		contexts.all // create all contexts
+		val currentContext = contexts.current!!
+		doReturn(newCurrentContext)
+			.whenever(contextFactory).invoke(any(), anyOrNull()) // returned on 2nd call
+		// when
+		val currentContextIsSet = contexts.setCurrent(newCurrentContext)
+		// then
+		assertThat(contexts.current).isEqualTo(newCurrentContext)
+		assertThat(currentContextIsSet).isTrue()
 	}
 
     private fun createKubeConfig(currentContext: NamedContext?, allContexts: List<NamedContext>): KubeConfig {
@@ -203,10 +249,10 @@ class ContextsTest {
         }
     }
 
-	private class TestableContext(observable: IModelChangeObservable,
+	private class TestableContext(modelChange: IModelChangeObservable,
 								  factory: (IModelChangeObservable, NamedContext) -> IActiveContext<out HasMetadata, out KubernetesClient>,
 								  override val config: KubeConfig
-	): Contexts(observable, factory) {
+	): Contexts(modelChange, factory) {
 
 		override val all: MutableList<IContext> = spy(super.all)
 

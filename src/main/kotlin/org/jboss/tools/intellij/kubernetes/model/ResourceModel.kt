@@ -43,7 +43,9 @@ open class ResourceModel(
 ) : IResourceModel {
 
     override fun setCurrentContext(context: IContext) {
-        contexts.setCurrent(context)
+        if (contexts.setCurrent(context)) {
+            observable.fireModified(this)
+        }
     }
 
     override fun getCurrentContext(): IActiveContext<out HasMetadata, out KubernetesClient>? {
@@ -83,7 +85,7 @@ open class ResourceModel(
         return ListableCustomResources(definition,this)
     }
 
-    fun <R: HasMetadata> getResources(kind: ResourceKind<R>, namespaced: ResourcesIn, filter: Predicate<R>? = null): Collection<R> {
+    fun <R: HasMetadata> getAllResources(kind: ResourceKind<R>, namespaced: ResourcesIn, filter: Predicate<R>? = null): Collection<R> {
         try {
             val resources: Collection<R> = contexts.current?.getAllResources(kind, namespaced) ?: return emptyList()
             return if (filter == null) {
@@ -99,7 +101,7 @@ open class ResourceModel(
         }
     }
 
-    fun getResources(definition: CustomResourceDefinition): Collection<HasMetadata> {
+    fun getAllResources(definition: CustomResourceDefinition): Collection<HasMetadata> {
         try {
             return contexts.current?.getResources(definition) ?: emptyList()
         } catch(e: IllegalArgumentException) {
@@ -122,8 +124,9 @@ open class ResourceModel(
 
     private fun invalidate() {
         logger<ResourceModel>().debug("Invalidating all contexts.")
-        contexts.clear()
-        observable.fireModified(this)
+        if (contexts.clear()) {
+            observable.fireModified(this)
+        }
     }
 
     private fun invalidate(context: IActiveContext<out HasMetadata, out KubernetesClient>) {
