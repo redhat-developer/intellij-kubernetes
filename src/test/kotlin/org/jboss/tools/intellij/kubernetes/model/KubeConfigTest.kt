@@ -146,7 +146,7 @@ class KubeConfigTest {
 	}
 
 	private fun createClient(config: Config): ConfigAware<Config> {
-		return mock() {
+		return mock {
 			on { configuration } doReturn config
 		}
 	}

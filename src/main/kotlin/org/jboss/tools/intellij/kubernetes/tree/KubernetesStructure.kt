@@ -13,7 +13,6 @@ package org.jboss.tools.intellij.kubernetes.tree
 import com.intellij.ide.util.treeView.NodeDescriptor
 import com.intellij.ui.tree.LeafState
 import io.fabric8.kubernetes.api.model.ConfigMap
-import io.fabric8.kubernetes.api.model.Endpoints
 import io.fabric8.kubernetes.api.model.Namespace
 import io.fabric8.kubernetes.api.model.Node
 import io.fabric8.kubernetes.api.model.Pod

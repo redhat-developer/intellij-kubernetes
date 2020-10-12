@@ -190,14 +190,13 @@ object ClientMocks {
     }
 
     fun objectMeta(name: String, namespace: String?, uid: String): ObjectMeta {
-        val metadata = mock<ObjectMeta> {
+        return mock<ObjectMeta> {
             on { getUid() } doReturn uid
             on { getName() } doReturn name
             if (namespace != null) {
                 on { getNamespace() } doReturn namespace
             }
         }
-        return metadata
     }
 
 }

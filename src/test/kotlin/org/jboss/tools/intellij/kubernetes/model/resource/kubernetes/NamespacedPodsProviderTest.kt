@@ -18,7 +18,6 @@ import com.nhaarman.mockitokotlin2.spy
 import com.nhaarman.mockitokotlin2.times
 import com.nhaarman.mockitokotlin2.verify
 import io.fabric8.kubernetes.api.model.Pod
-import io.fabric8.kubernetes.api.model.apps.Deployment
 import io.fabric8.kubernetes.client.KubernetesClient
 import org.assertj.core.api.Assertions.assertThat
 import org.jboss.tools.intellij.kubernetes.model.mocks.ClientMocks.NAMESPACE1

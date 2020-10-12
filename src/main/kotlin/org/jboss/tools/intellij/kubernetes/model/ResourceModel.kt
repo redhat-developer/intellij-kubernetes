@@ -68,7 +68,7 @@ open class ResourceModel(
 
     override fun getCurrentNamespace(): String? {
         try {
-            return contexts.current?.getCurrentNamespace() ?: return null
+            return contexts.current?.getCurrentNamespace()
         } catch (e: KubernetesClientException) {
             throw ResourceException(
                 "Could not get current namespace for server ${contexts.current?.client?.masterUrl}", e)

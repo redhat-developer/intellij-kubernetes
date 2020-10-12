@@ -125,11 +125,11 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
 
     override fun <R: HasMetadata> getAllResources(kind: ResourceKind<R>, resourcesIn: ResourcesIn): Collection<R> {
         logger<ActiveContext<*,*>>().debug("Resources $kind requested.")
-        return getAllResources(getProvider(kind, resourcesIn)) as Collection<R>
+        return getAllResources(getProvider(kind, resourcesIn))
     }
 
     private fun <R: HasMetadata> getAllResources(provider: IResourcesProvider<R>?): Collection<R> {
-        return provider?.getAllResources() as? Collection<R>?
+        return provider?.getAllResources()
                 ?: emptyList()
     }
 

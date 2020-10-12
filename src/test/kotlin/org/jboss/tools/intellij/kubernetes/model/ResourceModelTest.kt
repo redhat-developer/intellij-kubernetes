@@ -58,12 +58,6 @@ class ResourceModelTest {
             namedContext("ctx2", "namespace2", "cluster2", "user2")
     private val namedContext3 =
             namedContext("ctx3", "namespace3", "cluster3", "user3")
-/*
-    private val config: KubeConfig = createKubeConfigContexts(
-            context2,
-            listOf(context1, context2, context3)
-    )
-*/
 
     private val contexts = createContexts(activeContext, listOf(
             context(namedContext1),
@@ -213,21 +207,6 @@ class ResourceModelTest {
         verify(contextFactory, never()).invoke(any(), anyOrNull())
     }
 
-/*
-    @Test
-    fun `#getCurrentContext() should not create new active context if there's no current context in kubeconfig`() {
-        // given
-        val config: KubeConfig = createKubeConfigContexts(
-                null,
-                listOf(context1, context2, context3)
-        )
-        val model = ResourceModel(modelChange, contextFactory, config)
-        // when
-        model.getCurrentContext()
-        // then
-        verify(contextFactory, never()).invoke(any(), anyOrNull())
-    }
-*/
     @Test
     fun `#setCurrentContext(context) should not create new active context if setting (same) existing current context`() {
         // given

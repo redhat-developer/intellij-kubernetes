@@ -136,7 +136,7 @@ open class ResourceWatch(
             return if (watchable == null) {
                 NULL_WATCHABLE
             } else {
-                watchable?.watch(ResourceWatcher(addOperation, removeOperation, replaceOperation))
+                watchable.watch(ResourceWatcher(addOperation, removeOperation, replaceOperation))
             }
         }
 

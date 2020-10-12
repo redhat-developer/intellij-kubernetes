@@ -145,7 +145,7 @@ class KubernetesContextTest {
 				customResourceDefinitionsProvider)
 		val extensionResourceProviders = mutableListOf(
 				hasMetadataProvider)
-		val context = spy(TestableKubernetesContext(
+		return spy(TestableKubernetesContext(
 				observable,
 				this@KubernetesContextTest.client,
 				internalResourcesProviders,
@@ -153,7 +153,6 @@ class KubernetesContextTest {
 				Pair(namespacedCustomResourcesProvider, nonNamespacedCustomResourcesProvider),
 				resourceWatch
 		))
-		return context
 	}
 
 	@Test
