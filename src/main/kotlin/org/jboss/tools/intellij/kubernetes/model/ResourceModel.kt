@@ -15,7 +15,6 @@ import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.apiextensions.CustomResourceDefinition
 import io.fabric8.kubernetes.client.KubernetesClient
 import io.fabric8.kubernetes.client.KubernetesClientException
-import org.jboss.tools.intellij.kubernetes.model.context.ActiveContext
 import org.jboss.tools.intellij.kubernetes.model.context.ContextFactory
 import org.jboss.tools.intellij.kubernetes.model.context.IActiveContext
 import org.jboss.tools.intellij.kubernetes.model.context.IActiveContext.ResourcesIn
@@ -86,7 +85,7 @@ open class ResourceModel(
 
     fun <R: HasMetadata> getResources(kind: ResourceKind<R>, namespaced: ResourcesIn, filter: Predicate<R>? = null): Collection<R> {
         try {
-            val resources: Collection<R> = contexts.current?.getResources(kind, namespaced) ?: return emptyList()
+            val resources: Collection<R> = contexts.current?.getAllResources(kind, namespaced) ?: return emptyList()
             return if (filter == null) {
                 resources
             } else {

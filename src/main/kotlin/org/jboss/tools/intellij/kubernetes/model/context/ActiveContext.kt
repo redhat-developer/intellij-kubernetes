@@ -45,7 +45,7 @@ interface IActiveContext<N: HasMetadata, C: KubernetesClient>: IContext {
     fun isOpenShift(): Boolean
     fun setCurrentNamespace(namespace: String)
     fun getCurrentNamespace(): String?
-    fun <R: HasMetadata> getResources(kind: ResourceKind<R>, resourcesIn: ResourcesIn): Collection<R>
+    fun <R: HasMetadata> getAllResources(kind: ResourceKind<R>, resourcesIn: ResourcesIn): Collection<R>
     fun getResources(definition: CustomResourceDefinition): Collection<GenericResource>
     fun watch(kind: ResourceKind<out HasMetadata>)
     fun add(resource: HasMetadata): Boolean
@@ -68,8 +68,10 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
     }
     protected open val namespacedProviders: MutableMap<ResourceKind<out HasMetadata>, INamespacedResourcesProvider<out HasMetadata>> by lazy {
         val providers = getAllResourceProviders(INamespacedResourcesProvider::class.java)
-        val namespace = getCurrentNamespace(getNamespaces(nonNamespacedProviders))
+        val namespacesProvider: INonNamespacedResourcesProvider<N> = nonNamespacedProviders[getNamespacesKind()] as INonNamespacedResourcesProvider<N>
+        val namespace = getCurrentNamespace(getAllResources(namespacesProvider))
         setCurrentNamespace(namespace, providers.values)
+        watch(namespacesProvider) // always watch namespaces
         providers
     }
     protected open var watch: ResourceWatch = ResourceWatch(
@@ -100,7 +102,8 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
     }
 
     override fun getCurrentNamespace(): String? {
-        return getCurrentNamespace(getNamespaces(nonNamespacedProviders))
+        val namespaceKind = getNamespacesKind()
+        return getCurrentNamespace(getAllResources(nonNamespacedProviders[namespaceKind] as? IResourcesProvider<N>))
     }
 
     private fun getCurrentNamespace(namespaces: Collection<N>): String? {
@@ -118,12 +121,16 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
                 .contains(namespace)
     }
 
-    protected abstract fun getNamespaces(providers: Map<ResourceKind<out HasMetadata>, INonNamespacedResourcesProvider<out HasMetadata>>): Collection<N>
+    protected abstract fun getNamespacesKind(): ResourceKind<N>
 
-    override fun <R: HasMetadata> getResources(kind: ResourceKind<R>, resourcesIn: ResourcesIn): Collection<R> {
+    override fun <R: HasMetadata> getAllResources(kind: ResourceKind<R>, resourcesIn: ResourcesIn): Collection<R> {
         logger<ActiveContext<*,*>>().debug("Resources $kind requested.")
-        val provider = getProvider(kind, resourcesIn) ?: return emptyList()
-        return provider.getAllResources()
+        return getAllResources(getProvider(kind, resourcesIn)) as Collection<R>
+    }
+
+    private fun <R: HasMetadata> getAllResources(provider: IResourcesProvider<R>?): Collection<R> {
+        return provider?.getAllResources() as? Collection<R>?
+                ?: emptyList()
     }
 
     private fun setProvider(
@@ -140,7 +147,7 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
         }
     }
 
-    protected fun <R: HasMetadata> getProvider(kind: ResourceKind<R>, resourcesIn: ResourcesIn): IResourcesProvider<R>? {
+    private fun <R: HasMetadata> getProvider(kind: ResourceKind<R>, resourcesIn: ResourcesIn): IResourcesProvider<R>? {
         return when(resourcesIn) {
             CURRENT_NAMESPACE -> {
                 namespacedProviders[kind] as IResourcesProvider<R>?

@@ -157,15 +157,6 @@ class KubernetesContextTest {
 	}
 
 	@Test
-	fun `context instantiation should retrieve current namespace in client`() {
-		// given
-		// context created in #before
-		// when
-		// then
-		verify(client.configuration).namespace
-	}
-
-	@Test
 	fun `#setCurrentNamespace should remove all namespaced providers`() {
 		// given
 		val captor =
@@ -255,7 +246,7 @@ class KubernetesContextTest {
 	fun `#getResources should get all resources in provider for given resource type in correct ResourcesIn type`() {
 		// given
 		// when
-		context.getResources(NodesProvider.KIND, ResourcesIn.NO_NAMESPACE)
+		context.getAllResources(NodesProvider.KIND, ResourcesIn.NO_NAMESPACE)
 		// then
 		verify(nodesProvider).getAllResources()
 	}
@@ -265,7 +256,7 @@ class KubernetesContextTest {
 		// given
 		// when
 		// there are no namespaces in current namespace
-		context.getResources(NodesProvider.KIND, ResourcesIn.CURRENT_NAMESPACE)
+		context.getAllResources(NodesProvider.KIND, ResourcesIn.CURRENT_NAMESPACE)
 		// then
 		verify(nodesProvider, never()).getAllResources()
 	}
@@ -275,7 +266,7 @@ class KubernetesContextTest {
 		// given
 		// when
 		// namespace provider exists but for ResourceIn.NO_NAMESPACE
-		context.getResources(NodesProvider.KIND, ResourcesIn.CURRENT_NAMESPACE)
+		context.getAllResources(NodesProvider.KIND, ResourcesIn.CURRENT_NAMESPACE)
 		// then
 		verify(nodesProvider, never()).getAllResources()
 	}
@@ -284,7 +275,7 @@ class KubernetesContextTest {
 	fun `#getResources should return empty list if there's no provider of given resource type in given ResourceIn type`() {
 		// given
 		// when
-		val services = context.getResources(ServicesProvider.KIND, ResourcesIn.NO_NAMESPACE)
+		val services = context.getAllResources(ServicesProvider.KIND, ResourcesIn.NO_NAMESPACE)
 		// then
 		assertThat(services).isEmpty()
 	}

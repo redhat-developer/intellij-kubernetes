@@ -15,8 +15,6 @@ import io.fabric8.kubernetes.api.model.NamedContext
 import io.fabric8.openshift.api.model.Project
 import io.fabric8.openshift.client.NamespacedOpenShiftClient
 import org.jboss.tools.intellij.kubernetes.model.IModelChangeObservable
-import org.jboss.tools.intellij.kubernetes.model.context.IActiveContext.ResourcesIn
-import org.jboss.tools.intellij.kubernetes.model.resource.INonNamespacedResourcesProvider
 import org.jboss.tools.intellij.kubernetes.model.resource.IResourcesProvider
 import org.jboss.tools.intellij.kubernetes.model.resource.ResourceKind
 import org.jboss.tools.intellij.kubernetes.model.resource.kubernetes.AllPodsProvider
@@ -80,9 +78,8 @@ open class OpenShiftContext(
 		)
 	}
 
-	override fun getNamespaces(providers: Map<ResourceKind<out HasMetadata>, INonNamespacedResourcesProvider<out HasMetadata>>): Collection<Project> {
-		return providers[ProjectsProvider.KIND]?.getAllResources() as Collection<Project>?
-				?: emptyList()
+	override fun getNamespacesKind(): ResourceKind<Project> {
+		return ProjectsProvider.KIND
 	}
 
 	override fun isOpenShift() = true

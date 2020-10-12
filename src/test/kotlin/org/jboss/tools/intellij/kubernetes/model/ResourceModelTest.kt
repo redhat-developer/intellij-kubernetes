@@ -78,7 +78,7 @@ class ResourceModelTest {
         // when
         model.getResources(NamespacedPodsProvider.KIND, ResourcesIn.CURRENT_NAMESPACE)
         // then
-        verify(activeContext).getResources(NamespacedPodsProvider.KIND, ResourcesIn.CURRENT_NAMESPACE)
+        verify(activeContext).getAllResources(NamespacedPodsProvider.KIND, ResourcesIn.CURRENT_NAMESPACE)
     }
 
     @Test
@@ -87,14 +87,14 @@ class ResourceModelTest {
         // when
         model.getResources(NamespacedPodsProvider.KIND, ResourcesIn.NO_NAMESPACE)
         // then
-        verify(activeContext).getResources(NamespacedPodsProvider.KIND, ResourcesIn.NO_NAMESPACE)
+        verify(activeContext).getAllResources(NamespacedPodsProvider.KIND, ResourcesIn.NO_NAMESPACE)
     }
 
     @Test
     fun `#getResources(kind) should call predicate#test for each resource that is returned from context`() {
         // given
         val filter = mock<Predicate<Pod>>()
-        whenever(activeContext.getResources(any<ResourceKind<HasMetadata>>(), any()))
+        whenever(activeContext.getAllResources(any<ResourceKind<HasMetadata>>(), any()))
                 .thenReturn(listOf(
                         POD1,
                         POD2,

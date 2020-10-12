@@ -44,8 +44,8 @@ open class ResourceWatch(
     private val watchOperationsRunner = executor.submit(watchOperationsRunner)
 
     open fun watch(kind: ResourceKind<out HasMetadata>, supplier: () -> Watchable<Watch, Watcher<in HasMetadata>>?) {
+        val watchable = supplier.invoke() ?: return
         watches.computeIfAbsent(kind) {
-            val watchable = supplier.invoke()
             logger<ResourceWatch>().debug("Enqueueing watch for $kind resources in $watchable.")
             val watchOperation = WatchOperation(
                     kind,

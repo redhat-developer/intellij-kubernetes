@@ -70,9 +70,8 @@ open class KubernetesContext(
 		)
 	}
 
-	override fun getNamespaces(providers: Map<ResourceKind<out HasMetadata>, INonNamespacedResourcesProvider<out HasMetadata>>): Collection<Namespace> {
-		return providers[NamespacesProvider.KIND]?.getAllResources() as Collection<Namespace>?
-				?: emptyList()
+	override fun getNamespacesKind(): ResourceKind<Namespace> {
+		return NamespacesProvider.KIND
 	}
 
 	override fun isOpenShift() = false
