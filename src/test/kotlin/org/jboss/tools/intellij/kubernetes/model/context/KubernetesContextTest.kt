@@ -24,6 +24,7 @@ import com.nhaarman.mockitokotlin2.whenever
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.Namespace
 import io.fabric8.kubernetes.api.model.Pod
+import io.fabric8.kubernetes.api.model.Secret
 import io.fabric8.kubernetes.api.model.apiextensions.CustomResourceDefinition
 import io.fabric8.kubernetes.client.NamespacedKubernetesClient
 import io.fabric8.kubernetes.client.Watch
@@ -103,6 +104,11 @@ class KubernetesContextTest {
 			setOf(hasMetadata1, hasMetadata2),
 			currentNamespace)
 
+	private val danglingSecretsProvider: INamespacedResourcesProvider<Secret> = namespacedResourceProvider(
+		ResourceKind.new(Secret::class.java),
+		setOf(resource("secret1")),
+		currentNamespace)
+
 	private val namespacedCustomResource1 = customResource("genericCustomResource1", "namespace1", namespacedDefinition)
 	private val namespacedCustomResource2 = customResource("genericCustomResource2", "namespace1", namespacedDefinition)
 	private val watchable1: Watchable<Watch, Watcher<GenericResource>> = mock()
@@ -145,7 +151,7 @@ class KubernetesContextTest {
 				customResourceDefinitionsProvider)
 		val extensionResourceProviders = mutableListOf(
 				hasMetadataProvider)
-		val context = spy(TestableKubernetesContext(
+		return spy(TestableKubernetesContext(
 				observable,
 				this@KubernetesContextTest.client,
 				internalResourcesProviders,
@@ -153,16 +159,6 @@ class KubernetesContextTest {
 				Pair(namespacedCustomResourcesProvider, nonNamespacedCustomResourcesProvider),
 				resourceWatch
 		))
-		return context
-	}
-
-	@Test
-	fun `context instantiation should retrieve current namespace in client`() {
-		// given
-		// context created in #before
-		// when
-		// then
-		verify(client.configuration).namespace
 	}
 
 	@Test
@@ -178,6 +174,43 @@ class KubernetesContextTest {
 		// then
 		verify(context.watch).ignoreAll(captor.capture())
 		assertThat(captor.firstValue).containsOnly(*toRemove)
+	}
+
+	@Test
+	fun `#setCurrentNamespace should watch all namespaced providers that it stopped before`() {
+		// given
+		val captor =
+			argumentCaptor<Collection<Pair<ResourceKind<out HasMetadata>, () -> Watchable<Watch, Watcher<in HasMetadata>>?>>>()
+		val removed: Collection<ResourceKind<out HasMetadata>> =
+			context.namespacedProviders.values
+				.map { it.kind }
+		whenever(context.watch.ignoreAll(any()))
+			.doReturn(removed)
+		val reWatched: Array<Pair<ResourceKind<out HasMetadata>, () -> Watchable<Watch, Watcher<in HasMetadata>>?>> =
+			context.namespacedProviders.values
+				.filter { removed.contains(it.kind) }
+				.map { Pair(it.kind, it.getWatchable()) }
+				.toTypedArray() as Array<Pair<ResourceKind<out HasMetadata>, () -> Watchable<Watch, Watcher<in HasMetadata>>?>>
+		// when
+		context.setCurrentNamespace(NAMESPACE1.metadata.name)
+		// then
+		verify(context.watch).watchAll(captor.capture())
+		assertThat(captor.firstValue).containsOnly(*reWatched)
+	}
+
+	@Test
+	fun `#setCurrentNamespace should NOT watch provider that is not contained it stopped`() {
+		// given
+		val captor =
+			argumentCaptor<Collection<Pair<ResourceKind<out HasMetadata>, () -> Watchable<Watch, Watcher<in HasMetadata>>?>>>()
+		val stopped: Collection<ResourceKind<*>> = listOf(danglingSecretsProvider.kind)
+		whenever(context.watch.ignoreAll(any()))
+			.thenReturn(stopped)
+		// when
+		context.setCurrentNamespace(NAMESPACE1.metadata.name)
+		// then
+		verify(context.watch).watchAll(captor.capture())
+		assertThat(captor.firstValue).isEmpty()
 	}
 
 	@Test
@@ -255,7 +288,7 @@ class KubernetesContextTest {
 	fun `#getResources should get all resources in provider for given resource type in correct ResourcesIn type`() {
 		// given
 		// when
-		context.getResources(NodesProvider.KIND, ResourcesIn.NO_NAMESPACE)
+		context.getAllResources(NodesProvider.KIND, ResourcesIn.NO_NAMESPACE)
 		// then
 		verify(nodesProvider).getAllResources()
 	}
@@ -265,7 +298,7 @@ class KubernetesContextTest {
 		// given
 		// when
 		// there are no namespaces in current namespace
-		context.getResources(NodesProvider.KIND, ResourcesIn.CURRENT_NAMESPACE)
+		context.getAllResources(NodesProvider.KIND, ResourcesIn.CURRENT_NAMESPACE)
 		// then
 		verify(nodesProvider, never()).getAllResources()
 	}
@@ -275,7 +308,7 @@ class KubernetesContextTest {
 		// given
 		// when
 		// namespace provider exists but for ResourceIn.NO_NAMESPACE
-		context.getResources(NodesProvider.KIND, ResourcesIn.CURRENT_NAMESPACE)
+		context.getAllResources(NodesProvider.KIND, ResourcesIn.CURRENT_NAMESPACE)
 		// then
 		verify(nodesProvider, never()).getAllResources()
 	}
@@ -284,7 +317,7 @@ class KubernetesContextTest {
 	fun `#getResources should return empty list if there's no provider of given resource type in given ResourceIn type`() {
 		// given
 		// when
-		val services = context.getResources(ServicesProvider.KIND, ResourcesIn.NO_NAMESPACE)
+		val services = context.getAllResources(ServicesProvider.KIND, ResourcesIn.NO_NAMESPACE)
 		// then
 		assertThat(services).isEmpty()
 	}
@@ -634,37 +667,71 @@ class KubernetesContextTest {
 	}
 
 	@Test
-	fun `#invalidate(resource) should invalidate namespaced resource provider`() {
+	fun `#invalidate(kind) should invalidate resource provider for this kind`() {
+		// given
+		// when
+		context.invalidate(namespacedPodsProvider.kind)
+		// then
+		verify(namespacesProvider, never()).invalidate()
+		verify(namespacedPodsProvider).invalidate()
+	}
+
+	@Test
+	fun `#replace(resource) should replace in namespaced resource provider`() {
 		// given
 		val pod = allPods[0]
 		// when
-		context.invalidate(pod)
+		context.replace(pod)
 		// then
-		verify(namespacesProvider, never()).invalidate(pod)
-		verify(namespacedPodsProvider).invalidate(pod)
+		verify(namespacesProvider, never()).replace(pod)
+		verify(namespacedPodsProvider).replace(pod)
 	}
 
 	@Test
-	fun `#invalidate(resource) should invalidate non-namespaced resource provider`() {
+	fun `#replace(resource) should replace in non-namespaced resource provider`() {
 		// given
 		val namespace = allNamespaces[0]
 		// when
-		context.invalidate(namespace)
+		context.replace(namespace)
 		// then
-		verify(namespacesProvider).invalidate(namespace)
-		verify(namespacedPodsProvider, never()).invalidate(namespace)
+		verify(namespacesProvider).replace(namespace)
+		verify(namespacedPodsProvider, never()).replace(namespace)
 	}
 
 	@Test
-	fun `#invalidate(customResource) should invalidate custom resource provider`() {
+	fun `#replace(customResource) should replace in custom resource provider`() {
 		// given
 		givenCustomResourceProvider(namespacedDefinition,
 				customResourceDefinitionsProvider,
 				namespacedCustomResourcesProvider)
 		// when
-		context.invalidate(namespacedCustomResource1)
+		context.replace(namespacedCustomResource1)
 		// then
-		verify(namespacedCustomResourcesProvider).invalidate(namespacedCustomResource1)
+		verify(namespacedCustomResourcesProvider).replace(namespacedCustomResource1)
+	}
+
+	@Test
+	fun `#replace(pod) should fire if provider replaced pod`() {
+		// given
+		val pod = resource<Pod>("gargamel")
+		doReturn(true)
+				.whenever(namespacedPodsProvider).replace(pod)
+		// when
+		context.replace(pod)
+		// then
+		verify(observable).fireModified(pod)
+	}
+
+	@Test
+	fun `#replace(pod) should not fire if provider did NOT replace pod`() {
+		// given
+		val pod = resource<Pod>("gargamel")
+		doReturn(false)
+				.whenever(namespacedPodsProvider).replace(pod)
+		// when
+		context.replace(pod)
+		// then
+		verify(observable, never()).fireModified(pod)
 	}
 
 	@Test

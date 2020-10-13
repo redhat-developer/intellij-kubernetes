@@ -11,19 +11,25 @@
 package org.jboss.tools.intellij.kubernetes.model.util
 
 import io.fabric8.kubernetes.api.model.HasMetadata
-import io.fabric8.kubernetes.client.utils.KubernetesResourceUtil
 import io.fabric8.kubernetes.model.annotation.ApiGroup
 import io.fabric8.kubernetes.model.annotation.ApiVersion
 import io.fabric8.kubernetes.model.util.Helper
 
 /**
- * returns {@code true} if the given resources are equal.
- * These are considered equal if their name, namespace and kind are equal.
+ * returns {@code true} if the given resource has the same uid as this resource. Returns {@code false} otherwise.
  */
-fun areEqual(thisResource: HasMetadata, thatResource: HasMetadata): Boolean {
-	return KubernetesResourceUtil.getName(thisResource) == KubernetesResourceUtil.getName(thatResource)
-			&& KubernetesResourceUtil.getNamespace(thisResource) == KubernetesResourceUtil.getNamespace(thatResource)
-			&& KubernetesResourceUtil.getKind(thisResource) == KubernetesResourceUtil.getKind(thatResource)
+fun HasMetadata.sameUid(resource: HasMetadata): Boolean {
+	return this.metadata.uid == resource.metadata.uid
+}
+
+fun HasMetadata.isUpdated(resource: HasMetadata): Boolean {
+	return try {
+		val thisVersion = this.metadata.resourceVersion.toInt()
+		val thatVersion = resource.metadata.resourceVersion.toInt()
+		thisVersion < thatVersion
+	} catch(e: NumberFormatException) {
+		false
+	}
 }
 
 /**

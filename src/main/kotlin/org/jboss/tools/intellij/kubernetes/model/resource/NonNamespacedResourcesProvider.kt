@@ -10,15 +10,12 @@
  ******************************************************************************/
 package org.jboss.tools.intellij.kubernetes.model.resource
 
+import com.intellij.openapi.diagnostic.logger
 import io.fabric8.kubernetes.api.model.HasMetadata
-import io.fabric8.kubernetes.api.model.KubernetesResourceList
 import io.fabric8.kubernetes.client.KubernetesClient
 import io.fabric8.kubernetes.client.Watch
 import io.fabric8.kubernetes.client.Watcher
-import io.fabric8.kubernetes.client.dsl.WatchListDeletable
 import io.fabric8.kubernetes.client.dsl.Watchable
-
-typealias WatchableAndListable<R> = WatchListDeletable<R, out KubernetesResourceList<R>, Boolean, Watch, Watcher<R>>?
 
 interface INonNamespacedResourcesProvider<T: HasMetadata>: IResourcesProvider<T>
 
@@ -35,6 +32,7 @@ abstract class NonNamespacedResourcesProvider<R: HasMetadata, C: KubernetesClien
     }
 
     protected open fun loadAllResources(): List<R> {
+        logger<NamespacedResourcesProvider<*,*>>().debug("Loading all $kind resources.")
         return getOperation().invoke()?.list()?.items ?: emptyList()
     }
 

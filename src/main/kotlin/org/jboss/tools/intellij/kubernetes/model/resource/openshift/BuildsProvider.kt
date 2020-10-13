@@ -11,7 +11,6 @@
 package org.jboss.tools.intellij.kubernetes.model.resource.openshift
 
 import io.fabric8.openshift.api.model.Build
-import io.fabric8.openshift.api.model.BuildConfig
 import io.fabric8.openshift.client.OpenShiftClient
 import org.jboss.tools.intellij.kubernetes.model.resource.NamespacedResourcesProvider
 import org.jboss.tools.intellij.kubernetes.model.resource.ResourceKind

@@ -61,7 +61,7 @@ abstract class AbstractTreeStructureContribution(override val model: IResourceMo
 
         fun getParentElements(element: Any): Any? {
             val typedElement = element as? T ?: return null
-            return parentElementsProvider?.invoke(typedElement) ?: return null
+            return parentElementsProvider?.invoke(typedElement)
         }
 
     }

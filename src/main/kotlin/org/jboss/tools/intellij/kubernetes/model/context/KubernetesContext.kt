@@ -15,8 +15,8 @@ import io.fabric8.kubernetes.api.model.NamedContext
 import io.fabric8.kubernetes.api.model.Namespace
 import io.fabric8.kubernetes.client.NamespacedKubernetesClient
 import org.jboss.tools.intellij.kubernetes.model.IModelChangeObservable
-import org.jboss.tools.intellij.kubernetes.model.context.IActiveContext.ResourcesIn
 import org.jboss.tools.intellij.kubernetes.model.resource.IResourcesProvider
+import org.jboss.tools.intellij.kubernetes.model.resource.ResourceKind
 import org.jboss.tools.intellij.kubernetes.model.resource.kubernetes.AllPodsProvider
 import org.jboss.tools.intellij.kubernetes.model.resource.kubernetes.ConfigMapsProvider
 import org.jboss.tools.intellij.kubernetes.model.resource.kubernetes.CronJobsProvider
@@ -66,8 +66,8 @@ open class KubernetesContext(
 		)
 	}
 
-	public override fun getNamespaces(): Collection<Namespace> {
-		return getResources(NamespacesProvider.KIND, ResourcesIn.NO_NAMESPACE)
+	override fun getNamespacesKind(): ResourceKind<Namespace> {
+		return NamespacesProvider.KIND
 	}
 
 	override fun isOpenShift() = false

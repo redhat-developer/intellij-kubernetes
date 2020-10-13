@@ -58,12 +58,6 @@ class ResourceModelTest {
             namedContext("ctx2", "namespace2", "cluster2", "user2")
     private val namedContext3 =
             namedContext("ctx3", "namespace3", "cluster3", "user3")
-/*
-    private val config: KubeConfig = createKubeConfigContexts(
-            context2,
-            listOf(context1, context2, context3)
-    )
-*/
 
     private val contexts = createContexts(activeContext, listOf(
             context(namedContext1),
@@ -78,7 +72,7 @@ class ResourceModelTest {
         // when
         model.getResources(NamespacedPodsProvider.KIND, ResourcesIn.CURRENT_NAMESPACE)
         // then
-        verify(activeContext).getResources(NamespacedPodsProvider.KIND, ResourcesIn.CURRENT_NAMESPACE)
+        verify(activeContext).getAllResources(NamespacedPodsProvider.KIND, ResourcesIn.CURRENT_NAMESPACE)
     }
 
     @Test
@@ -87,14 +81,14 @@ class ResourceModelTest {
         // when
         model.getResources(NamespacedPodsProvider.KIND, ResourcesIn.NO_NAMESPACE)
         // then
-        verify(activeContext).getResources(NamespacedPodsProvider.KIND, ResourcesIn.NO_NAMESPACE)
+        verify(activeContext).getAllResources(NamespacedPodsProvider.KIND, ResourcesIn.NO_NAMESPACE)
     }
 
     @Test
     fun `#getResources(kind) should call predicate#test for each resource that is returned from context`() {
         // given
         val filter = mock<Predicate<Pod>>()
-        whenever(activeContext.getResources(any<ResourceKind<HasMetadata>>(), any()))
+        whenever(activeContext.getAllResources(any<ResourceKind<HasMetadata>>(), any()))
                 .thenReturn(listOf(
                         POD1,
                         POD2,
@@ -143,6 +137,15 @@ class ResourceModelTest {
     }
 
     @Test
+    fun `#invalidate(model) should fire model moidified`() {
+        // given
+        // when
+        model.invalidate(model)
+        // then
+        verify(modelChange).fireModified(model)
+    }
+
+    @Test
     fun `#invalidate(model) should cause #allContexts to (drop cache and) load again`() {
         // given
         model.getAllContexts()
@@ -156,21 +159,12 @@ class ResourceModelTest {
     }
 
     @Test
-    fun `#invalidate(class) should call context#invalidate(class)`() {
+    fun `#invalidate(kind) should call context#invalidate(class)`() {
         // given
         // when
         model.invalidate(NamespacedPodsProvider.KIND)
         // then
         verify(activeContext).invalidate(NamespacedPodsProvider.KIND)
-    }
-
-    @Test
-    fun `#invalidate(class) should fire class change`() {
-        // given
-        // when
-        model.invalidate(NamespacedPodsProvider.KIND)
-        // then
-        verify(modelChange).fireModified(NamespacedPodsProvider.KIND)
     }
 
     @Test
@@ -180,17 +174,7 @@ class ResourceModelTest {
         // when
         model.invalidate(resource)
         // then
-        verify(activeContext).invalidate(resource)
-    }
-
-    @Test
-    fun `#invalidate(resource) should fire resource change`() {
-        // given
-        // when
-        val resource = mock<HasMetadata>()
-        model.invalidate(resource)
-        // then
-        verify(modelChange).fireModified(resource)
+        verify(activeContext).replace(resource)
     }
 
     @Test
@@ -223,21 +207,6 @@ class ResourceModelTest {
         verify(contextFactory, never()).invoke(any(), anyOrNull())
     }
 
-/*
-    @Test
-    fun `#getCurrentContext() should not create new active context if there's no current context in kubeconfig`() {
-        // given
-        val config: KubeConfig = createKubeConfigContexts(
-                null,
-                listOf(context1, context2, context3)
-        )
-        val model = ResourceModel(modelChange, contextFactory, config)
-        // when
-        model.getCurrentContext()
-        // then
-        verify(contextFactory, never()).invoke(any(), anyOrNull())
-    }
-*/
     @Test
     fun `#setCurrentContext(context) should not create new active context if setting (same) existing current context`() {
         // given

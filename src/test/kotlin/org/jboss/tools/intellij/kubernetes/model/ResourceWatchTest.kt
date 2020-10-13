@@ -41,10 +41,13 @@ class ResourceWatchTest {
     private val addOperation: (HasMetadata) -> Unit = { addOperationState.operation(it) }
     private val removeOperationState = OperationState()
     private val removeOperation: (HasMetadata) -> Unit = { removeOperationState.operation(it) }
+    private val replaceOperationState = OperationState()
+    private val replaceOperation: (HasMetadata) -> Unit = { replaceOperationState.operation(it) }
     private val resourceWatch: TestableResourceWatch = spy(TestableResourceWatch(
         addOperation = addOperation,
         removeOperation = removeOperation,
-        watchOperations = LinkedBlockingDeque<Runnable>(),
+        replaceOperation = replaceOperation,
+        watchOperations = LinkedBlockingDeque<ResourceWatch.WatchOperation<*>>(),
         watchOperationsRunner = mock()
     ))
     private val podKind = ResourceKind.new(Pod::class.java)
@@ -177,7 +180,7 @@ class ResourceWatchTest {
     }
 
     @Test
-    fun `should not invoke any operation if watch notifies action that is not ADD or REMOVE`() {
+    fun `should not invoke any operation if watch notifies action that is not ADD, REMOVE or MODIFIED`() {
         // given
         val resource: HasMetadata = resource("some HasMetadata")
         // when
@@ -185,6 +188,19 @@ class ResourceWatchTest {
         // then
         assertThat(removeOperationState.wasInvoked()).isFalse()
         assertThat(addOperationState.wasInvoked()).isFalse()
+        assertThat(replaceOperationState.wasInvoked()).isFalse()
+    }
+
+    @Test
+    fun `#replaceOperation should get invoked if watch notifies MODIFIED`() {
+        // given
+        val resource: HasMetadata = resource("some HasMetadata")
+        // when
+        watchable1.watcher?.eventReceived(Watcher.Action.MODIFIED, resource)
+        // then
+        assertThat(removeOperationState.wasInvokedWithResource(resource)).isFalse()
+        assertThat(addOperationState.wasInvoked()).isFalse()
+        assertThat(replaceOperationState.wasInvokedWithResource(resource)).isTrue()
     }
 
     @Test
@@ -198,11 +214,12 @@ class ResourceWatchTest {
     }
 
     class TestableResourceWatch(
-            private var addOperation: (HasMetadata) -> Unit,
-            private var removeOperation: (HasMetadata) -> Unit,
-            watchOperations: BlockingDeque<Runnable>,
+            addOperation: (HasMetadata) -> Unit,
+            removeOperation: (HasMetadata) -> Unit,
+            replaceOperation: (HasMetadata) -> Unit,
+            watchOperations: BlockingDeque<WatchOperation<*>>,
             watchOperationsRunner: Runnable = mock()
-    ): ResourceWatch(addOperation, removeOperation, watchOperations, watchOperationsRunner) {
+    ): ResourceWatch(addOperation, removeOperation, replaceOperation, watchOperations, watchOperationsRunner) {
         public override val watches: ConcurrentHashMap<ResourceKind<*>, Watch?> = spy(super.watches)
 
         override fun watch(kind: ResourceKind<out HasMetadata>, supplier: () -> Watchable<Watch, Watcher<in HasMetadata>>?) {
