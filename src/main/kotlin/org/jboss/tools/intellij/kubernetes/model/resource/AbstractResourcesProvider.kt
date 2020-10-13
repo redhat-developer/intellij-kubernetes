@@ -26,45 +26,45 @@ abstract class AbstractResourcesProvider<R : HasMetadata> : IResourcesProvider<R
     }
 
     override fun add(resource: HasMetadata): Boolean {
-        if (!isOfCorrectKind(resource)) {
+        if (!isCorrectKind(resource)) {
             return false
         }
         logger<AbstractResourcesProvider<*>>().debug("Adding resource ${resource.metadata.name}.")
         // don't add resource if different instance of same resource is already contained
         synchronized(allResources) {
-            val existing = allResources.find { resource.sameUid(it) }
-            return when (existing) {
-                resource -> false
+            return when (val existing = allResources.find { resource.sameUid(it) }) {
                 null -> allResources.add(resource as R)
-                else -> replaceBy(existing, resource)
+                resource -> false
+                else -> replace(existing, resource)
             }
         }
     }
 
     override fun remove(resource: HasMetadata): Boolean {
-        if (!isOfCorrectKind(resource)) {
+        if (!isCorrectKind(resource)) {
             return false
         }
-        // do not remove by instance equality bcs instance to be removed can be different
-        // ex. when removal is triggered by resource watch
         logger<AbstractResourcesProvider<*>>().debug("Removing resource ${resource.metadata.name}.")
         synchronized(allResources) {
+            // do not remove by instance equality (ex. when removal is triggered by resource watch)
+            // or equals bcs instance to be removed can be different and not equals either
+            // (#equals would not match bcs properties - ex. phase - changed)
             return allResources.removeIf { resource.sameUid(it) }
         }
     }
 
     override fun replace(resource: HasMetadata): Boolean {
-        if (!isOfCorrectKind(resource)) {
+        if (!isCorrectKind(resource)) {
             return false
         }
         logger<AbstractResourcesProvider<*>>().debug("Replacing resource ${resource.metadata.name}.")
         synchronized(allResources) {
             val toReplace = allResources.find { resource.sameUid(it) } ?: return false
-            return replaceBy(toReplace, resource)
+            return replace(toReplace, resource)
         }
     }
 
-    private fun replaceBy(toReplace: R, replaceBy: HasMetadata): Boolean {
+    private fun replace(toReplace: R, replaceBy: HasMetadata): Boolean {
         val indexOf = allResources.indexOf(toReplace)
         if (indexOf < 0) {
             return false
@@ -73,7 +73,7 @@ abstract class AbstractResourcesProvider<R : HasMetadata> : IResourcesProvider<R
         return true
     }
 
-    private fun isOfCorrectKind(resource: HasMetadata): Boolean {
+    private fun isCorrectKind(resource: HasMetadata): Boolean {
         return kind.clazz.isAssignableFrom(resource::class.java)
     }
 }
