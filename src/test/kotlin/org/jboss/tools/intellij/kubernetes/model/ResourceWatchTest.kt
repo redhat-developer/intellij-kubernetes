@@ -204,10 +204,10 @@ class ResourceWatchTest {
     }
 
     @Test
-    fun `#clear() should close existing watches`() {
+    fun `#close() should close existing watches`() {
         // given
         // when starting 2nd time
-        resourceWatch.clear()
+        resourceWatch.close()
         // then
         assertThat(watchable1.watch.isClosed())
         assertThat(watchable2.watch.isClosed())

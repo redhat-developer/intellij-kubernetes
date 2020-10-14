@@ -20,13 +20,13 @@ import org.jboss.tools.intellij.kubernetes.model.context.IContext
 interface IContexts {
 	val current: IActiveContext<out HasMetadata, out KubernetesClient>?
 	val all: List<IContext>
-	fun setCurrent(context: IContext)
-	fun clear()
+	fun setCurrent(context: IContext): Boolean
+	fun clear(): Boolean
 }
 
 open class Contexts(
-		private val observable: IModelChangeObservable = ModelChangeObservable(),
-		private val factory: (IModelChangeObservable, NamedContext) -> IActiveContext<out HasMetadata, out KubernetesClient>
+	private val modelObservable: IModelChangeObservable = ModelChangeObservable(),
+	private val factory: (IModelChangeObservable, NamedContext) -> IActiveContext<out HasMetadata, out KubernetesClient>
 ) : IContexts {
 
 	override var current: IActiveContext<out HasMetadata, out KubernetesClient>? = null
@@ -60,61 +60,63 @@ open class Contexts(
 		KubeConfig(::refresh)
 	}
 
-	override fun setCurrent(context: IContext) {
+	override fun setCurrent(context: IContext): Boolean {
 		if (context == current) {
-			return
+			return false
 		}
-		var newContext: IActiveContext<out HasMetadata, out KubernetesClient>?
 		synchronized(this) {
+			if (current != null) {
+				replaceActiveContext(Context(current!!.context), all)
+			}
 			closeCurrent()
-			newContext = create(context.context)
+			val newContext = create(context.context)
 			current = newContext
-			replaceInAllContexts(newContext!!)
+			replaceContext(newContext!!, all)
 		}
-		if (newContext != null) {
-			observable.fireModified(newContext!!)
-		}
+		return true
 	}
 
-	override fun clear() {
-		clear(true)
-	}
-
-	private fun clear(notify: Boolean) {
+	override fun clear(): Boolean {
 		synchronized(this) {
 			all.clear()
-			closeCurrent(notify)
+			return closeCurrent()
 		}
 	}
 
 	protected open fun refresh() {
-		clear(false)
-		observable.fireModified(this) // invalidates root bcs there's no tree node for this
-	}
-
-	private fun closeCurrent() {
-		closeCurrent(true)
-	}
-
-	private fun closeCurrent(notify: Boolean) {
-		val current = this.current
-		current?.close() ?: return
-		this.current = null
-		if (notify) {
-			observable.fireModified(current)
+		if (clear()) {
+			modelObservable.fireModified(this) // invalidates root bcs there's no tree node for this
 		}
+	}
+
+	private fun closeCurrent(): Boolean {
+		val current = this.current
+		current?.close() ?: return false
+		this.current = null
+		return true
 	}
 
 	private fun create(namedContext: NamedContext): IActiveContext<out HasMetadata, out KubernetesClient> {
-		return factory(observable, namedContext)
+		return factory(modelObservable, namedContext)
 	}
 
-	private fun replaceInAllContexts(activeContext: IActiveContext<*, *>) {
-		val contextInAll = all.find { it.context == activeContext.context } ?: return
-		val indexOf = all.indexOf(contextInAll)
-		if (indexOf < 0) {
-			return
-		}
+	private fun replaceContext(activeContext: IActiveContext<*, *>, all: MutableList<IContext>) {
+		val indexOf = indexOf(activeContext.context, all) ?: return
 		all[indexOf] = activeContext
 	}
+
+	private fun replaceActiveContext(context: IContext, all: MutableList<IContext>) {
+		val indexOf = indexOf(context.context, all) ?: return
+		all[indexOf] = context
+	}
+
+	private fun indexOf(context: NamedContext, all: MutableList<IContext>): Int? {
+		val contextInAll = all.find { it.context == context } ?: return null
+		val indexOf = all.indexOf(contextInAll)
+		if (indexOf < 0) {
+			return null
+		}
+		return indexOf
+	}
+
 }

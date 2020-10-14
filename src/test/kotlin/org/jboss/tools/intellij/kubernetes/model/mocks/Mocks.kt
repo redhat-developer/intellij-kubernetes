@@ -49,7 +49,7 @@ object Mocks {
         }
     }
 
-    fun activeContext(client: NamespacedKubernetesClient, currentNamespace: Namespace, context: NamedContext? = null)
+    fun activeContext(client: NamespacedKubernetesClient, currentNamespace: Namespace, context: NamedContext)
             : IActiveContext<HasMetadata, KubernetesClient> {
         return mock {
             doReturn(client)

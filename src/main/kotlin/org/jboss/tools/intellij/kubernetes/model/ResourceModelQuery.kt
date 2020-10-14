@@ -36,7 +36,7 @@ class ListableResources<R : HasMetadata>(
 		private val model: ResourceModel) : IListable<R> {
 
 	override fun list(): Collection<R> {
-		return model.getResources(resourceKind, resourceIn, filter)
+		return model.getAllResources(resourceKind, resourceIn, filter)
 	}
 }
 
@@ -45,7 +45,7 @@ class ListableCustomResources(
 		private val model: ResourceModel) : IListable<HasMetadata> {
 
 	override fun list(): Collection<HasMetadata> {
-		return model.getResources(definition)
+		return model.getAllResources(definition)
 	}
 }
 
@@ -60,7 +60,7 @@ class FilterableResources<R : HasMetadata>(
 		private val model: ResourceModel) : IFilterable<R> {
 
 	override fun list(): Collection<R> {
-		return model.getResources(resourceKind, resourceIn)
+		return model.getAllResources(resourceKind, resourceIn)
 	}
 
 	override fun filtered(filter: Predicate<R>): IListable<R> {
