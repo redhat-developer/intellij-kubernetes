@@ -11,9 +11,10 @@
 package org.jboss.tools.intellij.kubernetes.model.resource
 
 import io.fabric8.kubernetes.api.model.HasMetadata
-import io.fabric8.kubernetes.client.KubernetesClient
+import io.fabric8.kubernetes.client.Client
+import org.jboss.tools.intellij.kubernetes.model.util.Clients
 
-interface IResourcesProviderFactory<N: HasMetadata, C: KubernetesClient, P: IResourcesProvider<N>> {
+interface IResourcesProviderFactory<N: HasMetadata, C: Client, P: IResourcesProvider<N>> {
 
-    fun create(client: C): P
+    fun create(client: Clients<C>): P
 }

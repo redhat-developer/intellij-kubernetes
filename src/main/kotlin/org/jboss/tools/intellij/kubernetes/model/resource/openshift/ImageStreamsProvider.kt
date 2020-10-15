@@ -15,17 +15,18 @@ import io.fabric8.openshift.client.OpenShiftClient
 import org.jboss.tools.intellij.kubernetes.model.resource.NamespacedResourcesProvider
 import org.jboss.tools.intellij.kubernetes.model.resource.ResourceKind
 import org.jboss.tools.intellij.kubernetes.model.resource.WatchableAndListable
+import java.util.function.Supplier
 
 class ImageStreamsProvider(client: OpenShiftClient)
     : NamespacedResourcesProvider<ImageStream, OpenShiftClient>(client) {
 
     companion object {
-        val KIND = ResourceKind.new(ImageStream::class.java)
+        val KIND = ResourceKind.create(ImageStream::class.java)
     }
 
     override val kind = KIND
 
-    override fun getOperation(namespace: String): () -> WatchableAndListable<ImageStream> {
-        return { client.imageStreams().inNamespace(namespace) }
+    override fun getOperation(namespace: String): Supplier<WatchableAndListable<ImageStream>> {
+        return Supplier { client.imageStreams().inNamespace(namespace) }
     }
 }

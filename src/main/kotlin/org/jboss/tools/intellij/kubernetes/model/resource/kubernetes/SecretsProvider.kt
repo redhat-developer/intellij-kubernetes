@@ -15,18 +15,19 @@ import io.fabric8.kubernetes.client.KubernetesClient
 import org.jboss.tools.intellij.kubernetes.model.resource.NamespacedResourcesProvider
 import org.jboss.tools.intellij.kubernetes.model.resource.ResourceKind
 import org.jboss.tools.intellij.kubernetes.model.resource.WatchableAndListable
+import java.util.function.Supplier
 
 class SecretsProvider(client: KubernetesClient)
     : NamespacedResourcesProvider<Secret, KubernetesClient>(client) {
 
     companion object {
-        val KIND = ResourceKind.new(Secret::class.java)
+        val KIND = ResourceKind.create(Secret::class.java)
     }
 
     override val kind = KIND
 
-    override fun getOperation(namespace: String): () -> WatchableAndListable<Secret> {
-        return { client.secrets().inNamespace(namespace) }
+    override fun getOperation(namespace: String): Supplier<WatchableAndListable<Secret>> {
+        return Supplier { client.secrets().inNamespace(namespace) }
     }
 
 }

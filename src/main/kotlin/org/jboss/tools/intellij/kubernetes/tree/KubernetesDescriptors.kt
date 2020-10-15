@@ -154,7 +154,7 @@ object KubernetesDescriptors {
 			if (element == null) {
 				return
 			}
-			model.watch(ResourceKind.new(element!!.spec))
+			model.watch(ResourceKind.create(element!!.spec))
 		}
 
 	}

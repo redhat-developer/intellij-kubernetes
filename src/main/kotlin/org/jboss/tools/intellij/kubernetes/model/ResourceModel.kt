@@ -24,7 +24,6 @@ import java.util.function.Predicate
 
 interface IResourceModel {
 
-    fun getClient(): KubernetesClient?
     fun setCurrentContext(context: IContext)
     fun getCurrentContext(): IActiveContext<out HasMetadata, out KubernetesClient>?
     fun getAllContexts(): List<IContext>
@@ -56,10 +55,6 @@ open class ResourceModel(
         return contexts.all
     }
 
-    override fun getClient(): KubernetesClient? {
-        return contexts.current?.client
-    }
-
     override fun addListener(listener: ModelChangeObservable.IResourceChangeListener) {
         observable.addListener(listener)
     }
@@ -73,7 +68,7 @@ open class ResourceModel(
             return contexts.current?.getCurrentNamespace()
         } catch (e: KubernetesClientException) {
             throw ResourceException(
-                "Could not get current namespace for server ${contexts.current?.client?.masterUrl}", e)
+                "Could not get current namespace for server ${contexts.current?.masterUrl}", e)
         }
     }
 
@@ -97,7 +92,7 @@ open class ResourceModel(
             if (isNotFound(e)) {
                 return emptyList()
             }
-            throw ResourceException("Could not get ${kind.kind}s for server ${contexts.current?.client?.masterUrl}", e)
+            throw ResourceException("Could not get ${kind.kind}s for server ${contexts.current?.masterUrl}", e)
         }
     }
 

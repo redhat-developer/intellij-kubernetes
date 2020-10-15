@@ -16,13 +16,14 @@ import io.fabric8.kubernetes.client.Watch
 import io.fabric8.kubernetes.client.Watcher
 import io.fabric8.kubernetes.client.dsl.WatchListDeletable
 import io.fabric8.kubernetes.client.dsl.Watchable
+import java.util.function.Supplier
 
 typealias WatchableAndListable<R> = WatchListDeletable<R, out KubernetesResourceList<R>, Boolean, Watch, Watcher<R>>?
 
 interface IResourcesProvider<R: HasMetadata> {
     val kind: ResourceKind<R>
-    fun getAllResources(): Collection<R>
-    fun getWatchable(): () -> Watchable<Watch, Watcher<R>>?
+    val allResources: Collection<R>
+    fun getWatchable(): Supplier<Watchable<Watch, Watcher<R>>?>
     fun invalidate()
     fun replace(resource: HasMetadata): Boolean
     fun add(resource: HasMetadata): Boolean

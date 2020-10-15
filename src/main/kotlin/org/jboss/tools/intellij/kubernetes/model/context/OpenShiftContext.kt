@@ -14,6 +14,7 @@ import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.NamedContext
 import io.fabric8.openshift.api.model.Project
 import io.fabric8.openshift.client.NamespacedOpenShiftClient
+import io.fabric8.openshift.client.OpenShiftClient
 import org.jboss.tools.intellij.kubernetes.model.IModelChangeObservable
 import org.jboss.tools.intellij.kubernetes.model.resource.IResourcesProvider
 import org.jboss.tools.intellij.kubernetes.model.resource.ResourceKind
@@ -41,24 +42,26 @@ import org.jboss.tools.intellij.kubernetes.model.resource.openshift.DeploymentCo
 import org.jboss.tools.intellij.kubernetes.model.resource.openshift.ImageStreamsProvider
 import org.jboss.tools.intellij.kubernetes.model.resource.openshift.ProjectsProvider
 import org.jboss.tools.intellij.kubernetes.model.resource.openshift.ReplicationControllersProvider
+import org.jboss.tools.intellij.kubernetes.model.util.Clients
 
 open class OpenShiftContext(
     modelChange: IModelChangeObservable,
     client: NamespacedOpenShiftClient,
 	context: NamedContext
-) : ActiveContext<Project, NamespacedOpenShiftClient>(modelChange, client, context) {
+) : ActiveContext<Project, OpenShiftClient>(modelChange, client, context) {
 
-	override fun getInternalResourceProviders(client: NamespacedOpenShiftClient)
+	override fun getInternalResourceProviders(supplier: Clients<OpenShiftClient>)
 			: List<IResourcesProvider<out HasMetadata>> {
+		val client = supplier.get(OpenShiftClient::class.java)
 		return listOf(
 				NamespacesProvider(client),
 				NodesProvider(client),
 				AllPodsProvider(client),
-				DeploymentsProvider(client),
-				StatefulSetsProvider(client),
-				DaemonSetsProvider(client),
-				JobsProvider(client),
-				CronJobsProvider(client),
+				DeploymentsProvider(supplier.getApps()),
+				StatefulSetsProvider(supplier.getApps()),
+				DaemonSetsProvider(supplier.getApps()),
+				JobsProvider(supplier.getBatch()),
+				CronJobsProvider(supplier.getBatch()),
 				NamespacedPodsProvider(client),
 				ProjectsProvider(client),
 				ImageStreamsProvider(client),
@@ -70,10 +73,10 @@ open class OpenShiftContext(
 				EndpointsProvider(client),
 				PersistentVolumesProvider(client),
 				PersistentVolumeClaimsProvider(client),
-				StorageClassesProvider(client),
+				StorageClassesProvider(supplier.getStorage()),
 				ConfigMapsProvider(client),
 				SecretsProvider(client),
-				IngressProvider(client),
+				IngressProvider(supplier.getExtensions()),
 				CustomResourceDefinitionsProvider(client)
 		)
 	}

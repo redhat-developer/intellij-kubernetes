@@ -21,8 +21,8 @@ class ResourceKindTest {
     @Test
     fun `#ResourceKinds for same Class are equal`() {
         // given
-        val kind1 = ResourceKind.new(Pod::class.java)
-        val kind2 = ResourceKind.new(Pod::class.java)
+        val kind1 = ResourceKind.create(Pod::class.java)
+        val kind2 = ResourceKind.create(Pod::class.java)
         // when
         // then
         assertThat(kind1).isEqualTo(kind2)
@@ -31,8 +31,8 @@ class ResourceKindTest {
     @Test
     fun `#ResourceKinds for different Classes are not equal`() {
         // given
-        val podKind = ResourceKind.new(Pod::class.java)
-        val namespaceKind = ResourceKind.new(Namespace::class.java)
+        val podKind = ResourceKind.create(Pod::class.java)
+        val namespaceKind = ResourceKind.create(Namespace::class.java)
         // when
         // then
         assertThat(podKind).isNotEqualTo(namespaceKind)
@@ -41,8 +41,8 @@ class ResourceKindTest {
     @Test
     fun `#ResourceKinds for class and instance are equal`() {
         // given
-        val classKind = ResourceKind.new(Pod::class.java)
-        val instanceKind = ResourceKind.new(Pod())
+        val classKind = ResourceKind.create(Pod::class.java)
+        val instanceKind = ResourceKind.create(Pod())
         // when
         // then
         assertThat(classKind).isEqualTo(instanceKind)
@@ -53,10 +53,10 @@ class ResourceKindTest {
         // given
         // version as defined in annotations to CustomResourceDefinition.class
         // private String apiVersion = "apiextensions/v1beta1";
-        val apiextensionKind = ResourceKind.new("apiextensions/v1beta1", HasMetadata::class.java, "CustomResourceDefinition")
+        val apiextensionKind = ResourceKind.create("apiextensions/v1beta1", HasMetadata::class.java, "CustomResourceDefinition")
         // version as defined in yaml
         // apiVersion: apiextensions.k8s.io/v1beta1
-        val apiextensionK8sioKind = ResourceKind.new("apiextensions.k8s.io/v1beta1", HasMetadata::class.java, "CustomResourceDefinition")
+        val apiextensionK8sioKind = ResourceKind.create("apiextensions.k8s.io/v1beta1", HasMetadata::class.java, "CustomResourceDefinition")
         // when
         // then
         assertThat(apiextensionKind).isNotEqualTo(apiextensionK8sioKind)

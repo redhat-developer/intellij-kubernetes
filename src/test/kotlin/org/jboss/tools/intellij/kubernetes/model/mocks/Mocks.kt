@@ -52,8 +52,6 @@ object Mocks {
     fun activeContext(client: NamespacedKubernetesClient, currentNamespace: Namespace, context: NamedContext)
             : IActiveContext<HasMetadata, KubernetesClient> {
         return mock {
-            doReturn(client)
-                .whenever(mock).client
             doReturn(currentNamespace.metadata.name)
                 .whenever(mock).getCurrentNamespace()
             doReturn(context)
@@ -93,7 +91,6 @@ object Mocks {
 
     fun resourceModel(client: KubernetesClient): IResourceModel {
         return mock {
-            on { getClient() } doReturn client
         }
     }
 }

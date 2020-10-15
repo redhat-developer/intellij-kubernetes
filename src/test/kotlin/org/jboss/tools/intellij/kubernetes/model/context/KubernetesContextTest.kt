@@ -70,7 +70,7 @@ class KubernetesContextTest {
 			"cluster crd", "version2", "group2", "cluster-crd", "Cluster")
 	private val customResourceDefinitionsProvider: INonNamespacedResourcesProvider<CustomResourceDefinition> =
 			nonNamespacedResourceProvider(
-					ResourceKind.new(CustomResourceDefinition::class.java),
+					ResourceKind.create(CustomResourceDefinition::class.java),
 					setOf(namespacedDefinition, clusterwideDefinition))
 
 	private val observable: ModelChangeObservable = mock()
@@ -100,12 +100,12 @@ class KubernetesContextTest {
 	private val hasMetadata1 = resource<HasMetadata>("hasMetadata1")
 	private val hasMetadata2 = resource<HasMetadata>("hasMetadata2")
 	private val hasMetadataProvider: INamespacedResourcesProvider<HasMetadata> = namespacedResourceProvider(
-			ResourceKind.new(HasMetadata::class.java),
+			ResourceKind.create(HasMetadata::class.java),
 			setOf(hasMetadata1, hasMetadata2),
 			currentNamespace)
 
 	private val danglingSecretsProvider: INamespacedResourcesProvider<Secret> = namespacedResourceProvider(
-		ResourceKind.new(Secret::class.java),
+		ResourceKind.create(Secret::class.java),
 		setOf(resource("secret1")),
 		currentNamespace)
 
@@ -115,7 +115,7 @@ class KubernetesContextTest {
 	private val watchableSupplier1: () -> Watchable<Watch, Watcher<GenericResource>>? = { watchable1 }
 	private val namespacedCustomResourcesProvider: INamespacedResourcesProvider<GenericResource> =
 			namespacedResourceProvider(
-					ResourceKind.new(namespacedDefinition.spec),
+					ResourceKind.create(namespacedDefinition.spec),
 					setOf(namespacedCustomResource1, namespacedCustomResource2),
 					currentNamespace,
 					watchableSupplier1
@@ -126,7 +126,7 @@ class KubernetesContextTest {
 	private val watchableSupplier2: () -> Watchable<Watch, Watcher<GenericResource>>? = { watchable2 }
 	private val nonNamespacedCustomResourcesProvider: INonNamespacedResourcesProvider<GenericResource> =
 			nonNamespacedResourceProvider(
-					ResourceKind.new(GenericResource::class.java),
+					ResourceKind.create(GenericResource::class.java),
 					setOf(nonNamespacedCustomResource1),
 					watchableSupplier2
 			)
@@ -369,7 +369,7 @@ class KubernetesContextTest {
 				customResourceDefinitionsProvider,
 				namespacedCustomResourcesProvider)
 		// when
-		context.watch(ResourceKind.new(namespacedDefinition.spec))
+		context.watch(ResourceKind.create(namespacedDefinition.spec))
 		// then
 		verify(context.watch, times(1)).watch(namespacedCustomResourcesProvider.kind, watchableSupplier1
 				as () -> Watchable<Watch, Watcher<in HasMetadata>>?)
@@ -382,7 +382,7 @@ class KubernetesContextTest {
 				customResourceDefinitionsProvider,
 				nonNamespacedCustomResourcesProvider)
 		// when
-		context.watch(ResourceKind.new(clusterwideDefinition.spec))
+		context.watch(ResourceKind.create(clusterwideDefinition.spec))
 		// then
 		verify(context.watch, times(1)).watch(nonNamespacedCustomResourcesProvider.kind, watchableSupplier2
 				as () -> Watchable<Watch, Watcher<in HasMetadata>>?)
@@ -749,7 +749,7 @@ class KubernetesContextTest {
 			resourceProvider: IResourcesProvider<GenericResource>) {
 		whenever(definitionProvider.remove(definition))
 				.doReturn(true)
-		val kind = ResourceKind.new(definition.spec)
+		val kind = ResourceKind.create(definition.spec)
 
 		whenever(resourceProvider.kind).thenReturn(kind)
 

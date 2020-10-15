@@ -15,17 +15,18 @@ import io.fabric8.kubernetes.client.KubernetesClient
 import org.jboss.tools.intellij.kubernetes.model.resource.NamespacedResourcesProvider
 import org.jboss.tools.intellij.kubernetes.model.resource.ResourceKind
 import org.jboss.tools.intellij.kubernetes.model.resource.WatchableAndListable
+import java.util.function.Supplier
 
 class PersistentVolumeClaimsProvider(client: KubernetesClient)
     : NamespacedResourcesProvider<PersistentVolumeClaim, KubernetesClient>(client) {
 
     companion object {
-        val KIND = ResourceKind.new(PersistentVolumeClaim::class.java)
+        val KIND = ResourceKind.create(PersistentVolumeClaim::class.java)
     }
 
     override val kind = KIND
 
-    override fun getOperation(namespace: String): () -> WatchableAndListable<PersistentVolumeClaim> {
-        return { client.persistentVolumeClaims().inNamespace(namespace) }
+    override fun getOperation(namespace: String): Supplier<WatchableAndListable<PersistentVolumeClaim>> {
+        return Supplier { client.persistentVolumeClaims().inNamespace(namespace) }
     }
 }

@@ -19,13 +19,14 @@ import io.fabric8.kubernetes.client.dsl.base.CustomResourceDefinitionContext
 import org.jboss.tools.intellij.kubernetes.model.resource.NonNamespacedResourcesProvider
 import org.jboss.tools.intellij.kubernetes.model.resource.ResourceKind
 import org.jboss.tools.intellij.kubernetes.model.resource.WatchableAndListable
+import java.util.function.Supplier
 
 class NonNamespacedCustomResourcesProvider(
-        definition: CustomResourceDefinition,
-        client: KubernetesClient)
-    : NonNamespacedResourcesProvider<GenericResource, KubernetesClient>(client) {
+    definition: CustomResourceDefinition,
+    client: KubernetesClient
+) : NonNamespacedResourcesProvider<GenericResource, KubernetesClient>(client) {
 
-    override val kind = ResourceKind.new(definition.spec)
+    override val kind = ResourceKind.create(definition.spec)
     private val context: CustomResourceDefinitionContext = CustomResourceDefinitionContext.fromCrd(definition)
 
     override fun loadAllResources(): List<GenericResource> {
@@ -33,8 +34,8 @@ class NonNamespacedCustomResourcesProvider(
         return GenericResourceFactory.createResources(resourcesList)
     }
 
-    override fun getWatchable(): () -> Watchable<Watch, Watcher<GenericResource>>? {
-        return {
+    override fun getWatchable(): Supplier<Watchable<Watch, Watcher<GenericResource>>?> {
+        return Supplier {
             GenericResourceWatchable { options, customResourceWatcher ->
                 val watchable = client.customResource(context)
                 watchable.watch(null, null, null, options, customResourceWatcher)
@@ -42,8 +43,8 @@ class NonNamespacedCustomResourcesProvider(
         }
     }
 
-    override fun getOperation(): () -> WatchableAndListable<GenericResource> {
-        return { null }
+    override fun getOperation(): Supplier<WatchableAndListable<GenericResource>> {
+        return Supplier { null }
     }
 
 }

@@ -50,12 +50,12 @@ class ResourceWatchTest {
         watchOperations = LinkedBlockingDeque<ResourceWatch.WatchOperation<*>>(),
         watchOperationsRunner = mock()
     ))
-    private val podKind = ResourceKind.new(Pod::class.java)
+    private val podKind = ResourceKind.create(Pod::class.java)
     private val watchable1 = WatchableFake()
-    private val namespaceKind = ResourceKind.new(Namespace::class.java)
+    private val namespaceKind = ResourceKind.create(Namespace::class.java)
     private val watchable2 = WatchableFake()
-    private val hasMetaKind1 = ResourceKind.new("v1", HasMetadata::class.java, "HasMetadata")
-    private val hasMetaKind2 = ResourceKind.new("v2", HasMetadata::class.java, "HasMetadata")
+    private val hasMetaKind1 = ResourceKind.create("v1", HasMetadata::class.java, "HasMetadata")
+    private val hasMetaKind2 = ResourceKind.create("v2", HasMetadata::class.java, "HasMetadata")
 
     @Before
     fun before() {

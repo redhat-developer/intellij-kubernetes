@@ -24,7 +24,7 @@ data class ResourceKind<R : HasMetadata> private constructor(
 
 	companion object {
 		@JvmStatic
-		fun <R: HasMetadata> new(clazz: Class<R>): ResourceKind<R> {
+		fun <R: HasMetadata> create(clazz: Class<R>): ResourceKind<R> {
 			return ResourceKind(
 					getApiVersion(clazz),
 					clazz,
@@ -32,7 +32,7 @@ data class ResourceKind<R : HasMetadata> private constructor(
 		}
 
 		@JvmStatic
-		fun new(resource: HasMetadata): ResourceKind<out HasMetadata> {
+		fun create(resource: HasMetadata): ResourceKind<out HasMetadata> {
 			return ResourceKind(
 					removeK8sio(resource.apiVersion),
 					resource.javaClass,
@@ -40,7 +40,7 @@ data class ResourceKind<R : HasMetadata> private constructor(
 		}
 
 		@JvmStatic
-		fun new(spec: CustomResourceDefinitionSpec): ResourceKind<GenericResource> {
+		fun create(spec: CustomResourceDefinitionSpec): ResourceKind<GenericResource> {
 			return ResourceKind(
 					getApiVersion(spec.group, spec.version),
 					GenericResource::class.java,
@@ -48,7 +48,7 @@ data class ResourceKind<R : HasMetadata> private constructor(
 		}
 
 		@JvmStatic
-		fun new(version: String, clazz: Class<out HasMetadata>, kind: String): ResourceKind<out HasMetadata> {
+		fun create(version: String, clazz: Class<out HasMetadata>, kind: String): ResourceKind<out HasMetadata> {
 			return ResourceKind(version, clazz, kind)
 		}
 
