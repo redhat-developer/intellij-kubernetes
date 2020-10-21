@@ -41,10 +41,8 @@ abstract class NamespacedResourcesProvider<R : HasMetadata, C: Client>(
         @Synchronized
         get() {
             if (field.isEmpty()) {
-                if (field != null) {
-                    if (namespace != null) {
-                        field.addAll(loadAllResources(namespace!!))
-                    }
+                if (namespace != null) {
+                    field.addAll(loadAllResources(namespace!!))
                 } else {
                     logger<NamespacedResourcesProvider<*, *>>().debug("Could not load $kind resources: no namespace set.")
                 }
