@@ -18,7 +18,7 @@ import io.fabric8.kubernetes.client.dsl.WatchListDeletable
 import io.fabric8.kubernetes.client.dsl.Watchable
 import java.util.function.Supplier
 
-typealias WatchableAndListable<R> = WatchListDeletable<R, out KubernetesResourceList<R>, Boolean, Watch, Watcher<R>>?
+typealias WatchableAndListable<R> = WatchListDeletable<R, out KubernetesResourceList<R>, Boolean, Watch>?
 
 interface IResourcesProvider<R: HasMetadata> {
     val kind: ResourceKind<R>

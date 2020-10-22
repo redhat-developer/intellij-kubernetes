@@ -10,7 +10,7 @@
  ******************************************************************************/
 package org.jboss.tools.intellij.kubernetes.model.resource.kubernetes.custom
 
-import io.fabric8.kubernetes.api.model.apiextensions.CustomResourceDefinition
+import io.fabric8.kubernetes.api.model.apiextensions.v1beta1.CustomResourceDefinition
 import io.fabric8.kubernetes.client.KubernetesClient
 import io.fabric8.kubernetes.client.Watch
 import io.fabric8.kubernetes.client.Watcher
@@ -26,7 +26,7 @@ class NonNamespacedCustomResourcesProvider(
     client: KubernetesClient
 ) : NonNamespacedResourcesProvider<GenericResource, KubernetesClient>(client) {
 
-    override val kind = ResourceKind.create(definition.spec)
+    override val kind = ResourceKind.create(definition)
     private val context: CustomResourceDefinitionContext = CustomResourceDefinitionContext.fromCrd(definition)
 
     override fun loadAllResources(): List<GenericResource> {

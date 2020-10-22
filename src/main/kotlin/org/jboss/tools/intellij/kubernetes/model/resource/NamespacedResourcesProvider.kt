@@ -52,7 +52,7 @@ abstract class NamespacedResourcesProvider<R : HasMetadata, C: Client>(
 
 
     protected open fun loadAllResources(namespace: String): List<R> {
-        logger<NamespacedResourcesProvider<*, *>>().debug("Loading $kind resources.")
+        logger<NamespacedResourcesProvider<*, *>>().debug("Loading $kind resources in namespace $namespace.")
         return getOperation(namespace).get()?.list()?.items ?: emptyList()
     }
 

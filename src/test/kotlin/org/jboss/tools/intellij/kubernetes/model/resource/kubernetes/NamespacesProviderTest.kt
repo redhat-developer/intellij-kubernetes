@@ -27,7 +27,7 @@ class NamespacesProviderTest {
     fun `#getAllResources should retrieve all namespaces`() {
         // given
         // when
-        provider.getAllResources()
+        provider.allResources
         // then
         verify(client.namespaces().list()).items
     }

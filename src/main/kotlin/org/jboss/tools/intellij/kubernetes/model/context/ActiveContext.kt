@@ -14,8 +14,8 @@ import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.extensions.ExtensionPointName
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.NamedContext
-import io.fabric8.kubernetes.api.model.apiextensions.CustomResourceDefinition
-import io.fabric8.kubernetes.api.model.apiextensions.CustomResourceDefinitionSpec
+import io.fabric8.kubernetes.api.model.apiextensions.v1beta1.CustomResourceDefinition
+import io.fabric8.kubernetes.api.model.apiextensions.v1beta1.CustomResourceDefinitionSpec
 import io.fabric8.kubernetes.client.KubernetesClient
 import io.fabric8.kubernetes.client.Watch
 import io.fabric8.kubernetes.client.Watcher
@@ -170,7 +170,7 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
     }
 
     override fun getResources(definition: CustomResourceDefinition): Collection<GenericResource> {
-            val kind = ResourceKind.create(definition.spec)
+            val kind = ResourceKind.create(definition)
             val resourcesIn = toResourcesIn(definition.spec)
         synchronized(this) {
             var provider: IResourcesProvider<GenericResource>? = getProvider(kind, resourcesIn)
@@ -214,7 +214,7 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
     }
 
     private fun removeCustomResourceProvider(resource: CustomResourceDefinition) {
-        val kind = ResourceKind.create(resource.spec)
+        val kind = ResourceKind.create(resource)
         watch.ignore(kind)
         val providers = when (toResourcesIn(resource.spec)) {
             CURRENT_NAMESPACE -> namespacedProviders
@@ -282,7 +282,7 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
     private fun addResource(resource: CustomResourceDefinition): Boolean {
         val added = addResource(resource as HasMetadata)
         if (added) {
-            createCustomResourcesProvider(resource, ResourceKind.create(resource.spec))
+            createCustomResourcesProvider(resource, ResourceKind.create(resource))
         }
         return added
     }
@@ -341,7 +341,7 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
     override fun replace(resource: HasMetadata): Boolean {
         val replaced = when(resource) {
             is CustomResourceDefinition ->
-                replace(ResourceKind.create(resource.spec), resource)
+                replace(ResourceKind.create(resource), resource)
             else ->
                 replace(ResourceKind.create(resource), resource)
         }

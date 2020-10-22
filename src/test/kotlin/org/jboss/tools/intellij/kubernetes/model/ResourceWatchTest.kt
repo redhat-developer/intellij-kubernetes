@@ -34,6 +34,7 @@ import java.util.concurrent.BlockingDeque
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.LinkedBlockingDeque
 import java.util.concurrent.TimeUnit
+import java.util.function.Supplier
 
 class ResourceWatchTest {
 
@@ -222,7 +223,7 @@ class ResourceWatchTest {
     ): ResourceWatch(addOperation, removeOperation, replaceOperation, watchOperations, watchOperationsRunner) {
         public override val watches: ConcurrentHashMap<ResourceKind<*>, Watch?> = spy(super.watches)
 
-        override fun watch(kind: ResourceKind<out HasMetadata>, supplier: () -> Watchable<Watch, Watcher<in HasMetadata>>?) {
+        override fun watch(kind: ResourceKind<out HasMetadata>, supplier: Supplier<out Watchable<Watch, out Watcher<in HasMetadata>>?>) {
             super.watch(kind, supplier)
             val watchOperation = watchOperations.pollFirst(10, TimeUnit.SECONDS)
             // run in sequence, not in separate thread

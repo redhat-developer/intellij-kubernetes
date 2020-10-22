@@ -12,7 +12,7 @@ package org.jboss.tools.intellij.kubernetes.model
 
 import com.intellij.openapi.diagnostic.logger
 import io.fabric8.kubernetes.api.model.HasMetadata
-import io.fabric8.kubernetes.api.model.apiextensions.CustomResourceDefinition
+import io.fabric8.kubernetes.api.model.apiextensions.v1beta1.CustomResourceDefinition
 import io.fabric8.kubernetes.client.KubernetesClient
 import io.fabric8.kubernetes.client.KubernetesClientException
 import org.jboss.tools.intellij.kubernetes.model.context.ContextFactory
@@ -23,7 +23,6 @@ import org.jboss.tools.intellij.kubernetes.model.resource.ResourceKind
 import java.util.function.Predicate
 
 interface IResourceModel {
-
     fun setCurrentContext(context: IContext)
     fun getCurrentContext(): IActiveContext<out HasMetadata, out KubernetesClient>?
     fun getAllContexts(): List<IContext>

@@ -24,7 +24,7 @@ import io.fabric8.kubernetes.api.model.PersistentVolumeClaim
 import io.fabric8.kubernetes.api.model.Pod
 import io.fabric8.kubernetes.api.model.Secret
 import io.fabric8.kubernetes.api.model.Service
-import io.fabric8.kubernetes.api.model.apiextensions.CustomResourceDefinition
+import io.fabric8.kubernetes.api.model.apiextensions.v1beta1.CustomResourceDefinition
 import io.fabric8.kubernetes.api.model.apps.DaemonSet
 import io.fabric8.kubernetes.api.model.apps.Deployment
 import io.fabric8.kubernetes.api.model.apps.StatefulSet
@@ -154,9 +154,8 @@ object KubernetesDescriptors {
 			if (element == null) {
 				return
 			}
-			model.watch(ResourceKind.create(element!!.spec))
+			model.watch(ResourceKind.create(element!!))
 		}
-
 	}
 
 	fun createPodDescriptorsFactories(pod: Pod)

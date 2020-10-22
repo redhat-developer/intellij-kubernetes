@@ -23,9 +23,9 @@ import io.fabric8.kubernetes.api.model.NamespaceList
 import io.fabric8.kubernetes.api.model.ObjectMeta
 import io.fabric8.kubernetes.api.model.Pod
 import io.fabric8.kubernetes.api.model.PodList
-import io.fabric8.kubernetes.api.model.apiextensions.CustomResourceDefinition
-import io.fabric8.kubernetes.api.model.apiextensions.CustomResourceDefinitionNames
-import io.fabric8.kubernetes.api.model.apiextensions.CustomResourceDefinitionSpec
+import io.fabric8.kubernetes.api.model.apiextensions.v1beta1.CustomResourceDefinition
+import io.fabric8.kubernetes.api.model.apiextensions.v1beta1.CustomResourceDefinitionNames
+import io.fabric8.kubernetes.api.model.apiextensions.v1beta1.CustomResourceDefinitionSpec
 import io.fabric8.kubernetes.client.Config
 import io.fabric8.kubernetes.client.NamespacedKubernetesClient
 import io.fabric8.kubernetes.client.dsl.MixedOperation
@@ -180,7 +180,7 @@ object ClientMocks {
 
     fun customResource(name: String, namespace: String, definition: CustomResourceDefinition, uid: String = System.currentTimeMillis().toString()): GenericResource {
         val metadata = objectMeta(name, namespace, uid)
-        val apiVersion = getApiVersion(definition.spec.group, definition.spec.version)
+        val apiVersion = definition.apiVersion
         val kind = definition.spec.names.kind
         return mock {
             on { getMetadata() } doReturn metadata
@@ -190,7 +190,7 @@ object ClientMocks {
     }
 
     fun objectMeta(name: String, namespace: String?, uid: String): ObjectMeta {
-        return mock<ObjectMeta> {
+        return mock {
             on { getUid() } doReturn uid
             on { getName() } doReturn name
             if (namespace != null) {
