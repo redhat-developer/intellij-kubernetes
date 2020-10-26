@@ -26,6 +26,7 @@ import io.fabric8.kubernetes.api.model.PodList
 import io.fabric8.kubernetes.api.model.apiextensions.v1beta1.CustomResourceDefinition
 import io.fabric8.kubernetes.api.model.apiextensions.v1beta1.CustomResourceDefinitionNames
 import io.fabric8.kubernetes.api.model.apiextensions.v1beta1.CustomResourceDefinitionSpec
+import io.fabric8.kubernetes.api.model.apiextensions.v1beta1.CustomResourceDefinitionVersion
 import io.fabric8.kubernetes.client.Config
 import io.fabric8.kubernetes.client.NamespacedKubernetesClient
 import io.fabric8.kubernetes.client.dsl.MixedOperation
@@ -154,19 +155,39 @@ object ClientMocks {
             group: String,
             kind: String,
             scope: String): CustomResourceDefinition {
+        return customResourceDefinition(
+            name,
+            listOf(version(version)),
+            group,
+            kind,
+            scope)
+    }
+
+    fun customResourceDefinition(
+        name: String,
+        versions: List<CustomResourceDefinitionVersion>,
+        group: String,
+        kind: String,
+        scope: String): CustomResourceDefinition {
         val names: CustomResourceDefinitionNames = mock {
             on { mock.kind } doReturn kind
         }
         val spec = mock<CustomResourceDefinitionSpec> {
-            on { mock.version } doReturn version
+            on { mock.versions } doReturn versions
             on { mock.group } doReturn group
             on { mock.names } doReturn names
             on { mock.scope } doReturn scope
         }
         val definition = resource<CustomResourceDefinition>(name)
         whenever(definition.spec)
-                .doReturn(spec)
+            .doReturn(spec)
         return definition
+    }
+
+    fun version(name: String): CustomResourceDefinitionVersion {
+        return mock {
+            on { mock.name } doReturn name
+        }
     }
 
     inline fun <reified T: HasMetadata> resource(name: String, namespace: String? = null, uid: String = System.currentTimeMillis().toString()): T {
@@ -180,7 +201,9 @@ object ClientMocks {
 
     fun customResource(name: String, namespace: String, definition: CustomResourceDefinition, uid: String = System.currentTimeMillis().toString()): GenericResource {
         val metadata = objectMeta(name, namespace, uid)
-        val apiVersion = definition.apiVersion
+        val apiVersion = getApiVersion(
+            definition.spec.group,
+            definition.spec.versions[0].name) // TODO: deal with multiple versions
         val kind = definition.spec.names.kind
         return mock {
             on { getMetadata() } doReturn metadata

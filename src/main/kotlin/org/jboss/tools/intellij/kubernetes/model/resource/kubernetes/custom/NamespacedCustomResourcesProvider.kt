@@ -26,7 +26,7 @@ class NamespacedCustomResourcesProvider(
 	client: KubernetesClient)
     : NamespacedResourcesProvider<GenericResource, KubernetesClient>(namespace, client) {
 
-    override val kind = ResourceKind.create(definition)
+    override val kind = ResourceKind.create(definition.spec)
     private val context: CustomResourceDefinitionContext = CustomResourceDefinitionContext.fromCrd(definition)
 
     override fun loadAllResources(namespace: String): List<GenericResource> {

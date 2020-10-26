@@ -119,11 +119,10 @@ class KubernetesContextTest {
 	private val watchableSupplier1: Supplier<Watchable<Watch, Watcher<GenericResource>>?> = Supplier { watchable1 }
 	private val namespacedCustomResourcesProvider: INamespacedResourcesProvider<GenericResource, NamespacedKubernetesClient> =
 			namespacedResourceProvider(
-					ResourceKind.create(namespacedDefinition),
-					setOf(namespacedCustomResource1, namespacedCustomResource2),
+					ResourceKind.create(namespacedDefinition.spec),
+					listOf(namespacedCustomResource1, namespacedCustomResource2),
 					currentNamespace,
-					watchableSupplier1
-			)
+					watchableSupplier1)
 	private val nonNamespacedCustomResource1 = resource<GenericResource>(
 			"genericCustomResource1", "smurfington")
 	private val watchable2: Watchable<Watch, Watcher<GenericResource>> = mock()
@@ -131,9 +130,8 @@ class KubernetesContextTest {
 	private val nonNamespacedCustomResourcesProvider: INonNamespacedResourcesProvider<GenericResource, NamespacedKubernetesClient> =
 			nonNamespacedResourceProvider(
 					ResourceKind.create(GenericResource::class.java),
-					setOf(nonNamespacedCustomResource1),
-					watchableSupplier2
-			)
+					listOf(nonNamespacedCustomResource1),
+					watchableSupplier2)
 
 	private val watchable3: Watchable<Watch, Watcher<in HasMetadata>> = mock()
 	private val watchableSupplier3: () -> Watchable<Watch, Watcher<in HasMetadata>>? = { watchable3 }
@@ -342,7 +340,7 @@ class KubernetesContextTest {
 		context.getAllResources(namespacedDefinition)
 		context.getAllResources(namespacedDefinition)
 		// then
-		verify(context, times(1)).createCustomResourcesProvider(eq(namespacedDefinition), any(), any())
+		verify(context, times(1)).createCustomResourcesProvider(eq(namespacedDefinition), any())
 	}
 
 	@Test
@@ -352,8 +350,8 @@ class KubernetesContextTest {
 		context.getAllResources(namespacedDefinition)
 		context.getAllResources(clusterwideDefinition)
 		// then
-		verify(context, times(1)).createCustomResourcesProvider(eq(namespacedDefinition), any(), any())
-		verify(context, times(1)).createCustomResourcesProvider(eq(clusterwideDefinition), any(), any())
+		verify(context, times(1)).createCustomResourcesProvider(eq(namespacedDefinition), any())
+		verify(context, times(1)).createCustomResourcesProvider(eq(clusterwideDefinition), any())
 	}
 
 	@Test(expected = IllegalArgumentException::class)
@@ -372,6 +370,8 @@ class KubernetesContextTest {
 		givenCustomResourceProvider(namespacedDefinition,
 				customResourceDefinitionsProvider,
 				namespacedCustomResourcesProvider)
+		val watch = context.watch
+		clearInvocations(watch)
 		// when
 		context.watch(ResourceKind.create(namespacedDefinition))
 		// then
@@ -507,7 +507,6 @@ class KubernetesContextTest {
 		verify(context)
 				.createCustomResourcesProvider(
 						eq(namespacedDefinition),
-						eq(currentNamespace),
 						eq(ResourcesIn.CURRENT_NAMESPACE))
 	}
 
@@ -523,7 +522,6 @@ class KubernetesContextTest {
 		verify(context, times(1))
 				.createCustomResourcesProvider(
 						eq(clusterwideDefinition),
-						eq(currentNamespace),
 						eq(ResourcesIn.NO_NAMESPACE))
 	}
 
@@ -535,7 +533,7 @@ class KubernetesContextTest {
 		// when
 		context.add(clusterwideDefinition)
 		// then
-		verify(context, never()).createCustomResourcesProvider(eq(clusterwideDefinition), any(), any())
+		verify(context, never()).createCustomResourcesProvider(eq(clusterwideDefinition), any())
 	}
 
 	@Test
@@ -752,11 +750,11 @@ class KubernetesContextTest {
 			definitionProvider: IResourcesProvider<CustomResourceDefinition>,
 			resourceProvider: IResourcesProvider<GenericResource>) {
 		whenever(definitionProvider.remove(definition))
-				.doReturn(true)
-		val kind = ResourceKind.create(definition)
+			.doReturn(true)
 
-		whenever(resourceProvider.kind).thenReturn(kind)
-
+		val kind = ResourceKind.create(definition.spec)
+		whenever(resourceProvider.kind)
+			.doReturn(kind)
 		if (resourceProvider is INamespacedResourcesProvider<*, *>) {
 			context.namespacedProviders[kind] =
 				resourceProvider as INamespacedResourcesProvider<*, NamespacedKubernetesClient>
@@ -805,9 +803,8 @@ class KubernetesContextTest {
 		}
 
 		public override fun createCustomResourcesProvider(
-				definition: CustomResourceDefinition,
-				namespace: String?,
-				resourceIn: ResourcesIn)
+			definition: CustomResourceDefinition,
+			resourceIn: ResourcesIn)
 				: IResourcesProvider<GenericResource> {
 			return when(resourceIn) {
 				ResourcesIn.CURRENT_NAMESPACE ->

@@ -79,7 +79,7 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
                 as MutableMap<ResourceKind<out HasMetadata>, INamespacedResourcesProvider<out HasMetadata, C>>
         val namespacesProvider: INonNamespacedResourcesProvider<N, C> = nonNamespacedProviders[getNamespacesKind()]
                 as INonNamespacedResourcesProvider<N, C>
-        val namespace = getCurrentNamespace(getAllResources(namespacesProvider))
+        val namespace = getCurrentNamespace(namespacesProvider.allResources)
         setCurrentNamespace(namespace, providers.values)
         watch(namespacesProvider) // always watch namespaces
         providers
@@ -114,7 +114,7 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
 
     override fun getCurrentNamespace(): String? {
         val namespaceKind = getNamespacesKind()
-        return getCurrentNamespace(getAllResources(nonNamespacedProviders[namespaceKind] as? IResourcesProvider<N>))
+        return getCurrentNamespace(getAllResources(namespaceKind, NO_NAMESPACE))
     }
 
     private fun getCurrentNamespace(namespaces: Collection<N>): String? {
@@ -136,12 +136,11 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
 
     override fun <R: HasMetadata> getAllResources(kind: ResourceKind<R>, resourcesIn: ResourcesIn): Collection<R> {
         logger<ActiveContext<*,*>>().debug("Resources $kind requested.")
-        return getAllResources(getProvider(kind, resourcesIn))
-    }
-
-    private fun <R : HasMetadata> getAllResources(provider: IResourcesProvider<R>?): Collection<R> {
-        return provider?.allResources
-            ?: emptyList()
+        synchronized(this) {
+            val provider = getProvider(kind, resourcesIn)
+            return provider?.allResources
+                ?: emptyList()
+        }
     }
 
     private fun setProvider(
@@ -187,7 +186,7 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
             : IResourcesProvider<GenericResource> {
         synchronized(this) {
             val resourceIn = toResourcesIn(definition.spec)
-            val provider = createCustomResourcesProvider(definition, getCurrentNamespace(), resourceIn)
+            val provider = createCustomResourcesProvider(definition, resourceIn)
             setProvider(provider, kind, resourceIn)
             return provider
         }
@@ -195,14 +194,13 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
 
     protected open fun createCustomResourcesProvider(
             definition: CustomResourceDefinition,
-            namespace: String?,
             resourceIn: ResourcesIn)
             : IResourcesProvider<GenericResource> {
         return when(resourceIn) {
             CURRENT_NAMESPACE ->
                 NamespacedCustomResourcesProvider(
                     definition,
-                    namespace,
+                    getCurrentNamespace(),
                     clients.get())
             ANY_NAMESPACE,
             NO_NAMESPACE ->
@@ -213,7 +211,7 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
     }
 
     private fun removeCustomResourceProvider(resource: CustomResourceDefinition) {
-        val kind = ResourceKind.create(resource)
+        val kind = ResourceKind.create(resource.spec)
         watch.ignore(kind)
         val providers = when (toResourcesIn(resource.spec)) {
             CURRENT_NAMESPACE -> namespacedProviders

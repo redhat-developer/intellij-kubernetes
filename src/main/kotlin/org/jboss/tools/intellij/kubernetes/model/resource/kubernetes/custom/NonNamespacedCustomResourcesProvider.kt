@@ -26,7 +26,7 @@ class NonNamespacedCustomResourcesProvider(
     client: KubernetesClient
 ) : NonNamespacedResourcesProvider<GenericResource, KubernetesClient>(client) {
 
-    override val kind = ResourceKind.create(definition)
+    override val kind = ResourceKind.create(definition.spec)
     private val context: CustomResourceDefinitionContext = CustomResourceDefinitionContext.fromCrd(definition)
 
     override fun loadAllResources(): List<GenericResource> {
