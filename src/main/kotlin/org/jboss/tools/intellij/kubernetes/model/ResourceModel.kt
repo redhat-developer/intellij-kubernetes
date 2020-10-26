@@ -15,10 +15,10 @@ import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.apiextensions.v1beta1.CustomResourceDefinition
 import io.fabric8.kubernetes.client.KubernetesClient
 import io.fabric8.kubernetes.client.KubernetesClientException
-import org.jboss.tools.intellij.kubernetes.model.context.ContextFactory
 import org.jboss.tools.intellij.kubernetes.model.context.IActiveContext
 import org.jboss.tools.intellij.kubernetes.model.context.IActiveContext.ResourcesIn
 import org.jboss.tools.intellij.kubernetes.model.context.IContext
+import org.jboss.tools.intellij.kubernetes.model.context.create
 import org.jboss.tools.intellij.kubernetes.model.resource.ResourceKind
 import java.util.function.Predicate
 
@@ -37,7 +37,7 @@ interface IResourceModel {
 
 open class ResourceModel(
         private val observable: IModelChangeObservable = ModelChangeObservable(),
-        private val contexts: IContexts = Contexts(observable, ContextFactory()::create)
+        private val contexts: IContexts = Contexts(observable, ::create)
 ) : IResourceModel {
 
     override fun setCurrentContext(context: IContext) {

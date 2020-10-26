@@ -20,29 +20,29 @@ import io.fabric8.openshift.client.NamespacedOpenShiftClient
 import io.fabric8.openshift.client.OpenShiftNotAvailableException
 import org.jboss.tools.intellij.kubernetes.model.IModelChangeObservable
 
-class ContextFactory {
-
-	fun create(observable: IModelChangeObservable, context: NamedContext): IActiveContext<out HasMetadata, out KubernetesClient> {
-		val config = Config.autoConfigure(context.name)
-		val k8Client = DefaultKubernetesClient(config)
-		try {
-			val osClient = k8Client.adapt(NamespacedOpenShiftClient::class.java)
-			return OpenShiftContext(
+fun create(
+	observable: IModelChangeObservable,
+	context: NamedContext
+): IActiveContext<out HasMetadata, out KubernetesClient> {
+	val config = Config.autoConfigure(context.name)
+	val k8Client = DefaultKubernetesClient(config)
+	try {
+		val osClient = k8Client.adapt(NamespacedOpenShiftClient::class.java)
+		return OpenShiftContext(
+			observable,
+			osClient,
+			context
+		)
+	} catch (e: RuntimeException) {
+		when (e) {
+			is KubernetesClientException,
+			is OpenShiftNotAvailableException ->
+				return KubernetesContext(
 					observable,
-					osClient,
+					k8Client,
 					context
-			)
-		} catch (e: RuntimeException) {
-			when (e) {
-				is KubernetesClientException,
-				is OpenShiftNotAvailableException ->
-					return KubernetesContext(
-							observable,
-							k8Client,
-							context)
-				else -> throw e
-			}
+				)
+			else -> throw e
 		}
 	}
-
 }

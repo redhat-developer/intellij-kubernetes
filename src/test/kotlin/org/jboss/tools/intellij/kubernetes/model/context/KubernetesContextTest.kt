@@ -78,7 +78,8 @@ class KubernetesContextTest {
 
 	private val observable: ModelChangeObservable = mock()
 
-	private val namespacesWatchSupplier: Supplier<Watchable<Watch, Watcher<Namespace>>?> = Supplier { mock() }
+	private val namespaceWatchable: Watchable<Watch, Watcher<Namespace>>? = mock()
+	private val namespacesWatchSupplier: Supplier<Watchable<Watch, Watcher<Namespace>>?> = Supplier { namespaceWatchable }
 	private val namespacesProvider = nonNamespacedResourceProvider<Namespace, NamespacedKubernetesClient>(
 			NamespacesProvider.KIND,
 			allNamespaces.toSet(),

@@ -37,7 +37,7 @@ class ContextsTest {
 	private val namedContext3 =
 			ClientMocks.namedContext("ctx3", "namespace3", "cluster3", "user3")
 	private val config = createKubeConfig(namedContext2, listOf(namedContext1, namedContext2, namedContext3))
-	private val currentContext: IActiveContext<HasMetadata, KubernetesClient> = activeContext(client, namespace, namedContext2)
+	private val currentContext: IActiveContext<HasMetadata, KubernetesClient> = activeContext(namespace, namedContext2)
 	private val contextFactory: (IModelChangeObservable, NamedContext?) -> IActiveContext<HasMetadata, KubernetesClient> =
 		Mocks.contextFactory(currentContext)
 	private val contexts = spy(TestableContext(modelChange, contextFactory, config))
@@ -162,7 +162,7 @@ class ContextsTest {
 	@Test
 	fun `#setCurrentContext(context) should replace context in #allContexts`() {
 		// given
-		val newCurrentContext = activeContext(client, namespace, namedContext3)
+		val newCurrentContext = activeContext(namespace, namedContext3)
 		contexts.all // create all contexts
 		val currentContext = contexts.current
 		assertThat(currentContext).isNotEqualTo(newCurrentContext)
@@ -179,7 +179,7 @@ class ContextsTest {
 	@Test
 	fun `#setCurrentContext(context) should set new current context in #allContexts`() {
 		// given
-		val newCurrentContext = activeContext(client, namespace, namedContext3)
+		val newCurrentContext = activeContext(namespace, namedContext3)
 		contexts.all // create all contexts
 		val currentContext = contexts.current
 		assertThat(currentContext).isNotEqualTo(newCurrentContext)
@@ -196,7 +196,7 @@ class ContextsTest {
 	@Test
 	fun `#setCurrentContext(context) should remove current context in #allContexts`() {
 		// given
-		val newCurrentContext = activeContext(client, namespace, namedContext3)
+		val newCurrentContext = activeContext(namespace, namedContext3)
 		contexts.all // create all contexts
 		val currentContext = contexts.current
 		assertThat(currentContext).isNotEqualTo(newCurrentContext)
@@ -213,7 +213,7 @@ class ContextsTest {
 	@Test
 	fun `#setCurrentContext(context) should close current context`() {
 		// given
-		val newCurrentContext = activeContext(client, namespace, namedContext3)
+		val newCurrentContext = activeContext(namespace, namedContext3)
 		contexts.all // create all contexts
 		val currentContext = contexts.current!!
 		doReturn(newCurrentContext)
@@ -227,7 +227,7 @@ class ContextsTest {
 	@Test
 	fun `#setCurrentContext(context) should return 'true' if new context was set`() {
 		// given
-		val newCurrentContext = activeContext(client, namespace, namedContext3)
+		val newCurrentContext = activeContext(namespace, namedContext3)
 		contexts.all // create all contexts
 		val currentContext = contexts.current!!
 		doReturn(newCurrentContext)

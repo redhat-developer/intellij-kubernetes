@@ -20,7 +20,6 @@ import io.fabric8.kubernetes.api.model.NamedContext
 import io.fabric8.kubernetes.api.model.Namespace
 import io.fabric8.kubernetes.client.Client
 import io.fabric8.kubernetes.client.KubernetesClient
-import io.fabric8.kubernetes.client.NamespacedKubernetesClient
 import io.fabric8.kubernetes.client.Watch
 import io.fabric8.kubernetes.client.Watcher
 import io.fabric8.kubernetes.client.dsl.Watchable
@@ -51,7 +50,7 @@ object Mocks {
         }
     }
 
-    fun activeContext(client: NamespacedKubernetesClient, currentNamespace: Namespace, context: NamedContext)
+    fun activeContext(currentNamespace: Namespace, context: NamedContext)
             : IActiveContext<HasMetadata, KubernetesClient> {
         return mock {
             doReturn(currentNamespace.metadata.name)
@@ -91,8 +90,7 @@ object Mocks {
         }
     }
 
-    fun resourceModel(client: KubernetesClient): IResourceModel {
-        return mock {
-        }
+    fun resourceModel(): IResourceModel {
+        return mock {}
     }
 }
