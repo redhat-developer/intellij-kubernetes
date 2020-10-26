@@ -79,9 +79,9 @@ open class ResourceModel(
         return ListableCustomResources(definition,this)
     }
 
-    fun <R: HasMetadata> getAllResources(kind: ResourceKind<R>, namespaced: ResourcesIn, filter: Predicate<R>? = null): Collection<R> {
+    fun <R: HasMetadata> getAllResources(kind: ResourceKind<R>, resourceIn: ResourcesIn, filter: Predicate<R>? = null): Collection<R> {
         try {
-            val resources: Collection<R> = contexts.current?.getAllResources(kind, namespaced) ?: return emptyList()
+            val resources: Collection<R> = contexts.current?.getAllResources(kind, resourceIn) ?: return emptyList()
             return if (filter == null) {
                 resources
             } else {
@@ -97,7 +97,7 @@ open class ResourceModel(
 
     fun getAllResources(definition: CustomResourceDefinition): Collection<HasMetadata> {
         try {
-            return contexts.current?.getResources(definition) ?: emptyList()
+            return contexts.current?.getAllResources(definition) ?: emptyList()
         } catch(e: IllegalArgumentException) {
             throw ResourceException("Could not get custom resources for ${definition.metadata}: ${e.cause}", e)
         }

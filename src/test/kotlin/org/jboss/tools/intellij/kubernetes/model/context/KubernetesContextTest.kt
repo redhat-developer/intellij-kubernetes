@@ -330,7 +330,7 @@ class KubernetesContextTest {
 	fun `#getCustomResources should query CustomResourceProvider`() {
 		// given
 		// when
-		context.getResources(namespacedDefinition)
+		context.getAllResources(namespacedDefinition)
 		// then
 		verify(namespacedCustomResourcesProvider).allResources
 	}
@@ -339,8 +339,8 @@ class KubernetesContextTest {
 	fun `#getCustomResources should create CustomResourceProvider once and reuse it`() {
 		// given
 		// when
-		context.getResources(namespacedDefinition)
-		context.getResources(namespacedDefinition)
+		context.getAllResources(namespacedDefinition)
+		context.getAllResources(namespacedDefinition)
 		// then
 		verify(context, times(1)).createCustomResourcesProvider(eq(namespacedDefinition), any(), any())
 	}
@@ -349,8 +349,8 @@ class KubernetesContextTest {
 	fun `#getCustomResources should create CustomResourceProvider for each unique definition`() {
 		// given
 		// when
-		context.getResources(namespacedDefinition)
-		context.getResources(clusterwideDefinition)
+		context.getAllResources(namespacedDefinition)
+		context.getAllResources(clusterwideDefinition)
 		// then
 		verify(context, times(1)).createCustomResourcesProvider(eq(namespacedDefinition), any(), any())
 		verify(context, times(1)).createCustomResourcesProvider(eq(clusterwideDefinition), any(), any())
@@ -362,7 +362,7 @@ class KubernetesContextTest {
 		val bogusScope = customResourceDefinition(
 				"bogus scope","version1", "group1", "bogus-scope-crd", "Bogus")
 		// when
-		context.getResources(bogusScope)
+		context.getAllResources(bogusScope)
 		// then
 	}
 

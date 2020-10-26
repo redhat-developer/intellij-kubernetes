@@ -48,7 +48,7 @@ interface IActiveContext<N: HasMetadata, C: KubernetesClient>: IContext {
     fun setCurrentNamespace(namespace: String)
     fun getCurrentNamespace(): String?
     fun <R: HasMetadata> getAllResources(kind: ResourceKind<R>, resourcesIn: ResourcesIn): Collection<R>
-    fun getResources(definition: CustomResourceDefinition): Collection<GenericResource>
+    fun getAllResources(definition: CustomResourceDefinition): Collection<GenericResource>
     fun watch(kind: ResourceKind<out HasMetadata>)
     fun add(resource: HasMetadata): Boolean
     fun remove(resource: HasMetadata): Boolean
@@ -139,9 +139,9 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
         return getAllResources(getProvider(kind, resourcesIn))
     }
 
-    private fun <R: HasMetadata> getAllResources(provider: IResourcesProvider<R>?): Collection<R> {
+    private fun <R : HasMetadata> getAllResources(provider: IResourcesProvider<R>?): Collection<R> {
         return provider?.allResources
-                ?: emptyList()
+            ?: emptyList()
     }
 
     private fun setProvider(
@@ -169,8 +169,8 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
         }
     }
 
-    override fun getResources(definition: CustomResourceDefinition): Collection<GenericResource> {
-            val kind = ResourceKind.create(definition)
+    override fun getAllResources(definition: CustomResourceDefinition): Collection<GenericResource> {
+            val kind = ResourceKind.create(definition.spec)
             val resourcesIn = toResourcesIn(definition.spec)
         synchronized(this) {
             var provider: IResourcesProvider<GenericResource>? = getProvider(kind, resourcesIn)
@@ -187,8 +187,7 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
             : IResourcesProvider<GenericResource> {
         synchronized(this) {
             val resourceIn = toResourcesIn(definition.spec)
-            val provider =
-                    createCustomResourcesProvider(definition, getCurrentNamespace(), resourceIn)
+            val provider = createCustomResourcesProvider(definition, getCurrentNamespace(), resourceIn)
             setProvider(provider, kind, resourceIn)
             return provider
         }
@@ -282,7 +281,7 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
     private fun addResource(resource: CustomResourceDefinition): Boolean {
         val added = addResource(resource as HasMetadata)
         if (added) {
-            createCustomResourcesProvider(resource, ResourceKind.create(resource))
+            createCustomResourcesProvider(resource, ResourceKind.create(resource.spec))
         }
         return added
     }
@@ -341,7 +340,7 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
     override fun replace(resource: HasMetadata): Boolean {
         val replaced = when(resource) {
             is CustomResourceDefinition ->
-                replace(ResourceKind.create(resource), resource)
+                replace(ResourceKind.create(resource.spec), resource)
             else ->
                 replace(ResourceKind.create(resource), resource)
         }
