@@ -50,6 +50,7 @@ interface IActiveContext<N: HasMetadata, C: KubernetesClient>: IContext {
     fun <R: HasMetadata> getAllResources(kind: ResourceKind<R>, resourcesIn: ResourcesIn): Collection<R>
     fun getAllResources(definition: CustomResourceDefinition): Collection<GenericResource>
     fun watch(kind: ResourceKind<out HasMetadata>)
+    fun watch(definition: CustomResourceDefinition)
     fun add(resource: HasMetadata): Boolean
     fun remove(resource: HasMetadata): Boolean
     fun invalidate(kind: ResourceKind<*>)
@@ -168,16 +169,20 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
         }
     }
 
-    override fun getAllResources(definition: CustomResourceDefinition): Collection<GenericResource> {
-            val kind = ResourceKind.create(definition.spec)
-            val resourcesIn = toResourcesIn(definition.spec)
+    private fun getProvider(definition: CustomResourceDefinition): IResourcesProvider<GenericResource> {
+        val kind = ResourceKind.create(definition.spec)
+        val resourcesIn = toResourcesIn(definition.spec)
         synchronized(this) {
             var provider: IResourcesProvider<GenericResource>? = getProvider(kind, resourcesIn)
             if (provider == null) {
                 provider = createCustomResourcesProvider(definition, kind)
             }
-            return provider.allResources
+            return provider
         }
+    }
+
+    override fun getAllResources(definition: CustomResourceDefinition): Collection<GenericResource> {
+        return getProvider(definition).allResources
     }
 
     private fun createCustomResourcesProvider(
@@ -234,6 +239,10 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
         logger<ActiveContext<*, *>>().debug("Watching $kind resources.")
         watch(namespacedProviders[kind])
         watch(nonNamespacedProviders[kind])
+    }
+
+    override fun watch(definition: CustomResourceDefinition) {
+        watch(getProvider(definition))
     }
 
     private fun watchAll(kinds: Collection<ResourceKind<out HasMetadata>>) {

@@ -31,6 +31,7 @@ interface IResourceModel {
     fun <R: HasMetadata> resources(kind: ResourceKind<R>): Namespaceable<R>
     fun resources(definition: CustomResourceDefinition): ListableCustomResources
     fun watch(kind: ResourceKind<out HasMetadata>)
+    fun watch(definition: CustomResourceDefinition)
     fun invalidate(element: Any?)
     fun addListener(listener: ModelChangeObservable.IResourceChangeListener)
 }
@@ -105,6 +106,10 @@ open class ResourceModel(
 
     override fun watch(kind: ResourceKind<out HasMetadata>) {
         contexts.current?.watch(kind)
+    }
+
+    override fun watch(definition: CustomResourceDefinition) {
+        contexts.current?.watch(definition)
     }
 
     override fun invalidate(element: Any?) {
