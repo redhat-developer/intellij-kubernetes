@@ -157,6 +157,7 @@ object ClientMocks {
             scope: String): CustomResourceDefinition {
         return customResourceDefinition(
             name,
+            version,
             listOf(version(version)),
             group,
             kind,
@@ -165,6 +166,7 @@ object ClientMocks {
 
     fun customResourceDefinition(
         name: String,
+        version: String,
         versions: List<CustomResourceDefinitionVersion>,
         group: String,
         kind: String,
@@ -173,6 +175,7 @@ object ClientMocks {
             on { mock.kind } doReturn kind
         }
         val spec = mock<CustomResourceDefinitionSpec> {
+            on { mock.version } doReturn version
             on { mock.versions } doReturn versions
             on { mock.group } doReturn group
             on { mock.names } doReturn names
@@ -199,11 +202,16 @@ object ClientMocks {
         }
     }
 
-    fun customResource(name: String, namespace: String, definition: CustomResourceDefinition, uid: String = System.currentTimeMillis().toString()): GenericResource {
+    fun customResource(
+        name: String,
+        namespace: String,
+        definition: CustomResourceDefinition,
+        uid: String = System.currentTimeMillis().toString()
+    ): GenericResource {
         val metadata = objectMeta(name, namespace, uid)
         val apiVersion = getApiVersion(
             definition.spec.group,
-            definition.spec.versions[0].name) // TODO: deal with multiple versions
+            definition.spec.version) // TODO: deal with multiple versions
         val kind = definition.spec.names.kind
         return mock {
             on { getMetadata() } doReturn metadata

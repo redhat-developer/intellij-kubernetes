@@ -46,7 +46,7 @@ data class ResourceKind<R : HasMetadata> private constructor(
 		@JvmStatic
 		fun create(spec: CustomResourceDefinitionSpec): ResourceKind<GenericResource> {
 			return ResourceKind(
-				removeK8sio(getApiVersion(spec.group, spec.versions[0].name)), // TODO: deal with several versions
+				removeK8sio(getApiVersion(spec.group, spec.version)), // TODO: deal with several versions
 				GenericResource::class.java,
 				spec.names.kind)
 		}
