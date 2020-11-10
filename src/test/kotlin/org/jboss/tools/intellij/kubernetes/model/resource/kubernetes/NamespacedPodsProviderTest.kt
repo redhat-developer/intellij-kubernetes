@@ -35,6 +35,7 @@ import org.jboss.tools.intellij.kubernetes.model.mocks.ClientMocks.resource
 import org.jboss.tools.intellij.kubernetes.model.resource.WatchableAndListable
 import org.junit.Before
 import org.junit.Test
+import java.util.function.Supplier
 
 class NamespacedPodsProviderTest {
 
@@ -53,9 +54,9 @@ class NamespacedPodsProviderTest {
         // given
         val namespace = NAMESPACE1.metadata.name
         provider.namespace =  namespace
-        provider.getAllResources()
+        provider.allResources
         // when
-        provider.getAllResources()
+        provider.allResources
         // then
         verify(provider, times(1)).loadAllResources(namespace)
     }
@@ -65,11 +66,11 @@ class NamespacedPodsProviderTest {
         // given
         val namespace = NAMESPACE1.metadata.name
         provider.namespace =  namespace
-        provider.getAllResources()
+        provider.allResources
         verify(provider, times(1)).loadAllResources(namespace)
         provider.invalidate()
         // when
-        provider.getAllResources()
+        provider.allResources
         // then
         verify(provider, times(2)).loadAllResources(namespace)
     }
@@ -78,8 +79,9 @@ class NamespacedPodsProviderTest {
     fun `#getAllResources() won't load resources if namespace is null`() {
         // given
         provider.namespace =  null
+        clearInvocations(provider)
         // when
-        provider.getAllResources()
+        provider.allResources
         // then
         verify(provider, never()).loadAllResources(any())
     }
@@ -88,6 +90,7 @@ class NamespacedPodsProviderTest {
     fun `#getRetrieveOperation() won't return operations if namespace is null`() {
         // given
         provider.namespace =  null
+        clearInvocations(provider)
         // when
         provider.getWatchable()
         // then
@@ -100,8 +103,9 @@ class NamespacedPodsProviderTest {
         val namespace = "darth vader"
         provider.namespace =  namespace
         val namespaceCaptor = argumentCaptor<String>()
+        clearInvocations(provider)
         // when
-        provider.getAllResources()
+        provider.allResources
         // then
         verify(provider).loadAllResources(namespaceCaptor.capture())
         assertThat(namespaceCaptor.firstValue).isEqualTo(namespace)
@@ -113,6 +117,7 @@ class NamespacedPodsProviderTest {
         val namespace = "darth vader"
         provider.namespace =  namespace
         val namespaceCaptor = argumentCaptor<String>()
+        clearInvocations(provider)
         // when
         provider.getWatchable()
         // then
@@ -135,12 +140,12 @@ class NamespacedPodsProviderTest {
         // given
         val uid = POD2.metadata.uid
         val pod = resource<Pod>("lord vader", "sith", uid)
-        assertThat(provider.getAllResources()).doesNotContain(pod)
+        assertThat(provider.allResources).doesNotContain(pod)
         // when
         val replaced = provider.replace(pod)
         // then
         assertThat(replaced).isTrue()
-        assertThat(provider.getAllResources()).contains(pod)
+        assertThat(provider.allResources).contains(pod)
     }
 
     @Test
@@ -148,12 +153,12 @@ class NamespacedPodsProviderTest {
         // given
         val namespace = POD2.metadata.namespace
         val pod = resource<Pod>("darth vader", namespace)
-        assertThat(provider.getAllResources()).doesNotContain(pod)
+        assertThat(provider.allResources).doesNotContain(pod)
         // when
         val replaced = provider.replace(pod)
         // then
         assertThat(replaced).isFalse()
-        assertThat(provider.getAllResources()).doesNotContain(pod)
+        assertThat(provider.allResources).doesNotContain(pod)
     }
 
     @Test
@@ -161,35 +166,35 @@ class NamespacedPodsProviderTest {
         // given
         val name = POD2.metadata.name
         val pod = resource<Pod>(name, "sith")
-        assertThat(provider.getAllResources()).doesNotContain(pod)
+        assertThat(provider.allResources).doesNotContain(pod)
         // when
         val replaced = provider.replace(pod)
         // then
         assertThat(replaced).isFalse()
-        assertThat(provider.getAllResources()).doesNotContain(pod)
+        assertThat(provider.allResources).doesNotContain(pod)
     }
 
     @Test
     fun `#add(pod) adds pod if not contained yet`() {
         // given
         val pod = resource<Pod>("papa-smurf")
-        assertThat(provider.getAllResources()).doesNotContain(pod)
+        assertThat(provider.allResources).doesNotContain(pod)
         // when
         provider.add(pod)
         // then
-        assertThat(provider.getAllResources()).contains(pod)
+        assertThat(provider.allResources).contains(pod)
     }
 
     @Test
     fun `#add(pod) does not add if pod is already contained`() {
         // given
-        val pod = provider.getAllResources().elementAt(0)
+        val pod = provider.allResources.elementAt(0)
         // when
-        val size = provider.getAllResources().size
+        val size = provider.allResources.size
         provider.add(pod)
         // then
-        assertThat(provider.getAllResources()).contains(pod)
-        assertThat(provider.getAllResources().size).isEqualTo(size)
+        assertThat(provider.allResources).contains(pod)
+        assertThat(provider.allResources.size).isEqualTo(size)
     }
 
     @Test
@@ -198,18 +203,19 @@ class NamespacedPodsProviderTest {
         val instance1 = resource<Pod>("gargamel", "smurfington", "uid-1-2-3")
         val instance2 = resource<Pod>("gargamel", "smurfington", "uid-1-2-3")
         provider.add(instance1)
-        assertThat(provider.getAllResources()).contains(instance1)
+        assertThat(provider.allResources).contains(instance1)
         // when
         provider.add(instance2)
         // then
-        assertThat(provider.getAllResources()).containsExactly(instance2)
+        assertThat(provider.allResources).doesNotContain(instance1)
+        assertThat(provider.allResources).contains(instance2)
     }
 
     @Test
     fun `#add(pod) returns true if pod was added`() {
         // given
         val pod = resource<Pod>("papa-smurf")
-        assertThat(provider.getAllResources()).doesNotContain(pod)
+        assertThat(provider.allResources).doesNotContain(pod)
         // when
         val added = provider.add(pod)
         // then
@@ -219,7 +225,7 @@ class NamespacedPodsProviderTest {
     @Test
     fun `#add(pod) returns false if pod was not added`() {
         // given
-        val pod = provider.getAllResources().elementAt(0)
+        val pod = provider.allResources.elementAt(0)
         // when
         val added = provider.add(pod)
         // then
@@ -229,28 +235,28 @@ class NamespacedPodsProviderTest {
     @Test
     fun `#remove(pod) removes the given pod`() {
         // given
-        val pod = provider.getAllResources().elementAt(0)
+        val pod = provider.allResources.elementAt(0)
         // when
         provider.remove(pod)
         // then
-        assertThat(provider.getAllResources()).doesNotContain(pod)
+        assertThat(provider.allResources).doesNotContain(pod)
     }
 
     @Test
     fun `#remove(pod) removes the given pod if it isn't the same instance but matches in uid`() {
         // given
-        val pod1 = provider.getAllResources().elementAt(0)
+        val pod1 = provider.allResources.elementAt(0)
         val pod2 = resource<Pod>("skywalker", "jedi", pod1.metadata.uid)
         // when
         provider.remove(pod2)
         // then
-        assertThat(provider.getAllResources()).doesNotContain(pod1)
+        assertThat(provider.allResources).doesNotContain(pod1)
     }
 
     @Test
     fun `#remove(pod) returns true if pod was removed`() {
         // given
-        val pod = provider.getAllResources().elementAt(0)
+        val pod = provider.allResources.elementAt(0)
         // when
         val removed = provider.remove(pod)
         // then
@@ -261,13 +267,13 @@ class NamespacedPodsProviderTest {
     fun `#remove(pod) does not remove if pod is not contained`() {
         // given
         val pod = resource<Pod>("papa-smurf")
-        assertThat(provider.getAllResources()).doesNotContain(pod)
+        assertThat(provider.allResources).doesNotContain(pod)
         // when
-        val size = provider.getAllResources().size
+        val size = provider.allResources.size
         provider.remove(pod)
         // then
-        assertThat(provider.getAllResources()).doesNotContain(pod)
-        assertThat(provider.getAllResources().size).isEqualTo(size)
+        assertThat(provider.allResources).doesNotContain(pod)
+        assertThat(provider.allResources.size).isEqualTo(size)
     }
 
     @Test
@@ -286,7 +292,7 @@ class NamespacedPodsProviderTest {
             return super.loadAllResources(namespace)
         }
 
-        public override fun getOperation(namespace: String): () -> WatchableAndListable<Pod> {
+        public override fun getOperation(namespace: String): Supplier<WatchableAndListable<Pod>> {
             return super.getOperation(namespace)
         }
     }

@@ -71,7 +71,7 @@ open class Contexts(
 			closeCurrent()
 			val newContext = create(context.context)
 			current = newContext
-			replaceContext(newContext!!, all)
+			replaceContext(newContext, all)
 		}
 		return true
 	}

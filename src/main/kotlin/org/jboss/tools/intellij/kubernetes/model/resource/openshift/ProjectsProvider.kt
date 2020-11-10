@@ -15,17 +15,18 @@ import io.fabric8.openshift.client.OpenShiftClient
 import org.jboss.tools.intellij.kubernetes.model.resource.NonNamespacedResourcesProvider
 import org.jboss.tools.intellij.kubernetes.model.resource.ResourceKind
 import org.jboss.tools.intellij.kubernetes.model.resource.WatchableAndListable
+import java.util.function.Supplier
 
 class ProjectsProvider(client: OpenShiftClient)
     : NonNamespacedResourcesProvider<Project, OpenShiftClient>(client) {
 
     companion object {
-        val KIND = ResourceKind.new(Project::class.java)
+        val KIND = ResourceKind.create(Project::class.java)
     }
 
     override val kind = KIND
 
-    override fun getOperation(): () -> WatchableAndListable<Project> {
-        return { client.projects() }
+    override fun getOperation(): Supplier<WatchableAndListable<Project>> {
+        return Supplier { client.projects() }
     }
 }

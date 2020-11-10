@@ -11,7 +11,7 @@
 package org.jboss.tools.intellij.kubernetes.model
 
 import io.fabric8.kubernetes.api.model.HasMetadata
-import io.fabric8.kubernetes.api.model.apiextensions.CustomResourceDefinition
+import io.fabric8.kubernetes.api.model.apiextensions.v1beta1.CustomResourceDefinition
 import org.jboss.tools.intellij.kubernetes.model.context.IActiveContext.ResourcesIn
 import org.jboss.tools.intellij.kubernetes.model.resource.ResourceKind
 import java.util.function.Predicate

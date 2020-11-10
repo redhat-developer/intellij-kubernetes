@@ -12,18 +12,19 @@ package org.jboss.tools.intellij.kubernetes.model.resource
 
 import com.intellij.openapi.diagnostic.logger
 import io.fabric8.kubernetes.api.model.HasMetadata
-import io.fabric8.kubernetes.client.KubernetesClient
+import io.fabric8.kubernetes.client.Client
 import io.fabric8.kubernetes.client.Watch
 import io.fabric8.kubernetes.client.Watcher
 import io.fabric8.kubernetes.client.dsl.Watchable
+import java.util.function.Supplier
 
-interface INamespacedResourcesProvider<T: HasMetadata>: IResourcesProvider<T> {
+interface INamespacedResourcesProvider<R: HasMetadata, C: Client>: IResourcesProvider<R> {
     var namespace: String?
 }
 
-abstract class NamespacedResourcesProvider<R : HasMetadata, C : KubernetesClient>(
+abstract class NamespacedResourcesProvider<R : HasMetadata, C: Client>(
     protected val client: C
-) : AbstractResourcesProvider<R>(), INamespacedResourcesProvider<R> {
+) : AbstractResourcesProvider<R>(), INamespacedResourcesProvider<R, C> {
 
     constructor(namespace: String?, client: C): this(client) {
         this.namespace = namespace
@@ -31,39 +32,40 @@ abstract class NamespacedResourcesProvider<R : HasMetadata, C : KubernetesClient
 
     final override var namespace: String? = null
         set(namespace) {
-            logger<NamespacedResourcesProvider<*,*>>().debug("Using new namespace $namespace.")
+            logger<NamespacedResourcesProvider<*, *>>().debug("Using new namespace $namespace.")
             invalidate()
             field = namespace
         }
 
-    override fun getAllResources(): Collection<R> {
-        synchronized(allResources) {
-            if (allResources.isEmpty()) {
+    override val allResources: MutableList<R> = mutableListOf()
+        @Synchronized
+        get() {
+            if (field.isEmpty()) {
                 if (namespace != null) {
-                    allResources.addAll(loadAllResources(namespace!!))
+                    field.addAll(loadAllResources(namespace!!))
                 } else {
-                    logger<NamespacedResourcesProvider<*,*>>().debug("Could not load $kind resources: no namespace set.")
+                    logger<NamespacedResourcesProvider<*, *>>().debug("Could not load $kind resources: no namespace set.")
                 }
             }
-            return allResources
+            return field
         }
-    }
+
 
     protected open fun loadAllResources(namespace: String): List<R> {
-        logger<NamespacedResourcesProvider<*,*>>().debug("Loading $kind resources.")
-        return getOperation(namespace).invoke()?.list()?.items ?: emptyList()
+        logger<NamespacedResourcesProvider<*, *>>().debug("Loading $kind resources in namespace $namespace.")
+        return getOperation(namespace).get()?.list()?.items ?: emptyList()
     }
 
-    override fun getWatchable(): () -> Watchable<Watch, Watcher<R>>? {
+    override fun getWatchable(): Supplier<Watchable<Watch, Watcher<R>>?> {
         if (namespace == null) {
-            logger<NamespacedResourcesProvider<*,*>>().debug("Returned empty watch for $kind: no namespace set.")
-            return { null }
+            logger<NamespacedResourcesProvider<*, *>>().debug("Returned empty watch for $kind: no namespace set.")
+            return Supplier { null }
         }
-        return getOperation(namespace!!)
+        return getOperation(namespace!!) as Supplier<Watchable<Watch, Watcher<R>>?>
     }
 
-    protected open fun getOperation(namespace: String): () -> WatchableAndListable<R> {
-        return { null }
+    protected open fun getOperation(namespace: String): Supplier<WatchableAndListable<R>> {
+        return Supplier { null }
     }
 
 }

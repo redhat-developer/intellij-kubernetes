@@ -12,24 +12,21 @@ package org.jboss.tools.intellij.kubernetes.model.resource.kubernetes
 
 import io.fabric8.kubernetes.api.model.apps.DaemonSet
 import io.fabric8.kubernetes.client.AppsAPIGroupClient
-import io.fabric8.kubernetes.client.KubernetesClient
-import org.jboss.tools.intellij.kubernetes.model.AdaptedClient
-import org.jboss.tools.intellij.kubernetes.model.IAdaptedClient
 import org.jboss.tools.intellij.kubernetes.model.resource.NamespacedResourcesProvider
 import org.jboss.tools.intellij.kubernetes.model.resource.ResourceKind
 import org.jboss.tools.intellij.kubernetes.model.resource.WatchableAndListable
+import java.util.function.Supplier
 
-class DaemonSetsProvider(client: KubernetesClient)
-	: NamespacedResourcesProvider<DaemonSet, KubernetesClient>(client),
-		IAdaptedClient<AppsAPIGroupClient> by AdaptedClient(client, AppsAPIGroupClient::class.java) {
+class DaemonSetsProvider(client: AppsAPIGroupClient)
+	: NamespacedResourcesProvider<DaemonSet, AppsAPIGroupClient>(client) {
 
 	companion object {
-		val KIND = ResourceKind.new(DaemonSet::class.java)
+		val KIND = ResourceKind.create(DaemonSet::class.java)
 	}
 
 	override val kind = KIND
 
-	override fun getOperation(namespace: String): () -> WatchableAndListable<DaemonSet> {
-		return { adaptedClient.daemonSets().inNamespace(namespace) }
+	override fun getOperation(namespace: String): Supplier<WatchableAndListable<DaemonSet>> {
+		return Supplier { client.daemonSets().inNamespace(namespace) }
 	}
 }

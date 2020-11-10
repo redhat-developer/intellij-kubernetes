@@ -10,7 +10,7 @@
  ******************************************************************************/
 package org.jboss.tools.intellij.kubernetes.model.resource.kubernetes.custom
 
-import io.fabric8.kubernetes.api.model.apiextensions.CustomResourceDefinition
+import io.fabric8.kubernetes.api.model.apiextensions.v1beta1.CustomResourceDefinition
 import io.fabric8.kubernetes.client.KubernetesClient
 import io.fabric8.kubernetes.client.Watch
 import io.fabric8.kubernetes.client.Watcher
@@ -18,14 +18,15 @@ import io.fabric8.kubernetes.client.dsl.Watchable
 import io.fabric8.kubernetes.client.dsl.base.CustomResourceDefinitionContext
 import org.jboss.tools.intellij.kubernetes.model.resource.NamespacedResourcesProvider
 import org.jboss.tools.intellij.kubernetes.model.resource.ResourceKind
+import java.util.function.Supplier
 
 class NamespacedCustomResourcesProvider(
-		definition: CustomResourceDefinition,
-		namespace: String?,
-		client: KubernetesClient)
+	definition: CustomResourceDefinition,
+	namespace: String?,
+	client: KubernetesClient)
     : NamespacedResourcesProvider<GenericResource, KubernetesClient>(namespace, client) {
 
-    override val kind = ResourceKind.new(definition.spec)
+    override val kind = ResourceKind.create(definition.spec)
     private val context: CustomResourceDefinitionContext = CustomResourceDefinitionContext.fromCrd(definition)
 
     override fun loadAllResources(namespace: String): List<GenericResource> {
@@ -33,11 +34,11 @@ class NamespacedCustomResourcesProvider(
         return GenericResourceFactory.createResources(resourcesList)
     }
 
-    override fun getWatchable(): () -> Watchable<Watch, Watcher<GenericResource>>? {
+    override fun getWatchable(): Supplier<Watchable<Watch, Watcher<GenericResource>>?> {
         if (namespace == null) {
-            return { null }
+            return Supplier { null }
         }
-        return {
+        return Supplier {
 			GenericResourceWatchable { options, customResourceWatcher ->
 				val watchable = client.customResource(context)
 				watchable.watch(namespace, null, null, options, customResourceWatcher)

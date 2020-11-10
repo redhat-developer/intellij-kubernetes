@@ -16,7 +16,7 @@ import org.jboss.tools.intellij.kubernetes.model.util.sameUid
 
 abstract class AbstractResourcesProvider<R : HasMetadata> : IResourcesProvider<R> {
 
-    protected val allResources = mutableListOf<R>()
+    override val allResources: MutableList<R> = mutableListOf()
 
     override fun invalidate() {
         logger<AbstractResourcesProvider<*>>().debug("Invalidating all $kind resources.")

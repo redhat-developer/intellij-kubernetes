@@ -15,18 +15,19 @@ import io.fabric8.kubernetes.client.KubernetesClient
 import org.jboss.tools.intellij.kubernetes.model.resource.NamespacedResourcesProvider
 import org.jboss.tools.intellij.kubernetes.model.resource.ResourceKind
 import org.jboss.tools.intellij.kubernetes.model.resource.WatchableAndListable
+import java.util.function.Supplier
 
 class ConfigMapsProvider(client: KubernetesClient)
     : NamespacedResourcesProvider<ConfigMap, KubernetesClient>(client) {
 
     companion object {
-        val KIND = ResourceKind.new(ConfigMap::class.java)
+        val KIND = ResourceKind.create(ConfigMap::class.java)
     }
 
     override val kind = KIND
 
-    override fun getOperation(namespace: String): () -> WatchableAndListable<ConfigMap> {
-        return { client.configMaps().inNamespace(namespace) }
+    override fun getOperation(namespace: String): Supplier<WatchableAndListable<ConfigMap>> {
+        return Supplier { client.configMaps().inNamespace(namespace) }
     }
 
 }

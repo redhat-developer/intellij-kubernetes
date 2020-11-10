@@ -12,34 +12,38 @@ package org.jboss.tools.intellij.kubernetes.model.resource
 
 import com.intellij.openapi.diagnostic.logger
 import io.fabric8.kubernetes.api.model.HasMetadata
-import io.fabric8.kubernetes.client.KubernetesClient
+import io.fabric8.kubernetes.client.Client
 import io.fabric8.kubernetes.client.Watch
 import io.fabric8.kubernetes.client.Watcher
 import io.fabric8.kubernetes.client.dsl.Watchable
+import java.util.function.Supplier
 
-interface INonNamespacedResourcesProvider<T: HasMetadata>: IResourcesProvider<T>
+interface INonNamespacedResourcesProvider<R: HasMetadata, C: Client>: IResourcesProvider<R>
 
-abstract class NonNamespacedResourcesProvider<R: HasMetadata, C: KubernetesClient>(protected val client: C)
-    : AbstractResourcesProvider<R>(), INonNamespacedResourcesProvider<R> {
+abstract class NonNamespacedResourcesProvider<R : HasMetadata, C : Client>(
+    protected val client: C
+) : AbstractResourcesProvider<R>(), INonNamespacedResourcesProvider<R, C> {
 
-    override fun getAllResources(): Collection<R> {
-        synchronized(allResources) {
-            if (allResources.isEmpty()) {
-                allResources.addAll(loadAllResources())
+    override val allResources: MutableList<R> = mutableListOf()
+        @Synchronized
+        get() {
+            if (field.isEmpty()) {
+                field.addAll(loadAllResources())
             }
-            return allResources
+            return field
         }
-    }
 
     protected open fun loadAllResources(): List<R> {
-        logger<NamespacedResourcesProvider<*,*>>().debug("Loading all $kind resources.")
-        return getOperation().invoke()?.list()?.items ?: emptyList()
+        logger<NamespacedResourcesProvider<*, *>>().debug("Loading all $kind resources.")
+        return getOperation().get()?.list()?.items ?: emptyList()
     }
 
-    override fun getWatchable(): () -> Watchable<Watch, Watcher<R>>? {
-        return getOperation()
+    override fun getWatchable(): Supplier<Watchable<Watch, Watcher<R>>?> {
+        return getOperation() as Supplier<Watchable<Watch, Watcher<R>>?>
     }
 
-    protected abstract fun getOperation(): () -> WatchableAndListable<R>
+    protected open fun getOperation(): Supplier<WatchableAndListable<R>> {
+        return Supplier { null }
+    }
 
 }

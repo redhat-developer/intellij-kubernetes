@@ -22,6 +22,7 @@ import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import java.util.concurrent.LinkedBlockingDeque
+import java.util.function.Supplier
 
 /**
  * A watch that listens for changes on the kubernetes cluster and operates actions on a model accordingly.
@@ -42,12 +43,12 @@ open class ResourceWatch(
     private val executor: ExecutorService = Executors.newWorkStealingPool(10)
     private val watchOperationsRunner = executor.submit(watchOperationsRunner)
 
-    open fun watchAll(toWatch: Collection<Pair<ResourceKind<out HasMetadata>, () -> Watchable<Watch, Watcher<in HasMetadata>>?>>) {
+    open fun watchAll(toWatch: Collection<Pair<ResourceKind<out HasMetadata>, Supplier<Watchable<Watch, Watcher<in HasMetadata>>?>>>) {
         toWatch.forEach { watch(it.first, it.second) }
     }
 
-    open fun watch(kind: ResourceKind<out HasMetadata>, supplier: () -> Watchable<Watch, Watcher<in HasMetadata>>?) {
-        val watchable = supplier.invoke() ?: return
+    open fun watch(kind: ResourceKind<out HasMetadata>, supplier: Supplier<out Watchable<Watch, out Watcher<in HasMetadata>>?>) {
+        val watchable = supplier.get() ?: return
         watches.computeIfAbsent(kind) {
             logger<ResourceWatch>().debug("Enqueueing watch for $kind resources in $watchable.")
             val watchOperation = WatchOperation(
@@ -118,7 +119,7 @@ open class ResourceWatch(
 
     class WatchOperation<R: HasMetadata>(
             val kind: ResourceKind<out R>,
-            private val watchable: Watchable<Watch, Watcher<in R>>?,
+            private val watchable: Watchable<Watch, out Watcher<in R>>?,
             private val watches: MutableMap<ResourceKind<*>, Watch?>,
             private val addOperation: (HasMetadata) -> Unit,
             private val removeOperation: (HasMetadata) -> Unit,
@@ -139,7 +140,7 @@ open class ResourceWatch(
             return if (watchable == null) {
               return null
             } else {
-                watchable.watch(ResourceWatcher(addOperation, removeOperation, replaceOperation))
+                (watchable as Watchable<Watch, Watcher<in R>>).watch(ResourceWatcher(addOperation, removeOperation, replaceOperation))
             }
         }
 

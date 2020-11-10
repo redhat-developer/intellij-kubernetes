@@ -34,6 +34,7 @@ import java.util.concurrent.BlockingDeque
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.LinkedBlockingDeque
 import java.util.concurrent.TimeUnit
+import java.util.function.Supplier
 
 class ResourceWatchTest {
 
@@ -50,17 +51,17 @@ class ResourceWatchTest {
         watchOperations = LinkedBlockingDeque<ResourceWatch.WatchOperation<*>>(),
         watchOperationsRunner = mock()
     ))
-    private val podKind = ResourceKind.new(Pod::class.java)
+    private val podKind = ResourceKind.create(Pod::class.java)
     private val watchable1 = WatchableFake()
-    private val namespaceKind = ResourceKind.new(Namespace::class.java)
+    private val namespaceKind = ResourceKind.create(Namespace::class.java)
     private val watchable2 = WatchableFake()
-    private val hasMetaKind1 = ResourceKind.new("v1", HasMetadata::class.java, "HasMetadata")
-    private val hasMetaKind2 = ResourceKind.new("v2", HasMetadata::class.java, "HasMetadata")
+    private val hasMetaKind1 = ResourceKind.create("v1", HasMetadata::class.java, "HasMetadata")
+    private val hasMetaKind2 = ResourceKind.create("v2", HasMetadata::class.java, "HasMetadata")
 
     @Before
     fun before() {
-        resourceWatch.watch(podKind, { watchable1 })
-        resourceWatch.watch(namespaceKind, { watchable2 })
+        resourceWatch.watch(podKind, Supplier { watchable1 })
+        resourceWatch.watch(namespaceKind, Supplier { watchable2 })
     }
 
     @Test
@@ -78,7 +79,7 @@ class ResourceWatchTest {
         val watchable = WatchableFake()
         assertThat(resourceWatch.watches.keys).doesNotContain(kind)
         // when
-        resourceWatch.watch(kind, { watchable })
+        resourceWatch.watch(kind, Supplier { watchable })
         // then
         assertThat(resourceWatch.watches.keys).contains(kind)
     }
@@ -89,7 +90,7 @@ class ResourceWatchTest {
         assertThat(resourceWatch.watches.keys).doesNotContain(hasMetaKind1)
         val sizeBeforeAdd = resourceWatch.watches.keys.size
         // when
-        resourceWatch.watch(hasMetaKind1, { null })
+        resourceWatch.watch(hasMetaKind1, Supplier { null })
         // then
         verify(resourceWatch.watches, never()).put(eq(hasMetaKind1), any())
         assertThat(resourceWatch.watches.keys.size).isEqualTo(sizeBeforeAdd)
@@ -102,7 +103,7 @@ class ResourceWatchTest {
         resourceWatch.watches[podKind] = existing
         val new = WatchableFake()
         // when
-        resourceWatch.watch(podKind, { new })
+        resourceWatch.watch(podKind, Supplier { new })
         // then
         val watch = resourceWatch.watches[podKind]
         assertThat(watch).isEqualTo(existing)
@@ -121,7 +122,7 @@ class ResourceWatchTest {
     fun `#ignore() should not close remaining watches`() {
         // given
         val notRemoved = WatchableFake()
-        resourceWatch.watch(hasMetaKind1, { notRemoved })
+        resourceWatch.watch(hasMetaKind1, Supplier { notRemoved })
         // when starting 2nd time
         resourceWatch.ignore(podKind)
         // then
@@ -132,7 +133,7 @@ class ResourceWatchTest {
     fun `#ignore() should remove watch`() {
         // given
         val toRemove = WatchFake()
-        resourceWatch.watch(hasMetaKind1, { WatchableFake(toRemove) })
+        resourceWatch.watch(hasMetaKind1, Supplier { WatchableFake(toRemove) })
         assertThat(resourceWatch.watches.values).contains(toRemove)
         // when starting 2nd time
         resourceWatch.ignore(hasMetaKind1)
@@ -148,8 +149,8 @@ class ResourceWatchTest {
         val watchable1 = WatchableFake(watch1)
         val watch2 = spy(WatchFake())
         val watchable2 = WatchableFake(watch2)
-        resourceWatch.watch(hasMetaKind1, { watchable1 })
-        resourceWatch.watch(hasMetaKind2, { watchable2 })
+        resourceWatch.watch(hasMetaKind1, Supplier { watchable1 })
+        resourceWatch.watch(hasMetaKind2, Supplier { watchable2 })
         // when
         resourceWatch.ignoreAll(listOf(hasMetaKind1, hasMetaKind2))
         // then watchable2 was closed
@@ -222,7 +223,7 @@ class ResourceWatchTest {
     ): ResourceWatch(addOperation, removeOperation, replaceOperation, watchOperations, watchOperationsRunner) {
         public override val watches: ConcurrentHashMap<ResourceKind<*>, Watch?> = spy(super.watches)
 
-        override fun watch(kind: ResourceKind<out HasMetadata>, supplier: () -> Watchable<Watch, Watcher<in HasMetadata>>?) {
+        override fun watch(kind: ResourceKind<out HasMetadata>, supplier: Supplier<out Watchable<Watch, out Watcher<in HasMetadata>>?>) {
             super.watch(kind, supplier)
             val watchOperation = watchOperations.pollFirst(10, TimeUnit.SECONDS)
             // run in sequence, not in separate thread

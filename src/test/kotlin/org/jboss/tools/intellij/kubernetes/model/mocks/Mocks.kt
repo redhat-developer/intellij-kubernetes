@@ -18,8 +18,8 @@ import com.nhaarman.mockitokotlin2.whenever
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.NamedContext
 import io.fabric8.kubernetes.api.model.Namespace
+import io.fabric8.kubernetes.client.Client
 import io.fabric8.kubernetes.client.KubernetesClient
-import io.fabric8.kubernetes.client.NamespacedKubernetesClient
 import io.fabric8.kubernetes.client.Watch
 import io.fabric8.kubernetes.client.Watcher
 import io.fabric8.kubernetes.client.dsl.Watchable
@@ -30,6 +30,7 @@ import org.jboss.tools.intellij.kubernetes.model.context.IContext
 import org.jboss.tools.intellij.kubernetes.model.resource.INamespacedResourcesProvider
 import org.jboss.tools.intellij.kubernetes.model.resource.INonNamespacedResourcesProvider
 import org.jboss.tools.intellij.kubernetes.model.resource.ResourceKind
+import java.util.function.Supplier
 
 object Mocks {
 
@@ -49,11 +50,9 @@ object Mocks {
         }
     }
 
-    fun activeContext(client: NamespacedKubernetesClient, currentNamespace: Namespace, context: NamedContext)
+    fun activeContext(currentNamespace: Namespace, context: NamedContext)
             : IActiveContext<HasMetadata, KubernetesClient> {
         return mock {
-            doReturn(client)
-                .whenever(mock).client
             doReturn(currentNamespace.metadata.name)
                 .whenever(mock).getCurrentNamespace()
             doReturn(context)
@@ -61,39 +60,37 @@ object Mocks {
         }
     }
 
-    fun <T : HasMetadata> namespacedResourceProvider(
+    fun <T : HasMetadata, C: Client> namespacedResourceProvider(
             kind: ResourceKind<T>,
             resources: Collection<T>,
             namespace: Namespace,
-            watchableSupplier: () -> Watchable<Watch, Watcher<T>>? = { null })
-            : INamespacedResourcesProvider<T> {
+            watchableSupplier: Supplier<Watchable<Watch, Watcher<T>>?> = Supplier { null })
+            : INamespacedResourcesProvider<T, C> {
         return mock {
             doReturn(namespace.metadata.name)
                     .whenever(mock).namespace
             doReturn(kind)
                     .whenever(mock).kind
             doReturn(resources)
-                    .whenever(mock).getAllResources()
+                    .whenever(mock).allResources
             doReturn(watchableSupplier)
                     .whenever(mock).getWatchable()
         }
     }
 
-    fun <T : HasMetadata> nonNamespacedResourceProvider(
+    fun <T : HasMetadata, C: Client> nonNamespacedResourceProvider(
             kind: ResourceKind<T>,
             resources: Collection<T>,
-            watchableSupplier: () -> Watchable<Watch, Watcher<T>>? = { null })
-            : INonNamespacedResourcesProvider<T> {
+            watchableSupplier: Supplier<Watchable<Watch, Watcher<T>>?> = Supplier { null })
+            : INonNamespacedResourcesProvider<T, C> {
         return mock {
             on { this.kind } doReturn kind
-            on { getAllResources() } doReturn resources
+            on { allResources } doReturn resources
             on { getWatchable() } doReturn watchableSupplier
         }
     }
 
-    fun resourceModel(client: KubernetesClient): IResourceModel {
-        return mock {
-            on { getClient() } doReturn client
-        }
+    fun resourceModel(): IResourceModel {
+        return mock {}
     }
 }

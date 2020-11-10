@@ -11,25 +11,22 @@
 package org.jboss.tools.intellij.kubernetes.model.resource.kubernetes
 
 import io.fabric8.kubernetes.api.model.storage.StorageClass
-import io.fabric8.kubernetes.client.KubernetesClient
 import io.fabric8.kubernetes.client.StorageAPIGroupClient
-import org.jboss.tools.intellij.kubernetes.model.AdaptedClient
-import org.jboss.tools.intellij.kubernetes.model.IAdaptedClient
 import org.jboss.tools.intellij.kubernetes.model.resource.NonNamespacedResourcesProvider
 import org.jboss.tools.intellij.kubernetes.model.resource.ResourceKind
 import org.jboss.tools.intellij.kubernetes.model.resource.WatchableAndListable
+import java.util.function.Supplier
 
-class StorageClassesProvider(client: KubernetesClient)
-    : NonNamespacedResourcesProvider<StorageClass, KubernetesClient>(client),
-        IAdaptedClient<StorageAPIGroupClient> by AdaptedClient(client, StorageAPIGroupClient::class.java) {
+class StorageClassesProvider(client: StorageAPIGroupClient)
+    : NonNamespacedResourcesProvider<StorageClass, StorageAPIGroupClient>(client) {
 
     companion object {
-        val KIND = ResourceKind.new(StorageClass::class.java)
+        val KIND = ResourceKind.create(StorageClass::class.java)
     }
 
     override val kind = KIND
 
-    override fun getOperation(): () -> WatchableAndListable<StorageClass> {
-        return { adaptedClient.storageClasses() }
+    override fun getOperation(): Supplier<WatchableAndListable<StorageClass>> {
+        return Supplier { client.storageClasses() }
     }
 }

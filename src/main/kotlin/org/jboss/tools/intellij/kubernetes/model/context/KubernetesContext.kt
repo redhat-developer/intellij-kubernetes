@@ -35,33 +35,35 @@ import org.jboss.tools.intellij.kubernetes.model.resource.kubernetes.SecretsProv
 import org.jboss.tools.intellij.kubernetes.model.resource.kubernetes.ServicesProvider
 import org.jboss.tools.intellij.kubernetes.model.resource.kubernetes.StatefulSetsProvider
 import org.jboss.tools.intellij.kubernetes.model.resource.kubernetes.StorageClassesProvider
+import org.jboss.tools.intellij.kubernetes.model.util.Clients
 
 open class KubernetesContext(
-		modelChange: IModelChangeObservable,
-		client: NamespacedKubernetesClient,
-		context: NamedContext
+	modelChange: IModelChangeObservable,
+	client: NamespacedKubernetesClient,
+	context: NamedContext
 ) : ActiveContext<Namespace, NamespacedKubernetesClient>(modelChange, client, context) {
 
-	override fun getInternalResourceProviders(client: NamespacedKubernetesClient)
+	override fun getInternalResourceProviders(supplier: Clients<NamespacedKubernetesClient>)
 			: List<IResourcesProvider<out HasMetadata>> {
+		val client = supplier.get()
 		return listOf(
 				NamespacesProvider(client),
 				NodesProvider(client),
 				AllPodsProvider(client),
-				DeploymentsProvider(client),
-				StatefulSetsProvider(client),
-				DaemonSetsProvider(client),
-				JobsProvider(client),
-				CronJobsProvider(client),
+				DeploymentsProvider(supplier.getApps()),
+				StatefulSetsProvider(supplier.getApps()),
+				DaemonSetsProvider(supplier.getApps()),
+				JobsProvider(supplier.getBatch()),
+				CronJobsProvider(supplier.getBatch()),
 				NamespacedPodsProvider(client),
 				ServicesProvider(client),
 				EndpointsProvider(client),
 				PersistentVolumesProvider(client),
 				PersistentVolumeClaimsProvider(client),
-				StorageClassesProvider(client),
+				StorageClassesProvider(supplier.getStorage()),
 				ConfigMapsProvider(client),
 				SecretsProvider(client),
-				IngressProvider(client),
+				IngressProvider(supplier.getExtensions()),
 				CustomResourceDefinitionsProvider(client)
 		)
 	}

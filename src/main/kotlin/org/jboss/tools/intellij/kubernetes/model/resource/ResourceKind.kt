@@ -11,8 +11,8 @@
 package org.jboss.tools.intellij.kubernetes.model.resource
 
 import io.fabric8.kubernetes.api.model.HasMetadata
-import io.fabric8.kubernetes.api.model.apiextensions.CustomResourceDefinition
-import io.fabric8.kubernetes.api.model.apiextensions.CustomResourceDefinitionSpec
+import io.fabric8.kubernetes.api.model.apiextensions.v1beta1.CustomResourceDefinition
+import io.fabric8.kubernetes.api.model.apiextensions.v1beta1.CustomResourceDefinitionSpec
 import org.jboss.tools.intellij.kubernetes.model.resource.kubernetes.custom.GenericResource
 import org.jboss.tools.intellij.kubernetes.model.util.getApiVersion
 
@@ -24,31 +24,35 @@ data class ResourceKind<R : HasMetadata> private constructor(
 
 	companion object {
 		@JvmStatic
-		fun <R: HasMetadata> new(clazz: Class<R>): ResourceKind<R> {
+		fun <R: HasMetadata> create(clazz: Class<R>): ResourceKind<R> {
 			return ResourceKind(
-					getApiVersion(clazz),
+					removeK8sio(getApiVersion(clazz)),
 					clazz,
 					clazz.simpleName)
 		}
 
 		@JvmStatic
-		fun new(resource: HasMetadata): ResourceKind<out HasMetadata> {
+		fun create(resource: HasMetadata): ResourceKind<out HasMetadata> {
 			return ResourceKind(
 					removeK8sio(resource.apiVersion),
 					resource.javaClass,
 					resource.kind)
 		}
 
-		@JvmStatic
-		fun new(spec: CustomResourceDefinitionSpec): ResourceKind<GenericResource> {
-			return ResourceKind(
-					getApiVersion(spec.group, spec.version),
-					GenericResource::class.java,
-					spec.names.kind)
+		fun create(definition: CustomResourceDefinition): ResourceKind<out HasMetadata> {
+			return create(definition.spec)
 		}
 
 		@JvmStatic
-		fun new(version: String, clazz: Class<out HasMetadata>, kind: String): ResourceKind<out HasMetadata> {
+		fun create(spec: CustomResourceDefinitionSpec): ResourceKind<GenericResource> {
+			return ResourceKind(
+				removeK8sio(getApiVersion(spec.group, spec.version)), // TODO: deal with several versions
+				GenericResource::class.java,
+				spec.names.kind)
+		}
+
+		@JvmStatic
+		fun create(version: String, clazz: Class<out HasMetadata>, kind: String): ResourceKind<out HasMetadata> {
 			return ResourceKind(version, clazz, kind)
 		}
 

@@ -23,7 +23,7 @@ import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.NamedContext
 import io.fabric8.kubernetes.api.model.Namespace
 import io.fabric8.kubernetes.api.model.Pod
-import io.fabric8.kubernetes.api.model.apiextensions.CustomResourceDefinition
+import io.fabric8.kubernetes.api.model.apiextensions.v1beta1.CustomResourceDefinition
 import io.fabric8.kubernetes.client.KubernetesClient
 import io.fabric8.kubernetes.client.NamespacedKubernetesClient
 import org.assertj.core.api.Assertions.assertThat
@@ -48,7 +48,7 @@ class ResourceModelTest {
     private val client: NamespacedKubernetesClient = mock()
     private val modelChange: IModelChangeObservable = mock()
     private val namespace: Namespace = resource("papa smurf")
-    private val activeContext: IActiveContext<HasMetadata, KubernetesClient> = activeContext(client, namespace, mock())
+    private val activeContext: IActiveContext<HasMetadata, KubernetesClient> = activeContext(namespace, mock())
     private val contextFactory: (IModelChangeObservable, NamedContext?) -> IActiveContext<HasMetadata, KubernetesClient> =
             contextFactory(activeContext)
 
@@ -106,7 +106,7 @@ class ResourceModelTest {
         // when
         model.getAllResources(definition)
         // then
-        verify(activeContext).getResources(definition)
+        verify(activeContext).getAllResources(definition)
     }
 
     @Test

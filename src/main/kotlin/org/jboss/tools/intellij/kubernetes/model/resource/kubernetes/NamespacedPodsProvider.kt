@@ -15,17 +15,18 @@ import io.fabric8.kubernetes.client.KubernetesClient
 import org.jboss.tools.intellij.kubernetes.model.resource.NamespacedResourcesProvider
 import org.jboss.tools.intellij.kubernetes.model.resource.ResourceKind
 import org.jboss.tools.intellij.kubernetes.model.resource.WatchableAndListable
+import java.util.function.Supplier
 
 open class NamespacedPodsProvider(client: KubernetesClient)
     : NamespacedResourcesProvider<Pod, KubernetesClient>(client) {
 
     companion object {
-        val KIND = ResourceKind.new(Pod::class.java)
+        val KIND = ResourceKind.create(Pod::class.java)
     }
 
     override val kind = KIND
 
-    override fun getOperation(namespace: String): () -> WatchableAndListable<Pod> {
-        return { client.pods().inNamespace(namespace) }
+    override fun getOperation(namespace: String): Supplier<WatchableAndListable<Pod>> {
+        return Supplier { client.pods().inNamespace(namespace) }
     }
 }

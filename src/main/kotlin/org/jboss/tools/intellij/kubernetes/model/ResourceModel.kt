@@ -12,19 +12,17 @@ package org.jboss.tools.intellij.kubernetes.model
 
 import com.intellij.openapi.diagnostic.logger
 import io.fabric8.kubernetes.api.model.HasMetadata
-import io.fabric8.kubernetes.api.model.apiextensions.CustomResourceDefinition
+import io.fabric8.kubernetes.api.model.apiextensions.v1beta1.CustomResourceDefinition
 import io.fabric8.kubernetes.client.KubernetesClient
 import io.fabric8.kubernetes.client.KubernetesClientException
-import org.jboss.tools.intellij.kubernetes.model.context.ContextFactory
 import org.jboss.tools.intellij.kubernetes.model.context.IActiveContext
 import org.jboss.tools.intellij.kubernetes.model.context.IActiveContext.ResourcesIn
 import org.jboss.tools.intellij.kubernetes.model.context.IContext
+import org.jboss.tools.intellij.kubernetes.model.context.create
 import org.jboss.tools.intellij.kubernetes.model.resource.ResourceKind
 import java.util.function.Predicate
 
 interface IResourceModel {
-
-    fun getClient(): KubernetesClient?
     fun setCurrentContext(context: IContext)
     fun getCurrentContext(): IActiveContext<out HasMetadata, out KubernetesClient>?
     fun getAllContexts(): List<IContext>
@@ -39,7 +37,7 @@ interface IResourceModel {
 
 open class ResourceModel(
         private val observable: IModelChangeObservable = ModelChangeObservable(),
-        private val contexts: IContexts = Contexts(observable, ContextFactory()::create)
+        private val contexts: IContexts = Contexts(observable, ::create)
 ) : IResourceModel {
 
     override fun setCurrentContext(context: IContext) {
@@ -56,10 +54,6 @@ open class ResourceModel(
         return contexts.all
     }
 
-    override fun getClient(): KubernetesClient? {
-        return contexts.current?.client
-    }
-
     override fun addListener(listener: ModelChangeObservable.IResourceChangeListener) {
         observable.addListener(listener)
     }
@@ -73,7 +67,7 @@ open class ResourceModel(
             return contexts.current?.getCurrentNamespace()
         } catch (e: KubernetesClientException) {
             throw ResourceException(
-                "Could not get current namespace for server ${contexts.current?.client?.masterUrl}", e)
+                "Could not get current namespace for server ${contexts.current?.masterUrl}", e)
         }
     }
 
@@ -85,9 +79,9 @@ open class ResourceModel(
         return ListableCustomResources(definition,this)
     }
 
-    fun <R: HasMetadata> getAllResources(kind: ResourceKind<R>, namespaced: ResourcesIn, filter: Predicate<R>? = null): Collection<R> {
+    fun <R: HasMetadata> getAllResources(kind: ResourceKind<R>, resourceIn: ResourcesIn, filter: Predicate<R>? = null): Collection<R> {
         try {
-            val resources: Collection<R> = contexts.current?.getAllResources(kind, namespaced) ?: return emptyList()
+            val resources: Collection<R> = contexts.current?.getAllResources(kind, resourceIn) ?: return emptyList()
             return if (filter == null) {
                 resources
             } else {
@@ -97,13 +91,13 @@ open class ResourceModel(
             if (isNotFound(e)) {
                 return emptyList()
             }
-            throw ResourceException("Could not get ${kind.kind}s for server ${contexts.current?.client?.masterUrl}", e)
+            throw ResourceException("Could not get ${kind.kind}s for server ${contexts.current?.masterUrl}", e)
         }
     }
 
     fun getAllResources(definition: CustomResourceDefinition): Collection<HasMetadata> {
         try {
-            return contexts.current?.getResources(definition) ?: emptyList()
+            return contexts.current?.getAllResources(definition) ?: emptyList()
         } catch(e: IllegalArgumentException) {
             throw ResourceException("Could not get custom resources for ${definition.metadata}: ${e.cause}", e)
         }
