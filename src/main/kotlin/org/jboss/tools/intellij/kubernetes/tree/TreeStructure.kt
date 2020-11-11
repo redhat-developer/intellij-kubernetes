@@ -94,10 +94,10 @@ open class TreeStructure(
             return descriptor
         }
         return when (element) {
-            is IContext -> ContextDescriptor(element, parent, model = model)
-            is Exception -> ErrorDescriptor(element, parent, model = model)
-            is Folder -> FolderDescriptor(element, parent, model = model)
-            else -> Descriptor(element, parent, model = model)
+            is IContext -> ContextDescriptor(element, parent, model)
+            is Exception -> ErrorDescriptor(element, parent, model)
+            is Folder -> FolderDescriptor(element, parent, model)
+            else -> Descriptor(element, parent, model)
         }
     }
 

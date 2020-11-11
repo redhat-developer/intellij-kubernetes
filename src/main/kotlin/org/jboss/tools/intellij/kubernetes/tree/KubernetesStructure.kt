@@ -440,7 +440,7 @@ class KubernetesStructure(model: IResourceModel) : AbstractTreeStructureContribu
 				element<ConfigMap> {
 					anchor { it is ConfigMap }
 					childElements {
-						KubernetesDescriptors.createDataDescriptorFactories(it.data, it)
+						KubernetesDescriptors.createDataDescriptorFactories((it).data, it)
 					}
 					parentElements { CONFIGURATION }
 				},
@@ -457,7 +457,7 @@ class KubernetesStructure(model: IResourceModel) : AbstractTreeStructureContribu
 				element<Secret>{
 					anchor { it is Secret }
 					childElements {
-						KubernetesDescriptors.createDataDescriptorFactories(it.data, it)
+						KubernetesDescriptors.createDataDescriptorFactories((it).data, it)
 					}
 					parentElements { CONFIGURATION }
 				}

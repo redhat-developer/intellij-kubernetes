@@ -64,25 +64,17 @@ import java.util.function.Supplier
 
 class KubernetesContextTest {
 
+	private val observable: ModelChangeObservable = mock()
+
 	private val allNamespaces = arrayOf(NAMESPACE1, NAMESPACE2, NAMESPACE3)
 	private val currentNamespace = NAMESPACE2
 	private val client: NamespacedKubernetesClient = client(currentNamespace.metadata.name, allNamespaces)
-	private val namespacedDefinition = customResourceDefinition(
-			"namespaced crd","version1", "group1", "namespaced-crd", "Namespaced")
-	private val clusterwideDefinition = customResourceDefinition(
-			"cluster crd", "version2", "group2", "cluster-crd", "Cluster")
-	private val customResourceDefinitionsProvider: INonNamespacedResourcesProvider<CustomResourceDefinition, NamespacedKubernetesClient> =
-			nonNamespacedResourceProvider(
-					ResourceKind.create(CustomResourceDefinition::class.java),
-					setOf(namespacedDefinition, clusterwideDefinition))
 
-	private val observable: ModelChangeObservable = mock()
-
-	private val namespaceWatchable: Watchable<Watch, Watcher<Namespace>>? = mock()
+	private val namespaceWatchable: Watchable<Watch, Watcher<Namespace>> = mock()
 	private val namespacesWatchSupplier: Supplier<Watchable<Watch, Watcher<Namespace>>?> = Supplier { namespaceWatchable }
 	private val namespacesProvider = nonNamespacedResourceProvider<Namespace, NamespacedKubernetesClient>(
 			NamespacesProvider.KIND,
-			allNamespaces.toSet(),
+			allNamespaces.toList(),
 			namespacesWatchSupplier)
 
 	private val nodesProvider = nonNamespacedResourceProvider<Node, NamespacedKubernetesClient>(
@@ -113,6 +105,15 @@ class KubernetesContextTest {
 		setOf(resource("secret1")),
 		currentNamespace)
 
+	private val namespacedDefinition = customResourceDefinition(
+		"namespaced crd","version1", "group1", "namespaced-crd", "Namespaced")
+	private val clusterwideDefinition = customResourceDefinition(
+		"cluster crd", "version2", "group2", "cluster-crd", "Cluster")
+	private val customResourceDefinitionsProvider: INonNamespacedResourcesProvider<CustomResourceDefinition, NamespacedKubernetesClient> =
+		nonNamespacedResourceProvider(
+			ResourceKind.create(CustomResourceDefinition::class.java),
+			listOf(namespacedDefinition, clusterwideDefinition))
+
 	private val namespacedCustomResource1 = customResource("genericCustomResource1", "namespace1", namespacedDefinition)
 	private val namespacedCustomResource2 = customResource("genericCustomResource2", "namespace1", namespacedDefinition)
 	private val watchable1: Watchable<Watch, Watcher<GenericResource>> = mock()
@@ -123,8 +124,7 @@ class KubernetesContextTest {
 					listOf(namespacedCustomResource1, namespacedCustomResource2),
 					currentNamespace,
 					watchableSupplier1)
-	private val nonNamespacedCustomResource1 = resource<GenericResource>(
-			"genericCustomResource1", "smurfington")
+	private val nonNamespacedCustomResource1 = resource<GenericResource>("genericCustomResource1", "smurfington")
 	private val watchable2: Watchable<Watch, Watcher<GenericResource>> = mock()
 	private val watchableSupplier2: Supplier<Watchable<Watch, Watcher<GenericResource>>?> = Supplier { watchable2 }
 	private val nonNamespacedCustomResourcesProvider: INonNamespacedResourcesProvider<GenericResource, NamespacedKubernetesClient> =
@@ -365,7 +365,7 @@ class KubernetesContextTest {
 	}
 
 	@Test
-	fun `#watch should watch watchable provided by namespaced resource provider`() {
+	fun `#watch(kind) should watch watchable provided by namespaced resource provider`() {
 		// given
 		givenCustomResourceProvider(namespacedDefinition,
 				customResourceDefinitionsProvider,
@@ -380,7 +380,7 @@ class KubernetesContextTest {
 	}
 
 	@Test
-	fun `#watch should watch watchable provided by non-namespaced resource provider`() {
+	fun `#watch(kind) should watch watchable provided by non-namespaced resource provider`() {
 		// given
 		givenCustomResourceProvider(clusterwideDefinition,
 				customResourceDefinitionsProvider,
@@ -390,6 +390,36 @@ class KubernetesContextTest {
 		// then
 		verify(context.watch, times(1)).watch(nonNamespacedCustomResourcesProvider.kind, watchableSupplier2
 				as Supplier<Watchable<Watch, Watcher<in HasMetadata>>?>)
+	}
+
+	@Test
+	fun `#watch(definition) should create custom resource provider if none exists yet`() {
+		// given
+		givenCustomResourceProvider(clusterwideDefinition,
+			customResourceDefinitionsProvider,
+			null) // no resource provider for definition
+		// when
+		context.watch(clusterwideDefinition)
+		// then
+		verify(context, times(1)).createCustomResourcesProvider(
+			eq(clusterwideDefinition),
+			any()
+		)
+	}
+
+	@Test
+	fun `#watch(definition) should NOT create custom resource provider if already exists`() {
+		// given
+		givenCustomResourceProvider(clusterwideDefinition,
+			customResourceDefinitionsProvider,
+			nonNamespacedCustomResourcesProvider)
+		// when
+		context.watch(clusterwideDefinition)
+		// then
+		verify(context, never()).createCustomResourcesProvider(
+			eq(clusterwideDefinition),
+			any()
+		)
 	}
 
 	@Test
@@ -513,7 +543,6 @@ class KubernetesContextTest {
 	@Test
 	fun `#add(CustomResourceDefinition) should create clusterwide custom resources provider if definition was added`() {
 		// given
-		val currentNamespace = currentNamespace.metadata.name
 		whenever(customResourceDefinitionsProvider.add(clusterwideDefinition))
 				.doReturn(true)
 		// when
@@ -748,13 +777,15 @@ class KubernetesContextTest {
 	private fun givenCustomResourceProvider(
 			definition: CustomResourceDefinition,
 			definitionProvider: IResourcesProvider<CustomResourceDefinition>,
-			resourceProvider: IResourcesProvider<GenericResource>) {
+			resourceProvider: IResourcesProvider<GenericResource>?) {
 		whenever(definitionProvider.remove(definition))
 			.doReturn(true)
 
 		val kind = ResourceKind.create(definition.spec)
-		whenever(resourceProvider.kind)
-			.doReturn(kind)
+		if (resourceProvider != null) {
+			whenever(resourceProvider.kind)
+				.doReturn(kind)
+		}
 		if (resourceProvider is INamespacedResourcesProvider<*, *>) {
 			context.namespacedProviders[kind] =
 				resourceProvider as INamespacedResourcesProvider<*, NamespacedKubernetesClient>
@@ -792,12 +823,12 @@ class KubernetesContextTest {
 				return super.nonNamespacedProviders
 			}
 
-		override fun getInternalResourceProviders(clients: Clients<NamespacedKubernetesClient>)
+		override fun getInternalResourceProviders(supplier: Clients<NamespacedKubernetesClient>)
 				: List<IResourcesProvider<out HasMetadata>> {
 			return internalResourceProviders
 		}
 
-		override fun getExtensionResourceProviders(clients: Clients<NamespacedKubernetesClient>)
+		override fun getExtensionResourceProviders(supplier: Clients<NamespacedKubernetesClient>)
 				: List<IResourcesProvider<out HasMetadata>> {
 			return extensionResourcesProviders
 		}
