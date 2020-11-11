@@ -11,9 +11,11 @@
 package org.jboss.tools.intellij.kubernetes.model.util
 
 import io.fabric8.kubernetes.api.model.HasMetadata
+import io.fabric8.kubernetes.api.model.apiextensions.v1beta1.CustomResourceDefinitionSpec
 import io.fabric8.kubernetes.model.annotation.ApiGroup
 import io.fabric8.kubernetes.model.annotation.ApiVersion
 import io.fabric8.kubernetes.model.util.Helper
+import org.jboss.tools.intellij.kubernetes.model.resource.KubernetesVersionPriority
 
 /**
  * returns {@code true} if the given resource has the same uid as this resource. Returns {@code false} otherwise.
@@ -58,3 +60,8 @@ fun getApiVersion(clazz: Class<out HasMetadata>): String {
  * Returns the version for given apiGroup and apiVersion. Both values are concatenated and separated by '/'.
  */
 fun getApiVersion(apiGroup: String, apiVersion: String) = "$apiGroup/$apiVersion"
+
+fun getVersion(spec: CustomResourceDefinitionSpec): String {
+	val versions = spec.versions.map { it.name }
+	return KubernetesVersionPriority.highestPriority(versions) ?: spec.version
+}

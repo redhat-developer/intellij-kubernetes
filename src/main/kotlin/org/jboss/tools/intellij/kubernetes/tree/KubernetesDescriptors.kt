@@ -37,6 +37,7 @@ import org.jboss.tools.intellij.kubernetes.model.context.KubernetesContext
 import org.jboss.tools.intellij.kubernetes.model.resource.ResourceKind
 import org.jboss.tools.intellij.kubernetes.model.resource.kubernetes.custom.GenericResource
 import org.jboss.tools.intellij.kubernetes.model.util.getContainers
+import org.jboss.tools.intellij.kubernetes.model.util.getVersion
 import org.jboss.tools.intellij.kubernetes.model.util.isRunning
 import org.jboss.tools.intellij.kubernetes.tree.TreeStructure.Descriptor
 import org.jboss.tools.intellij.kubernetes.tree.TreeStructure.ResourceDescriptor
@@ -147,7 +148,7 @@ object KubernetesDescriptors {
 				return
 			}
 			presentation.addText(getLabel(element!!), SimpleTextAttributes.REGULAR_ATTRIBUTES)
-			presentation.addText(" (${element!!.spec.group}/${element!!.spec.version})", SimpleTextAttributes.GRAYED_SMALL_ATTRIBUTES)
+			presentation.addText(" (${element!!.spec.group}/${getVersion(element!!.spec)})", SimpleTextAttributes.GRAYED_SMALL_ATTRIBUTES)
 		}
 
 		override fun watchResources() {
