@@ -17,6 +17,7 @@ import io.fabric8.kubernetes.api.model.NamedContext
 import io.fabric8.kubernetes.api.model.apiextensions.v1beta1.CustomResourceDefinition
 import io.fabric8.kubernetes.api.model.apiextensions.v1beta1.CustomResourceDefinitionSpec
 import io.fabric8.kubernetes.client.KubernetesClient
+import io.fabric8.kubernetes.client.KubernetesClientException
 import io.fabric8.kubernetes.client.Watch
 import io.fabric8.kubernetes.client.Watcher
 import io.fabric8.kubernetes.client.dsl.Watchable
@@ -35,6 +36,7 @@ import org.jboss.tools.intellij.kubernetes.model.resource.kubernetes.custom.Gene
 import org.jboss.tools.intellij.kubernetes.model.resource.kubernetes.custom.NamespacedCustomResourcesProvider
 import org.jboss.tools.intellij.kubernetes.model.resource.kubernetes.custom.NonNamespacedCustomResourcesProvider
 import org.jboss.tools.intellij.kubernetes.model.util.Clients
+import java.io.IOException
 import java.net.URL
 import java.util.function.Supplier
 
@@ -78,11 +80,7 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
     protected open val namespacedProviders: MutableMap<ResourceKind<out HasMetadata>, INamespacedResourcesProvider<out HasMetadata, C>> by lazy {
         val providers = getAllResourceProviders(INamespacedResourcesProvider::class.java)
                 as MutableMap<ResourceKind<out HasMetadata>, INamespacedResourcesProvider<out HasMetadata, C>>
-        val namespacesProvider: INonNamespacedResourcesProvider<N, C> = nonNamespacedProviders[getNamespacesKind()]
-                as INonNamespacedResourcesProvider<N, C>
-        val namespace = getCurrentNamespace(namespacesProvider.allResources)
-        setCurrentNamespace(namespace, providers.values)
-        watch(namespacesProvider) // always watch namespaces
+        setCurrentNamespace(providers.values)
         providers
     }
 
@@ -104,6 +102,18 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
         setCurrentNamespace(namespace, namespacedProviders.values)
         watchAll(stopped)
         modelChange.fireCurrentNamespace(namespace)
+    }
+
+    private fun setCurrentNamespace(providers: Collection<INamespacedResourcesProvider<*, *>>) {
+        try {
+            val namespacesProvider: INonNamespacedResourcesProvider<N, C> = nonNamespacedProviders[getNamespacesKind()]
+                    as INonNamespacedResourcesProvider<N, C>
+            val namespace = getCurrentNamespace(namespacesProvider.allResources)
+            setCurrentNamespace(namespace, providers)
+            watch(namespacesProvider) // always watch namespaces
+        } catch (e: KubernetesClientException) {
+            logger<ActiveContext<*, *>>().info("Could not set current namespace to all non namespaced providers.", e)
+        }
     }
 
     private fun setCurrentNamespace(namespace: String?, providers: Collection<INamespacedResourcesProvider<*, *>>) {
