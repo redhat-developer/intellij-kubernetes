@@ -167,7 +167,7 @@ class KubernetesStructure(model: IResourceModel) : AbstractTreeStructureContribu
 				element<Pod> {
 					anchor { it is Pod }
 					childElements {
-						KubernetesDescriptors.createPodDescriptorsFactories(it)
+						KubernetesDescriptors.createPodDescriptorFactories(it)
 					}
 					parentElements {
 						listOf(PODS,
