@@ -34,23 +34,27 @@ import io.fabric8.kubernetes.api.model.extensions.Ingress
 import io.fabric8.kubernetes.api.model.storage.StorageClass
 import org.jboss.tools.intellij.kubernetes.model.IResourceModel
 import org.jboss.tools.intellij.kubernetes.model.context.KubernetesContext
-import org.jboss.tools.intellij.kubernetes.model.resource.ResourceKind
 import org.jboss.tools.intellij.kubernetes.model.resource.kubernetes.custom.GenericResource
 import org.jboss.tools.intellij.kubernetes.model.util.getContainers
 import org.jboss.tools.intellij.kubernetes.model.util.isRunning
+import org.jboss.tools.intellij.kubernetes.tree.AbstractTreeStructureContribution.DescriptorFactory
 import org.jboss.tools.intellij.kubernetes.tree.TreeStructure.Descriptor
 import org.jboss.tools.intellij.kubernetes.tree.TreeStructure.ResourceDescriptor
+import org.jboss.tools.intellij.kubernetes.tree.TreeStructure.ResourcePropertyDescriptor
+
 import javax.swing.Icon
 
 object KubernetesDescriptors {
 
 	fun createDescriptor(element: Any, parent: NodeDescriptor<*>?, model: IResourceModel): NodeDescriptor<*>? {
 		return when (element) {
+			is DescriptorFactory<*> -> element.create(parent, model)
+
 			is KubernetesContext -> KubernetesContextDescriptor(element, model)
 			is Namespace -> NamespaceDescriptor(element, parent, model)
 			is Node -> ResourceDescriptor(element, parent, model)
 			is Pod -> PodDescriptor(element, parent, model)
-			is AbstractTreeStructureContribution.DescriptorFactory<*> -> element.create(parent, model)
+
 			is Deployment,
 			is StatefulSet,
 			is DaemonSet,
@@ -158,10 +162,11 @@ object KubernetesDescriptors {
 		}
 	}
 
-	fun createPodDescriptorsFactories(pod: Pod)
-			: List<AbstractTreeStructureContribution.DescriptorFactory<Pod>> {
-		return listOf(PodContainersDescriptorFactory(pod),
-				PodIpDescriptorFactory(pod))
+	fun createPodDescriptorFactories(pod: Pod)
+			: List<DescriptorFactory<Pod>> {
+		return listOf(
+			PodContainersDescriptorFactory(pod),
+			PodIpDescriptorFactory(pod))
 	}
 
 	class PodContainersDescriptorFactory(pod: Pod) : AbstractTreeStructureContribution.DescriptorFactory<Pod>(pod) {
@@ -171,7 +176,7 @@ object KubernetesDescriptors {
 		}
 
 		private class PodContainersDescriptor(element: Pod, parent: NodeDescriptor<*>?, model: IResourceModel)
-			: TreeStructure.ResourcePropertyDescriptor<Pod>(
+			: ResourcePropertyDescriptor<Pod>(
 				element,
 				parent,
 				model
@@ -192,7 +197,7 @@ object KubernetesDescriptors {
 		}
 
 		private class PodIpDescriptor(element: Pod, parent: NodeDescriptor<*>?, model: IResourceModel)
-			: TreeStructure.ResourcePropertyDescriptor<Pod>(
+			: ResourcePropertyDescriptor<Pod>(
 				element,
 				parent,
 				model
@@ -226,7 +231,7 @@ object KubernetesDescriptors {
 				element: R,
 				parent: NodeDescriptor<*>?,
 				model: IResourceModel
-		) : TreeStructure.ResourcePropertyDescriptor<R>(
+		) : ResourcePropertyDescriptor<R>(
 				element,
 				parent,
 				model
@@ -248,7 +253,7 @@ object KubernetesDescriptors {
 				element: R,
 				parent: NodeDescriptor<*>?,
 				model: IResourceModel
-		) : TreeStructure.ResourcePropertyDescriptor<R>(
+		) : ResourcePropertyDescriptor<R>(
 				element,
 				parent,
 				model
