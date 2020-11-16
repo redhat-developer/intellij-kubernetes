@@ -170,6 +170,11 @@ open class TreeStructure(
             parent,
             model
     ) {
+        /**
+         * Returns {@code null} so that resource property descriptor has no children
+         *
+         * @see KubernetesStructure#createPodElements
+         */
         override fun getElement(): T? {
             return null
         }
