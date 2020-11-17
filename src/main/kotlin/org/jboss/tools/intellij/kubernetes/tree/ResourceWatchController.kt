@@ -10,6 +10,7 @@
  ******************************************************************************/
 package org.jboss.tools.intellij.kubernetes.tree
 
+import com.intellij.openapi.diagnostic.logger
 import org.jboss.tools.intellij.kubernetes.actions.getDescriptor
 import javax.swing.JTree
 import javax.swing.event.TreeExpansionEvent
@@ -25,7 +26,11 @@ object ResourceWatchController {
 		tree.addTreeExpansionListener(object: TreeExpansionListener {
 			override fun treeExpanded(event: TreeExpansionEvent) {
 				val descriptor = (event.path.lastPathComponent as DefaultMutableTreeNode).getDescriptor()
-				descriptor?.watchResources()
+				try {
+					descriptor?.watchResources()
+				} catch(e: Exception) {
+					logger<ResourceWatchController>().warn("Could not watch ${descriptor?.element} resources.", e)
+				}
 			}
 
 			override fun treeCollapsed(event: TreeExpansionEvent?) {
