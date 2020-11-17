@@ -12,6 +12,7 @@ package org.jboss.tools.intellij.kubernetes.actions
 
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.components.ServiceManager
+import io.fabric8.kubernetes.api.model.HasMetadata
 import org.jboss.tools.intellij.kubernetes.model.IResourceModel
 import org.jboss.tools.intellij.kubernetes.tree.TreeStructure
 import javax.swing.tree.DefaultMutableTreeNode
@@ -28,3 +29,9 @@ fun Any?.getDescriptor(): TreeStructure.Descriptor<*>? {
 fun <T> Any.getElement(): T? {
     return (this as? DefaultMutableTreeNode)?.getDescriptor()?.element as? T
 }
+
+fun TreeStructure.Descriptor<*>.getKind(): String? {
+    val element = this?.element
+    return (element as? TreeStructure.Folder)?.kind?.kind ?: (element as? HasMetadata)?.kind
+}
+
