@@ -14,6 +14,7 @@ import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.progress.ProgressManager
+import com.intellij.openapi.progress.Progressive
 import com.intellij.openapi.progress.Task
 import com.redhat.devtools.intellij.common.actions.StructureTreeAction
 import io.fabric8.openshift.api.model.Project
@@ -25,16 +26,16 @@ class UseProjectAction : StructureTreeAction(Project::class.java) {
 
 	override fun actionPerformed(event: AnActionEvent?, path: TreePath?, selectedNode: Any?) {
 		val project: Project = selectedNode?.getElement() ?: return
-		ProgressManager.getInstance().run(object :
-			Task.Backgroundable(null, "Switching project...", true) {
-			override fun run(@NotNull progress: ProgressIndicator) {
+		val projectName = project.metadata.name
+		run("Using project $projectName...", true,
+			Progressive {
 				try {
-					getResourceModel()?.setCurrentNamespace(project.metadata.name)
+					getResourceModel()?.setCurrentNamespace(projectName)
 				} catch (e: Exception) {
 					logger<ResourceWatchController>().warn(
-						"Could not use namespace ${project.metadata.name}.", e)
+						"Could not use namespace $projectName.", e
+					)
 				}
-			}
-		})
+			})
 	}
 }
