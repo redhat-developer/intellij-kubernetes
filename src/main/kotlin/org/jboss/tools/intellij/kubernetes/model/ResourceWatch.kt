@@ -128,7 +128,7 @@ open class ResourceWatch(
         override fun run() {
             try {
                 logger<ResourceWatcher>().debug("Watching $kind resources.")
-                val watch: Watch? = createWatch()
+                val watch: Watch? = watch()
                 saveWatch(watch)
             } catch (e: Exception) {
                 watches.remove(kind) // remove placeholder
@@ -136,7 +136,7 @@ open class ResourceWatch(
             }
         }
 
-        private fun createWatch(): Watch? {
+        private fun watch(): Watch? {
             return if (watchable == null) {
               return null
             } else {

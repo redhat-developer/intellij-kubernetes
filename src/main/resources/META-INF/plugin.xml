@@ -10,19 +10,15 @@
                     anchor="left"
                     factoryClass="org.jboss.tools.intellij.kubernetes.KubernetesToolWindowFactory"
                     icon="/META-INF/pluginIcon13x13.svg"/>
-    </extensions>
-
-    <extensions defaultExtensionNs="com.intellij">
         <applicationService serviceInterface="org.jboss.tools.intellij.kubernetes.model.IResourceModel"
                         serviceImplementation="org.jboss.tools.intellij.kubernetes.model.ResourceModel" />
     </extensions>
 
     <extensionPoints>
-        <extensionPoint name="resourceProvider" interface="org.jboss.tools.intellij.kubernetes.model.resource.IResourcesProviderFactory"/>
-    </extensionPoints>
-
-    <extensionPoints>
-        <extensionPoint name="structureContribution" interface="org.jboss.tools.intellij.kubernetes.tree.ITreeStructureContributionFactory"/>
+        <extensionPoint name="resourceProvider"
+                        interface="org.jboss.tools.intellij.kubernetes.model.resource.IResourcesProviderFactory"/>
+        <extensionPoint name="structureContribution"
+                        interface="org.jboss.tools.intellij.kubernetes.tree.ITreeStructureContributionFactory"/>
     </extensionPoints>
 
     <actions>
