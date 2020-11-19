@@ -23,3 +23,6 @@ fun Logger.debugWithClass(clazz: Class<*>, message: String) {
 fun Logger.debugWithClass(clazz: Class<*>, message: String, t: Throwable?) {
 	this.debug("${clazz.simpleName}: $message", t)
 }
+
+
+
