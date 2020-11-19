@@ -12,6 +12,7 @@ package org.jboss.tools.intellij.kubernetes.actions
 
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.diagnostic.logger
+import com.intellij.openapi.progress.Progressive
 import com.redhat.devtools.intellij.common.actions.StructureTreeAction
 import org.jboss.tools.intellij.kubernetes.model.context.IContext
 import org.jboss.tools.intellij.kubernetes.tree.ResourceWatchController
@@ -21,11 +22,15 @@ class SetAsCurrentClusterAction: StructureTreeAction(IContext::class.java) {
 
     override fun actionPerformed(event: AnActionEvent?, path: TreePath?, selectedNode: Any?) {
         val context: IContext = selectedNode?.getElement() ?: return
-        try {
-            getResourceModel()?.setCurrentContext(context)
-        } catch(e: Exception) {
-            logger<ResourceWatchController>().warn(
-                "Could not set current context to ${context.context.name}.", e)
-        }
+        run("Setting $context as current cluster...", true,
+            Progressive {
+                try {
+                    getResourceModel()?.setCurrentContext(context)
+                } catch (e: Exception) {
+                    logger<ResourceWatchController>().warn(
+                        "Could not set current context to ${context.context.name}.", e
+                    )
+                }
+            })
     }
 }
