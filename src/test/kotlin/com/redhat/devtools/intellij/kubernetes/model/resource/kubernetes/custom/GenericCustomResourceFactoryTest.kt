@@ -13,31 +13,31 @@ package com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.custom
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.ObjectMapper
 import org.assertj.core.api.Assertions.assertThat
-import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.custom.GenericResourceFactory.API_VERSION
-import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.custom.GenericResourceFactory.CREATION_TIMESTAMP
-import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.custom.GenericResourceFactory.GENERATION
-import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.custom.GenericResourceFactory.ITEMS
-import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.custom.GenericResourceFactory.KIND
-import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.custom.GenericResourceFactory.METADATA
-import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.custom.GenericResourceFactory.NAME
-import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.custom.GenericResourceFactory.NAMESPACE
-import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.custom.GenericResourceFactory.RESOURCE_VERSION
-import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.custom.GenericResourceFactory.SELF_LINK
-import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.custom.GenericResourceFactory.SPEC
-import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.custom.GenericResourceFactory.UID
+import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.custom.GenericCustomResourceFactory.API_VERSION
+import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.custom.GenericCustomResourceFactory.CREATION_TIMESTAMP
+import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.custom.GenericCustomResourceFactory.GENERATION
+import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.custom.GenericCustomResourceFactory.ITEMS
+import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.custom.GenericCustomResourceFactory.KIND
+import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.custom.GenericCustomResourceFactory.METADATA
+import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.custom.GenericCustomResourceFactory.NAME
+import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.custom.GenericCustomResourceFactory.NAMESPACE
+import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.custom.GenericCustomResourceFactory.RESOURCE_VERSION
+import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.custom.GenericCustomResourceFactory.SELF_LINK
+import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.custom.GenericCustomResourceFactory.SPEC
+import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.custom.GenericCustomResourceFactory.UID
 import org.junit.Test
 
 
 private const val SCOPE = "scope"
 
-class GenericResourceFactoryTest {
+class GenericCustomResourceFactoryTest {
 
 	@Test
 	fun `#createResources(map) should return empty list if resourceList has items of wrong type`() {
 		// given
 		val resourcesList = mapOf(Pair(ITEMS, Integer.valueOf(1)))
 		// when
-		val items = GenericResourceFactory.createResources(resourcesList)
+		val items = GenericCustomResourceFactory.createResources(resourcesList)
 		// then
 		assertThat(items).isEmpty()
 	}
@@ -47,24 +47,24 @@ class GenericResourceFactoryTest {
 		// given
 		val resourcesList = mapOf(Pair(ITEMS, null))
 		// when
-		val items = GenericResourceFactory.createResources(resourcesList)
+		val items = GenericCustomResourceFactory.createResources(resourcesList)
 		// then
 		assertThat(items).isEmpty()
 	}
 
 	@Test
-	fun `#createResources(map) should return create GenericResource with empty Metadata if metadata is null`() {
+	fun `#createResources(map) should return create GenericCustomResource with empty Metadata if metadata is null`() {
 		// given
-		val resourcesList = mapOf(Pair(ITEMS, listOf(createGenericResourceMap())))
+		val resourcesList = mapOf(Pair(ITEMS, listOf(createGenericCustomResourceMap())))
 		// when
-		val items = GenericResourceFactory.createResources(resourcesList)
+		val items = GenericCustomResourceFactory.createResources(resourcesList)
 		// then
 		assertThat(items).hasSize(1)
 		assertThat(items[0].metadata).isNotNull()
 	}
 
 	@Test
-	fun `#createResources(map) should return create GenericResource`() {
+	fun `#createResources(map) should return create GenericCustomResource`() {
 		// given
 		// resource
 		val resourceVersion = "version1"
@@ -83,7 +83,7 @@ class GenericResourceFactoryTest {
 		val uid = "uid"
 
 		// resource list
-		val resourcesList = mapOf(Pair(ITEMS, listOf(createGenericResourceMap(
+		val resourcesList = mapOf(Pair(ITEMS, listOf(createGenericCustomResourceMap(
 				resourceVersion,
 				kind,
 				createMetadataMap(
@@ -97,7 +97,7 @@ class GenericResourceFactoryTest {
 				createSpecMap(scope)
 		))))
 		// when
-		val items = GenericResourceFactory.createResources(resourcesList)
+		val items = GenericCustomResourceFactory.createResources(resourcesList)
 
 		// then
 		assertThat(items).hasSize(1)
@@ -119,7 +119,7 @@ class GenericResourceFactoryTest {
 	}
 
 	@Test
-	fun `createResources(jsonNode) should create GenericResource`() {
+	fun `createResources(jsonNode) should create GenericCustomResource`() {
 		// given
 		val json = """
 			{
@@ -141,7 +141,7 @@ class GenericResourceFactoryTest {
 			""".trimIndent()
 		val node: JsonNode = ObjectMapper().readTree(json)
 		// when
-		val resource = 	GenericResourceFactory.createResource(node)
+		val resource = 	GenericCustomResourceFactory.createResource(node)
 		assertThat(resource.apiVersion).isEqualTo("openshift.pub/v1")
 		assertThat(resource.kind).isEqualTo("Car")
 
@@ -182,7 +182,7 @@ class GenericResourceFactoryTest {
 				Pair(UID, uid))
 	}
 
-	private fun createGenericResourceMap(
+	private fun createGenericCustomResourceMap(
 			version: String? = null,
 			kind: String? = null,
 			metadata: Map<String, Any?>? = null,

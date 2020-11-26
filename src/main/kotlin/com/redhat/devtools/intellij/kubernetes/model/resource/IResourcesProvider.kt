@@ -12,18 +12,17 @@ package com.redhat.devtools.intellij.kubernetes.model.resource
 
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.KubernetesResourceList
-import io.fabric8.kubernetes.client.Watch
 import io.fabric8.kubernetes.client.Watcher
 import io.fabric8.kubernetes.client.dsl.FilterWatchListMultiDeletable
 import io.fabric8.kubernetes.client.dsl.Watchable
 import java.util.function.Supplier
 
-typealias WatchableListableDeletable<R> = FilterWatchListMultiDeletable<R, out KubernetesResourceList<R>, Boolean, Watch>?
+typealias WatchableListableDeletable<R> = FilterWatchListMultiDeletable<R, out KubernetesResourceList<R>>?
 
 interface IResourcesProvider<R: HasMetadata> {
     val kind: ResourceKind<R>
     val allResources: Collection<R>
-    fun getWatchable(): Supplier<Watchable<Watch, Watcher<R>>?>
+    fun getWatchable(): Supplier<Watchable<Watcher<R>>?>
     fun invalidate()
     fun replace(resource: HasMetadata): Boolean
     fun add(resource: HasMetadata): Boolean

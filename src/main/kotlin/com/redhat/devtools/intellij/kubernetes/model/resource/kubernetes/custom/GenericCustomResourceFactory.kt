@@ -17,7 +17,7 @@ import io.fabric8.kubernetes.api.model.ObjectMeta
 import io.fabric8.kubernetes.api.model.ObjectMetaBuilder
 import java.util.stream.Collectors
 
-object GenericResourceFactory {
+object GenericCustomResourceFactory {
 
 	const val ITEMS = "items"
 	const val API_VERSION = "apiVersion"
@@ -32,23 +32,24 @@ object GenericResourceFactory {
 	const val SELF_LINK = "selfLink"
 	const val UID = "uid"
 
-	fun createResources(resourcesList: Map<String, Any?>): List<GenericResource> {
+	fun createResources(resourcesList: Map<String, Any?>): List<GenericCustomResource> {
 		val items = resourcesList[ITEMS] as? List<Map<String, Any?>> ?: return emptyList()
 		return createResources(items)
 	}
 
-	private fun createResources(items: List<Map<String, Any?>>): List<GenericResource> {
+	private fun createResources(items: List<Map<String, Any?>>): List<GenericCustomResource> {
 		return items.stream()
 				.map { createResource(it) }
 				.collect(Collectors.toList())
 	}
 
-	private fun createResource(item: Map<String, Any?>): GenericResource {
-		return GenericResource(
-				item[API_VERSION] as? String,
-				item[KIND] as? String,
-				createObjectMetadata(item[METADATA] as? Map<String, Any?>),
-				GenericResourceSpec(item[SPEC] as? Map<String, Any?>))
+	private fun createResource(item: Map<String, Any?>): GenericCustomResource {
+		return GenericCustomResource(
+			item[KIND] as? String,
+			item[API_VERSION] as? String,
+			createObjectMetadata(item[METADATA] as? Map<String, Any?>),
+			GenericCustomResourceSpec(item[SPEC] as? Map<String, Any?>)
+		)
 	}
 
 	private fun createObjectMetadata(metadata: Map<String, Any?>?): ObjectMeta {
@@ -66,12 +67,13 @@ object GenericResourceFactory {
 				.build()
 	}
 
-	fun createResource(node: JsonNode): GenericResource {
-		return GenericResource(
-				node.get(API_VERSION).asText(),
-				node.get(KIND).asText(),
-				createObjectMetadata(node.get(METADATA)),
-				createSpec(node.get(SPEC)))
+	fun createResource(node: JsonNode): GenericCustomResource {
+		return GenericCustomResource(
+			node.get(KIND).asText(),
+			node.get(API_VERSION).asText(),
+			createObjectMetadata(node.get(METADATA)),
+			createSpec(node.get(SPEC))
+		)
 	}
 
 	private fun createObjectMetadata(metadata: JsonNode): ObjectMeta {
@@ -86,9 +88,9 @@ object GenericResourceFactory {
 				.build()
 	}
 
-	private fun createSpec(node: JsonNode?): GenericResourceSpec {
+	private fun createSpec(node: JsonNode?): GenericCustomResourceSpec {
 		val specs: Map<String, Any> = ObjectMapper().convertValue(node, object : TypeReference<Map<String, Any>>() {})
-		return GenericResourceSpec(specs)
+		return GenericCustomResourceSpec(specs)
 	}
 
 }

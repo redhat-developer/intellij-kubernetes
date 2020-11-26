@@ -14,8 +14,8 @@ import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.apiextensions.v1beta1.CustomResourceDefinition
 import io.fabric8.kubernetes.api.model.apiextensions.v1beta1.CustomResourceDefinitionSpec
 import io.fabric8.kubernetes.client.dsl.base.CustomResourceDefinitionContext
-import io.fabric8.kubernetes.model.annotation.ApiGroup
-import io.fabric8.kubernetes.model.annotation.ApiVersion
+import io.fabric8.kubernetes.model.annotation.Group
+import io.fabric8.kubernetes.model.annotation.Version
 import io.fabric8.kubernetes.model.util.Helper
 import com.redhat.devtools.intellij.kubernetes.model.resource.KubernetesVersionPriority
 import java.util.stream.Collectors
@@ -70,9 +70,9 @@ fun HasMetadata.sameSelfLink(resource: HasMetadata): Boolean {
  * @see io.fabric8.kubernetes.model.annotation.ApiGroup (annotation)
  */
 fun getApiVersion(clazz: Class<out HasMetadata>): String {
-	val apiVersion = Helper.getAnnotationValue(clazz, ApiVersion::class.java)
+	val apiVersion = Helper.getAnnotationValue(clazz, Version::class.java)
 	return if (!apiVersion.isNullOrBlank()) {
-		val apiGroup = Helper.getAnnotationValue(clazz, ApiGroup::class.java)
+		val apiGroup = Helper.getAnnotationValue(clazz, Group::class.java)
 		if (!apiGroup.isNullOrBlank()) {
 			getApiVersion(apiGroup, apiVersion)
 		} else {

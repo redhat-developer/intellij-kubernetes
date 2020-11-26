@@ -57,12 +57,12 @@ abstract class NamespacedResourcesProvider<R : HasMetadata, C: Client>(
         return getOperation(namespace).get()?.list()?.items ?: emptyList()
     }
 
-    override fun getWatchable(): Supplier<Watchable<Watch, Watcher<R>>?> {
+    override fun getWatchable(): Supplier<Watchable<Watcher<R>>?> {
         if (namespace == null) {
             logger<NamespacedResourcesProvider<*, *>>().debug("Returned empty watch for $kind: no namespace set.")
             return Supplier { null }
         }
-        return getOperation(namespace!!) as Supplier<Watchable<Watch, Watcher<R>>?>
+        return getOperation(namespace!!) as Supplier<Watchable<Watcher<R>>?>
     }
 
     protected open fun getOperation(namespace: String): Supplier<WatchableListableDeletable<R>> {

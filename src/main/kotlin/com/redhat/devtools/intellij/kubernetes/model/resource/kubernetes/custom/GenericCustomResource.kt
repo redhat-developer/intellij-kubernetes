@@ -12,22 +12,39 @@ package com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.custom
 
 import com.fasterxml.jackson.databind.JsonDeserializer
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize
+import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.KubernetesResource
-import io.fabric8.kubernetes.api.model.Namespaced
 import io.fabric8.kubernetes.api.model.ObjectMeta
-import io.fabric8.kubernetes.client.CustomResource
 
-class GenericResource() : CustomResource(), Namespaced {
+@JsonDeserialize(using = GenericCustomResourceDeserializer::class)
+class GenericCustomResource(
+	private val kind: String?,
+	private var apiVersion: String?,
+	private var metadata: ObjectMeta,
+	val spec: GenericCustomResourceSpec?
+) : HasMetadata {
 
-	constructor(apiVersion: String?, kind: String?, metadata: ObjectMeta?, spec: GenericResourceSpec?) : this() {
-		this.kind = kind
-		this.apiVersion = apiVersion
+	override fun setMetadata(metadata: ObjectMeta) {
 		this.metadata = metadata
-		this.spec = spec
 	}
 
-	var spec: GenericResourceSpec? = null
+	override fun getMetadata(): ObjectMeta {
+		return metadata
+	}
+
+	override fun getKind(): String? {
+		return kind
+	}
+
+	override fun setApiVersion(version: String?) {
+		this.apiVersion = apiVersion
+	}
+
+	override fun getApiVersion(): String? {
+		return apiVersion
+	}
+
 }
 
 @JsonDeserialize(using = JsonDeserializer.None::class)
-class GenericResourceSpec(val values: Map<String, Any?>?) : KubernetesResource
+class GenericCustomResourceSpec(val values: Map<String, Any?>?) : KubernetesResource

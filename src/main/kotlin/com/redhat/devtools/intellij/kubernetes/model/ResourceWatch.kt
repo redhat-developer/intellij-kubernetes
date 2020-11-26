@@ -15,6 +15,7 @@ import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.client.KubernetesClientException
 import io.fabric8.kubernetes.client.Watch
 import io.fabric8.kubernetes.client.Watcher
+import io.fabric8.kubernetes.client.WatcherException
 import io.fabric8.kubernetes.client.dsl.Watchable
 import com.redhat.devtools.intellij.kubernetes.model.resource.ResourceKind
 import java.util.concurrent.BlockingDeque
@@ -43,11 +44,11 @@ open class ResourceWatch(
     private val executor: ExecutorService = Executors.newWorkStealingPool(10)
     private val watchOperationsRunner = executor.submit(watchOperationsRunner)
 
-    open fun watchAll(toWatch: Collection<Pair<ResourceKind<out HasMetadata>, Supplier<Watchable<Watch, Watcher<in HasMetadata>>?>>>) {
+    open fun watchAll(toWatch: Collection<Pair<ResourceKind<out HasMetadata>, Supplier<Watchable<Watcher<in HasMetadata>>?>>>) {
         toWatch.forEach { watch(it.first, it.second) }
     }
 
-    open fun watch(kind: ResourceKind<out HasMetadata>, supplier: Supplier<out Watchable<Watch, out Watcher<in HasMetadata>>?>) {
+    open fun watch(kind: ResourceKind<out HasMetadata>, supplier: Supplier<out Watchable<Watcher<in HasMetadata>>?>) {
         val watchable = supplier.get() ?: return
         watches.computeIfAbsent(kind) {
             logger<ResourceWatch>().debug("Enqueueing watch for $kind resources in $watchable.")
@@ -119,7 +120,7 @@ open class ResourceWatch(
 
     class WatchOperation<R: HasMetadata>(
             val kind: ResourceKind<out R>,
-            private val watchable: Watchable<Watch, out Watcher<in R>>?,
+            private val watchable: Watchable<out Watcher<in R>>?,
             private val watches: MutableMap<ResourceKind<*>, Watch?>,
             private val addOperation: (HasMetadata) -> Unit,
             private val removeOperation: (HasMetadata) -> Unit,
@@ -140,7 +141,7 @@ open class ResourceWatch(
             return if (watchable == null) {
               return null
             } else {
-                (watchable as Watchable<Watch, Watcher<in R>>).watch(ResourceWatcher(addOperation, removeOperation, replaceOperation))
+                (watchable as Watchable<Watcher<in R>>).watch(ResourceWatcher(addOperation, removeOperation, replaceOperation))
             }
         }
 
@@ -174,7 +175,7 @@ open class ResourceWatch(
             }
         }
 
-        override fun onClose(e: KubernetesClientException?) {
+        override fun onClose(e: WatcherException?) {
             logger<ResourceWatcher>().debug("watcher closed.", e)
         }
     }

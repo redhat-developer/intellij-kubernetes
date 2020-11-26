@@ -39,8 +39,8 @@ abstract class NonNamespacedResourcesProvider<R : HasMetadata, C : Client>(
         return getOperation().get()?.list()?.items ?: emptyList()
     }
 
-    override fun getWatchable(): Supplier<Watchable<Watch, Watcher<R>>?> {
-        return getOperation() as Supplier<Watchable<Watch, Watcher<R>>?>
+    override fun getWatchable(): Supplier<Watchable<Watcher<R>>?> {
+        return getOperation() as Supplier<Watchable<Watcher<R>>?>
     }
 
     protected open fun getOperation(): Supplier<WatchableListableDeletable<R>> {

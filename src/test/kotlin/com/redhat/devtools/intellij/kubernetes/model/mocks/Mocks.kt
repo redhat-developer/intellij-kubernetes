@@ -72,7 +72,7 @@ object Mocks {
         kind: ResourceKind<T>,
         resources: Collection<T>,
         namespace: Namespace,
-        watchableSupplier: Supplier<Watchable<Watch, Watcher<T>>?> = Supplier { null })
+        watchableSupplier: Supplier<Watchable<Watcher<T>>?> = Supplier { null })
             : INamespacedResourcesProvider<T, C> {
         return mock {
             Mockito.doReturn(namespace.metadata.name)
@@ -89,7 +89,7 @@ object Mocks {
     fun <T : HasMetadata, C: Client> nonNamespacedResourceProvider(
         kind: ResourceKind<T>,
         resources: Collection<T>,
-        watchableSupplier: Supplier<Watchable<Watch, Watcher<T>>?> = Supplier { null },
+        watchableSupplier: Supplier<Watchable<Watcher<T>>?> = Supplier { null },
         deleteSuccess: Boolean = true)
             : INonNamespacedResourcesProvider<T, C> {
         return mock {
