@@ -13,7 +13,7 @@ package com.redhat.devtools.intellij.kubernetes.model.resource
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.apiextensions.v1beta1.CustomResourceDefinition
 import io.fabric8.kubernetes.api.model.apiextensions.v1beta1.CustomResourceDefinitionSpec
-import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.custom.GenericResource
+import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.custom.GenericCustomResource
 import com.redhat.devtools.intellij.kubernetes.model.util.getApiVersion
 import com.redhat.devtools.intellij.kubernetes.model.util.getVersion
 
@@ -45,10 +45,10 @@ data class ResourceKind<R : HasMetadata> private constructor(
 		}
 
 		@JvmStatic
-		fun create(spec: CustomResourceDefinitionSpec): ResourceKind<GenericResource> {
+		fun create(spec: CustomResourceDefinitionSpec): ResourceKind<GenericCustomResource> {
 			return ResourceKind(
 				removeK8sio(getApiVersion(spec.group, getVersion(spec))),
-				GenericResource::class.java,
+				GenericCustomResource::class.java,
 				spec.names.kind)
 		}
 

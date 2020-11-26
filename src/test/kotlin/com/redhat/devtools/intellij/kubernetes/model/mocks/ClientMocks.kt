@@ -14,8 +14,6 @@ import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.whenever
 import io.fabric8.kubernetes.api.model.Context
-import io.fabric8.kubernetes.api.model.DoneableNamespace
-import io.fabric8.kubernetes.api.model.DoneablePod
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.NamedContext
 import io.fabric8.kubernetes.api.model.Namespace
@@ -33,13 +31,13 @@ import io.fabric8.kubernetes.client.dsl.MixedOperation
 import io.fabric8.kubernetes.client.dsl.NonNamespaceOperation
 import io.fabric8.kubernetes.client.dsl.PodResource
 import io.fabric8.kubernetes.client.dsl.Resource
-import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.custom.GenericResource
+import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.custom.GenericCustomResource
 import com.redhat.devtools.intellij.kubernetes.model.util.getApiVersion
 import org.mockito.ArgumentMatchers
 import java.net.URL
 
 typealias NamespaceListOperation =
-        NonNamespaceOperation<Namespace, NamespaceList, DoneableNamespace, Resource<Namespace, DoneableNamespace>>
+        NonNamespaceOperation<Namespace, NamespaceList, Resource<Namespace>>
 
 object ClientMocks {
 
@@ -82,9 +80,9 @@ object ClientMocks {
         return namespaceClient
     }
 
-    fun inNamespace(mixedOp: MixedOperation<Pod, PodList, DoneablePod, PodResource<Pod, DoneablePod>>)
-            : NonNamespaceOperation<Pod, PodList, DoneablePod, PodResource<Pod, DoneablePod>> {
-        val nonNamespaceOperation: NonNamespaceOperation<Pod, PodList, DoneablePod, PodResource<Pod, DoneablePod>>
+    fun inNamespace(mixedOp: MixedOperation<Pod, PodList, PodResource<Pod>>)
+            : NonNamespaceOperation<Pod, PodList, PodResource<Pod>> {
+        val nonNamespaceOperation: NonNamespaceOperation<Pod, PodList, PodResource<Pod>>
                 = mock()
         whenever(mixedOp.inNamespace(ArgumentMatchers.anyString()))
             .doReturn(nonNamespaceOperation)
@@ -92,14 +90,14 @@ object ClientMocks {
     }
 
     fun pods(client: NamespacedKubernetesClient)
-            : MixedOperation<Pod, PodList, DoneablePod, PodResource<Pod, DoneablePod>> {
-        val podsOp = mock<MixedOperation<Pod, PodList, DoneablePod, PodResource<Pod, DoneablePod>>>()
+            : MixedOperation<Pod, PodList, PodResource<Pod>> {
+        val podsOp = mock<MixedOperation<Pod, PodList, PodResource<Pod>>>()
         whenever(client.pods())
             .doReturn(podsOp)
         return podsOp
     }
 
-    fun list(nonNamespaceOperation: NonNamespaceOperation<Pod, PodList, DoneablePod, PodResource<Pod, DoneablePod>>)
+    fun list(nonNamespaceOperation: NonNamespaceOperation<Pod, PodList, PodResource<Pod>>)
             : PodList {
         val podList = mock<PodList>()
         whenever(nonNamespaceOperation.list())
@@ -108,7 +106,7 @@ object ClientMocks {
 
     }
 
-    fun list(mixedOp: MixedOperation<Pod, PodList, DoneablePod, PodResource<Pod, DoneablePod>>): PodList {
+    fun list(mixedOp: MixedOperation<Pod, PodList, PodResource<Pod>>): PodList {
         val podList = mock<PodList>()
         whenever(mixedOp.list())
             .doReturn(podList)
@@ -121,8 +119,8 @@ object ClientMocks {
             .doReturn(returnedPods)
     }
 
-    fun withName(mixedOp: MixedOperation<Pod, PodList, DoneablePod, PodResource<Pod, DoneablePod>>, pod: Pod) {
-        val podResource = mock<PodResource<Pod, DoneablePod>>()
+    fun withName(mixedOp: MixedOperation<Pod, PodList, PodResource<Pod>>, pod: Pod) {
+        val podResource = mock<PodResource<Pod>>()
         whenever(podResource.get())
             .doReturn(pod)
         whenever(mixedOp.withName(pod.metadata.name))
@@ -226,7 +224,7 @@ object ClientMocks {
         definition: CustomResourceDefinition,
         uid: String? = System.currentTimeMillis().toString(),
         selfLink: String? = "/apis/$namespace/customresources/$name"
-    ): GenericResource {
+    ): GenericCustomResource {
         val metadata = objectMeta(name, namespace, uid, selfLink)
         val apiVersion = getApiVersion(
             definition.spec.group,

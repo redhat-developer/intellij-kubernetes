@@ -15,7 +15,6 @@ import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.apiextensions.v1beta1.CustomResourceDefinition
 import io.fabric8.kubernetes.client.KubernetesClient
 import io.fabric8.kubernetes.client.KubernetesClientException
-import io.fabric8.kubernetes.client.Watch
 import io.fabric8.kubernetes.client.Watcher
 import io.fabric8.kubernetes.client.dsl.Watchable
 import com.redhat.devtools.intellij.kubernetes.model.resource.NonNamespacedResourcesProvider
@@ -25,26 +24,26 @@ import java.util.function.Supplier
 class NonNamespacedCustomResourcesProvider(
     definition: CustomResourceDefinition,
     client: KubernetesClient
-) : NonNamespacedResourcesProvider<GenericResource, KubernetesClient>(client) {
+) : NonNamespacedResourcesProvider<GenericCustomResource, KubernetesClient>(client) {
 
     override val kind = ResourceKind.create(definition.spec)
     private val operation = CustomResourceRawOperation(client, definition)
 
-    override fun loadAllResources(): List<GenericResource> {
+    override fun loadAllResources(): List<GenericCustomResource> {
         val resourcesList = operation.get().list()
-        return GenericResourceFactory.createResources(resourcesList)
+        return GenericCustomResourceFactory.createResources(resourcesList)
     }
 
-    override fun getWatchable(): Supplier<Watchable<Watch, Watcher<GenericResource>>?> {
+    override fun getWatchable(): Supplier<Watchable<Watcher<GenericCustomResource>>?> {
         return Supplier {
-            GenericResourceWatchable { options, customResourceWatcher ->
+            GenericCustomResourceWatchable { options, customResourceWatcher ->
                 operation.get().watch(null, null, null, options, customResourceWatcher)
             }
         }
     }
 
     override fun delete(resources: List<HasMetadata>): Boolean {
-        val toDelete = resources as? List<GenericResource> ?: return false
+        val toDelete = resources as? List<GenericCustomResource> ?: return false
         return toDelete.stream()
             .map { delete(it.metadata.name) }
             .reduce(false, { thisDelete, thatDelete -> thisDelete || thatDelete })

@@ -223,7 +223,7 @@ class ResourceWatchTest {
     ): ResourceWatch(addOperation, removeOperation, replaceOperation, watchOperations, watchOperationsRunner) {
         public override val watches: ConcurrentHashMap<ResourceKind<*>, Watch?> = spy(super.watches)
 
-        override fun watch(kind: ResourceKind<out HasMetadata>, supplier: Supplier<out Watchable<Watch, out Watcher<in HasMetadata>>?>) {
+        override fun watch(kind: ResourceKind<out HasMetadata>, supplier: Supplier<out Watchable<Watcher<in HasMetadata>>?>) {
             super.watch(kind, supplier)
             val watchOperation = watchOperations.pollFirst(10, TimeUnit.SECONDS)
             // run in sequence, not in separate thread
@@ -247,7 +247,7 @@ class ResourceWatchTest {
         }
     }
 
-    private class WatchableFake (var watch: WatchFake = WatchFake()) : Watchable<Watch, Watcher<in HasMetadata>> {
+    private class WatchableFake (var watch: WatchFake = WatchFake()) : Watchable<Watcher<in HasMetadata>> {
 
         var watcher: Watcher<in HasMetadata>? = null
 

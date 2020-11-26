@@ -48,7 +48,7 @@ import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.Secrets
 import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.ServicesProvider
 import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.StatefulSetsProvider
 import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.StorageClassesProvider
-import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.custom.GenericResource
+import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.custom.GenericCustomResource
 import com.redhat.devtools.intellij.kubernetes.model.resourceName
 import com.redhat.devtools.intellij.kubernetes.tree.KubernetesStructure.Folders.CONFIGURATION
 import com.redhat.devtools.intellij.kubernetes.tree.KubernetesStructure.Folders.CONFIG_MAPS
@@ -494,7 +494,7 @@ class KubernetesStructure(model: IResourceModel) : AbstractTreeStructureContribu
 			is Namespace,
 			is Endpoint,
 			is StorageClass,
-			is GenericResource -> LeafState.ALWAYS
+			is GenericCustomResource -> LeafState.ALWAYS
 			else -> null
 		}
 	}

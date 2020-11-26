@@ -29,7 +29,6 @@ import io.fabric8.kubernetes.api.model.Pod
 import io.fabric8.kubernetes.api.model.Secret
 import io.fabric8.kubernetes.api.model.apiextensions.v1beta1.CustomResourceDefinition
 import io.fabric8.kubernetes.client.NamespacedKubernetesClient
-import io.fabric8.kubernetes.client.Watch
 import io.fabric8.kubernetes.client.Watcher
 import io.fabric8.kubernetes.client.dsl.Watchable
 import org.assertj.core.api.Assertions.assertThat
@@ -57,12 +56,11 @@ import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.AllPods
 import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.NamespacesProvider
 import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.NodesProvider
 import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.ServicesProvider
-import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.custom.GenericResource
+import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.custom.GenericCustomResource
 import com.redhat.devtools.intellij.kubernetes.model.util.Clients
 import com.redhat.devtools.intellij.kubernetes.model.util.MultiResourceException
 import org.junit.Before
 import org.junit.Test
-import org.mockito.Mockito
 import java.util.function.Supplier
 
 class KubernetesContextTest {
@@ -73,8 +71,8 @@ class KubernetesContextTest {
 	private val currentNamespace = NAMESPACE2
 	private val client: NamespacedKubernetesClient = client(currentNamespace.metadata.name, allNamespaces)
 
-	private val namespaceWatchable: Watchable<Watch, Watcher<Namespace>> = mock()
-	private val namespacesWatchSupplier: Supplier<Watchable<Watch, Watcher<Namespace>>?> = Supplier { namespaceWatchable }
+	private val namespaceWatchable: Watchable<Watcher<Namespace>> = mock()
+	private val namespacesWatchSupplier: Supplier<Watchable<Watcher<Namespace>>?> = Supplier { namespaceWatchable }
 	private val namespacesProvider = nonNamespacedResourceProvider<Namespace, NamespacedKubernetesClient>(
 			NamespacesProvider.KIND,
 			allNamespaces.toList(),
@@ -119,25 +117,25 @@ class KubernetesContextTest {
 
 	private val namespacedCustomResource1 = customResource("genericCustomResource1", "namespace1", namespacedDefinition)
 	private val namespacedCustomResource2 = customResource("genericCustomResource2", "namespace1", namespacedDefinition)
-	private val watchable1: Watchable<Watch, Watcher<GenericResource>> = mock()
-	private val watchableSupplier1: Supplier<Watchable<Watch, Watcher<GenericResource>>?> = Supplier { watchable1 }
-	private val namespacedCustomResourcesProvider: INamespacedResourcesProvider<GenericResource, NamespacedKubernetesClient> =
+	private val watchable1: Watchable<Watcher<GenericCustomResource>> = mock()
+	private val watchableSupplier1: Supplier<Watchable<Watcher<GenericCustomResource>>?> = Supplier { watchable1 }
+	private val namespacedCustomResourcesProvider: INamespacedResourcesProvider<GenericCustomResource, NamespacedKubernetesClient> =
 			namespacedResourceProvider(
 					ResourceKind.create(namespacedDefinition.spec),
 					listOf(namespacedCustomResource1, namespacedCustomResource2),
 					currentNamespace,
 					watchableSupplier1)
-	private val nonNamespacedCustomResource1 = resource<GenericResource>("genericCustomResource1", "smurfington")
-	private val watchable2: Watchable<Watch, Watcher<GenericResource>> = mock()
-	private val watchableSupplier2: Supplier<Watchable<Watch, Watcher<GenericResource>>?> = Supplier { watchable2 }
-	private val nonNamespacedCustomResourcesProvider: INonNamespacedResourcesProvider<GenericResource, NamespacedKubernetesClient> =
+	private val nonNamespacedCustomResource1 = resource<GenericCustomResource>("genericCustomResource1", "smurfington")
+	private val watchable2: Watchable<Watcher<GenericCustomResource>> = mock()
+	private val watchableSupplier2: Supplier<Watchable<Watcher<GenericCustomResource>>?> = Supplier { watchable2 }
+	private val nonNamespacedCustomResourcesProvider: INonNamespacedResourcesProvider<GenericCustomResource, NamespacedKubernetesClient> =
 			nonNamespacedResourceProvider(
-					ResourceKind.create(GenericResource::class.java),
+					ResourceKind.create(GenericCustomResource::class.java),
 					listOf(nonNamespacedCustomResource1),
 					watchableSupplier2)
 
-	private val watchable3: Watchable<Watch, Watcher<in HasMetadata>> = mock()
-	private val watchableSupplier3: () -> Watchable<Watch, Watcher<in HasMetadata>>? = { watchable3 }
+	private val watchable3: Watchable<Watcher<in HasMetadata>> = mock()
+	private val watchableSupplier3: () -> Watchable<Watcher<in HasMetadata>>? = { watchable3 }
 
 	private val resourceWatch: ResourceWatch = mock()
 	private val notification: Notification = mock()
@@ -188,17 +186,17 @@ class KubernetesContextTest {
 	fun `#setCurrentNamespace should watch all namespaced providers that it stopped before`() {
 		// given
 		val captor =
-			argumentCaptor<Collection<Pair<ResourceKind<out HasMetadata>, Supplier<Watchable<Watch, Watcher<in HasMetadata>>?>>>>()
+			argumentCaptor<Collection<Pair<ResourceKind<out HasMetadata>, Supplier<Watchable<Watcher<in HasMetadata>>?>>>>()
 		val removed: Collection<ResourceKind<out HasMetadata>> =
 			context.namespacedProviders.values
 				.map { it.kind }
 		whenever(context.watch.ignoreAll(any()))
 			.doReturn(removed)
-		val reWatched: Array<Pair<ResourceKind<out HasMetadata>, Supplier<Watchable<Watch, Watcher<in HasMetadata>>?>>> =
+		val reWatched: Array<Pair<ResourceKind<out HasMetadata>, Supplier<Watchable<Watcher<in HasMetadata>>?>>> =
 			context.namespacedProviders.values
 				.filter { removed.contains(it.kind) }
 				.map { Pair(it.kind, it.getWatchable()) }
-				.toTypedArray() as Array<Pair<ResourceKind<out HasMetadata>, Supplier<Watchable<Watch, Watcher<in HasMetadata>>?>>>
+				.toTypedArray() as Array<Pair<ResourceKind<out HasMetadata>, Supplier<Watchable<Watcher<in HasMetadata>>?>>>
 		// when
 		context.setCurrentNamespace(NAMESPACE1.metadata.name)
 		// then
@@ -210,7 +208,7 @@ class KubernetesContextTest {
 	fun `#setCurrentNamespace should NOT watch provider that is not contained it stopped`() {
 		// given
 		val captor =
-			argumentCaptor<Collection<Pair<ResourceKind<out HasMetadata>, Supplier<Watchable<Watch, Watcher<in HasMetadata>>?>>>>()
+			argumentCaptor<Collection<Pair<ResourceKind<out HasMetadata>, Supplier<Watchable<Watcher<in HasMetadata>>?>>>>()
 		val stopped: Collection<ResourceKind<*>> = listOf(danglingSecretsProvider.kind)
 		whenever(context.watch.ignoreAll(any()))
 			.thenReturn(stopped)
@@ -513,7 +511,7 @@ class KubernetesContextTest {
 		context.watch(ResourceKind.create(namespacedDefinition))
 		// then
 		verify(context.watch, times(1)).watch(namespacedCustomResourcesProvider.kind, watchableSupplier1
-				as Supplier<Watchable<Watch, Watcher<in HasMetadata>>?>)
+				as Supplier<Watchable<Watcher<in HasMetadata>>?>)
 	}
 
 	@Test
@@ -526,7 +524,7 @@ class KubernetesContextTest {
 		context.watch(ResourceKind.create(clusterwideDefinition))
 		// then
 		verify(context.watch, times(1)).watch(nonNamespacedCustomResourcesProvider.kind, watchableSupplier2
-				as Supplier<Watchable<Watch, Watcher<in HasMetadata>>?>)
+				as Supplier<Watchable<Watcher<in HasMetadata>>?>)
 	}
 
 	@Test
@@ -915,7 +913,7 @@ class KubernetesContextTest {
 	private fun givenCustomResourceProvider(
 			definition: CustomResourceDefinition,
 			definitionProvider: IResourcesProvider<CustomResourceDefinition>,
-			resourceProvider: IResourcesProvider<GenericResource>?) {
+			resourceProvider: IResourcesProvider<GenericCustomResource>?) {
 		whenever(definitionProvider.remove(definition))
 			.doReturn(true)
 
@@ -939,15 +937,15 @@ class KubernetesContextTest {
 	}
 
 	class TestableKubernetesContext(
-			observable: ModelChangeObservable,
-			client: NamespacedKubernetesClient,
-			private val internalResourceProviders: List<IResourcesProvider<out HasMetadata>>,
-			private val extensionResourcesProviders: List<IResourcesProvider<out HasMetadata>>,
-			private val customResourcesProviders: Pair<
-					INamespacedResourcesProvider<GenericResource, NamespacedKubernetesClient>,
-					INonNamespacedResourcesProvider<GenericResource, NamespacedKubernetesClient>>,
-			public override var watch: ResourceWatch,
-			override val notification: Notification)
+		observable: ModelChangeObservable,
+		client: NamespacedKubernetesClient,
+		private val internalResourceProviders: List<IResourcesProvider<out HasMetadata>>,
+		private val extensionResourcesProviders: List<IResourcesProvider<out HasMetadata>>,
+		private val customResourcesProviders: Pair<
+					INamespacedResourcesProvider<GenericCustomResource, NamespacedKubernetesClient>,
+					INonNamespacedResourcesProvider<GenericCustomResource, NamespacedKubernetesClient>>,
+		public override var watch: ResourceWatch,
+		override val notification: Notification)
 		: KubernetesContext(observable, client, mock()) {
 
 		public override val namespacedProviders
@@ -975,7 +973,7 @@ class KubernetesContextTest {
 		public override fun createCustomResourcesProvider(
 			definition: CustomResourceDefinition,
 			resourceIn: ResourcesIn)
-				: IResourcesProvider<GenericResource> {
+				: IResourcesProvider<GenericCustomResource> {
 			return when(resourceIn) {
 				ResourcesIn.CURRENT_NAMESPACE ->
 					customResourcesProviders.first

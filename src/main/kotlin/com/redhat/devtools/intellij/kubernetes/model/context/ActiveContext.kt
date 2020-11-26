@@ -18,7 +18,6 @@ import io.fabric8.kubernetes.api.model.apiextensions.v1beta1.CustomResourceDefin
 import io.fabric8.kubernetes.api.model.apiextensions.v1beta1.CustomResourceDefinitionSpec
 import io.fabric8.kubernetes.client.KubernetesClient
 import io.fabric8.kubernetes.client.KubernetesClientException
-import io.fabric8.kubernetes.client.Watch
 import io.fabric8.kubernetes.client.Watcher
 import io.fabric8.kubernetes.client.dsl.Watchable
 import com.redhat.devtools.intellij.kubernetes.model.IModelChangeObservable
@@ -33,7 +32,7 @@ import com.redhat.devtools.intellij.kubernetes.model.resource.INonNamespacedReso
 import com.redhat.devtools.intellij.kubernetes.model.resource.IResourcesProvider
 import com.redhat.devtools.intellij.kubernetes.model.resource.IResourcesProviderFactory
 import com.redhat.devtools.intellij.kubernetes.model.resource.ResourceKind
-import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.custom.GenericResource
+import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.custom.GenericCustomResource
 import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.custom.NamespacedCustomResourcesProvider
 import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.custom.NonNamespacedCustomResourcesProvider
 import com.redhat.devtools.intellij.kubernetes.model.util.Clients
@@ -57,7 +56,7 @@ interface IActiveContext<N: HasMetadata, C: KubernetesClient>: IContext {
     fun getCurrentNamespace(): String?
     fun isCurrentNamespace(resource: HasMetadata): Boolean
     fun <R: HasMetadata> getAllResources(kind: ResourceKind<R>, resourcesIn: ResourcesIn): Collection<R>
-    fun getAllResources(definition: CustomResourceDefinition): Collection<GenericResource>
+    fun getAllResources(definition: CustomResourceDefinition): Collection<GenericCustomResource>
     fun watch(kind: ResourceKind<out HasMetadata>)
     fun watch(definition: CustomResourceDefinition)
     fun add(resource: HasMetadata): Boolean
@@ -170,9 +169,9 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
     }
 
     private fun setProvider(
-            provider: IResourcesProvider<out HasMetadata>,
-            kind: ResourceKind<GenericResource>,
-            resourcesIn: ResourcesIn
+		provider: IResourcesProvider<out HasMetadata>,
+		kind: ResourceKind<GenericCustomResource>,
+		resourcesIn: ResourcesIn
     ) {
         when (resourcesIn) {
             CURRENT_NAMESPACE ->
@@ -194,11 +193,11 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
         }
     }
 
-    private fun getProvider(definition: CustomResourceDefinition): IResourcesProvider<GenericResource> {
+    private fun getProvider(definition: CustomResourceDefinition): IResourcesProvider<GenericCustomResource> {
         val kind = ResourceKind.create(definition.spec)
         val resourcesIn = toResourcesIn(definition.spec)
         synchronized(this) {
-            var provider: IResourcesProvider<GenericResource>? = getProvider(kind, resourcesIn)
+            var provider: IResourcesProvider<GenericCustomResource>? = getProvider(kind, resourcesIn)
             if (provider == null) {
                 provider = createCustomResourcesProvider(definition, kind)
             }
@@ -206,14 +205,14 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
         }
     }
 
-    override fun getAllResources(definition: CustomResourceDefinition): Collection<GenericResource> {
+    override fun getAllResources(definition: CustomResourceDefinition): Collection<GenericCustomResource> {
         return getProvider(definition).allResources
     }
 
     private fun createCustomResourcesProvider(
             definition: CustomResourceDefinition,
-            kind: ResourceKind<GenericResource>)
-            : IResourcesProvider<GenericResource> {
+            kind: ResourceKind<GenericCustomResource>)
+            : IResourcesProvider<GenericCustomResource> {
         synchronized(this) {
             val resourceIn = toResourcesIn(definition.spec)
             val provider = createCustomResourcesProvider(definition, resourceIn)
@@ -225,7 +224,7 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
     protected open fun createCustomResourcesProvider(
             definition: CustomResourceDefinition,
             resourceIn: ResourcesIn)
-            : IResourcesProvider<GenericResource> {
+            : IResourcesProvider<GenericCustomResource> {
         return when(resourceIn) {
             CURRENT_NAMESPACE ->
                 NamespacedCustomResourcesProvider(
@@ -282,7 +281,7 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
             .filter { kinds.contains(it.key) }
             .map { Pair(it.value.kind, it.value.getWatchable()) }
         watch.watchAll(watchables
-                as Collection<Pair<ResourceKind<out HasMetadata>, Supplier<Watchable<Watch, Watcher<in HasMetadata>>?>>>)
+                as Collection<Pair<ResourceKind<out HasMetadata>, Supplier<Watchable<Watcher<in HasMetadata>>?>>>)
     }
 
     private fun watch(provider: IResourcesProvider<*>?) {
@@ -291,7 +290,7 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
         }
 
         watch.watch(provider.kind, provider.getWatchable()
-                as Supplier<Watchable<Watch, Watcher<in HasMetadata>>?>)
+                as Supplier<Watchable<Watcher<in HasMetadata>>?>)
     }
 
     override fun add(resource: HasMetadata): Boolean {
