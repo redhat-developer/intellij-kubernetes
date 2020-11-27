@@ -35,12 +35,11 @@ import io.fabric8.kubernetes.api.model.storage.StorageClass
 import com.redhat.devtools.intellij.kubernetes.model.IResourceModel
 import com.redhat.devtools.intellij.kubernetes.model.context.KubernetesContext
 import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.custom.GenericCustomResource
-import com.redhat.devtools.intellij.kubernetes.model.util.getContainers
 import com.redhat.devtools.intellij.kubernetes.model.util.getVersion
-import com.redhat.devtools.intellij.kubernetes.model.util.isRunning
 import com.redhat.devtools.intellij.kubernetes.tree.AbstractTreeStructureContribution.DescriptorFactory
 import com.redhat.devtools.intellij.kubernetes.tree.TreeStructure.ResourceDescriptor
 import com.redhat.devtools.intellij.kubernetes.tree.TreeStructure.ResourcePropertyDescriptor
+import io.fabric8.kubernetes.client.utils.PodStatusUtil
 import javax.swing.Icon
 
 object KubernetesDescriptors {
@@ -121,7 +120,7 @@ object KubernetesDescriptors {
 		}
 
 		override fun getIcon(element: Pod): Icon? {
-			return if (element.isRunning()) {
+			return if (PodStatusUtil.isRunning(element)) {
 				IconLoader.getIcon("/icons/runningPod.svg")
 			} else {
 				IconLoader.getIcon("/icons/errorPod.svg")
@@ -180,10 +179,10 @@ object KubernetesDescriptors {
 				parent,
 				model
 		) {
-			override fun getLabel(element: Pod): String {
-				val total = element.getContainers().size
-				val ready = element.getContainers().filter { it.ready }.size
-				val state = element.status.phase
+			override fun getLabel(pod: Pod): String {
+				val total = PodStatusUtil.getContainerStatus(pod).size
+				val ready = PodStatusUtil.getContainerStatus(pod).filter { it.ready }.size
+				val state = pod.status.phase
 				return "$state ($ready/$total)"
 			}
 		}
