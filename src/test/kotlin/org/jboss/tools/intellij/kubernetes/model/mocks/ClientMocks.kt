@@ -141,11 +141,25 @@ object ClientMocks {
         }
     }
 
-    private fun kubeconfigContext(namespace: String, cluster: String, user: String): Context {
+    fun kubeconfigContext(namespace: String, cluster: String, user: String): Context {
         return mock {
             on { this.namespace } doReturn namespace
             on { this.cluster } doReturn cluster
             on { this.user } doReturn user
+        }
+    }
+
+    fun config(currentContext: NamedContext?, contexts: List<NamedContext>): Config {
+        return mock {
+            on { mock.currentContext } doReturn currentContext
+            on { mock.contexts } doReturn contexts
+        }
+    }
+
+    fun apiConfig(currentContext: String, contexts: List<NamedContext>): io.fabric8.kubernetes.api.model.Config {
+        return mock {
+            on { mock.currentContext } doReturn currentContext
+            on { mock.contexts } doReturn contexts
         }
     }
 
