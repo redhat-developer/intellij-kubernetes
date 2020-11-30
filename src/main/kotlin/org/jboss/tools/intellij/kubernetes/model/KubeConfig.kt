@@ -58,14 +58,12 @@ open class KubeConfig(private val refreshOperation: () -> Unit) {
 	}
 
 	protected open fun onConfigChange(watcher: ConfigWatcher, config: io.fabric8.kubernetes.api.model.Config) {
-		val oldCurrentContext = currentContext
-		val newCurrentContext = KubeConfigUtils.getCurrentContext(config)
-		val currentContextChanged = (oldCurrentContext != newCurrentContext)
-		val allContextsChanged = (this.config?.contexts != config.contexts)
-		if (currentContextChanged
-				|| allContextsChanged) {
-			this.client = createClient()
-			refreshOperation.invoke()
+		if (ConfigHelper.areEqual(currentContext, KubeConfigUtils.getCurrentContext(config))
+			&& ConfigHelper.areEqual(this.config?.contexts, config.contexts)
+		) {
+			return
 		}
+		this.client = createClient()
+		refreshOperation.invoke()
 	}
 }
