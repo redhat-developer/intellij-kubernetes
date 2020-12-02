@@ -300,7 +300,7 @@ class KubernetesContextTest {
 		// given
 		// when
 		// there are no namespaces in current namespace
-		context.getAllResources(NodesProvider.KIND, ResourcesIn.CURRENT_NAMESPACE)
+		context.getAllResources(NamespacesProvider.KIND, ResourcesIn.CURRENT_NAMESPACE)
 		// then
 		verify(nodesProvider, never()).allResources
 	}
@@ -310,16 +310,17 @@ class KubernetesContextTest {
 		// given
 		// when
 		// namespace provider exists but for ResourceIn.NO_NAMESPACE
-		context.getAllResources(NodesProvider.KIND, ResourcesIn.CURRENT_NAMESPACE)
+		val resources = context.getAllResources(NamespacesProvider.KIND, ResourcesIn.CURRENT_NAMESPACE)
 		// then
-		verify(nodesProvider, never()).allResources
+		assertThat(resources).isEmpty()
 	}
 
 	@Test
 	fun `#getResources should return empty list if there's no provider of given resource type in given ResourceIn type`() {
 		// given
 		// when
-		val services = context.getAllResources(ServicesProvider.KIND, ResourcesIn.NO_NAMESPACE)
+		// services provider was not registered to context, it doesn't exist in context
+		val services = context.getAllResources(ServicesProvider.KIND, ResourcesIn.CURRENT_NAMESPACE)
 		// then
 		assertThat(services).isEmpty()
 	}
