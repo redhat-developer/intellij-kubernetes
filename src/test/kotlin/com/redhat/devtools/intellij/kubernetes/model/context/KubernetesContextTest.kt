@@ -178,7 +178,7 @@ class KubernetesContextTest {
 		// when
 		context.setCurrentNamespace(NAMESPACE1.metadata.name)
 		// then
-		verify(context.watch).ignoreAll(captor.capture())
+		verify(context.watch).stopWatchAll(captor.capture())
 		assertThat(captor.firstValue).containsOnly(*toRemove)
 	}
 
@@ -190,7 +190,7 @@ class KubernetesContextTest {
 		val removed: Collection<ResourceKind<out HasMetadata>> =
 			context.namespacedProviders.values
 				.map { it.kind }
-		whenever(context.watch.ignoreAll(any()))
+		whenever(context.watch.stopWatchAll(any()))
 			.doReturn(removed)
 		val reWatched: Array<Pair<ResourceKind<out HasMetadata>, Supplier<Watchable<Watcher<in HasMetadata>>?>>> =
 			context.namespacedProviders.values
@@ -210,7 +210,7 @@ class KubernetesContextTest {
 		val captor =
 			argumentCaptor<Collection<Pair<ResourceKind<out HasMetadata>, Supplier<Watchable<Watcher<in HasMetadata>>?>>>>()
 		val stopped: Collection<ResourceKind<*>> = listOf(danglingSecretsProvider.kind)
-		whenever(context.watch.ignoreAll(any()))
+		whenever(context.watch.stopWatchAll(any()))
 			.thenReturn(stopped)
 		// when
 		context.setCurrentNamespace(NAMESPACE1.metadata.name)
@@ -558,6 +558,45 @@ class KubernetesContextTest {
 	}
 
 	@Test
+	fun `#stopWatch(kind) should stop watch`() {
+		// given
+		// when
+		context.stopWatch(NamespacesProvider.KIND)
+		// then
+		verify(resourceWatch, times(1)).stopWatch(NamespacesProvider.KIND)
+	}
+
+	@Test
+	fun `#stopWatch(kind) should clear providers`() {
+		// given
+		// when
+		context.stopWatch(NamespacesProvider.KIND)
+		// then
+		verify(namespacesProvider, times(1)).invalidate()
+	}
+
+	@Test
+	fun `#stopWatch(kind) should NOT notify of changes in provider`() {
+		// given
+		// when
+		context.stopWatch(NamespacesProvider.KIND)
+		// then should not notify change because this would cause UI to reload immediately
+		// instead of only when node is expanded
+		verify(modelChange, never()).fireModified(NamespacesProvider.KIND)
+	}
+
+	@Test
+	fun `#stopWatch(definition) should stop watching) kind specified by definition`() {
+		// given
+		val definition = clusterwideDefinition
+		val kind = ResourceKind.create(definition.spec)
+		// when
+		context.stopWatch(definition)
+		// then
+		verify(context, times(1)).stopWatch(kind)
+	}
+
+	@Test
 	fun `#add(namespace) should add to namespaces provider but not to pods provider`() {
 		// given
 		val namespace = resource<Namespace>("papa smurf namespace")
@@ -792,7 +831,7 @@ class KubernetesContextTest {
 		// when
 		context.remove(clusterwideDefinition)
 		// then
-		verify(resourceWatch).ignore(nonNamespacedCustomResourcesProvider.kind)
+		verify(resourceWatch).stopWatch(nonNamespacedCustomResourcesProvider.kind)
 	}
 
 	@Test

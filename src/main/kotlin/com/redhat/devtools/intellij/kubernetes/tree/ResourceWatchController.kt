@@ -25,7 +25,7 @@ object ResourceWatchController {
 	fun install(tree: JTree) {
 		tree.addTreeExpansionListener(object: TreeExpansionListener {
 			override fun treeExpanded(event: TreeExpansionEvent) {
-				val descriptor = (event.path.lastPathComponent as DefaultMutableTreeNode).getDescriptor()
+				val descriptor = getDescriptor(event)
 				try {
 					descriptor?.watchResources()
 				} catch(e: Exception) {
@@ -34,8 +34,18 @@ object ResourceWatchController {
 			}
 
 			override fun treeCollapsed(event: TreeExpansionEvent?) {
-				// TODO: stop watching
+				val descriptor = getDescriptor(event)
+				try {
+					descriptor?.stopWatchResources()
+				} catch(e: Exception) {
+					logger<ResourceWatchController>().warn("Could not watch ${descriptor?.element} resources.", e)
+				}
 			}
+
+			private fun getDescriptor(event: TreeExpansionEvent?): TreeStructure.Descriptor<*>? {
+				return (event?.path?.lastPathComponent as? DefaultMutableTreeNode)?.getDescriptor()
+			}
+
 		})
 	}
 }

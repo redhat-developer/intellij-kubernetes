@@ -64,13 +64,13 @@ open class ResourceWatch(
         }
     }
 
-    fun ignoreAll(kinds: Collection<ResourceKind<*>>): Collection<ResourceKind<*>> {
+    fun stopWatchAll(kinds: Collection<ResourceKind<*>>): Collection<ResourceKind<*>> {
         val existing = watches.entries.filter { kinds.contains(it.key) }
         closeAll(existing)
         return existing.map { it.key }
     }
 
-    fun ignore(kind: ResourceKind<*>) {
+    fun stopWatch(kind: ResourceKind<*>) {
         try {
             logger<ResourceWatch>().debug("Closing watch for $kind resources.")
             val watch = watches[kind] ?: return

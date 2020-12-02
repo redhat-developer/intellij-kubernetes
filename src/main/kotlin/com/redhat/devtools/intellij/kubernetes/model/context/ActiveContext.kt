@@ -44,30 +44,6 @@ import com.redhat.devtools.intellij.kubernetes.model.util.toMessage
 import java.net.URL
 import java.util.function.Supplier
 
-interface IActiveContext<N: HasMetadata, C: KubernetesClient>: IContext {
-
-    enum class ResourcesIn {
-        CURRENT_NAMESPACE, ANY_NAMESPACE, NO_NAMESPACE
-    }
-
-    val masterUrl: URL
-    fun isOpenShift(): Boolean
-    fun setCurrentNamespace(namespace: String)
-    fun getCurrentNamespace(): String?
-    fun isCurrentNamespace(resource: HasMetadata): Boolean
-    fun <R: HasMetadata> getAllResources(kind: ResourceKind<R>, resourcesIn: ResourcesIn): Collection<R>
-    fun getAllResources(definition: CustomResourceDefinition): Collection<GenericCustomResource>
-    fun watch(kind: ResourceKind<out HasMetadata>)
-    fun watch(definition: CustomResourceDefinition)
-    fun add(resource: HasMetadata): Boolean
-    fun remove(resource: HasMetadata): Boolean
-    fun delete(resources: List<HasMetadata>)
-    fun invalidate()
-    fun invalidate(kind: ResourceKind<*>)
-    fun replace(resource: HasMetadata): Boolean
-    fun close()
-}
-
 abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
         private val modelChange: IModelChangeObservable,
         client: C,
@@ -241,7 +217,7 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
 
     private fun removeCustomResourceProvider(resource: CustomResourceDefinition) {
         val kind = ResourceKind.create(resource.spec)
-        watch.ignore(kind)
+        watch.stopWatch(kind)
         val providers = when (toResourcesIn(resource.spec)) {
             CURRENT_NAMESPACE -> namespacedProviders
             ANY_NAMESPACE,
@@ -291,6 +267,28 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
 
         watch.watch(provider.kind, provider.getWatchable()
                 as Supplier<Watchable<Watcher<in HasMetadata>>?>)
+    }
+
+    override fun stopWatch(kind: ResourceKind<out HasMetadata>) {
+        logger<ActiveContext<*, *>>().debug("Stop watching $kind resources.")
+        watch.stopWatch(kind)
+        invalidateProviders(kind);
+    }
+
+    override fun stopWatch(definition: CustomResourceDefinition) {
+        val kind = ResourceKind.create(definition.spec)
+        stopWatch(kind)
+    }
+
+    /**
+     * Stops watching all watchables for the given namespace. Doesn't stop the cluster wide watchables nor
+     * the ones for a different namespace.
+     *
+     * @param namespace the namespace that the watchables should be stopped for
+     */
+    private fun stopWatch(namespace: String?): Collection<ResourceKind<out HasMetadata>> {
+        logger<ActiveContext<*, *>>().debug("Stopping all watches for namespace $namespace.")
+        return watch.stopWatchAll(namespacedProviders(namespace).map { it.kind })
     }
 
     override fun add(resource: HasMetadata): Boolean {
@@ -397,20 +395,13 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
 
     override fun invalidate(kind: ResourceKind<*>) {
         logger<ActiveContext<*, *>>().debug("Invalidating resource providers for $kind resources.")
-        namespacedProviders[kind]?.invalidate()
-        nonNamespacedProviders[kind]?.invalidate()
+        invalidateProviders(kind)
         modelChange.fireModified(kind)
     }
 
-    /**
-     * Stops watching all watchables for the given namespace. Doesn't stop the cluster wide watchables nor
-     * the ones for a different namespace.
-     *
-     * @param namespace the namespace that the watchables should be stopped for
-     */
-    private fun stopWatch(namespace: String?): Collection<ResourceKind<out HasMetadata>> {
-        logger<ActiveContext<*, *>>().debug("Stopping all watches for namespace $namespace.")
-        return watch.ignoreAll(namespacedProviders(namespace).map { it.kind })
+    private fun invalidateProviders(kind: ResourceKind<*>) {
+        namespacedProviders[kind]?.invalidate()
+        nonNamespacedProviders[kind]?.invalidate()
     }
 
     protected open fun namespacedProviders(namespace: String?): List<INamespacedResourcesProvider<out HasMetadata, C>> {
