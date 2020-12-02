@@ -16,6 +16,7 @@ import com.fasterxml.jackson.databind.DeserializationContext
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer
 import com.fasterxml.jackson.databind.module.SimpleModule
+import com.intellij.openapi.diagnostic.logger
 import io.fabric8.kubernetes.api.model.ListOptions
 import io.fabric8.kubernetes.api.model.ListOptionsBuilder
 import io.fabric8.kubernetes.client.KubernetesClientException
@@ -60,7 +61,8 @@ class GenericResourceWatchable(private val watchSupplier: (options: ListOptions,
 			return mapper.readValue(json, GenericResource::class.java)
 		}
 
-		override fun onClose(exception: KubernetesClientException?) {
+		override fun onClose(e: KubernetesClientException?) {
+			logger<DelegatingResourceWatcher>().debug("Watcher $target was closed.", e)
 		}
 
 		inner class GenericCustomResourceDeserializer @JvmOverloads constructor(vc: Class<*>? = null) : StdDeserializer<GenericResource?>(vc) {

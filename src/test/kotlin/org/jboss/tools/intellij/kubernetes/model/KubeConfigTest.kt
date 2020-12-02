@@ -280,6 +280,7 @@ class KubeConfigTest {
 	) : KubeConfig(refreshOperation) {
 
 		public override fun initWatcher() {
+			// test fake, should not watch config file
 		}
 
 		public override fun createClient(): ConfigAware<Config> {

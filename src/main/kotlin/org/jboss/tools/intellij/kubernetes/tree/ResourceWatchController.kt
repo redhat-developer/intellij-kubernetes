@@ -34,6 +34,7 @@ object ResourceWatchController {
 			}
 
 			override fun treeCollapsed(event: TreeExpansionEvent?) {
+
 			}
 		})
 	}

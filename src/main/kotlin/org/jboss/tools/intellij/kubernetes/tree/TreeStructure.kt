@@ -267,7 +267,9 @@ open class TreeStructure(
             }
         }
 
-        open fun watchResources() {}
+        open fun watchResources() {
+            // empty default implementation
+        }
 
     }
 
