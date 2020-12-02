@@ -54,6 +54,7 @@ interface IActiveContext<N: HasMetadata, C: KubernetesClient>: IContext {
     fun watch(definition: CustomResourceDefinition)
     fun add(resource: HasMetadata): Boolean
     fun remove(resource: HasMetadata): Boolean
+    fun invalidate()
     fun invalidate(kind: ResourceKind<*>)
     fun replace(resource: HasMetadata): Boolean
     fun close()
