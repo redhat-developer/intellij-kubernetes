@@ -160,6 +160,39 @@ class ContextsTest {
 	}
 
 	@Test
+	fun `#setCurrentContext(context) should set new current context in #allContexts`() {
+		// given
+		val config = createKubeConfig(null, listOf(namedContext1, namedContext2, namedContext3))
+		val contexts = spy(TestableContext(modelChange, contextFactory, config))
+		assertThat(contexts.current).isNull()
+		val newCurrentContext = activeContext(namespace, namedContext3)
+		contexts.all // create all contexts
+		doReturn(newCurrentContext)
+			.whenever(contextFactory).invoke(any(), anyOrNull()) // returned on 2nd call
+		// when
+		contexts.setCurrent(newCurrentContext)
+		// then
+		assertThat(contexts.all).contains(newCurrentContext)
+	}
+
+	@Test
+	fun `#setCurrentContext(context) should return 'true' if new context was set`() {
+		// given
+		val config = createKubeConfig(null, listOf(namedContext1, namedContext2, namedContext3))
+		val contexts = spy(TestableContext(modelChange, contextFactory, config))
+		assertThat(contexts.current).isNull()
+		val newCurrentContext = activeContext(namespace, namedContext3)
+		contexts.all // create all contexts
+		doReturn(newCurrentContext)
+			.whenever(contextFactory).invoke(any(), anyOrNull()) // returned on 2nd call
+		// when
+		val currentContextIsSet = contexts.setCurrent(newCurrentContext)
+		// then
+		assertThat(contexts.current).isEqualTo(newCurrentContext)
+		assertThat(currentContextIsSet).isTrue()
+	}
+
+	@Test
 	fun `#setCurrentContext(context) should replace context in #allContexts`() {
 		// given
 		val newCurrentContext = activeContext(namespace, namedContext3)
@@ -174,39 +207,6 @@ class ContextsTest {
 		contexts.setCurrent(newCurrentContext)
 		// then
 		assertThat(contexts.all).contains(newCurrentContext)
-	}
-
-	@Test
-	fun `#setCurrentContext(context) should set new current context in #allContexts`() {
-		// given
-		val newCurrentContext = activeContext(namespace, namedContext3)
-		contexts.all // create all contexts
-		val currentContext = contexts.current
-		assertThat(currentContext).isNotEqualTo(newCurrentContext)
-		assertThat(contexts.all).contains(currentContext)
-		assertThat(contexts.all).doesNotContain(newCurrentContext)
-		doReturn(newCurrentContext)
-			.whenever(contextFactory).invoke(any(), anyOrNull()) // returned on 2nd call
-		// when
-		contexts.setCurrent(newCurrentContext)
-		// then
-		assertThat(contexts.all).contains(newCurrentContext)
-	}
-
-	@Test
-	fun `#setCurrentContext(context) should remove current context in #allContexts`() {
-		// given
-		val newCurrentContext = activeContext(namespace, namedContext3)
-		contexts.all // create all contexts
-		val currentContext = contexts.current
-		assertThat(currentContext).isNotEqualTo(newCurrentContext)
-		assertThat(contexts.all).contains(currentContext)
-		assertThat(contexts.all).doesNotContain(newCurrentContext)
-		doReturn(newCurrentContext)
-			.whenever(contextFactory).invoke(any(), anyOrNull()) // returned on 2nd call
-		// when
-		contexts.setCurrent(newCurrentContext)
-		// then
 		assertThat(contexts.all).doesNotContain(currentContext)
 	}
 
@@ -222,21 +222,6 @@ class ContextsTest {
 		contexts.setCurrent(newCurrentContext)
 		// then
 		verify(currentContext).close()
-	}
-
-	@Test
-	fun `#setCurrentContext(context) should return 'true' if new context was set`() {
-		// given
-		val newCurrentContext = activeContext(namespace, namedContext3)
-		contexts.all // create all contexts
-		val currentContext = contexts.current!!
-		doReturn(newCurrentContext)
-			.whenever(contextFactory).invoke(any(), anyOrNull()) // returned on 2nd call
-		// when
-		val currentContextIsSet = contexts.setCurrent(newCurrentContext)
-		// then
-		assertThat(contexts.current).isEqualTo(newCurrentContext)
-		assertThat(currentContextIsSet).isTrue()
 	}
 
     private fun createKubeConfig(currentContext: NamedContext?, allContexts: List<NamedContext>): KubeConfig {
