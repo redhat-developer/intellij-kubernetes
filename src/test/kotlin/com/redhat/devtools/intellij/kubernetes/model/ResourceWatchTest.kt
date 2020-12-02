@@ -113,7 +113,7 @@ class ResourceWatchTest {
     fun `#ignore() should close removed watch`() {
         // given
         // when starting 2nd time
-        resourceWatch.ignore(podKind)
+        resourceWatch.stopWatch(podKind)
         // then
         assertThat(watchable1.watch.isClosed()).isTrue()
     }
@@ -124,7 +124,7 @@ class ResourceWatchTest {
         val notRemoved = WatchableFake()
         resourceWatch.watch(hasMetaKind1, Supplier { notRemoved })
         // when starting 2nd time
-        resourceWatch.ignore(podKind)
+        resourceWatch.stopWatch(podKind)
         // then
         assertThat(notRemoved.watch.isClosed()).isFalse()
     }
@@ -136,7 +136,7 @@ class ResourceWatchTest {
         resourceWatch.watch(hasMetaKind1, Supplier { WatchableFake(toRemove) })
         assertThat(resourceWatch.watches.values).contains(toRemove)
         // when starting 2nd time
-        resourceWatch.ignore(hasMetaKind1)
+        resourceWatch.stopWatch(hasMetaKind1)
         // then
         assertThat(resourceWatch.watches.values).doesNotContain(toRemove)
     }
@@ -152,7 +152,7 @@ class ResourceWatchTest {
         resourceWatch.watch(hasMetaKind1, Supplier { watchable1 })
         resourceWatch.watch(hasMetaKind2, Supplier { watchable2 })
         // when
-        resourceWatch.ignoreAll(listOf(hasMetaKind1, hasMetaKind2))
+        resourceWatch.stopWatchAll(listOf(hasMetaKind1, hasMetaKind2))
         // then watchable2 was closed
         verify(watch1).close()
         verify(watch2).close()

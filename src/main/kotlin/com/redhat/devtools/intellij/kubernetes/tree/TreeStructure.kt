@@ -27,9 +27,8 @@ import com.redhat.devtools.intellij.kubernetes.model.context.IContext
 import com.redhat.devtools.intellij.kubernetes.model.resource.ResourceKind
 import com.redhat.devtools.intellij.kubernetes.model.util.hasDeletionTimestamp
 import com.redhat.devtools.intellij.kubernetes.model.util.isWillBeDeleted
-import java.util.*
+import java.util.Optional
 import javax.swing.Icon
-
 
 /**
  * A factory that creates nodes (PresentableNodeDescriptor) for a (tree-) model.
@@ -206,6 +205,11 @@ open class TreeStructure(
             val kind = element?.kind ?: return
             model.watch(kind)
         }
+
+        override fun stopWatchResources() {
+            val kind = element?.kind ?: return
+            model.stopWatch(kind)
+        }
     }
 
     private class ErrorDescriptor(exception: java.lang.Exception, parent: NodeDescriptor<*>?, model: IResourceModel)
@@ -289,6 +293,9 @@ open class TreeStructure(
             // empty default implementation
         }
 
+        open fun stopWatchResources() {
+            // empty default implementation
+        }
     }
 
     data class Folder(val label: String, val kind: ResourceKind<out HasMetadata>?)

@@ -33,14 +33,16 @@ interface IResourceModel {
     fun resources(definition: CustomResourceDefinition): ListableCustomResources
     fun watch(kind: ResourceKind<out HasMetadata>)
     fun watch(definition: CustomResourceDefinition)
+    fun stopWatch(kind: ResourceKind<out HasMetadata>)
+    fun stopWatch(definition: CustomResourceDefinition)
     fun invalidate(element: Any?)
     fun delete(resources: List<HasMetadata>)
     fun addListener(listener: ModelChangeObservable.IResourceChangeListener)
 }
 
 open class ResourceModel(
-        private val observable: IModelChangeObservable = ModelChangeObservable(),
-        private val contexts: IContexts = Contexts(observable, ::create)
+    private val observable: IModelChangeObservable = com.redhat.devtools.intellij.kubernetes.model.ModelChangeObservable(),
+    private val contexts: IContexts = Contexts(observable, ::create)
 ) : IResourceModel {
 
     override fun setCurrentContext(context: IContext) {
@@ -122,6 +124,14 @@ open class ResourceModel(
 
     override fun watch(definition: CustomResourceDefinition) {
         contexts.current?.watch(definition)
+    }
+
+    override fun stopWatch(kind: ResourceKind<out HasMetadata>) {
+        contexts.current?.stopWatch(kind)
+    }
+
+    override fun stopWatch(definition: CustomResourceDefinition) {
+        contexts.current?.stopWatch(definition)
     }
 
     override fun invalidate(element: Any?) {
