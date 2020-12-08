@@ -36,7 +36,6 @@ import org.jboss.tools.intellij.kubernetes.model.resource.kubernetes.custom.Gene
 import org.jboss.tools.intellij.kubernetes.model.resource.kubernetes.custom.NamespacedCustomResourcesProvider
 import org.jboss.tools.intellij.kubernetes.model.resource.kubernetes.custom.NonNamespacedCustomResourcesProvider
 import org.jboss.tools.intellij.kubernetes.model.util.Clients
-import java.io.IOException
 import java.net.URL
 import java.util.function.Supplier
 
