@@ -10,28 +10,29 @@
  ******************************************************************************/
 package org.jboss.tools.intellij.kubernetes.model.resource.kubernetes.custom
 
+import com.intellij.openapi.diagnostic.logger
+import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.apiextensions.v1beta1.CustomResourceDefinition
 import io.fabric8.kubernetes.client.KubernetesClient
+import io.fabric8.kubernetes.client.KubernetesClientException
 import io.fabric8.kubernetes.client.Watch
 import io.fabric8.kubernetes.client.Watcher
 import io.fabric8.kubernetes.client.dsl.Watchable
-import io.fabric8.kubernetes.client.dsl.base.CustomResourceDefinitionContext
 import org.jboss.tools.intellij.kubernetes.model.resource.NamespacedResourcesProvider
 import org.jboss.tools.intellij.kubernetes.model.resource.ResourceKind
-import org.jboss.tools.intellij.kubernetes.model.util.createContext
 import java.util.function.Supplier
 
 class NamespacedCustomResourcesProvider(
 	definition: CustomResourceDefinition,
 	namespace: String?,
-	client: KubernetesClient)
-    : NamespacedResourcesProvider<GenericResource, KubernetesClient>(namespace, client) {
+	client: KubernetesClient
+) : NamespacedResourcesProvider<GenericResource, KubernetesClient>(namespace, client) {
 
     override val kind = ResourceKind.create(definition.spec)
-    private val context: CustomResourceDefinitionContext =  createContext(definition)
+    private val operation = CustomResourceRawOperation(client, definition)
 
     override fun loadAllResources(namespace: String): List<GenericResource> {
-        val resourcesList = client.customResource(context).list(namespace)
+        val resourcesList = operation.get().list(namespace)
         return GenericResourceFactory.createResources(resourcesList)
     }
 
@@ -41,9 +42,26 @@ class NamespacedCustomResourcesProvider(
         }
         return Supplier {
 			GenericResourceWatchable { options, customResourceWatcher ->
-				val watchable = client.customResource(context)
-				watchable.watch(namespace, null, null, options, customResourceWatcher)
+				operation.get().watch(namespace, null, null, options, customResourceWatcher)
 			}
         }
     }
+
+	override fun delete(resources: List<HasMetadata>): Boolean {
+		val toDelete = resources as? List<GenericResource> ?: return false
+		return toDelete.stream()
+			.map { delete(it.metadata.namespace, it.metadata.name) }
+			.reduce(false, { thisDelete, thatDelete -> thisDelete || thatDelete })
+	}
+
+	private fun delete(namespace: String, name: String): Boolean {
+		return try {
+			operation.get().delete(namespace, name)
+			true
+		} catch(e: KubernetesClientException) {
+			logger<NonNamespacedCustomResourcesProvider>()
+				.info("Could not delete $kind custom resource named $name in namespace $namespace.", e)
+			false
+		}
+	}
 }

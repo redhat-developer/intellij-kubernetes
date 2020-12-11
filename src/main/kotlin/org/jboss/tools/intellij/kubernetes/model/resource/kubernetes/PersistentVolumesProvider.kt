@@ -14,7 +14,7 @@ import io.fabric8.kubernetes.api.model.PersistentVolume
 import io.fabric8.kubernetes.client.KubernetesClient
 import org.jboss.tools.intellij.kubernetes.model.resource.NonNamespacedResourcesProvider
 import org.jboss.tools.intellij.kubernetes.model.resource.ResourceKind
-import org.jboss.tools.intellij.kubernetes.model.resource.WatchableAndListable
+import org.jboss.tools.intellij.kubernetes.model.resource.WatchableListableDeletable
 import java.util.function.Supplier
 
 class PersistentVolumesProvider(client: KubernetesClient)
@@ -26,7 +26,7 @@ class PersistentVolumesProvider(client: KubernetesClient)
 
     override val kind = KIND
 
-    override fun getOperation(): Supplier<WatchableAndListable<PersistentVolume>> {
+    override fun getOperation(): Supplier<WatchableListableDeletable<PersistentVolume>> {
         return Supplier { client.persistentVolumes() }
     }
 }

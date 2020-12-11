@@ -17,6 +17,7 @@ import com.nhaarman.mockitokotlin2.never
 import com.nhaarman.mockitokotlin2.spy
 import com.nhaarman.mockitokotlin2.times
 import com.nhaarman.mockitokotlin2.verify
+import com.nhaarman.mockitokotlin2.whenever
 import io.fabric8.kubernetes.api.model.Pod
 import io.fabric8.kubernetes.client.KubernetesClient
 import org.assertj.core.api.Assertions.assertThat
@@ -32,7 +33,7 @@ import org.jboss.tools.intellij.kubernetes.model.mocks.ClientMocks.items
 import org.jboss.tools.intellij.kubernetes.model.mocks.ClientMocks.list
 import org.jboss.tools.intellij.kubernetes.model.mocks.ClientMocks.pods
 import org.jboss.tools.intellij.kubernetes.model.mocks.ClientMocks.resource
-import org.jboss.tools.intellij.kubernetes.model.resource.WatchableAndListable
+import org.jboss.tools.intellij.kubernetes.model.resource.WatchableListableDeletable
 import org.junit.Before
 import org.junit.Test
 import java.util.function.Supplier
@@ -87,7 +88,7 @@ class NamespacedPodsProviderTest {
     }
 
     @Test
-    fun `#getRetrieveOperation() won't return operations if namespace is null`() {
+    fun `#getOperation() won't return operations if namespace is null`() {
         // given
         provider.namespace =  null
         clearInvocations(provider)
@@ -95,6 +96,52 @@ class NamespacedPodsProviderTest {
         provider.getWatchable()
         // then
         verify(provider, never()).getOperation(any())
+    }
+
+    @Test
+    fun `#delete() deletes given pods in client`() {
+        // given
+        clearInvocations(provider)
+        // when
+        val toDelete = listOf(POD2)
+        provider.delete(toDelete)
+        // then
+        verify(client.pods().inNamespace(currentNamespace)).delete(toDelete)
+    }
+
+    @Test
+    fun `#delete() won't delete if namespace is null`() {
+        // given
+        provider.namespace =  null
+        clearInvocations(provider)
+        // when
+        provider.delete(listOf(POD2))
+        // then
+        verify(client.pods().inNamespace(currentNamespace), never()).delete(any<List<Pod>>())
+    }
+
+    @Test
+    fun `#delete() returns true if client could delete`() {
+        // given
+        clearInvocations(provider)
+        whenever(client.pods().inNamespace(currentNamespace).delete(any<List<Pod>>()))
+            .thenReturn(true)
+        // when
+        val success = provider.delete(listOf(POD2))
+        // then
+        assertThat(success).isTrue()
+    }
+
+    @Test
+    fun `#delete() returns false if client could NOT delete`() {
+        // given
+        clearInvocations(provider)
+        whenever(client.pods().inNamespace(currentNamespace).delete(any<List<Pod>>()))
+            .thenReturn(false)
+        // when
+        val success = provider.delete(listOf(POD2))
+        // then
+        assertThat(success).isFalse()
     }
 
     @Test
@@ -112,7 +159,7 @@ class NamespacedPodsProviderTest {
     }
 
     @Test
-    fun `#setNamespace(namespace) sets namespace that's used in #getRetrieveOperation(namespace)`() {
+    fun `#setNamespace(namespace) sets namespace that's used in #getOperation(namespace)`() {
         // given
         val namespace = "darth vader"
         provider.namespace =  namespace
@@ -292,7 +339,7 @@ class NamespacedPodsProviderTest {
             return super.loadAllResources(namespace)
         }
 
-        public override fun getOperation(namespace: String): Supplier<WatchableAndListable<Pod>> {
+        public override fun getOperation(namespace: String): Supplier<WatchableListableDeletable<Pod>> {
             return super.getOperation(namespace)
         }
     }

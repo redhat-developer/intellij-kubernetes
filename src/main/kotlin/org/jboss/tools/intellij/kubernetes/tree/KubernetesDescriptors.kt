@@ -94,7 +94,7 @@ object KubernetesDescriptors {
 			element: Namespace,
 			parent: NodeDescriptor<*>?,
 			model: IResourceModel)
-		: Descriptor<Namespace>(
+		: ResourceDescriptor<Namespace>(
 			element,
 			parent,
 			model
@@ -113,7 +113,7 @@ object KubernetesDescriptors {
 	}
 
 	private class PodDescriptor(pod: Pod, parent: NodeDescriptor<*>?, model: IResourceModel)
-		: Descriptor<Pod>(
+		: ResourceDescriptor<Pod>(
 			pod,
 			parent,
 			model
@@ -135,12 +135,12 @@ object KubernetesDescriptors {
 			definition: CustomResourceDefinition,
 			parent: NodeDescriptor<*>?,
 			model: IResourceModel)
-		: Descriptor<CustomResourceDefinition>(
+		: ResourceDescriptor<CustomResourceDefinition>(
 			definition,
 			parent,
 			model
 	) {
-		override fun getLabel(element: CustomResourceDefinition): String? {
+		override fun getLabel(element: CustomResourceDefinition): String {
 			return when {
 				element.spec.names.plural.isNotBlank() -> element.spec.names.plural
 				else -> element.metadata.name

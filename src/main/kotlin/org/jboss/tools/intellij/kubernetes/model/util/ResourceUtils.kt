@@ -18,6 +18,7 @@ import io.fabric8.kubernetes.model.annotation.ApiGroup
 import io.fabric8.kubernetes.model.annotation.ApiVersion
 import io.fabric8.kubernetes.model.util.Helper
 import org.jboss.tools.intellij.kubernetes.model.resource.KubernetesVersionPriority
+import java.util.stream.Collectors
 
 /**
  * returns {@code true} if the given resource has the same uid as this resource. Returns {@code false} otherwise.
@@ -77,4 +78,52 @@ fun createContext(definition: CustomResourceDefinition): CustomResourceDefinitio
 		.withPlural(definition.spec.names.plural)
 		.withKind(definition.spec.names.kind)
 		.build();
+}
+
+fun setDeleted(timestamp: String, resource: HasMetadata) {
+	resource.metadata.deletionTimestamp = timestamp
+}
+
+fun isDeleted(resource: HasMetadata?): Boolean {
+	return resource?.metadata?.deletionTimestamp != null
+}
+
+/**
+ * Returns a message listing the given resources by name while using ',' as delimiter.
+ * Duplicate resources are ignored. Names that are longer than 20 characters are trimmed.
+ *
+ * @see toMessage
+ * @see trim
+ */
+fun toMessage(resources: Collection<HasMetadata>): String {
+	return resources.stream()
+		.distinct()
+		.map { toMessage(it) }
+		.collect(Collectors.joining(",\n"))
+}
+
+fun toMessage(resource: HasMetadata): String {
+	return "${resource.kind} \"${trimName(resource.metadata.name, 20)}\""
+}
+
+/**
+ * Trims a string to the given length.
+ * The following rules are applied:
+ * <ul>
+ *		<li>if the string is shorter than the given length, the message is returned as is</li>
+ *		<li>if the string is longer than the given length of <= 3, the given length is returned</li>
+ *		<li>if the string is longer than the given length of <= 6, the given message is trimmed
+ *		to length - 3 and "..." is appended</li>
+ *		<li>if the string is larger than the given length, the given message is trimmed to the given
+ *		length - 3, "..." is appended and the last 3 characters of the message are appended</li>
+ * </ul>
+ */
+fun trimName(name: String, length: Int): String {
+	return when {
+		length <= name.length -> name
+		length <= 3 -> name.substring(0, length)
+		length <= 6 -> "${name.take(length - 3)}..."
+		else -> "${name.take(length - 6)}..." +
+				"${name.takeLast(3)}"
+	}
 }

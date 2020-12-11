@@ -65,8 +65,16 @@ abstract class NamespacedResourcesProvider<R : HasMetadata, C: Client>(
         return getOperation(namespace!!) as Supplier<Watchable<Watch, Watcher<R>>?>
     }
 
-    protected open fun getOperation(namespace: String): Supplier<WatchableAndListable<R>> {
+    protected open fun getOperation(namespace: String): Supplier<WatchableListableDeletable<R>> {
         return Supplier { null }
+    }
+
+    override fun delete(resources: List<HasMetadata>): Boolean {
+        if (namespace == null) {
+            return false
+        }
+        val toDelete = resources as? List<R> ?: return false
+        return getOperation(namespace!!).get()?.delete(toDelete) ?: false
     }
 
 }

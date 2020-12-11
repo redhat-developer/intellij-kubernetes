@@ -12,6 +12,7 @@ package org.jboss.tools.intellij.kubernetes.model.context
 
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.argumentCaptor
+import com.nhaarman.mockitokotlin2.atLeastOnce
 import com.nhaarman.mockitokotlin2.clearInvocations
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.eq
@@ -33,6 +34,7 @@ import io.fabric8.kubernetes.client.Watcher
 import io.fabric8.kubernetes.client.dsl.Watchable
 import org.assertj.core.api.Assertions.assertThat
 import org.jboss.tools.intellij.kubernetes.model.ModelChangeObservable
+import org.jboss.tools.intellij.kubernetes.model.Notification
 import org.jboss.tools.intellij.kubernetes.model.ResourceWatch
 import org.jboss.tools.intellij.kubernetes.model.context.IActiveContext.ResourcesIn
 import org.jboss.tools.intellij.kubernetes.model.mocks.ClientMocks.NAMESPACE1
@@ -64,7 +66,7 @@ import java.util.function.Supplier
 
 class KubernetesContextTest {
 
-	private val observable: ModelChangeObservable = mock()
+	private val modelChange: ModelChangeObservable = mock()
 
 	private val allNamespaces = arrayOf(NAMESPACE1, NAMESPACE2, NAMESPACE3)
 	private val currentNamespace = NAMESPACE2
@@ -137,6 +139,8 @@ class KubernetesContextTest {
 	private val watchableSupplier3: () -> Watchable<Watch, Watcher<in HasMetadata>>? = { watchable3 }
 
 	private val resourceWatch: ResourceWatch = mock()
+	private val notification: Notification = mock()
+
 	private lateinit var context: TestableKubernetesContext
 
 	@Before
@@ -154,13 +158,14 @@ class KubernetesContextTest {
 		val extensionResourceProviders = mutableListOf(
 				hasMetadataProvider)
 		return spy(TestableKubernetesContext(
-				observable,
+				modelChange,
 				this@KubernetesContextTest.client,
 				internalResourcesProviders,
 				extensionResourceProviders,
 				Pair(namespacedCustomResourcesProvider, nonNamespacedCustomResourcesProvider),
-				resourceWatch
-		))
+				resourceWatch,
+				notification)
+		)
 	}
 
 	@Test
@@ -241,7 +246,7 @@ class KubernetesContextTest {
 		// when
 		context.setCurrentNamespace(NAMESPACE1.metadata.name)
 		// then
-		verify(observable).fireCurrentNamespace(NAMESPACE1.metadata.name)
+		verify(modelChange).fireCurrentNamespace(NAMESPACE1.metadata.name)
 	}
 
 	@Test
@@ -366,6 +371,84 @@ class KubernetesContextTest {
 	}
 
 	@Test
+	fun `#delete should ask provider to delete`() {
+		// given
+		val toDelete = listOf(POD2)
+		// when
+		context.delete(toDelete)
+		// then
+		verify(allPodsProvider).delete(toDelete)
+	}
+
+	@Test
+	fun `#delete should not ask any provider to delete if there is no provider for it`() {
+		// given
+		val toDelete = listOf(resource<HasMetadata>("lord sith"))
+		// when
+		context.delete(toDelete)
+		// then
+		verify(allPodsProvider, never()).delete(toDelete)
+	}
+
+	@Test
+	fun `#delete should only delete 1 resource if it is given twice the same resource`() {
+		// given
+		val toDelete = listOf(POD2, POD2)
+		// when
+		context.delete(toDelete)
+		// then
+		verify(allPodsProvider, times(1)).delete(eq(listOf(POD2)))
+	}
+
+	@Test
+	fun `#delete should delete in 2 separate providers if resources of 2 kinds are given`() {
+		// given
+		val toDelete = listOf(POD2, NAMESPACE2)
+		// when
+		context.delete(toDelete)
+		// then
+		verify(allPodsProvider, times(1)).delete(eq(listOf(POD2)))
+		verify(namespacesProvider, times(1)).delete(eq(listOf(NAMESPACE2)))
+	}
+
+	@Test
+	fun `#delete should fire if resource was deleted`() {
+		// given
+		val toDelete = listOf(POD2)
+		whenever(allPodsProvider.delete(any()))
+				.thenReturn(true)
+		// when
+		context.delete(toDelete)
+		// then
+		verify(modelChange).fireModified(toDelete)
+	}
+
+	@Test
+	fun `#delete should set resource deletionTimestamp if resource was deleted`() {
+		// given
+		val toDelete = listOf(POD2, POD3)
+		whenever(allPodsProvider.delete(any()))
+			.thenReturn(true)
+		// when
+		context.delete(toDelete)
+		// then
+		verify(POD2.metadata, atLeastOnce()).setDeletionTimestamp(any())
+		verify(POD3.metadata, atLeastOnce()).setDeletionTimestamp(any())
+	}
+
+	@Test
+	fun `#delete should NOT fire if resource was deleted`() {
+		// given
+		val toDelete = listOf(POD2)
+		whenever(allPodsProvider.delete(any<List<HasMetadata>>()))
+			.thenReturn(false)
+		// when
+		context.delete(toDelete)
+		// then
+		verify(modelChange, never()).fireModified(toDelete)
+	}
+
+	@Test
 	fun `#watch(kind) should watch watchable provided by namespaced resource provider`() {
 		// given
 		givenCustomResourceProvider(namespacedDefinition,
@@ -468,8 +551,9 @@ class KubernetesContextTest {
 	fun `#add(pod) should return true if pod was added to pods provider`() {
 		// given
 		val pod = resource<Pod>("pod", currentNamespace.metadata.name)
-		doReturn(true)
-				.whenever(namespacedPodsProvider).add(pod)
+		whenever(namespacedPodsProvider.add(pod))
+			.thenReturn(true)
+
 		// when
 		val added = context.add(pod)
 		// then
@@ -480,8 +564,8 @@ class KubernetesContextTest {
 	fun `#add(namespace) should return true if namespace was added to namespace provider`() {
 		// given
 		val namespace = resource<Namespace>("pod")
-		doReturn(true)
-				.whenever(namespacesProvider).add(namespace)
+		whenever(namespacesProvider.add(namespace))
+			.thenReturn(true)
 		// when
 		val added = context.add(namespace)
 		// then
@@ -492,8 +576,8 @@ class KubernetesContextTest {
 	fun `#add(pod) should return false if pod was not added to pods provider`() {
 		// given
 		val pod = resource<Pod>("pod")
-		doReturn(false)
-				.whenever(namespacedPodsProvider).add(pod)
+		whenever(namespacedPodsProvider.add(pod))
+			.thenReturn(false)
 		// when
 		val added = context.add(pod)
 		// then
@@ -504,24 +588,24 @@ class KubernetesContextTest {
 	fun `#add(pod) should fire if provider added pod`() {
 		// given
 		val pod = resource<Pod>("gargamel", currentNamespace.metadata.name)
-		doReturn(true)
-				.whenever(namespacedPodsProvider).add(pod)
+		whenever(namespacedPodsProvider.add(pod))
+			.thenReturn(true)
 		// when
 		context.add(pod)
 		// then
-		verify(observable).fireAdded(pod)
+		verify(modelChange).fireAdded(pod)
 	}
 
 	@Test
 	fun `#add(pod) should not fire if provider did not add pod`() {
 		// given
 		val pod = resource<Pod>("gargamel")
-		doReturn(false)
-				.whenever(namespacedPodsProvider).add(pod)
+		whenever(namespacedPodsProvider.add(pod))
+			.thenReturn(false)
 		// when
 		context.add(pod)
 		// then
-		verify(observable, never()).fireAdded(pod)
+		verify(modelChange, never()).fireAdded(pod)
 	}
 
 	@Test
@@ -614,24 +698,24 @@ class KubernetesContextTest {
 	fun `#remove(pod) should fire if provider removed pod`() {
 		// given
 		val pod = resource<Pod>("gargamel", currentNamespace.metadata.name)
-		doReturn(true)
-				.whenever(namespacedPodsProvider).remove(pod)
+		whenever(namespacedPodsProvider.remove(pod))
+			.thenReturn(true)
 		// when
 		context.remove(pod)
 		// then
-		verify(observable).fireRemoved(pod)
+		verify(modelChange).fireRemoved(pod)
 	}
 
 	@Test
 	fun `#remove(pod) should not fire if provider did not remove pod`() {
 		// given
 		val pod = resource<Pod>("gargamel")
-		doReturn(false)
-				.whenever(namespacedPodsProvider).remove(pod)
+		whenever(namespacedPodsProvider.remove(pod))
+			.thenReturn(false)
 		// when
 		context.remove(pod)
 		// then
-		verify(observable, never()).fireRemoved(pod)
+		verify(modelChange, never()).fireRemoved(pod)
 	}
 
 	@Test
@@ -746,24 +830,24 @@ class KubernetesContextTest {
 	fun `#replace(pod) should fire if provider replaced pod`() {
 		// given
 		val pod = resource<Pod>("gargamel")
-		doReturn(true)
-				.whenever(namespacedPodsProvider).replace(pod)
+		whenever(namespacedPodsProvider.replace(pod))
+			.thenReturn(true)
 		// when
 		context.replace(pod)
 		// then
-		verify(observable).fireModified(pod)
+		verify(modelChange).fireModified(pod)
 	}
 
 	@Test
 	fun `#replace(pod) should not fire if provider did NOT replace pod`() {
 		// given
 		val pod = resource<Pod>("gargamel")
-		doReturn(false)
-				.whenever(namespacedPodsProvider).replace(pod)
+		whenever(namespacedPodsProvider.replace(pod))
+			.thenReturn(false)
 		// when
 		context.replace(pod)
 		// then
-		verify(observable, never()).fireModified(pod)
+		verify(modelChange, never()).fireModified(pod)
 	}
 
 	@Test
@@ -809,7 +893,8 @@ class KubernetesContextTest {
 			private val customResourcesProviders: Pair<
 					INamespacedResourcesProvider<GenericResource, NamespacedKubernetesClient>,
 					INonNamespacedResourcesProvider<GenericResource, NamespacedKubernetesClient>>,
-			public override var watch: ResourceWatch)
+			public override var watch: ResourceWatch,
+			override val notification: Notification)
 		: KubernetesContext(observable, client, mock()) {
 
 		public override val namespacedProviders

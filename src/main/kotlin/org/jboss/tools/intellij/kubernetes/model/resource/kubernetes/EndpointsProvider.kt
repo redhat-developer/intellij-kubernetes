@@ -14,7 +14,7 @@ import io.fabric8.kubernetes.api.model.Endpoints
 import io.fabric8.kubernetes.client.KubernetesClient
 import org.jboss.tools.intellij.kubernetes.model.resource.NamespacedResourcesProvider
 import org.jboss.tools.intellij.kubernetes.model.resource.ResourceKind
-import org.jboss.tools.intellij.kubernetes.model.resource.WatchableAndListable
+import org.jboss.tools.intellij.kubernetes.model.resource.WatchableListableDeletable
 import java.util.function.Supplier
 
 class EndpointsProvider(client: KubernetesClient)
@@ -26,7 +26,7 @@ class EndpointsProvider(client: KubernetesClient)
 
     override val kind = KIND
 
-    override fun getOperation(namespace: String): Supplier<WatchableAndListable<Endpoints>> {
+    override fun getOperation(namespace: String): Supplier<WatchableListableDeletable<Endpoints>> {
         return Supplier { client.endpoints().inNamespace(namespace) }
     }
 

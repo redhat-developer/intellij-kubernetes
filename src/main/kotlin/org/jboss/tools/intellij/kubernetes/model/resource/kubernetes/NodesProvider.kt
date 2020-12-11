@@ -14,7 +14,7 @@ import io.fabric8.kubernetes.api.model.Node
 import io.fabric8.kubernetes.client.KubernetesClient
 import org.jboss.tools.intellij.kubernetes.model.resource.NonNamespacedResourcesProvider
 import org.jboss.tools.intellij.kubernetes.model.resource.ResourceKind
-import org.jboss.tools.intellij.kubernetes.model.resource.WatchableAndListable
+import org.jboss.tools.intellij.kubernetes.model.resource.WatchableListableDeletable
 import java.util.function.Supplier
 
 class NodesProvider(client: KubernetesClient)
@@ -26,7 +26,7 @@ class NodesProvider(client: KubernetesClient)
 
     override val kind = KIND
 
-    override fun getOperation(): Supplier<WatchableAndListable<Node>> {
+    override fun getOperation(): Supplier<WatchableListableDeletable<Node>> {
         return Supplier { client.nodes() }
     }
 }

@@ -14,11 +14,11 @@ import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.KubernetesResourceList
 import io.fabric8.kubernetes.client.Watch
 import io.fabric8.kubernetes.client.Watcher
-import io.fabric8.kubernetes.client.dsl.WatchListDeletable
+import io.fabric8.kubernetes.client.dsl.FilterWatchListMultiDeletable
 import io.fabric8.kubernetes.client.dsl.Watchable
 import java.util.function.Supplier
 
-typealias WatchableAndListable<R> = WatchListDeletable<R, out KubernetesResourceList<R>, Boolean, Watch>?
+typealias WatchableListableDeletable<R> = FilterWatchListMultiDeletable<R, out KubernetesResourceList<R>, Boolean, Watch>?
 
 interface IResourcesProvider<R: HasMetadata> {
     val kind: ResourceKind<R>
@@ -28,4 +28,5 @@ interface IResourcesProvider<R: HasMetadata> {
     fun replace(resource: HasMetadata): Boolean
     fun add(resource: HasMetadata): Boolean
     fun remove(resource: HasMetadata): Boolean
+    fun delete(resources: List<HasMetadata>): Boolean
 }
