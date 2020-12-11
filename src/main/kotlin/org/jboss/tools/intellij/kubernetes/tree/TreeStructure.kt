@@ -16,10 +16,14 @@ import com.intellij.ide.util.treeView.AbstractTreeStructure
 import com.intellij.ide.util.treeView.NodeDescriptor
 import com.intellij.ide.util.treeView.PresentableNodeDescriptor
 import com.intellij.openapi.diagnostic.logger
+import com.intellij.openapi.editor.colors.CodeInsightColors
 import com.intellij.openapi.extensions.ExtensionPointName
 import com.intellij.openapi.util.IconLoader
+import com.intellij.ui.JBColor
+import com.intellij.ui.SimpleTextAttributes
 import com.intellij.ui.tree.LeafState
 import io.fabric8.kubernetes.api.model.HasMetadata
+import org.jboss.tools.intellij.kubernetes.actions.getElement
 import org.jboss.tools.intellij.kubernetes.model.IResourceModel
 import org.jboss.tools.intellij.kubernetes.model.context.IActiveContext
 import org.jboss.tools.intellij.kubernetes.model.context.IContext
@@ -228,6 +232,18 @@ open class TreeStructure(
         override fun getLabel(element: T): String {
             return element.metadata.name
         }
+
+        override fun update(presentation: PresentationData) {
+            super.update(presentation)
+            if (isDeleted(element)) {
+                presentation.presentableText += " (deleted)"
+                presentation.setAttributesKey(CodeInsightColors.WRONG_REFERENCES_ATTRIBUTES)
+            }
+        }
+
+        protected open fun isDeleted(element: T?): Boolean {
+            return element?.metadata?.deletionTimestamp != null
+        }
     }
 
     open class Descriptor<T>(
@@ -237,8 +253,12 @@ open class TreeStructure(
     ) : PresentableNodeDescriptor<T>(null, parent) {
 
         override fun update(presentation: PresentationData) {
-            presentation.presentableText = getLabel(element)
+            updateLabel(getLabel(element), presentation)
             updateIcon(getIcon(element), presentation)
+        }
+
+        private fun updateLabel(label: String?, presentation: PresentationData) {
+            presentation.presentableText = label
         }
 
         open fun isMatching(element: Any?): Boolean {

@@ -14,7 +14,7 @@ import io.fabric8.kubernetes.api.model.apps.DaemonSet
 import io.fabric8.kubernetes.client.AppsAPIGroupClient
 import org.jboss.tools.intellij.kubernetes.model.resource.NamespacedResourcesProvider
 import org.jboss.tools.intellij.kubernetes.model.resource.ResourceKind
-import org.jboss.tools.intellij.kubernetes.model.resource.WatchableAndListable
+import org.jboss.tools.intellij.kubernetes.model.resource.WatchableListableDeletable
 import java.util.function.Supplier
 
 class DaemonSetsProvider(client: AppsAPIGroupClient)
@@ -26,7 +26,7 @@ class DaemonSetsProvider(client: AppsAPIGroupClient)
 
 	override val kind = KIND
 
-	override fun getOperation(namespace: String): Supplier<WatchableAndListable<DaemonSet>> {
+	override fun getOperation(namespace: String): Supplier<WatchableListableDeletable<DaemonSet>> {
 		return Supplier { client.daemonSets().inNamespace(namespace) }
 	}
 }

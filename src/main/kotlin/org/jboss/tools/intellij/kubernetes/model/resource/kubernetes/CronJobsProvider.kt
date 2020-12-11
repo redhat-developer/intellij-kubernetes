@@ -14,7 +14,7 @@ import io.fabric8.kubernetes.api.model.batch.CronJob
 import io.fabric8.kubernetes.client.BatchAPIGroupClient
 import org.jboss.tools.intellij.kubernetes.model.resource.NamespacedResourcesProvider
 import org.jboss.tools.intellij.kubernetes.model.resource.ResourceKind
-import org.jboss.tools.intellij.kubernetes.model.resource.WatchableAndListable
+import org.jboss.tools.intellij.kubernetes.model.resource.WatchableListableDeletable
 import java.util.function.Supplier
 
 class CronJobsProvider(client: BatchAPIGroupClient)
@@ -26,7 +26,7 @@ class CronJobsProvider(client: BatchAPIGroupClient)
 
     override val kind = KIND
 
-    override fun getOperation(namespace: String): Supplier<WatchableAndListable<CronJob>> {
+    override fun getOperation(namespace: String): Supplier<WatchableListableDeletable<CronJob>> {
         return Supplier { client.cronjobs().inNamespace(namespace) }
     }
 

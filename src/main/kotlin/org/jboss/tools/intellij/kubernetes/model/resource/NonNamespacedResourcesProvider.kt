@@ -43,8 +43,13 @@ abstract class NonNamespacedResourcesProvider<R : HasMetadata, C : Client>(
         return getOperation() as Supplier<Watchable<Watch, Watcher<R>>?>
     }
 
-    protected open fun getOperation(): Supplier<WatchableAndListable<R>> {
+    protected open fun getOperation(): Supplier<WatchableListableDeletable<R>> {
         return Supplier { null }
+    }
+
+    override fun delete(resources: List<HasMetadata>): Boolean {
+        val toDelete = resources as? List<R> ?: return false
+        return getOperation().get()?.delete(toDelete) ?: false
     }
 
 }

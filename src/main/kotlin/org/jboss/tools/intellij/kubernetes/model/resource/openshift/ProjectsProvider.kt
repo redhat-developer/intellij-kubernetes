@@ -14,7 +14,7 @@ import io.fabric8.openshift.api.model.Project
 import io.fabric8.openshift.client.OpenShiftClient
 import org.jboss.tools.intellij.kubernetes.model.resource.NonNamespacedResourcesProvider
 import org.jboss.tools.intellij.kubernetes.model.resource.ResourceKind
-import org.jboss.tools.intellij.kubernetes.model.resource.WatchableAndListable
+import org.jboss.tools.intellij.kubernetes.model.resource.WatchableListableDeletable
 import java.util.function.Supplier
 
 class ProjectsProvider(client: OpenShiftClient)
@@ -26,7 +26,7 @@ class ProjectsProvider(client: OpenShiftClient)
 
     override val kind = KIND
 
-    override fun getOperation(): Supplier<WatchableAndListable<Project>> {
+    override fun getOperation(): Supplier<WatchableListableDeletable<Project>> {
         return Supplier { client.projects() }
     }
 }

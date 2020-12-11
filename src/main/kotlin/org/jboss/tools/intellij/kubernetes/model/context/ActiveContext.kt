@@ -22,6 +22,7 @@ import io.fabric8.kubernetes.client.Watch
 import io.fabric8.kubernetes.client.Watcher
 import io.fabric8.kubernetes.client.dsl.Watchable
 import org.jboss.tools.intellij.kubernetes.model.IModelChangeObservable
+import org.jboss.tools.intellij.kubernetes.model.Notification
 import org.jboss.tools.intellij.kubernetes.model.ResourceWatch
 import org.jboss.tools.intellij.kubernetes.model.context.IActiveContext.ResourcesIn
 import org.jboss.tools.intellij.kubernetes.model.context.IActiveContext.ResourcesIn.ANY_NAMESPACE
@@ -37,6 +38,8 @@ import org.jboss.tools.intellij.kubernetes.model.resource.kubernetes.custom.Name
 import org.jboss.tools.intellij.kubernetes.model.resource.kubernetes.custom.NonNamespacedCustomResourcesProvider
 import org.jboss.tools.intellij.kubernetes.model.util.Clients
 import org.jboss.tools.intellij.kubernetes.model.util.sameUid
+import org.jboss.tools.intellij.kubernetes.model.util.setDeleted
+import org.jboss.tools.intellij.kubernetes.model.util.toMessage
 import java.net.URL
 import java.util.function.Supplier
 
@@ -45,6 +48,7 @@ interface IActiveContext<N: HasMetadata, C: KubernetesClient>: IContext {
     enum class ResourcesIn {
         CURRENT_NAMESPACE, ANY_NAMESPACE, NO_NAMESPACE
     }
+
     val masterUrl: URL
     fun isOpenShift(): Boolean
     fun setCurrentNamespace(namespace: String)
@@ -56,6 +60,7 @@ interface IActiveContext<N: HasMetadata, C: KubernetesClient>: IContext {
     fun watch(definition: CustomResourceDefinition)
     fun add(resource: HasMetadata): Boolean
     fun remove(resource: HasMetadata): Boolean
+    fun delete(resources: List<HasMetadata>)
     fun invalidate()
     fun invalidate(kind: ResourceKind<*>)
     fun replace(resource: HasMetadata): Boolean
@@ -92,6 +97,8 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
             removeOperation = { remove(it) },
             replaceOperation = { replace(it) }
     )
+
+    protected open val notification: Notification = Notification()
 
     override fun setCurrentNamespace(namespace: String) {
         val currentNamespace = getCurrentNamespace()
@@ -251,6 +258,13 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
         }
     }
 
+    private fun toResourcesIn(resource: HasMetadata): ResourcesIn {
+        return when (resource.metadata.namespace) {
+            null -> ANY_NAMESPACE
+            else -> CURRENT_NAMESPACE
+        }
+    }
+
     override fun watch(kind: ResourceKind<out HasMetadata>) {
         logger<ActiveContext<*, *>>().debug("Watching $kind resources.")
         watch(namespacedProviders[kind])
@@ -401,6 +415,24 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
     protected open fun namespacedProviders(namespace: String?): List<INamespacedResourcesProvider<out HasMetadata, C>> {
         return namespacedProviders.values
                 .filter { it.namespace == namespace }
+    }
+
+    override fun delete(resources: List<HasMetadata>) {
+        resources
+            .distinct()
+            .groupBy { Pair(ResourceKind.create(it), toResourcesIn(it)) }
+            .forEach { delete(it.key.first, it.key.second, it.value) }
+    }
+
+    private fun delete(kind: ResourceKind<out HasMetadata>, scope: ResourcesIn, resources: List<HasMetadata>) {
+        val provider = getProvider(kind, scope) ?: return
+        val deleted = provider.delete(resources)
+        if (deleted) {
+            resources.forEach { setDeleted(MARKER_WILL_BE_DELETED, it) }
+            modelChange.fireModified(resources)
+        } else {
+            notification.error("Could not delete resources", "Resources: ${toMessage(resources)} ")
+        }
     }
 
     override fun close() {

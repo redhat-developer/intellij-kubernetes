@@ -15,7 +15,7 @@ import io.fabric8.kubernetes.client.AppsAPIGroupClient
 import org.jboss.tools.intellij.kubernetes.model.resource.NamespacedResourcesProvider
 import org.jboss.tools.intellij.kubernetes.model.resource.ResourceKind
 import java.util.function.Supplier
-import org.jboss.tools.intellij.kubernetes.model.resource.WatchableAndListable
+import org.jboss.tools.intellij.kubernetes.model.resource.WatchableListableDeletable
 
 class StatefulSetsProvider(client: AppsAPIGroupClient)
     : NamespacedResourcesProvider<StatefulSet, AppsAPIGroupClient>(client) {
@@ -26,7 +26,7 @@ class StatefulSetsProvider(client: AppsAPIGroupClient)
 
     override val kind = KIND
 
-    override fun getOperation(namespace: String): Supplier<WatchableAndListable<StatefulSet>> {
+    override fun getOperation(namespace: String): Supplier<WatchableListableDeletable<StatefulSet>> {
         return Supplier { client.statefulSets().inNamespace(namespace) }
     }
 }

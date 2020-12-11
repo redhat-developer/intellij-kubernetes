@@ -14,7 +14,7 @@ import io.fabric8.openshift.api.model.DeploymentConfig
 import io.fabric8.openshift.client.OpenShiftClient
 import org.jboss.tools.intellij.kubernetes.model.resource.NamespacedResourcesProvider
 import org.jboss.tools.intellij.kubernetes.model.resource.ResourceKind
-import org.jboss.tools.intellij.kubernetes.model.resource.WatchableAndListable
+import org.jboss.tools.intellij.kubernetes.model.resource.WatchableListableDeletable
 import java.util.function.Supplier
 
 class DeploymentConfigsProvider(client: OpenShiftClient)
@@ -26,7 +26,7 @@ class DeploymentConfigsProvider(client: OpenShiftClient)
 
     override val kind = KIND
 
-    override fun getOperation(namespace: String): Supplier<WatchableAndListable<DeploymentConfig>> {
+    override fun getOperation(namespace: String): Supplier<WatchableListableDeletable<DeploymentConfig>> {
         return Supplier { client.deploymentConfigs().inNamespace(namespace) }
     }
 

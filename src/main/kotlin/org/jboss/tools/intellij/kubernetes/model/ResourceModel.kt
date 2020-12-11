@@ -34,6 +34,7 @@ interface IResourceModel {
     fun watch(kind: ResourceKind<out HasMetadata>)
     fun watch(definition: CustomResourceDefinition)
     fun invalidate(element: Any?)
+    fun delete(resources: List<HasMetadata>)
     fun addListener(listener: ModelChangeObservable.IResourceChangeListener)
 }
 
@@ -151,7 +152,12 @@ open class ResourceModel(
         contexts.current?.replace(resource)
     }
 
+    override fun delete(resources: List<HasMetadata>) {
+        contexts.current?.delete(resources)
+    }
+
     private fun isNotFound(e: KubernetesClientException): Boolean {
         return e.code == 404
     }
+
 }
