@@ -11,7 +11,9 @@
 package org.jboss.tools.intellij.kubernetes.model.util
 
 import io.fabric8.kubernetes.api.model.HasMetadata
+import io.fabric8.kubernetes.api.model.apiextensions.v1beta1.CustomResourceDefinition
 import io.fabric8.kubernetes.api.model.apiextensions.v1beta1.CustomResourceDefinitionSpec
+import io.fabric8.kubernetes.client.dsl.base.CustomResourceDefinitionContext
 import io.fabric8.kubernetes.model.annotation.ApiGroup
 import io.fabric8.kubernetes.model.annotation.ApiVersion
 import io.fabric8.kubernetes.model.util.Helper
@@ -64,4 +66,15 @@ fun getApiVersion(apiGroup: String, apiVersion: String) = "$apiGroup/$apiVersion
 fun getVersion(spec: CustomResourceDefinitionSpec): String {
 	val versions = spec.versions.map { it.name }
 	return KubernetesVersionPriority.highestPriority(versions) ?: spec.version
+}
+
+fun createContext(definition: CustomResourceDefinition): CustomResourceDefinitionContext {
+	return CustomResourceDefinitionContext.Builder()
+		.withGroup(definition.spec.group)
+		.withVersion(getVersion(definition.spec)) // use version with highest priority
+		.withScope(definition.spec.scope)
+		.withName(definition.metadata.name)
+		.withPlural(definition.spec.names.plural)
+		.withKind(definition.spec.names.kind)
+		.build();
 }

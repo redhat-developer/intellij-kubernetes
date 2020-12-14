@@ -18,7 +18,7 @@ import io.fabric8.kubernetes.client.dsl.Watchable
 import io.fabric8.kubernetes.client.dsl.base.CustomResourceDefinitionContext
 import org.jboss.tools.intellij.kubernetes.model.resource.NamespacedResourcesProvider
 import org.jboss.tools.intellij.kubernetes.model.resource.ResourceKind
-import org.jboss.tools.intellij.kubernetes.model.util.getVersion
+import org.jboss.tools.intellij.kubernetes.model.util.createContext
 import java.util.function.Supplier
 
 class NamespacedCustomResourcesProvider(
@@ -28,14 +28,7 @@ class NamespacedCustomResourcesProvider(
     : NamespacedResourcesProvider<GenericResource, KubernetesClient>(namespace, client) {
 
     override val kind = ResourceKind.create(definition.spec)
-    private val context: CustomResourceDefinitionContext = CustomResourceDefinitionContext.Builder()
-		.withGroup(definition.spec.group)
-		.withVersion(getVersion(definition.spec)) // use version with highest priority
-		.withScope(definition.spec.scope)
-		.withName(definition.metadata.name)
-		.withPlural(definition.spec.names.plural)
-		.withKind(definition.spec.names.kind)
-		.build();
+    private val context: CustomResourceDefinitionContext =  createContext(definition)
 
     override fun loadAllResources(namespace: String): List<GenericResource> {
         val resourcesList = client.customResource(context).list(namespace)

@@ -19,6 +19,7 @@ import io.fabric8.kubernetes.client.dsl.base.CustomResourceDefinitionContext
 import org.jboss.tools.intellij.kubernetes.model.resource.NonNamespacedResourcesProvider
 import org.jboss.tools.intellij.kubernetes.model.resource.ResourceKind
 import org.jboss.tools.intellij.kubernetes.model.resource.WatchableAndListable
+import org.jboss.tools.intellij.kubernetes.model.util.createContext
 import java.util.function.Supplier
 
 class NonNamespacedCustomResourcesProvider(
@@ -27,7 +28,7 @@ class NonNamespacedCustomResourcesProvider(
 ) : NonNamespacedResourcesProvider<GenericResource, KubernetesClient>(client) {
 
     override val kind = ResourceKind.create(definition.spec)
-    private val context: CustomResourceDefinitionContext = CustomResourceDefinitionContext.fromCrd(definition)
+    private val context: CustomResourceDefinitionContext = createContext(definition)
 
     override fun loadAllResources(): List<GenericResource> {
         val resourcesList = client.customResource(context).list()
