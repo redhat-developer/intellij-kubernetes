@@ -37,16 +37,18 @@ abstract class NamespacedResourcesProvider<R : HasMetadata, C: Client>(
             field = namespace
         }
 
-    override val allResources: MutableList<R>
+    override val allResources: List<R>
         get() {
-            if (_allResources.isEmpty()) {
-                if (namespace != null) {
-                    _allResources.addAll(loadAllResources(namespace!!))
-                } else {
-                    logger<NamespacedResourcesProvider<*, *>>().debug("Could not load $kind resources: no namespace set.")
+            synchronized(_allResources) {
+                if (_allResources.isEmpty()) {
+                    if (namespace != null) {
+                        _allResources.addAll(loadAllResources(namespace!!))
+                    } else {
+                        logger<NamespacedResourcesProvider<*, *>>().debug("Could not load $kind resources: no namespace set.")
+                    }
                 }
+                return _allResources
             }
-            return _allResources
         }
 
 
