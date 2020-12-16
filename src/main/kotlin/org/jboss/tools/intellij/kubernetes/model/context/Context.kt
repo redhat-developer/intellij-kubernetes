@@ -14,6 +14,9 @@ import io.fabric8.kubernetes.api.model.NamedContext
 
 interface IContext {
 	val context: NamedContext
+	val active: Boolean
 }
 
-open class Context(override val context: NamedContext): IContext
+open class Context(override val context: NamedContext): IContext {
+	override val active: Boolean = false
+}

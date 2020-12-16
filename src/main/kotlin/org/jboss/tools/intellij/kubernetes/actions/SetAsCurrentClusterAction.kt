@@ -33,4 +33,13 @@ class SetAsCurrentClusterAction: StructureTreeAction(IContext::class.java) {
                 }
             })
     }
+
+    override fun isVisible(selected: Any?): Boolean {
+        return false == selected?.getElement<IContext>()?.active
+    }
+
+    override fun isVisible(selected: Array<out Any>?): Boolean {
+        return selected?.size == 1
+                && isVisible(selected[0])
+    }
 }

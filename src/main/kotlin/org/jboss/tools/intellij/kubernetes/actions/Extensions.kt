@@ -21,22 +21,32 @@ import org.jboss.tools.intellij.kubernetes.model.IResourceModel
 import org.jboss.tools.intellij.kubernetes.tree.TreeStructure
 import org.jetbrains.annotations.NotNull
 import javax.swing.tree.DefaultMutableTreeNode
-
+import org.jboss.tools.intellij.kubernetes.tree.TreeStructure.Descriptor
 
 fun AnAction.getResourceModel(): IResourceModel? {
     return ServiceManager.getService(IResourceModel::class.java)
 }
 
-fun Any?.getDescriptor(): TreeStructure.Descriptor<*>? {
-    return (this as? DefaultMutableTreeNode)?.userObject as? TreeStructure.Descriptor<*>
+fun Any.getDescriptor(): Descriptor<*>? {
+    return if (this is DefaultMutableTreeNode
+        && this.userObject is Descriptor<*>) {
+        return this.userObject as Descriptor<*>
+    } else {
+        null
+    }
 }
 
-fun <T> Any.getElement(): T? {
-    return (this as? DefaultMutableTreeNode)?.getDescriptor()?.element as? T
+inline fun <reified T> Any.getElement(): T? {
+    val element = getDescriptor()?.element
+    return if (element is T) {
+        element
+    } else {
+        null
+    }
 }
 
 fun TreeStructure.Descriptor<*>.getKind(): String? {
-    val element = this?.element
+    val element = this.element
     return (element as? TreeStructure.Folder)?.kind?.kind ?: (element as? HasMetadata)?.kind
 }
 
