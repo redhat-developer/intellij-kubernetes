@@ -24,12 +24,14 @@ abstract class NonNamespacedResourcesProvider<R : HasMetadata, C : Client>(
     protected val client: C
 ) : AbstractResourcesProvider<R>(), INonNamespacedResourcesProvider<R, C> {
 
-    override val allResources: MutableList<R>
+    override val allResources: List<R>
         get() {
-            if (_allResources.isEmpty()) {
-                _allResources.addAll(loadAllResources())
+            synchronized(_allResources) {
+                if (_allResources.isEmpty()) {
+                    _allResources.addAll(loadAllResources())
+                }
+                return _allResources
             }
-            return _allResources
         }
 
     protected open fun loadAllResources(): List<R> {
