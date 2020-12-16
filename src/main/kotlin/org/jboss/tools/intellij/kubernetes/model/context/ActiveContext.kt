@@ -66,6 +66,7 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
         context: NamedContext
 ) : Context(context), IActiveContext<N, C> {
 
+    override val active: Boolean = true
     private val clients = Clients(client)
     override val masterUrl: URL
         get() {
