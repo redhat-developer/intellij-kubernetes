@@ -36,6 +36,7 @@ import org.jboss.tools.intellij.kubernetes.model.resource.kubernetes.custom.Gene
 import org.jboss.tools.intellij.kubernetes.model.resource.kubernetes.custom.NamespacedCustomResourcesProvider
 import org.jboss.tools.intellij.kubernetes.model.resource.kubernetes.custom.NonNamespacedCustomResourcesProvider
 import org.jboss.tools.intellij.kubernetes.model.util.Clients
+import org.jboss.tools.intellij.kubernetes.model.util.sameUid
 import java.net.URL
 import java.util.function.Supplier
 
@@ -48,6 +49,7 @@ interface IActiveContext<N: HasMetadata, C: KubernetesClient>: IContext {
     fun isOpenShift(): Boolean
     fun setCurrentNamespace(namespace: String)
     fun getCurrentNamespace(): String?
+    fun isCurrentNamespace(resource: HasMetadata): Boolean
     fun <R: HasMetadata> getAllResources(kind: ResourceKind<R>, resourcesIn: ResourcesIn): Collection<R>
     fun getAllResources(definition: CustomResourceDefinition): Collection<GenericResource>
     fun watch(kind: ResourceKind<out HasMetadata>)
@@ -109,7 +111,7 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
             val namespacesProvider: INonNamespacedResourcesProvider<N, C> = nonNamespacedProviders[getNamespacesKind()]
                     as INonNamespacedResourcesProvider<N, C>
             val namespace = getCurrentNamespace(namespacesProvider.allResources)
-            setCurrentNamespace(namespace, providers)
+            setCurrentNamespace(namespace?.metadata?.name, providers)
             watch(namespacesProvider) // always watch namespaces
         } catch (e: KubernetesClientException) {
             logger<ActiveContext<*, *>>().info("Could not set current namespace to all non namespaced providers.", e)
@@ -125,25 +127,28 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
 
     override fun getCurrentNamespace(): String? {
         val namespaceKind = getNamespacesKind()
-        return getCurrentNamespace(getAllResources(namespaceKind, NO_NAMESPACE))
+        val current = getCurrentNamespace(getAllResources(namespaceKind, NO_NAMESPACE))
+        return current?.metadata?.name
     }
 
-    private fun getCurrentNamespace(namespaces: Collection<N>): String? {
+    private fun getCurrentNamespace(namespaces: Collection<N>): N? {
         var name: String? = clients.get().configuration.namespace
-        if (!exists(name, namespaces)) {
-            name = null
-        }
-        return name
+        return find(name, namespaces)
     }
 
-    private fun exists(namespace: String?, namespaces: Collection<N>): Boolean {
-        return namespace == null
-                || namespaces
-                .map { it.metadata.name }
-                .contains(namespace)
+    private fun find(namespace: String?, namespaces: Collection<N>): N? {
+        if (namespace == null) {
+            return null
+        }
+        return namespaces.find { namespace == it.metadata.name }
     }
 
     protected abstract fun getNamespacesKind(): ResourceKind<N>
+
+    override fun isCurrentNamespace(resource: HasMetadata): Boolean {
+        val current = getCurrentNamespace(getAllResources(getNamespacesKind(), NO_NAMESPACE))
+        return resource.sameUid(current as HasMetadata)
+    }
 
     override fun <R: HasMetadata> getAllResources(kind: ResourceKind<R>, resourcesIn: ResourcesIn): Collection<R> {
         logger<ActiveContext<*,*>>().debug("Resources $kind requested.")

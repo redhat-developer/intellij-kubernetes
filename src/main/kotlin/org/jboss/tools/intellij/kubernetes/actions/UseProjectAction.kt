@@ -12,28 +12,24 @@ package org.jboss.tools.intellij.kubernetes.actions
 
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.diagnostic.logger
-import com.intellij.openapi.progress.ProgressIndicator
-import com.intellij.openapi.progress.ProgressManager
 import com.intellij.openapi.progress.Progressive
-import com.intellij.openapi.progress.Task
-import com.redhat.devtools.intellij.common.actions.StructureTreeAction
 import io.fabric8.openshift.api.model.Project
 import org.jboss.tools.intellij.kubernetes.tree.ResourceWatchController
-import org.jetbrains.annotations.NotNull
 import javax.swing.tree.TreePath
 
-class UseProjectAction : StructureTreeAction(Project::class.java) {
+class UseProjectAction : UseResourceAction<Project>(Project::class.java) {
 
 	override fun actionPerformed(event: AnActionEvent?, path: TreePath?, selectedNode: Any?) {
 		val project: Project = selectedNode?.getElement() ?: return
-		val projectName = project.metadata.name
-		run("Using project $projectName...", true,
+		val name = project.metadata.name
+		val model = getResourceModel() ?: return
+		run("Using project $name...", true,
 			Progressive {
 				try {
-					getResourceModel()?.setCurrentNamespace(projectName)
+					model.setCurrentNamespace(name)
 				} catch (e: Exception) {
 					logger<ResourceWatchController>().warn(
-						"Could not use namespace $projectName.", e
+						"Could not use namespace $name.", e
 					)
 				}
 			})

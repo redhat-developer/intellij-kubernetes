@@ -28,6 +28,7 @@ interface IResourceModel {
     fun getAllContexts(): List<IContext>
     fun setCurrentNamespace(namespace: String)
     fun getCurrentNamespace(): String?
+    fun isCurrentNamespace(resource: HasMetadata): Boolean
     fun <R: HasMetadata> resources(kind: ResourceKind<R>): Namespaceable<R>
     fun resources(definition: CustomResourceDefinition): ListableCustomResources
     fun watch(kind: ResourceKind<out HasMetadata>)
@@ -69,6 +70,16 @@ open class ResourceModel(
         } catch (e: KubernetesClientException) {
             throw ResourceException(
                 "Could not get current namespace for server ${contexts.current?.masterUrl}", e)
+        }
+    }
+
+    override fun isCurrentNamespace(resource: HasMetadata): Boolean {
+        try {
+            return contexts.current?.isCurrentNamespace(resource) ?: false
+        } catch (e: KubernetesClientException) {
+            throw ResourceException(
+                "Could not get current namespace for server ${contexts.current?.masterUrl}", e
+            )
         }
     }
 

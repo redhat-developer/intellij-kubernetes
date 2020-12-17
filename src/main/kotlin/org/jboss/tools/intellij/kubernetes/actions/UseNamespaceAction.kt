@@ -22,18 +22,19 @@ import org.jboss.tools.intellij.kubernetes.tree.ResourceWatchController
 import org.jetbrains.annotations.NotNull
 import javax.swing.tree.TreePath
 
-class UseNamespaceAction: StructureTreeAction(Namespace::class.java) {
+class UseNamespaceAction : UseResourceAction<Namespace>(Namespace::class.java) {
 
     override fun actionPerformed(event: AnActionEvent?, path: TreePath?, selectedNode: Any?) {
         val namespace: Namespace = selectedNode?.getElement() ?: return
+        val name = namespace.metadata.name
         val model = getResourceModel() ?: return
         run("Switching namespace $namespace...", true,
             Progressive {
                 try {
-                    model.setCurrentNamespace(namespace.metadata.name)
+                    model.setCurrentNamespace(name)
                 } catch (e: Exception) {
                     logger<ResourceWatchController>().warn(
-                        "Could not use namespace ${namespace.metadata.name}.", e
+                        "Could not use namespace ${name}.", e
                     )
                 }
             })
