@@ -45,7 +45,6 @@ import java.util.function.Predicate
 
 class ResourceModelTest {
 
-    private val client: NamespacedKubernetesClient = mock()
     private val modelChange: IModelChangeObservable = mock()
     private val namespace: Namespace = resource("papa smurf")
     private val activeContext: IActiveContext<HasMetadata, KubernetesClient> = activeContext(namespace, mock())

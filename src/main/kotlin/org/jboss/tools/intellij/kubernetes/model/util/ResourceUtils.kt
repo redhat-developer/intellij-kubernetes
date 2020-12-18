@@ -27,16 +27,6 @@ fun HasMetadata.sameUid(resource: HasMetadata): Boolean {
 	return this.metadata.uid == resource.metadata.uid
 }
 
-fun HasMetadata.isUpdated(resource: HasMetadata): Boolean {
-	return try {
-		val thisVersion = this.metadata.resourceVersion.toInt()
-		val thatVersion = resource.metadata.resourceVersion.toInt()
-		thisVersion < thatVersion
-	} catch(e: NumberFormatException) {
-		false
-	}
-}
-
 /**
  * Returns the version for a given subclass of HasMetadata.
  * The version is built of the apiGroup and apiVersion that are annotated in the HasMetadata subclasses.
@@ -77,7 +67,7 @@ fun createContext(definition: CustomResourceDefinition): CustomResourceDefinitio
 		.withName(definition.metadata.name)
 		.withPlural(definition.spec.names.plural)
 		.withKind(definition.spec.names.kind)
-		.build();
+		.build()
 }
 
 fun setDeleted(timestamp: String, resource: HasMetadata) {
@@ -123,7 +113,6 @@ fun trimName(name: String, length: Int): String {
 		length <= name.length -> name
 		length <= 3 -> name.substring(0, length)
 		length <= 6 -> "${name.take(length - 3)}..."
-		else -> "${name.take(length - 6)}..." +
-				"${name.takeLast(3)}"
+		else -> "${name.take(length - 6)}...${name.takeLast(3)}"
 	}
 }

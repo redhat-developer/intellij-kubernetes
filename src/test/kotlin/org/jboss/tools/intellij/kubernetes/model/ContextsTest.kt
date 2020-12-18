@@ -37,7 +37,6 @@ import org.mockito.Mockito
 
 class ContextsTest {
 
-	private val client: NamespacedKubernetesClient = mock()
 	private val modelChange: IModelChangeObservable = mock()
 	private val namespace: Namespace = ClientMocks.resource("papa smurf")
 	private val namedContext1 =

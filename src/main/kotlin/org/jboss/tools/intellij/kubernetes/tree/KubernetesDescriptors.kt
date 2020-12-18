@@ -208,7 +208,7 @@ object KubernetesDescriptors {
 	}
 
 	fun <R : HasMetadata> createDataDescriptorFactories(data: Map<String, String>?, element: R)
-			: List<AbstractTreeStructureContribution.DescriptorFactory<R>> {
+			: List<DescriptorFactory<R>> {
 		return if (data == null
 				|| data.isEmpty()) {
 			listOf(EmptyDataDescriptorFactory(element))
@@ -218,7 +218,7 @@ object KubernetesDescriptors {
 	}
 
 	private class DataEntryDescriptorFactory<R : HasMetadata>(private val key: String, resource: R)
-		: AbstractTreeStructureContribution.DescriptorFactory<R>(resource) {
+		: DescriptorFactory<R>(resource) {
 
 
 		override fun create(parent: NodeDescriptor<*>?, model: IResourceModel): NodeDescriptor<R>? {

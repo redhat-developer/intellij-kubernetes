@@ -27,7 +27,6 @@ import org.junit.Test
 
 class TreeStructureExtensionTest {
 
-	private val client: KubernetesClient = mock()
 	private val model: IResourceModel = resourceModel()
 	private val extensionPoint: ExtensionPointName<ITreeStructureContributionFactory> = mock()
 	private val structure: TreeStructure = TestableTreeStructure(model, extensionPoint)
