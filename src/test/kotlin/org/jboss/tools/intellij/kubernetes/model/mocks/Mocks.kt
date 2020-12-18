@@ -14,7 +14,6 @@ import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.anyOrNull
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.mock
-import com.nhaarman.mockitokotlin2.whenever
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.NamedContext
 import io.fabric8.kubernetes.api.model.Namespace
@@ -30,6 +29,7 @@ import org.jboss.tools.intellij.kubernetes.model.context.IContext
 import org.jboss.tools.intellij.kubernetes.model.resource.INamespacedResourcesProvider
 import org.jboss.tools.intellij.kubernetes.model.resource.INonNamespacedResourcesProvider
 import org.jboss.tools.intellij.kubernetes.model.resource.ResourceKind
+import org.mockito.Mockito
 import java.util.function.Supplier
 
 object Mocks {
@@ -37,51 +37,59 @@ object Mocks {
     fun contextFactory(context: IActiveContext<HasMetadata, KubernetesClient>?)
             : (IModelChangeObservable, NamedContext?) -> IActiveContext<HasMetadata, KubernetesClient> {
         return mock {
-            doReturn(context)
-                    .whenever(mock).invoke(any(), anyOrNull()) // anyOrNull() bcs NamedContext is nullable
+            /**
+             * Trying to use {@code com.nhaarman.mockitokotlin2.doReturn} leads to
+             * "Overload Resolution Ambiguity" with {@code org.mockito.Mockito.doReturn} in intellij.
+             * Gradle compiles it just fine
+             *
+             * @see <a href="https://youtrack.jetbrains.com/issue/KT-22961">KT-22961</a>
+             * @see <a href="https://stackoverflow.com/questions/38779666/how-to-fix-overload-resolution-ambiguity-in-kotlin-no-lambda">fix-overload-resolution-ambiguity</a>
+             */
+            Mockito.doReturn(context)
+                .`when`(mock).invoke(any(), anyOrNull()) // anyOrNull() bcs NamedContext is nullable
         }
     }
 
     fun context(namedContext: NamedContext)
             : IContext {
         return mock {
-            doReturn(namedContext)
-                    .whenever(mock).context
+            Mockito.doReturn(namedContext)
+                .`when`(mock).context
         }
     }
 
     fun activeContext(currentNamespace: Namespace, context: NamedContext)
             : IActiveContext<HasMetadata, KubernetesClient> {
         return mock {
-            doReturn(currentNamespace.metadata.name)
-                .whenever(mock).getCurrentNamespace()
-            doReturn(context)
-                    .whenever(mock).context
+            Mockito.doReturn(currentNamespace.metadata.name)
+                .`when`(mock).getCurrentNamespace()
+            Mockito.doReturn(context)
+                .`when`(mock).context
         }
     }
 
     fun <T : HasMetadata, C: Client> namespacedResourceProvider(
-            kind: ResourceKind<T>,
-            resources: Collection<T>,
-            namespace: Namespace,
-            watchableSupplier: Supplier<Watchable<Watch, Watcher<T>>?> = Supplier { null })
+        kind: ResourceKind<T>,
+        resources: Collection<T>,
+        namespace: Namespace,
+        watchableSupplier: Supplier<Watchable<Watch, Watcher<T>>?> = Supplier { null })
             : INamespacedResourcesProvider<T, C> {
         return mock {
-            doReturn(namespace.metadata.name)
-                    .whenever(mock).namespace
-            doReturn(kind)
-                    .whenever(mock).kind
-            doReturn(resources)
-                    .whenever(mock).allResources
-            doReturn(watchableSupplier)
-                    .whenever(mock).getWatchable()
+            Mockito.doReturn(namespace.metadata.name)
+                .`when`(mock).namespace
+            Mockito.doReturn(kind as Any?)
+                .`when`(mock).kind
+            Mockito.doReturn(resources)
+                .`when`(mock).allResources
+            Mockito.doReturn(watchableSupplier)
+                .`when`(mock).getWatchable()
         }
     }
 
     fun <T : HasMetadata, C: Client> nonNamespacedResourceProvider(
-            kind: ResourceKind<T>,
-            resources: Collection<T>,
-            watchableSupplier: Supplier<Watchable<Watch, Watcher<T>>?> = Supplier { null })
+        kind: ResourceKind<T>,
+        resources: Collection<T>,
+        watchableSupplier: Supplier<Watchable<Watch, Watcher<T>>?> = Supplier { null })
             : INonNamespacedResourcesProvider<T, C> {
         return mock {
             on { this.kind } doReturn kind

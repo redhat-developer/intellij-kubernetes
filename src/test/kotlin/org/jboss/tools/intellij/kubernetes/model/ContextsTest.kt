@@ -24,6 +24,7 @@ import org.jboss.tools.intellij.kubernetes.model.mocks.Mocks
 import org.jboss.tools.intellij.kubernetes.model.mocks.Mocks.activeContext
 import org.jboss.tools.intellij.kubernetes.model.mocks.Mocks.context
 import org.junit.Test
+import org.mockito.Mockito
 
 class ContextsTest {
 
@@ -167,8 +168,16 @@ class ContextsTest {
 		assertThat(contexts.current).isNull()
 		val newCurrentContext = activeContext(namespace, namedContext3)
 		contexts.all // create all contexts
-		doReturn(newCurrentContext)
-			.whenever(contextFactory).invoke(any(), anyOrNull()) // returned on 2nd call
+		/**
+		 * Trying to use {@code com.nhaarman.mockitokotlin2.doReturn} leads to
+		 * "Overload Resolution Ambiguity" with {@code org.mockito.Mockito.doReturn} in intellij.
+		 * Gradle compiles it just fine
+		 *
+		 * @see <a href="https://youtrack.jetbrains.com/issue/KT-22961">KT-22961</a>
+		 * @see <a href="https://stackoverflow.com/questions/38779666/how-to-fix-overload-resolution-ambiguity-in-kotlin-no-lambda">fix-overload-resolution-ambiguity</a>
+		 */
+		Mockito.doReturn(newCurrentContext)
+			.`when`(contextFactory).invoke(any(), anyOrNull()) // returned on 2nd call
 		// when
 		contexts.setCurrent(newCurrentContext)
 		// then
@@ -183,8 +192,8 @@ class ContextsTest {
 		assertThat(contexts.current).isNull()
 		val newCurrentContext = activeContext(namespace, namedContext3)
 		contexts.all // create all contexts
-		doReturn(newCurrentContext)
-			.whenever(contextFactory).invoke(any(), anyOrNull()) // returned on 2nd call
+		Mockito.doReturn(newCurrentContext)
+			.`when`(contextFactory).invoke(any(), anyOrNull()) // returned on 2nd call
 		// when
 		val currentContextIsSet = contexts.setCurrent(newCurrentContext)
 		// then
@@ -201,8 +210,8 @@ class ContextsTest {
 		assertThat(currentContext).isNotEqualTo(newCurrentContext)
 		assertThat(contexts.all).contains(currentContext)
 		assertThat(contexts.all).doesNotContain(newCurrentContext)
-		doReturn(newCurrentContext)
-				.whenever(contextFactory).invoke(any(), anyOrNull()) // returned on 2nd call
+		Mockito.doReturn(newCurrentContext)
+				.`when`(contextFactory).invoke(any(), anyOrNull()) // returned on 2nd call
 		// when
 		contexts.setCurrent(newCurrentContext)
 		// then
@@ -216,8 +225,8 @@ class ContextsTest {
 		val newCurrentContext = activeContext(namespace, namedContext3)
 		contexts.all // create all contexts
 		val currentContext = contexts.current!!
-		doReturn(newCurrentContext)
-			.whenever(contextFactory).invoke(any(), anyOrNull()) // returned on 2nd call
+		Mockito.doReturn(newCurrentContext)
+			.`when`(contextFactory).invoke(any(), anyOrNull()) // returned on 2nd call
 		// when
 		contexts.setCurrent(newCurrentContext)
 		// then
