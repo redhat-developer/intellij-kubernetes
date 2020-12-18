@@ -45,11 +45,6 @@ inline fun <reified T> Any.getElement(): T? {
     }
 }
 
-fun TreeStructure.Descriptor<*>.getKind(): String? {
-    val element = this.element
-    return (element as? TreeStructure.Folder)?.kind?.kind ?: (element as? HasMetadata)?.kind
-}
-
 fun AnAction.run(title: String, canBeCancelled: Boolean, runnable: Progressive) {
     ProgressManager.getInstance().run(object :
         Task.Backgroundable(null, title, canBeCancelled){
