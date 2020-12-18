@@ -20,6 +20,8 @@ import io.fabric8.kubernetes.model.util.Helper
 import org.jboss.tools.intellij.kubernetes.model.resource.KubernetesVersionPriority
 import java.util.stream.Collectors
 
+const val MARKER_WILL_BE_DELETED = "willBeDeleted"
+
 /**
  * returns {@code true} if the given resource has the same uid as this resource. Returns {@code false} otherwise.
  */
@@ -70,12 +72,20 @@ fun createContext(definition: CustomResourceDefinition): CustomResourceDefinitio
 		.build()
 }
 
-fun setDeleted(timestamp: String, resource: HasMetadata) {
+fun setDeletionTimestamp(timestamp: String, resource: HasMetadata) {
 	resource.metadata.deletionTimestamp = timestamp
 }
 
-fun isDeleted(resource: HasMetadata?): Boolean {
-	return resource?.metadata?.deletionTimestamp != null
+fun hasDeletionTimestamp(resource: HasMetadata?): Boolean {
+	return null != resource?.metadata?.deletionTimestamp
+}
+
+fun setWillBeDeleted(resource: HasMetadata) {
+	setDeletionTimestamp(MARKER_WILL_BE_DELETED, resource)
+}
+
+fun isWillBeDeleted(resource: HasMetadata?): Boolean {
+	return MARKER_WILL_BE_DELETED == resource?.metadata?.deletionTimestamp
 }
 
 /**
@@ -85,34 +95,36 @@ fun isDeleted(resource: HasMetadata?): Boolean {
  * @see toMessage
  * @see trim
  */
-fun toMessage(resources: Collection<HasMetadata>): String {
+fun toMessage(resources: Collection<HasMetadata>, maxLength: Int): String {
 	return resources.stream()
 		.distinct()
-		.map { toMessage(it) }
+		.map { toMessage(it, maxLength) }
 		.collect(Collectors.joining(",\n"))
 }
 
-fun toMessage(resource: HasMetadata): String {
-	return "${resource.kind} \"${trimName(resource.metadata.name, 20)}\""
+fun toMessage(resource: HasMetadata, maxLength: Int): String {
+	return "${resource.kind} \"${trimWithEllipsis(resource.metadata.name, maxLength)}\""
 }
 
 /**
- * Trims a string to the given length.
+ * Trims a string to the given length. The strategy that's applied is trying to preserve the trailing 3 chars
+ * which are especially important in resource names (starting chars usually the same, trailing portion differing).
  * The following rules are applied:
  * <ul>
- *		<li>if the string is shorter than the given length, the message is returned as is</li>
- *		<li>if the string is longer than the given length of <= 3, the given length is returned</li>
- *		<li>if the string is longer than the given length of <= 6, the given message is trimmed
- *		to length - 3 and "..." is appended</li>
- *		<li>if the string is larger than the given length, the given message is trimmed to the given
- *		length - 3, "..." is appended and the last 3 characters of the message are appended</li>
+ *		<li>if the string is shorter than the requested length, the message is returned as is</li>
+ *		<li>if the string is longer than the requested length of <= 4, the requested length with ellipsis is used and
+ *		then trimmed to the requested length</li>
+ *		<li>if the string is longer than the requested length of <= 6, then the given message is trimmed
+ *		and ellipsis appended</li>
+ *		<li>if the string is longer than the requested length, then the given message is trimmed, ellipsis and
+ *		the last 3 characters are appended</li>
  * </ul>
  */
-fun trimName(name: String, length: Int): String {
+fun trimWithEllipsis(value: String, length: Int): String {
 	return when {
-		length <= name.length -> name
-		length <= 3 -> name.substring(0, length)
-		length <= 6 -> "${name.take(length - 3)}..."
-		else -> "${name.take(length - 6)}...${name.takeLast(3)}"
+		length >= value.length -> value
+		length <= 4 -> ("${value}...").take(length)
+		length <= 6 -> "${value.take(length - 3)}..."
+		else -> "${value.take(length - 6)}...${value.takeLast(3)}"
 	}
 }
