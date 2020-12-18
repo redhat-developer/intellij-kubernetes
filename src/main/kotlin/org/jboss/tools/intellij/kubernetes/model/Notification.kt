@@ -10,9 +10,9 @@
  ******************************************************************************/
 package org.jboss.tools.intellij.kubernetes.model
 
-import com.intellij.notification.NotificationType
 import com.intellij.notification.NotificationDisplayType
 import com.intellij.notification.NotificationGroup
+import com.intellij.notification.NotificationType
 
 class Notification {
 

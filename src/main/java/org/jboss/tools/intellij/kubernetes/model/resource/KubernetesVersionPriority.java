@@ -11,11 +11,11 @@
 package org.jboss.tools.intellij.kubernetes.model.resource;
 
 import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinitionVersion;
+import org.jboss.tools.intellij.kubernetes.model.resource.KubernetesVersionFactory.Version;
 
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
-import org.jboss.tools.intellij.kubernetes.model.resource.KubernetesVersionFactory.Version;
 
 /**
  * A util class that allows to deal with kubernetes versions.

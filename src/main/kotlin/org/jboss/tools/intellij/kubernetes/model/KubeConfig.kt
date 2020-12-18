@@ -13,10 +13,10 @@ package org.jboss.tools.intellij.kubernetes.model
 import com.redhat.devtools.intellij.common.utils.ConfigHelper
 import com.redhat.devtools.intellij.common.utils.ConfigWatcher
 import io.fabric8.kubernetes.api.model.NamedContext
-import io.fabric8.kubernetes.client.DefaultKubernetesClient
-import io.fabric8.kubernetes.client.internal.KubeConfigUtils
 import io.fabric8.kubernetes.client.Config
 import io.fabric8.kubernetes.client.ConfigAware
+import io.fabric8.kubernetes.client.DefaultKubernetesClient
+import io.fabric8.kubernetes.client.internal.KubeConfigUtils
 import java.nio.file.Paths
 import java.util.concurrent.Executors
 

@@ -18,10 +18,10 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.jboss.tools.intellij.kubernetes.model.resource.KubernetesVersionFactory.KubernetesVersion;
 import static org.jboss.tools.intellij.kubernetes.model.resource.KubernetesVersionFactory.NonKubernetesVersion;
 import static org.jboss.tools.intellij.kubernetes.model.resource.KubernetesVersionFactory.Version;
-import static org.assertj.core.api.Assertions.assertThat;
 
 public class KubernetesVersionFactoryTest {
 

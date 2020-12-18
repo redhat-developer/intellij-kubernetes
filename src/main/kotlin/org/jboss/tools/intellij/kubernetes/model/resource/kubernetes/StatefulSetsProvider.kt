@@ -14,8 +14,8 @@ import io.fabric8.kubernetes.api.model.apps.StatefulSet
 import io.fabric8.kubernetes.client.AppsAPIGroupClient
 import org.jboss.tools.intellij.kubernetes.model.resource.NamespacedResourcesProvider
 import org.jboss.tools.intellij.kubernetes.model.resource.ResourceKind
-import java.util.function.Supplier
 import org.jboss.tools.intellij.kubernetes.model.resource.WatchableListableDeletable
+import java.util.function.Supplier
 
 class StatefulSetsProvider(client: AppsAPIGroupClient)
     : NamespacedResourcesProvider<StatefulSet, AppsAPIGroupClient>(client) {

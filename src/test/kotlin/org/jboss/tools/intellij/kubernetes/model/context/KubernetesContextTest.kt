@@ -44,8 +44,8 @@ import org.jboss.tools.intellij.kubernetes.model.mocks.ClientMocks.POD1
 import org.jboss.tools.intellij.kubernetes.model.mocks.ClientMocks.POD2
 import org.jboss.tools.intellij.kubernetes.model.mocks.ClientMocks.POD3
 import org.jboss.tools.intellij.kubernetes.model.mocks.ClientMocks.client
-import org.jboss.tools.intellij.kubernetes.model.mocks.ClientMocks.customResourceDefinition
 import org.jboss.tools.intellij.kubernetes.model.mocks.ClientMocks.customResource
+import org.jboss.tools.intellij.kubernetes.model.mocks.ClientMocks.customResourceDefinition
 import org.jboss.tools.intellij.kubernetes.model.mocks.ClientMocks.resource
 import org.jboss.tools.intellij.kubernetes.model.mocks.Mocks.namespacedResourceProvider
 import org.jboss.tools.intellij.kubernetes.model.mocks.Mocks.nonNamespacedResourceProvider
@@ -59,7 +59,6 @@ import org.jboss.tools.intellij.kubernetes.model.resource.kubernetes.NodesProvid
 import org.jboss.tools.intellij.kubernetes.model.resource.kubernetes.ServicesProvider
 import org.jboss.tools.intellij.kubernetes.model.resource.kubernetes.custom.GenericResource
 import org.jboss.tools.intellij.kubernetes.model.util.Clients
-
 import org.junit.Before
 import org.junit.Test
 import java.util.function.Supplier
