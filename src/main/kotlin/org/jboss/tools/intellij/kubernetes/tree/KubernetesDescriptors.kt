@@ -39,10 +39,8 @@ import org.jboss.tools.intellij.kubernetes.model.util.getContainers
 import org.jboss.tools.intellij.kubernetes.model.util.getVersion
 import org.jboss.tools.intellij.kubernetes.model.util.isRunning
 import org.jboss.tools.intellij.kubernetes.tree.AbstractTreeStructureContribution.DescriptorFactory
-import org.jboss.tools.intellij.kubernetes.tree.TreeStructure.Descriptor
 import org.jboss.tools.intellij.kubernetes.tree.TreeStructure.ResourceDescriptor
 import org.jboss.tools.intellij.kubernetes.tree.TreeStructure.ResourcePropertyDescriptor
-
 import javax.swing.Icon
 
 object KubernetesDescriptors {

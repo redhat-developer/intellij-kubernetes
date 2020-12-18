@@ -10,7 +10,6 @@
  ******************************************************************************/
 package org.jboss.tools.intellij.kubernetes.model.resource.kubernetes
 
-import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.Namespace
 import io.fabric8.kubernetes.client.KubernetesClient
 import org.jboss.tools.intellij.kubernetes.model.resource.NonNamespacedResourcesProvider

@@ -19,7 +19,6 @@ import io.fabric8.kubernetes.api.model.HasMetadata
 import org.jboss.tools.intellij.kubernetes.model.util.isDeleted
 import org.jboss.tools.intellij.kubernetes.model.util.toMessage
 import org.jboss.tools.intellij.kubernetes.tree.ResourceWatchController
-import java.util.stream.Collectors
 import javax.swing.tree.TreePath
 
 class DeleteResourceAction: StructureTreeAction() {
