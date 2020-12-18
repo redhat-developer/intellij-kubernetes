@@ -25,6 +25,8 @@ import org.jboss.tools.intellij.kubernetes.model.IResourceModel
 import org.jboss.tools.intellij.kubernetes.model.context.IActiveContext
 import org.jboss.tools.intellij.kubernetes.model.context.IContext
 import org.jboss.tools.intellij.kubernetes.model.resource.ResourceKind
+import org.jboss.tools.intellij.kubernetes.model.util.hasDeletionTimestamp
+import org.jboss.tools.intellij.kubernetes.model.util.isWillBeDeleted
 import java.util.*
 import javax.swing.Icon
 
@@ -232,14 +234,13 @@ open class TreeStructure(
 
         override fun update(presentation: PresentationData) {
             super.update(presentation)
-            if (isDeleted(element)) {
+            if (isWillBeDeleted(element)) {
                 presentation.presentableText += " (deleted)"
                 presentation.setAttributesKey(CodeInsightColors.WRONG_REFERENCES_ATTRIBUTES)
+            } else if (hasDeletionTimestamp(element)) {
+                presentation.presentableText += " (terminating)"
+                presentation.setAttributesKey(CodeInsightColors.WRONG_REFERENCES_ATTRIBUTES)
             }
-        }
-
-        protected open fun isDeleted(element: T?): Boolean {
-            return element?.metadata?.deletionTimestamp != null
         }
     }
 

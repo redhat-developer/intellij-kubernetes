@@ -16,7 +16,7 @@ import com.intellij.openapi.progress.Progressive
 import com.intellij.openapi.ui.Messages
 import com.redhat.devtools.intellij.common.actions.StructureTreeAction
 import io.fabric8.kubernetes.api.model.HasMetadata
-import org.jboss.tools.intellij.kubernetes.model.util.isDeleted
+import org.jboss.tools.intellij.kubernetes.model.util.hasDeletionTimestamp
 import org.jboss.tools.intellij.kubernetes.model.util.toMessage
 import org.jboss.tools.intellij.kubernetes.tree.ResourceWatchController
 import javax.swing.tree.TreePath
@@ -45,7 +45,7 @@ class DeleteResourceAction: StructureTreeAction() {
 
     private fun userConfirmed(resources: List<HasMetadata>): Boolean {
         val answer = Messages.showYesNoDialog(
-            "Delete ${toMessage(resources)}?",
+            "Delete ${toMessage(resources, 30)}?",
             "Delete resources?",
             Messages.getQuestionIcon())
         return answer == Messages.OK
@@ -59,6 +59,6 @@ class DeleteResourceAction: StructureTreeAction() {
     override fun isVisible(selected: Any?): Boolean {
         val element = selected?.getElement<HasMetadata>()
         return element != null
-                    && !isDeleted(element)
+                    && !hasDeletionTimestamp(element)
     }
 }

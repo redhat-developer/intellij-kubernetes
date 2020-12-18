@@ -38,7 +38,7 @@ import org.jboss.tools.intellij.kubernetes.model.resource.kubernetes.custom.Name
 import org.jboss.tools.intellij.kubernetes.model.resource.kubernetes.custom.NonNamespacedCustomResourcesProvider
 import org.jboss.tools.intellij.kubernetes.model.util.Clients
 import org.jboss.tools.intellij.kubernetes.model.util.sameUid
-import org.jboss.tools.intellij.kubernetes.model.util.setDeleted
+import org.jboss.tools.intellij.kubernetes.model.util.setWillBeDeleted
 import org.jboss.tools.intellij.kubernetes.model.util.toMessage
 import java.net.URL
 import java.util.function.Supplier
@@ -428,10 +428,10 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
         val provider = getProvider(kind, scope) ?: return
         val deleted = provider.delete(resources)
         if (deleted) {
-            resources.forEach { setDeleted(MARKER_WILL_BE_DELETED, it) }
+            resources.forEach { setWillBeDeleted(it) }
             modelChange.fireModified(resources)
         } else {
-            notification.error("Could not delete resources", "Resources: ${toMessage(resources)} ")
+            notification.error("Could not delete resources", "Resources: ${toMessage(resources, 30)} ")
         }
     }
 
