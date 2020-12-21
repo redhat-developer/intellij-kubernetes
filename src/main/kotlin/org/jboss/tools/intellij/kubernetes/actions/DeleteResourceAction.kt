@@ -16,6 +16,8 @@ import com.intellij.openapi.progress.Progressive
 import com.intellij.openapi.ui.Messages
 import com.redhat.devtools.intellij.common.actions.StructureTreeAction
 import io.fabric8.kubernetes.api.model.HasMetadata
+import org.jboss.tools.intellij.kubernetes.model.Notification
+import org.jboss.tools.intellij.kubernetes.model.util.MultiResourceException
 import org.jboss.tools.intellij.kubernetes.model.util.hasDeletionTimestamp
 import org.jboss.tools.intellij.kubernetes.model.util.toMessage
 import org.jboss.tools.intellij.kubernetes.tree.ResourceWatchController
@@ -37,7 +39,9 @@ class DeleteResourceAction: StructureTreeAction() {
             Progressive {
                 try {
                     model.delete(toDelete)
-                } catch (e: Exception) {
+                } catch (e: MultiResourceException) {
+                    val resources = e.causes.flatMap { it.resources }
+                    Notification().error("Could not delete resource(s)", toMessage(resources, 30))
                     logger<ResourceWatchController>().warn("Could not delete resources.", e)
                 }
             })

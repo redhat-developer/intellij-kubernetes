@@ -59,8 +59,10 @@ import org.jboss.tools.intellij.kubernetes.model.resource.kubernetes.NodesProvid
 import org.jboss.tools.intellij.kubernetes.model.resource.kubernetes.ServicesProvider
 import org.jboss.tools.intellij.kubernetes.model.resource.kubernetes.custom.GenericResource
 import org.jboss.tools.intellij.kubernetes.model.util.Clients
+import org.jboss.tools.intellij.kubernetes.model.util.MultiResourceException
 import org.junit.Before
 import org.junit.Test
+import org.mockito.Mockito
 import java.util.function.Supplier
 
 class KubernetesContextTest {
@@ -435,8 +437,6 @@ class KubernetesContextTest {
 	fun `#delete should set resource deletionTimestamp if resource was deleted`() {
 		// given
 		val toDelete = listOf(POD2, POD3)
-		whenever(allPodsProvider.delete(any()))
-			.thenReturn(true)
 		// when
 		context.delete(toDelete)
 		// then
@@ -444,14 +444,49 @@ class KubernetesContextTest {
 		verify(POD3.metadata, atLeastOnce()).setDeletionTimestamp(any())
 	}
 
-	@Test
-	fun `#delete should NOT fire if resource was deleted`() {
+	@Test(expected=MultiResourceException::class)
+	fun `#delete should throw if resource was NOT deleted`() {
 		// given
 		val toDelete = listOf(POD2)
-		whenever(allPodsProvider.delete(any<List<HasMetadata>>()))
+		whenever(allPodsProvider.delete(any()))
 			.thenReturn(false)
 		// when
 		context.delete(toDelete)
+		// then
+		// expect exception
+	}
+
+	@Test
+	fun `#delete should throw for provider that failed, not successful ones`() {
+		// given
+		val toDelete = listOf(POD2, NAMESPACE2)
+		whenever(allPodsProvider.delete(any()))
+			.thenReturn(false)
+		// when
+		val ex = try {
+			context.delete(toDelete)
+			null
+		} catch (e: MultiResourceException) {
+			e
+		}
+		// then
+		assertThat(ex?.causes?.size).isEqualTo(1)
+		val resourceEx = ex?.causes?.toTypedArray()!![0]
+		assertThat(resourceEx.resources).containsExactly(POD2)
+	}
+
+	@Test
+	fun `#delete should NOT fire if resource was NOT deleted`() {
+		// given
+		val toDelete = listOf(POD2)
+		whenever(allPodsProvider.delete(any()))
+			.thenReturn(false)
+		// when
+		try {
+			context.delete(toDelete)
+		} catch (e: MultiResourceException) {
+			// ignore expected exception
+		}
 		// then
 		verify(modelChange, never()).fireModified(toDelete)
 	}

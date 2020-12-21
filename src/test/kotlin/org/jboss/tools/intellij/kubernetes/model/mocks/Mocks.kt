@@ -89,12 +89,14 @@ object Mocks {
     fun <T : HasMetadata, C: Client> nonNamespacedResourceProvider(
         kind: ResourceKind<T>,
         resources: Collection<T>,
-        watchableSupplier: Supplier<Watchable<Watch, Watcher<T>>?> = Supplier { null })
+        watchableSupplier: Supplier<Watchable<Watch, Watcher<T>>?> = Supplier { null },
+        deleteSuccess: Boolean = true)
             : INonNamespacedResourcesProvider<T, C> {
         return mock {
             on { this.kind } doReturn kind
             on { allResources } doReturn resources
             on { getWatchable() } doReturn watchableSupplier
+            on { delete(any()) } doReturn deleteSuccess
         }
     }
 
