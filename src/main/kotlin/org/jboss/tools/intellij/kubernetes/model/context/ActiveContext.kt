@@ -37,6 +37,8 @@ import org.jboss.tools.intellij.kubernetes.model.resource.kubernetes.custom.Gene
 import org.jboss.tools.intellij.kubernetes.model.resource.kubernetes.custom.NamespacedCustomResourcesProvider
 import org.jboss.tools.intellij.kubernetes.model.resource.kubernetes.custom.NonNamespacedCustomResourcesProvider
 import org.jboss.tools.intellij.kubernetes.model.util.Clients
+import org.jboss.tools.intellij.kubernetes.model.util.MultiResourceException
+import org.jboss.tools.intellij.kubernetes.model.util.ResourceException
 import org.jboss.tools.intellij.kubernetes.model.util.sameUid
 import org.jboss.tools.intellij.kubernetes.model.util.setWillBeDeleted
 import org.jboss.tools.intellij.kubernetes.model.util.toMessage
@@ -148,7 +150,7 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
         if (namespace == null) {
             return null
         }
-        return namespaces.find { namespace == it.metadata.name }
+        return namespaces.find { namespace == it.metadata?.name }
     }
 
     protected abstract fun getNamespacesKind(): ResourceKind<N>
@@ -418,20 +420,35 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
     }
 
     override fun delete(resources: List<HasMetadata>) {
-        resources
+        val exceptions = resources
             .distinct()
             .groupBy { Pair(ResourceKind.create(it), toResourcesIn(it)) }
-            .forEach { delete(it.key.first, it.key.second, it.value) }
+            .mapNotNull {
+                try {
+                    delete(it.key.first, it.key.second, it.value)
+                    null
+                } catch (e: KubernetesClientException) {
+                    ResourceException(it.value, "Could not delete ${it.key.first} resource(s) ${toMessage(resources, -1)}", e)
+                }
+            }
+        if (exceptions.isNotEmpty()) {
+            val resources = exceptions.flatMap { it.resources }
+            throw MultiResourceException("Could not delete resource(s) ${toMessage(resources, -1)}", exceptions)
+        }
     }
 
     private fun delete(kind: ResourceKind<out HasMetadata>, scope: ResourcesIn, resources: List<HasMetadata>) {
         val provider = getProvider(kind, scope) ?: return
-        val deleted = provider.delete(resources)
-        if (deleted) {
-            resources.forEach { setWillBeDeleted(it) }
-            modelChange.fireModified(resources)
-        } else {
-            notification.error("Could not delete resources", "Resources: ${toMessage(resources, 30)} ")
+        try {
+            val deleted = provider.delete(resources)
+            if (deleted) {
+                resources.forEach { setWillBeDeleted(it) }
+                modelChange.fireModified(resources)
+            } else {
+                throw KubernetesClientException("Could not delete $kind resources: ${toMessage(resources, -1)} ")
+            }
+        } catch (e: KubernetesClientException) {
+            throw KubernetesClientException("Could not delete $kind resources: ${toMessage(resources, -1)} ", e)
         }
     }
 

@@ -109,8 +109,9 @@ fun toMessage(resource: HasMetadata, maxLength: Int): String {
 }
 
 /**
- * Trims a string to the given length. The strategy that's applied is trying to preserve the trailing 3 chars
- * which are especially important in resource names (starting chars usually the same, trailing portion differing).
+ * Trims a string to the given length. A negative length is interpreted as no trimming to be applied.
+ * The strategy that's applied is trying to preserve the trailing 3 chars which are especially important
+ * in resource names (starting chars usually the same, trailing portion differing).
  * The following rules are applied:
  * <ul>
  *		<li>if the string is shorter than the requested length, the message is returned as is</li>
@@ -124,9 +125,13 @@ fun toMessage(resource: HasMetadata, maxLength: Int): String {
  */
 fun trimWithEllipsis(value: String, length: Int): String {
 	return when {
-		length >= value.length -> value
-		length <= 4 -> ("${value}...").take(length)
-		length <= 6 -> "${value.take(length - 3)}..."
+		length < 0
+				|| length >= value.length
+			-> value
+		length <= 4
+			-> ("${value}...").take(length)
+		length <= 6
+			-> "${value.take(length - 3)}..."
 		else -> "${value.take(length - 6)}...${value.takeLast(3)}"
 	}
 }
