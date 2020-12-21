@@ -24,9 +24,11 @@ const val MARKER_WILL_BE_DELETED = "willBeDeleted"
 
 /**
  * returns {@code true} if the given resource has the same uid as this resource. Returns {@code false} otherwise.
+ *
+ * @see ObjectMeta.getUid()
  */
 fun HasMetadata.sameUid(resource: HasMetadata): Boolean {
-	return this.metadata.uid == resource.metadata.uid
+	return this.metadata?.uid == resource.metadata?.uid
 }
 
 /**

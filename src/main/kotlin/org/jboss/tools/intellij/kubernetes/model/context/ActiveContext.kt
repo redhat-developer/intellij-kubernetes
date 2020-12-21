@@ -154,7 +154,7 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
     protected abstract fun getNamespacesKind(): ResourceKind<N>
 
     override fun isCurrentNamespace(resource: HasMetadata): Boolean {
-        val current = getCurrentNamespace(getAllResources(getNamespacesKind(), NO_NAMESPACE))
+        val current = getCurrentNamespace(getAllResources(getNamespacesKind(), NO_NAMESPACE)) ?: return false
         return resource.sameUid(current as HasMetadata)
     }
 
