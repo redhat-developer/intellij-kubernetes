@@ -68,32 +68,32 @@ class ResourceUtilsTest {
 	}
 
 	@Test
-	fun `#sameResource should return false if both resources have different selfLink`() {
+	fun `#sameResource should return false if both resources have null uid and different selfLink`() {
 		// given
-		val nemo = resource<Pod>("agent smith", selfLink = "red pill")
-		val morpheus = resource<Pod>("agent smith", selfLink = "blue pill")
+		val red = resource<Pod>("agent smith", uid = null, selfLink = "red pill")
+		val blue = resource<Pod>("agent smith", uid = null, selfLink = "blue pill")
 		// when
-		val same = nemo.sameResource(morpheus)
+		val same = red.sameResource(blue)
 		// then
 		assertThat(same).isFalse()
 	}
 
 	@Test
-	fun `#sameResource should return true if both resources have same selfLink`() {
+	fun `#sameResource should return true if both resources have null uid and same selfLink`() {
 		// given
-		val nemo = resource<Pod>("trinity", selfLink = "red pill")
-		val morpheus = resource<Pod>("merovingian", selfLink = "red pill")
+		val trinity = resource<Pod>("trinity", uid = null, selfLink = "red pill")
+		val merovingian = resource<Pod>("merovingian", uid = null, selfLink = "red pill")
 		// when
-		val same = nemo.sameResource(morpheus)
+		val same = trinity.sameResource(merovingian)
 		// then
 		assertThat(same).isTrue()
 	}
 
 	@Test
-	fun `#sameResource should return true if both resources have same uid`() {
+	fun `#sameResource should return true if both resources have same uid and null selfLink`() {
 		// given
-		val nemo = resource<Pod>("nemo", uid = "red pill")
-		val morpheus = resource<Pod>("morpheus", uid = "red pill")
+		val nemo = resource<Pod>("nemo", uid = "red pill", selfLink = null)
+		val morpheus = resource<Pod>("morpheus", uid = "red pill", selfLink = null)
 		// when
 		val same = nemo.sameResource(morpheus)
 		// then
@@ -103,8 +103,8 @@ class ResourceUtilsTest {
 	@Test
 	fun `#sameResource should return false if both resources have different uid`() {
 		// given
-		val nemo = resource<Pod>("nemo", uid = "red pill")
-		val morpheus = resource<Pod>("morpheus", uid = "blue pill")
+		val nemo = resource<Pod>("nemo", uid = "red pill", selfLink = null)
+		val morpheus = resource<Pod>("morpheus", uid = "blue pill", selfLink = null)
 		// when
 		val same = nemo.sameResource(morpheus)
 		// then
@@ -134,7 +134,7 @@ class ResourceUtilsTest {
 	}
 
 	@Test
-	fun `#sameResource should return false if both resources have different uid and selflink`() {
+	fun `#sameResource should return false if both resources have different uid and selfLink`() {
 		// given
 		val nemo = resource<Pod>("nemo", uid = "red pill", selfLink = "Nebuchadnezzar")
 		val morpheus = resource<Pod>("morpheus", uid = "blue pill", selfLink = "Zion")
