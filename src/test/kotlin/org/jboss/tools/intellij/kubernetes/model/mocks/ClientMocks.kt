@@ -201,7 +201,7 @@ object ClientMocks {
         return definition
     }
 
-    fun version(name: String): CustomResourceDefinitionVersion {
+    private fun version(name: String): CustomResourceDefinitionVersion {
         return mock {
             on { mock.name } doReturn name
         }
@@ -210,8 +210,8 @@ object ClientMocks {
     inline fun <reified T: HasMetadata> resource(
         name: String,
         namespace: String? = null,
-        uid: String = System.currentTimeMillis().toString(),
-        selfLink: String = "/apis/${namespace ?: ""}/$name"): T {
+        uid: String? = System.currentTimeMillis().toString(),
+        selfLink: String? = "/apis/${namespace}/$name"): T {
         val metadata = objectMeta(name, namespace, uid, selfLink)
         return mock {
             on { getMetadata() } doReturn metadata
@@ -224,8 +224,8 @@ object ClientMocks {
         name: String,
         namespace: String,
         definition: CustomResourceDefinition,
-        uid: String = System.currentTimeMillis().toString(),
-        selfLink: String = "/apis/$namespace/customresources/$name"
+        uid: String? = System.currentTimeMillis().toString(),
+        selfLink: String? = "/apis/$namespace/customresources/$name"
     ): GenericResource {
         val metadata = objectMeta(name, namespace, uid, selfLink)
         val apiVersion = getApiVersion(
@@ -239,7 +239,7 @@ object ClientMocks {
         }
     }
 
-    fun objectMeta(name: String, namespace: String?, uid: String, selfLink: String): ObjectMeta {
+    fun objectMeta(name: String, namespace: String?, uid: String?, selfLink: String?): ObjectMeta {
         return mock {
             on { getName() } doReturn name
             on { getNamespace() } doReturn namespace
