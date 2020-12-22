@@ -39,7 +39,7 @@ import org.jboss.tools.intellij.kubernetes.model.resource.kubernetes.custom.NonN
 import org.jboss.tools.intellij.kubernetes.model.util.Clients
 import org.jboss.tools.intellij.kubernetes.model.util.MultiResourceException
 import org.jboss.tools.intellij.kubernetes.model.util.ResourceException
-import org.jboss.tools.intellij.kubernetes.model.util.sameUid
+import org.jboss.tools.intellij.kubernetes.model.util.sameResource
 import org.jboss.tools.intellij.kubernetes.model.util.setWillBeDeleted
 import org.jboss.tools.intellij.kubernetes.model.util.toMessage
 import java.net.URL
@@ -157,7 +157,7 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
 
     override fun isCurrentNamespace(resource: HasMetadata): Boolean {
         val current = getCurrentNamespace(getAllResources(getNamespacesKind(), NO_NAMESPACE)) ?: return false
-        return resource.sameUid(current as HasMetadata)
+        return resource.sameResource(current as HasMetadata)
     }
 
     override fun <R: HasMetadata> getAllResources(kind: ResourceKind<R>, resourcesIn: ResourcesIn): Collection<R> {
