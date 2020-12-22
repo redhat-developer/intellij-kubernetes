@@ -130,7 +130,8 @@ class KubernetesStructure(model: IResourceModel) : AbstractTreeStructureContribu
 
 	override fun getParentElement(element: Any): Any? {
 		try {
-			val node = elementsTree.find { it.isAnchor(element) } ?: return getRootElement()
+			// default to null to allow tree structure to choose default parent element
+			val node = elementsTree.find { it.isAnchor(element) } ?: return null
 			return node.getParentElements(element)
 		} catch (e: ResourceException) {
 			return null
