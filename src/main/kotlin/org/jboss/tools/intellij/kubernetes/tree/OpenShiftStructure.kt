@@ -14,6 +14,7 @@ import com.intellij.ide.util.treeView.NodeDescriptor
 import com.intellij.openapi.util.IconLoader
 import com.intellij.ui.tree.LeafState
 import io.fabric8.kubernetes.api.model.HasMetadata
+import io.fabric8.kubernetes.api.model.Namespace
 import io.fabric8.kubernetes.api.model.Node
 import io.fabric8.kubernetes.api.model.ReplicationController
 import io.fabric8.openshift.api.model.Build
@@ -136,7 +137,8 @@ class OpenShiftStructure(model: IResourceModel): AbstractTreeStructureContributi
                             .list()
                             .sortedBy(resourceName)
                 else ->
-                    getRootElement()
+                    // fallback to (calling) tree structure
+                    null
             }
         } catch(e: ResourceException) {
             return null
