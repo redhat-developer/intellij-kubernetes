@@ -207,8 +207,12 @@ object ClientMocks {
         }
     }
 
-    inline fun <reified T: HasMetadata> resource(name: String, namespace: String? = null, uid: String = System.currentTimeMillis().toString()): T {
-        val metadata = objectMeta(name, namespace, uid)
+    inline fun <reified T: HasMetadata> resource(
+        name: String,
+        namespace: String? = null,
+        uid: String = System.currentTimeMillis().toString(),
+        selfLink: String = "/apis/${namespace ?: ""}/$name"): T {
+        val metadata = objectMeta(name, namespace, uid, selfLink)
         return mock {
             on { getMetadata() } doReturn metadata
             on { getApiVersion() } doReturn getApiVersion(T::class.java)
@@ -220,9 +224,10 @@ object ClientMocks {
         name: String,
         namespace: String,
         definition: CustomResourceDefinition,
-        uid: String = System.currentTimeMillis().toString()
+        uid: String = System.currentTimeMillis().toString(),
+        selfLink: String = "/apis/$namespace/customresources/$name"
     ): GenericResource {
-        val metadata = objectMeta(name, namespace, uid)
+        val metadata = objectMeta(name, namespace, uid, selfLink)
         val apiVersion = getApiVersion(
             definition.spec.group,
             definition.spec.version) // TODO: deal with multiple versions
@@ -234,13 +239,12 @@ object ClientMocks {
         }
     }
 
-    fun objectMeta(name: String, namespace: String?, uid: String): ObjectMeta {
+    fun objectMeta(name: String, namespace: String?, uid: String, selfLink: String): ObjectMeta {
         return mock {
-            on { getUid() } doReturn uid
             on { getName() } doReturn name
-            if (namespace != null) {
-                on { getNamespace() } doReturn namespace
-            }
+            on { getNamespace() } doReturn namespace
+            on { getUid() } doReturn uid
+            on { getSelfLink() } doReturn selfLink
         }
     }
 

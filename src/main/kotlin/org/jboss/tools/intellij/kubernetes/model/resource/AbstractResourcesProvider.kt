@@ -12,7 +12,7 @@ package org.jboss.tools.intellij.kubernetes.model.resource
 
 import com.intellij.openapi.diagnostic.logger
 import io.fabric8.kubernetes.api.model.HasMetadata
-import org.jboss.tools.intellij.kubernetes.model.util.sameUid
+import org.jboss.tools.intellij.kubernetes.model.util.sameResource
 
 abstract class AbstractResourcesProvider<R : HasMetadata> : IResourcesProvider<R> {
 
@@ -32,7 +32,7 @@ abstract class AbstractResourcesProvider<R : HasMetadata> : IResourcesProvider<R
         logger<AbstractResourcesProvider<*>>().debug("Adding resource ${resource.metadata.name}.")
         // don't add resource if different instance of same resource is already contained
         synchronized(_allResources) {
-            return when (val existing = _allResources.find { resource.sameUid(it) }) {
+            return when (val existing = _allResources.find { resource.sameResource(it) }) {
                 null -> _allResources.add(resource as R)
                 resource -> false
                 else -> replace(existing, resource)
@@ -49,7 +49,7 @@ abstract class AbstractResourcesProvider<R : HasMetadata> : IResourcesProvider<R
             // do not remove by instance equality (ex. when removal is triggered by resource watch)
             // or equals bcs instance to be removed can be different and not equals either
             // (#equals would not match bcs properties - ex. phase - changed)
-            return _allResources.removeIf { resource.sameUid(it) }
+            return _allResources.removeIf { resource.sameResource(it) }
         }
     }
 
@@ -59,7 +59,7 @@ abstract class AbstractResourcesProvider<R : HasMetadata> : IResourcesProvider<R
         }
         logger<AbstractResourcesProvider<*>>().debug("Replacing resource ${resource.metadata.name}.")
         synchronized(_allResources) {
-            val toReplace = _allResources.find { resource.sameUid(it) } ?: return false
+            val toReplace = _allResources.find { resource.sameResource(it) } ?: return false
             return replace(toReplace, resource)
         }
     }

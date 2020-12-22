@@ -23,12 +23,42 @@ import java.util.stream.Collectors
 const val MARKER_WILL_BE_DELETED = "willBeDeleted"
 
 /**
+ * returns {@code true} if the given resource have the same uid or same selfLink.
+ *
+ * @see io.fabric8.kubernetes.api.model.ObjectMeta.getUid()
+ */
+fun HasMetadata.sameResource(resource: HasMetadata): Boolean {
+	return sameUid(resource)
+			|| sameSelfLink(resource)
+}
+
+/**
  * returns {@code true} if the given resource has the same uid as this resource. Returns {@code false} otherwise.
  *
- * @see ObjectMeta.getUid()
+ * @see io.fabric8.kubernetes.api.model.ObjectMeta.getUid()
  */
 fun HasMetadata.sameUid(resource: HasMetadata): Boolean {
-	return this.metadata?.uid == resource.metadata?.uid
+	if (this.metadata?.uid == null
+		&& resource.metadata?.uid == null) {
+		return false
+	}
+	return resource.metadata?.uid == this.metadata?.uid
+}
+
+/**
+ * returns {@code true} if the given resource has the same selfLink as this resource. Returns {@code false} otherwise.
+ * SelfLink will be deprecated in kubernetes 1.19 and removed in 1.21.
+ * See <a href="https://github.com/kubernetes/enhancements/tree/master/keps/sig-api-machinery/1164-remove-selflink#risks-and-mitigations">KEP-1164: Deprecate and Remove SelfLink</a>
+ * and <a href="https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.19/">Kubernetes API Overview, ObjectMeta v1 meta</a>
+ *
+ * @see io.fabric8.kubernetes.api.model.ObjectMeta.getSelfLink
+ */
+fun HasMetadata.sameSelfLink(resource: HasMetadata): Boolean {
+	if (this.metadata?.selfLink == null
+		&& resource.metadata?.selfLink == null) {
+		return false
+	}
+	return this.metadata?.selfLink == resource.metadata?.selfLink
 }
 
 /**

@@ -302,6 +302,16 @@ class KubernetesContextTest {
 	}
 
 	@Test
+	fun `#isCurrentNamespace should return false if given namespace is not current namespaces`() {
+		// given
+		assertThat(currentNamespace).isNotEqualTo(NAMESPACE3)
+		// when
+		val isCurrent = context.isCurrentNamespace(NAMESPACE3)
+		// then
+		assertThat(isCurrent).isFalse()
+	}
+
+	@Test
 	fun `#getResources should get all resources in provider for given resource type in correct ResourcesIn type`() {
 		// given
 		// when

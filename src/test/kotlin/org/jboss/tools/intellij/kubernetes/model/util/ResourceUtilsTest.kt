@@ -10,7 +10,9 @@
  ******************************************************************************/
 package org.jboss.tools.intellij.kubernetes.model.util
 
+import io.fabric8.kubernetes.api.model.Pod
 import org.assertj.core.api.Assertions.assertThat
+import org.jboss.tools.intellij.kubernetes.model.mocks.ClientMocks.resource
 import org.junit.Test
 
 class ResourceUtilsTest {
@@ -65,4 +67,80 @@ class ResourceUtilsTest {
 		assertThat(trimmed).isEqualTo("Papa...tte")
 	}
 
+	@Test
+	fun `#sameResource should return false if both resources have different selfLink`() {
+		// given
+		val nemo = resource<Pod>("agent smith", selfLink = "red pill")
+		val morpheus = resource<Pod>("agent smith", selfLink = "blue pill")
+		// when
+		val same = nemo.sameResource(morpheus)
+		// then
+		assertThat(same).isFalse()
+	}
+
+	@Test
+	fun `#sameResource should return true if both resources have same selfLink`() {
+		// given
+		val nemo = resource<Pod>("trinity", selfLink = "red pill")
+		val morpheus = resource<Pod>("merovingian", selfLink = "red pill")
+		// when
+		val same = nemo.sameResource(morpheus)
+		// then
+		assertThat(same).isTrue()
+	}
+
+	@Test
+	fun `#sameResource should return true if both resources have same uid`() {
+		// given
+		val nemo = resource<Pod>("nemo", uid = "red pill")
+		val morpheus = resource<Pod>("morpheus", uid = "red pill")
+		// when
+		val same = nemo.sameResource(morpheus)
+		// then
+		assertThat(same).isTrue()
+	}
+
+	@Test
+	fun `#sameResource should return false if both resources have different uid`() {
+		// given
+		val nemo = resource<Pod>("nemo", uid = "red pill")
+		val morpheus = resource<Pod>("morpheus", uid = "blue pill")
+		// when
+		val same = nemo.sameResource(morpheus)
+		// then
+		assertThat(same).isFalse()
+	}
+
+	@Test
+	fun `#sameResource should return true if both resources have same uid but different selfLink`() {
+		// given
+		val nemo = resource<Pod>("nemo", uid = "red pill", selfLink = "Nebuchadnezzar")
+		val morpheus = resource<Pod>("morpheus", uid = "red pill", selfLink = "Zion")
+		// when
+		val same = nemo.sameResource(morpheus)
+		// then
+		assertThat(same).isTrue()
+	}
+
+	@Test
+	fun `#sameResource should return true if both resources have different uid but same selfLink`() {
+		// given
+		val nemo = resource<Pod>("nemo", uid = "red pill", selfLink = "Nebuchadnezzar")
+		val morpheus = resource<Pod>("morpheus", uid = "blue pill", selfLink = "Nebuchadnezzar")
+		// when
+		val same = nemo.sameResource(morpheus)
+		// then
+		assertThat(same).isTrue()
+	}
+
+	@Test
+	fun `#sameResource should return false if both resources have different uid and selflink`() {
+		// given
+		val nemo = resource<Pod>("nemo", uid = "red pill", selfLink = "Nebuchadnezzar")
+		val morpheus = resource<Pod>("morpheus", uid = "blue pill", selfLink = "Zion")
+		// when
+		val same = nemo.sameResource(morpheus)
+		// then
+		assertThat(same).isFalse()
+	}
 }
