@@ -28,4 +28,10 @@ class Notification {
 		NOTIFICATION_GROUP.createNotification(title, content, NotificationType.ERROR, null)
 			.notify(null)
 	}
+
+	fun info(title: String, content: String) {
+		NOTIFICATION_GROUP.createNotification(title, content, NotificationType.INFORMATION, null)
+			.notify(null)
+	}
+
 }

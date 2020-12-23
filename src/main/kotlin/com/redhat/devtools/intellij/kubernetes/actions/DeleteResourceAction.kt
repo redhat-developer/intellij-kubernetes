@@ -39,6 +39,7 @@ class DeleteResourceAction: StructureTreeAction() {
             Progressive {
                 try {
                     model.delete(toDelete)
+                    Notification().info("Resources Deleted", toMessage(toDelete, 30))
                 } catch (e: MultiResourceException) {
                     val resources = e.causes.flatMap { it.resources }
                     Notification().error("Could not delete resource(s)", toMessage(resources, 30))
