@@ -1,5 +1,5 @@
 <idea-plugin>
-    <id>org.jboss.tools.intellij.kubernetes</id>
+    <id>com.redhat.devtools.intellij.kubernetes</id>
     <name>IntelliJ Kubernetes by Red Hat</name>
     <vendor email="support@redhat.com" url="http://www.redhat.com">Red Hat</vendor>
 
@@ -8,42 +8,42 @@
     <extensions defaultExtensionNs="com.intellij">
         <toolWindow id="Kubernetes"
                     anchor="left"
-                    factoryClass="org.jboss.tools.intellij.kubernetes.KubernetesToolWindowFactory"
+                    factoryClass="com.redhat.devtools.intellij.kubernetes.KubernetesToolWindowFactory"
                     icon="/META-INF/pluginIcon13x13.svg"/>
-        <applicationService serviceInterface="org.jboss.tools.intellij.kubernetes.model.IResourceModel"
-                        serviceImplementation="org.jboss.tools.intellij.kubernetes.model.ResourceModel" />
+        <applicationService serviceInterface="com.redhat.devtools.intellij.kubernetes.model.IResourceModel"
+                        serviceImplementation="com.redhat.devtools.intellij.kubernetes.model.ResourceModel" />
     </extensions>
 
     <extensionPoints>
         <extensionPoint name="resourceProvider"
-                        interface="org.jboss.tools.intellij.kubernetes.model.resource.IResourcesProviderFactory"/>
+                        interface="com.redhat.devtools.intellij.kubernetes.model.resource.IResourcesProviderFactory"/>
         <extensionPoint name="structureContribution"
-                        interface="org.jboss.tools.intellij.kubernetes.tree.ITreeStructureContributionFactory"/>
+                        interface="com.redhat.devtools.intellij.kubernetes.tree.ITreeStructureContributionFactory"/>
     </extensionPoints>
 
     <actions>
-        <group id="org.jboss.tools.intellij.kubernetes.tree" popup="true">
+        <group id="com.redhat.devtools.intellij.kubernetes.tree" popup="true">
             <!-- Application Explorer -->
             <!-- action icon via class: has to be in 'icons' package and name ending with *Icons -->
             <!-- https://www.jetbrains.org/intellij/sdk/docs/reference_guide/work_with_icons_and_images.html -->
-            <action class="org.jboss.tools.intellij.kubernetes.actions.SetAsCurrentClusterAction"
-                    id="org.jboss.tools.intellij.kubernetes.actions.SetAsCurrentClusterAction"
+            <action class="com.redhat.devtools.intellij.kubernetes.actions.SetAsCurrentClusterAction"
+                    id="com.redhat.devtools.intellij.kubernetes.actions.SetAsCurrentClusterAction"
                     text="Set as Current Cluster"
                     icon="AllIcons.Nodes.EmptyNode"/>
-            <action class="org.jboss.tools.intellij.kubernetes.actions.UseNamespaceAction"
-                    id="org.jboss.tools.intellij.kubernetes.actions.UseNamespaceAction"
+            <action class="com.redhat.devtools.intellij.kubernetes.actions.UseNamespaceAction"
+                    id="com.redhat.devtools.intellij.kubernetes.actions.UseNamespaceAction"
                     text="Use Namespace"
                     icon="AllIcons.Nodes.EmptyNode"/>
-            <action class="org.jboss.tools.intellij.kubernetes.actions.UseProjectAction"
-                    id="org.jboss.tools.intellij.kubernetes.actions.UseProjectAction"
+            <action class="com.redhat.devtools.intellij.kubernetes.actions.UseProjectAction"
+                    id="com.redhat.devtools.intellij.kubernetes.actions.UseProjectAction"
                     text="Use Project"
                     icon="AllIcons.Nodes.EmptyNode"/>
-            <action class="org.jboss.tools.intellij.kubernetes.actions.RefreshAction"
-                    id="org.jboss.tools.intellij.kubernetes.actions.RefreshAction"
+            <action class="com.redhat.devtools.intellij.kubernetes.actions.RefreshAction"
+                    id="com.redhat.devtools.intellij.kubernetes.actions.RefreshAction"
                     text="Refresh"
                     icon="AllIcons.Actions.Refresh"/>
-            <action class="org.jboss.tools.intellij.kubernetes.actions.DeleteResourceAction"
-                    id="org.jboss.tools.intellij.kubernetes.actions.DeleteResourceAction"
+            <action class="com.redhat.devtools.intellij.kubernetes.actions.DeleteResourceAction"
+                    id="com.redhat.devtools.intellij.kubernetes.actions.DeleteResourceAction"
                     text="Delete"
                     icon="AllIcons.Modules.DeleteContentFolder"/>
         </group>
