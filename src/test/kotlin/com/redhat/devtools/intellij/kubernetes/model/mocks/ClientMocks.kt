@@ -1,0 +1,251 @@
+/*******************************************************************************
+ * Copyright (c) 2020 Red Hat, Inc.
+ * Distributed under license by Red Hat, Inc. All rights reserved.
+ * This program is made available under the terms of the
+ * Eclipse Public License v2.0 which accompanies this distribution,
+ * and is available at http://www.eclipse.org/legal/epl-v20.html
+ *
+ * Contributors:
+ * Red Hat, Inc. - initial API and implementation
+ ******************************************************************************/
+package com.redhat.devtools.intellij.kubernetes.model.mocks
+
+import com.nhaarman.mockitokotlin2.doReturn
+import com.nhaarman.mockitokotlin2.mock
+import com.nhaarman.mockitokotlin2.whenever
+import io.fabric8.kubernetes.api.model.Context
+import io.fabric8.kubernetes.api.model.DoneableNamespace
+import io.fabric8.kubernetes.api.model.DoneablePod
+import io.fabric8.kubernetes.api.model.HasMetadata
+import io.fabric8.kubernetes.api.model.NamedContext
+import io.fabric8.kubernetes.api.model.Namespace
+import io.fabric8.kubernetes.api.model.NamespaceList
+import io.fabric8.kubernetes.api.model.ObjectMeta
+import io.fabric8.kubernetes.api.model.Pod
+import io.fabric8.kubernetes.api.model.PodList
+import io.fabric8.kubernetes.api.model.apiextensions.v1beta1.CustomResourceDefinition
+import io.fabric8.kubernetes.api.model.apiextensions.v1beta1.CustomResourceDefinitionNames
+import io.fabric8.kubernetes.api.model.apiextensions.v1beta1.CustomResourceDefinitionSpec
+import io.fabric8.kubernetes.api.model.apiextensions.v1beta1.CustomResourceDefinitionVersion
+import io.fabric8.kubernetes.client.Config
+import io.fabric8.kubernetes.client.NamespacedKubernetesClient
+import io.fabric8.kubernetes.client.dsl.MixedOperation
+import io.fabric8.kubernetes.client.dsl.NonNamespaceOperation
+import io.fabric8.kubernetes.client.dsl.PodResource
+import io.fabric8.kubernetes.client.dsl.Resource
+import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.custom.GenericResource
+import com.redhat.devtools.intellij.kubernetes.model.util.getApiVersion
+import org.mockito.ArgumentMatchers
+import java.net.URL
+
+typealias NamespaceListOperation =
+        NonNamespaceOperation<Namespace, NamespaceList, DoneableNamespace, Resource<Namespace, DoneableNamespace>>
+
+object ClientMocks {
+
+    val NAMESPACE1 = resource<Namespace>("namespace1")
+    val NAMESPACE2 = resource<Namespace>("namespace2")
+    val NAMESPACE3 = resource<Namespace>("namespace3")
+
+    val POD1 = resource<Pod>("pod1")
+    val POD2 = resource<Pod>("pod2")
+    val POD3 = resource<Pod>("pod3")
+
+    fun client(currentNamespace: String?, namespaces: Array<Namespace>, masterUrl: URL = URL("http://localhost"))
+            : NamespacedKubernetesClient {
+        val namespacesMock = namespaceListOperation(namespaces)
+        val config = mock<Config> {
+            on { namespace } doReturn currentNamespace
+        }
+
+        return mock {
+            on { namespaces() } doReturn namespacesMock
+            on { namespace } doReturn currentNamespace
+            on { configuration } doReturn config
+            on { getMasterUrl() } doReturn masterUrl
+        }
+    }
+
+    private fun namespaceListOperation(namespaces: Array<Namespace>): NamespaceListOperation {
+        val namespaceList = mock<NamespaceList> {
+            on { items } doReturn namespaces.asList()
+        }
+        return mock {
+            on { list() } doReturn namespaceList
+        }
+    }
+
+    fun inNamespace(client: NamespacedKubernetesClient): NamespacedKubernetesClient {
+        val namespaceClient = mock<NamespacedKubernetesClient>()
+        whenever(client.inNamespace(ArgumentMatchers.anyString()))
+            .doReturn(namespaceClient)
+        return namespaceClient
+    }
+
+    fun inNamespace(mixedOp: MixedOperation<Pod, PodList, DoneablePod, PodResource<Pod, DoneablePod>>)
+            : NonNamespaceOperation<Pod, PodList, DoneablePod, PodResource<Pod, DoneablePod>> {
+        val nonNamespaceOperation: NonNamespaceOperation<Pod, PodList, DoneablePod, PodResource<Pod, DoneablePod>>
+                = mock()
+        whenever(mixedOp.inNamespace(ArgumentMatchers.anyString()))
+            .doReturn(nonNamespaceOperation)
+        return nonNamespaceOperation
+    }
+
+    fun pods(client: NamespacedKubernetesClient)
+            : MixedOperation<Pod, PodList, DoneablePod, PodResource<Pod, DoneablePod>> {
+        val podsOp = mock<MixedOperation<Pod, PodList, DoneablePod, PodResource<Pod, DoneablePod>>>()
+        whenever(client.pods())
+            .doReturn(podsOp)
+        return podsOp
+    }
+
+    fun list(nonNamespaceOperation: NonNamespaceOperation<Pod, PodList, DoneablePod, PodResource<Pod, DoneablePod>>)
+            : PodList {
+        val podList = mock<PodList>()
+        whenever(nonNamespaceOperation.list())
+            .doReturn(podList)
+        return podList
+
+    }
+
+    fun list(mixedOp: MixedOperation<Pod, PodList, DoneablePod, PodResource<Pod, DoneablePod>>): PodList {
+        val podList = mock<PodList>()
+        whenever(mixedOp.list())
+            .doReturn(podList)
+        return podList
+    }
+
+    fun items(podList: PodList, vararg pods: Pod ) {
+        val returnedPods = listOf(*pods)
+        whenever(podList.items)
+            .doReturn(returnedPods)
+    }
+
+    fun withName(mixedOp: MixedOperation<Pod, PodList, DoneablePod, PodResource<Pod, DoneablePod>>, pod: Pod) {
+        val podResource = mock<PodResource<Pod, DoneablePod>>()
+        whenever(podResource.get())
+            .doReturn(pod)
+        whenever(mixedOp.withName(pod.metadata.name))
+            .doReturn(podResource)
+    }
+
+    fun namedContext(name: String, namespace: String, cluster: String, user: String): NamedContext {
+        val context: Context = kubeconfigContext(namespace, cluster, user)
+        return namedContext(name, context)
+    }
+
+    fun namedContext(name: String, context: Context): NamedContext {
+        return mock {
+            on { this.name } doReturn name
+            on { this.context } doReturn context
+        }
+    }
+
+    fun kubeconfigContext(namespace: String, cluster: String, user: String): Context {
+        return mock {
+            on { this.namespace } doReturn namespace
+            on { this.cluster } doReturn cluster
+            on { this.user } doReturn user
+        }
+    }
+
+    fun config(currentContext: NamedContext?, contexts: List<NamedContext>): Config {
+        return mock {
+            on { mock.currentContext } doReturn currentContext
+            on { mock.contexts } doReturn contexts
+        }
+    }
+
+    fun apiConfig(currentContext: String, contexts: List<NamedContext>): io.fabric8.kubernetes.api.model.Config {
+        return mock {
+            on { mock.currentContext } doReturn currentContext
+            on { mock.contexts } doReturn contexts
+        }
+    }
+
+    fun customResourceDefinition(
+            name: String,
+            version: String,
+            group: String,
+            kind: String,
+            scope: String): CustomResourceDefinition {
+        return customResourceDefinition(
+            name,
+            version,
+            listOf(version(version)),
+            group,
+            kind,
+            scope)
+    }
+
+    fun customResourceDefinition(
+        name: String,
+        version: String,
+        versions: List<CustomResourceDefinitionVersion>,
+        group: String,
+        kind: String,
+        scope: String): CustomResourceDefinition {
+        val names: CustomResourceDefinitionNames = mock {
+            on { mock.kind } doReturn kind
+        }
+        val spec = mock<CustomResourceDefinitionSpec> {
+            on { mock.version } doReturn version
+            on { mock.versions } doReturn versions
+            on { mock.group } doReturn group
+            on { mock.names } doReturn names
+            on { mock.scope } doReturn scope
+        }
+        val definition = resource<CustomResourceDefinition>(name)
+        whenever(definition.spec)
+            .doReturn(spec)
+        return definition
+    }
+
+    private fun version(name: String): CustomResourceDefinitionVersion {
+        return mock {
+            on { mock.name } doReturn name
+        }
+    }
+
+    inline fun <reified T: HasMetadata> resource(
+        name: String,
+        namespace: String? = null,
+        uid: String? = System.currentTimeMillis().toString(),
+        selfLink: String? = "/apis/${namespace}/$name"): T {
+        val metadata = objectMeta(name, namespace, uid, selfLink)
+        return mock {
+            on { getMetadata() } doReturn metadata
+            on { getApiVersion() } doReturn getApiVersion(T::class.java)
+            on { getKind() } doReturn T::class.java.simpleName
+        }
+    }
+
+    fun customResource(
+        name: String,
+        namespace: String,
+        definition: CustomResourceDefinition,
+        uid: String? = System.currentTimeMillis().toString(),
+        selfLink: String? = "/apis/$namespace/customresources/$name"
+    ): GenericResource {
+        val metadata = objectMeta(name, namespace, uid, selfLink)
+        val apiVersion = getApiVersion(
+            definition.spec.group,
+            definition.spec.version) // TODO: deal with multiple versions
+        val kind = definition.spec.names.kind
+        return mock {
+            on { getMetadata() } doReturn metadata
+            on { getApiVersion() } doReturn apiVersion
+            on { getKind() } doReturn kind
+        }
+    }
+
+    fun objectMeta(name: String, namespace: String?, uid: String?, selfLink: String?): ObjectMeta {
+        return mock {
+            on { getName() } doReturn name
+            on { getNamespace() } doReturn namespace
+            on { getUid() } doReturn uid
+            on { getSelfLink() } doReturn selfLink
+        }
+    }
+
+}
