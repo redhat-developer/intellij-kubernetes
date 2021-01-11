@@ -16,7 +16,6 @@ import io.fabric8.kubernetes.api.model.NamedContext
 import io.fabric8.kubernetes.client.Config
 import io.fabric8.kubernetes.client.ConfigAware
 import io.fabric8.kubernetes.client.DefaultKubernetesClient
-import io.fabric8.kubernetes.client.internal.KubeConfigUtils
 import java.nio.file.Paths
 import java.util.concurrent.Executors
 
@@ -57,10 +56,8 @@ open class KubeConfig(private val refreshOperation: () -> Unit) {
 		return DefaultKubernetesClient()
 	}
 
-	protected open fun onConfigChange(watcher: ConfigWatcher, config: io.fabric8.kubernetes.api.model.Config) {
-		if (ConfigHelper.areEqual(currentContext, KubeConfigUtils.getCurrentContext(config))
-			&& ConfigHelper.areEqual(this.config?.contexts, config.contexts)
-		) {
+	protected open fun onConfigChange(watcher: ConfigWatcher, fileConfig: io.fabric8.kubernetes.api.model.Config) {
+		if (ConfigHelper.areEqual(fileConfig, config)) {
 			return
 		}
 		this.client = createClient()
