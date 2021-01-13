@@ -27,7 +27,7 @@ import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks
 import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.apiConfig
 import org.junit.Test
 
-class KubeConfigTest {
+class ClientConfigTest {
 
 	private val namedContext1 =
 		createContext("ctx1", "namespace1", "cluster1", "user1")
@@ -40,13 +40,13 @@ class KubeConfigTest {
 	private val config: Config = ClientMocks.config(currentContext, allContexts)
 	private val client: ConfigAware<Config> = createClient(config)
 	private val refreshOperation: () -> Unit = mock()
-	private val kubeConfig = spy(TestableKubeConfig(refreshOperation, client))
+	private val clientConfig = spy(TestableClientConfig(refreshOperation, client))
 
 	@Test
 	fun `#currentContext should return config#currentContext`() {
 		// given
 		// when
-		kubeConfig.currentContext
+		clientConfig.currentContext
 		// then
 		verify(config).currentContext
 	}
@@ -55,7 +55,7 @@ class KubeConfigTest {
 	fun `#contexts should return config#contexts`() {
 		// given
 		// when
-		kubeConfig.contexts
+		clientConfig.contexts
 		// then
 		verify(config).contexts
 	}
@@ -64,47 +64,47 @@ class KubeConfigTest {
 	fun `#currentContext should call #createClient once`() {
 		// given
 		// when
-		kubeConfig.currentContext
-		kubeConfig.currentContext
+		clientConfig.currentContext
+		clientConfig.currentContext
 		// then
-		verify(kubeConfig, times(1)).createClient()
+		verify(clientConfig, times(1)).createClient()
 	}
 
 	@Test
 	fun `#contexts should call #createClient once`() {
 		// given
 		// when
-		kubeConfig.contexts
-		kubeConfig.contexts
+		clientConfig.contexts
+		clientConfig.contexts
 		// then
-		verify(kubeConfig, times(1)).createClient()
+		verify(clientConfig, times(1)).createClient()
 	}
 
 	@Test
 	fun `#currentContext should call #initWatcher once`() {
 		// given
 		// when
-		kubeConfig.currentContext
-		kubeConfig.currentContext
+		clientConfig.currentContext
+		clientConfig.currentContext
 		// then
-		verify(kubeConfig, times(1)).initWatcher()
+		verify(clientConfig, times(1)).initWatcher()
 	}
 
 	@Test
 	fun `#contexts should call #initWatcher once`() {
 		// given
 		// when
-		kubeConfig.contexts
-		kubeConfig.contexts
+		clientConfig.contexts
+		clientConfig.contexts
 		// then
-		verify(kubeConfig, times(1)).initWatcher()
+		verify(clientConfig, times(1)).initWatcher()
 	}
 
 	@Test
 	fun `#isCurrent should return true if context is equal`() {
 		// given
 		// when
-		val isCurrent = kubeConfig.isCurrent(currentContext)
+		val isCurrent = clientConfig.isCurrent(currentContext)
 		// then
 		assertThat(isCurrent).isTrue()
 	}
@@ -113,7 +113,7 @@ class KubeConfigTest {
 	fun `#isCurrent should return false if context isn't equal`() {
 		// given
 		// when
-		val isCurrent = kubeConfig.isCurrent(namedContext3)
+		val isCurrent = clientConfig.isCurrent(namedContext3)
 		// then
 		assertThat(isCurrent).isFalse()
 	}
@@ -124,7 +124,7 @@ class KubeConfigTest {
 		val newConfig =
 			apiConfig(namedContext3.name, allContexts)
 		// when
-		kubeConfig.onConfigChange(mock(), newConfig)
+		clientConfig.onConfigChange(mock(), newConfig)
 		// then
 		verify(refreshOperation, times(1)).invoke()
 	}
@@ -135,7 +135,7 @@ class KubeConfigTest {
 		val config: Config = ClientMocks.config(null, allContexts)
 		val client: ConfigAware<Config> = createClient(config)
 		val refreshOperation: () -> Unit = mock()
-		val kubeConfig = spy(TestableKubeConfig(refreshOperation, client))
+		val kubeConfig = spy(TestableClientConfig(refreshOperation, client))
 		val newConfig =
 			apiConfig(null, namedContext3, allContexts)
 		// when
@@ -155,7 +155,7 @@ class KubeConfigTest {
 		)
 		val newConfig = apiConfig(currentContext, newCurrentContext, allContexts)
 		// when
-		kubeConfig.onConfigChange(mock(), newConfig)
+		clientConfig.onConfigChange(mock(), newConfig)
 		// then
 		verify(refreshOperation, times(1)).invoke()
 	}
@@ -171,7 +171,7 @@ class KubeConfigTest {
 		)
 		val newConfig = apiConfig(currentContext, newCurrentContext, allContexts)
 		// when
-		kubeConfig.onConfigChange(mock(), newConfig)
+		clientConfig.onConfigChange(mock(), newConfig)
 		// then
 		verify(refreshOperation, times(1)).invoke()
 	}
@@ -187,7 +187,7 @@ class KubeConfigTest {
 		)
 		val newConfig = apiConfig(currentContext, newCurrentContext, allContexts)
 		// when
-		kubeConfig.onConfigChange(mock(), newConfig)
+		clientConfig.onConfigChange(mock(), newConfig)
 		// then
 		verify(refreshOperation, times(1)).invoke()
 	}
@@ -198,7 +198,7 @@ class KubeConfigTest {
 		val newConfig =
 			apiConfig(currentContext.name, listOf(mock(), *allContexts.toTypedArray()))
 		// when
-		kubeConfig.onConfigChange(mock(), newConfig)
+		clientConfig.onConfigChange(mock(), newConfig)
 		// then
 		verify(refreshOperation, times(1)).invoke()
 	}
@@ -217,22 +217,22 @@ class KubeConfigTest {
 			currentContext.context.cluster,
 			currentContext.context.user
 		)
-		val kubeConfig = createKubeConfig(currentContext, allContexts, refreshOperation)
+		val clientConfig = createClientConfig(currentContext, allContexts, refreshOperation)
 		val newConfig = apiConfig(currentContext, newCurrentContext, allContexts)
 		// when
-		kubeConfig.onConfigChange(mock(), newConfig)
+		clientConfig.onConfigChange(mock(), newConfig)
 		// then
 		verify(refreshOperation, never()).invoke()
 	}
 
-	private fun createKubeConfig(
+	private fun createClientConfig(
 		currentContext: NamedContext,
 		allContexts: List<NamedContext>,
 		refreshOperation: () -> Unit
-	): TestableKubeConfig {
+	): TestableClientConfig {
 		val config: Config = ClientMocks.config(currentContext, allContexts)
 		val client: ConfigAware<Config> = createClient(config)
-		return spy(TestableKubeConfig(refreshOperation, client))
+		return spy(TestableClientConfig(refreshOperation, client))
 	}
 
 	private fun createContext(name: String, namespace: String, cluster: String, user: String): NamedContext {
@@ -274,10 +274,10 @@ class KubeConfigTest {
 	}
 
 
-	private class TestableKubeConfig(
+	private class TestableClientConfig(
 			refreshOperation: () -> Unit,
 			private val client: ConfigAware<Config>
-	) : KubeConfig(refreshOperation) {
+	) : ClientConfig(refreshOperation) {
 
 		public override fun initWatcher() {
 			// test fake, should not watch config file

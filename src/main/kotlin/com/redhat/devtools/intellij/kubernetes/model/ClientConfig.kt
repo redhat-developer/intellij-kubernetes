@@ -19,7 +19,7 @@ import io.fabric8.kubernetes.client.DefaultKubernetesClient
 import java.nio.file.Paths
 import java.util.concurrent.Executors
 
-open class KubeConfig(private val refreshOperation: () -> Unit) {
+open class ClientConfig(private val refreshOperation: () -> Unit) {
 
 	private val executors = Executors.newFixedThreadPool(1)
 	private var client: ConfigAware<Config>? = null

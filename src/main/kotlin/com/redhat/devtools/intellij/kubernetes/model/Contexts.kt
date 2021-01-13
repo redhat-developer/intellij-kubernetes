@@ -56,8 +56,8 @@ open class Contexts(
 			return field
 		}
 
-	protected open val config: KubeConfig by lazy {
-		KubeConfig(::refresh)
+	protected open val config: ClientConfig by lazy {
+		ClientConfig(::refresh)
 	}
 
 	override fun setCurrent(context: IContext): Boolean {

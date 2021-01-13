@@ -24,7 +24,6 @@ import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.NamedContext
 import io.fabric8.kubernetes.api.model.Namespace
 import io.fabric8.kubernetes.client.KubernetesClient
-import io.fabric8.kubernetes.client.NamespacedKubernetesClient
 import org.assertj.core.api.Assertions.assertThat
 import com.redhat.devtools.intellij.kubernetes.model.context.IActiveContext
 import com.redhat.devtools.intellij.kubernetes.model.context.IContext
@@ -45,7 +44,7 @@ class ContextsTest {
 			ClientMocks.namedContext("ctx2", "namespace2", "cluster2", "user2")
 	private val namedContext3 =
 			ClientMocks.namedContext("ctx3", "namespace3", "cluster3", "user3")
-	private val config = createKubeConfig(namedContext2, listOf(namedContext1, namedContext2, namedContext3))
+	private val config = createClientConfig(namedContext2, listOf(namedContext1, namedContext2, namedContext3))
 	private val currentContext: IActiveContext<HasMetadata, KubernetesClient> = activeContext(namespace, namedContext2)
 	private val contextFactory: (IModelChangeObservable, NamedContext?) -> IActiveContext<HasMetadata, KubernetesClient> =
 		Mocks.contextFactory(currentContext)
@@ -171,7 +170,7 @@ class ContextsTest {
 	@Test
 	fun `#setCurrentContext(context) should set new current context in #allContexts`() {
 		// given
-		val config = createKubeConfig(null, listOf(namedContext1, namedContext2, namedContext3))
+		val config = createClientConfig(null, listOf(namedContext1, namedContext2, namedContext3))
 		val contexts = spy(TestableContext(modelChange, contextFactory, config))
 		assertThat(contexts.current).isNull()
 		val newCurrentContext = activeContext(namespace, namedContext3)
@@ -195,7 +194,7 @@ class ContextsTest {
 	@Test
 	fun `#setCurrentContext(context) should return 'true' if new context was set`() {
 		// given
-		val config = createKubeConfig(null, listOf(namedContext1, namedContext2, namedContext3))
+		val config = createClientConfig(null, listOf(namedContext1, namedContext2, namedContext3))
 		val contexts = spy(TestableContext(modelChange, contextFactory, config))
 		assertThat(contexts.current).isNull()
 		val newCurrentContext = activeContext(namespace, namedContext3)
@@ -241,7 +240,7 @@ class ContextsTest {
 		verify(currentContext).close()
 	}
 
-    private fun createKubeConfig(currentContext: NamedContext?, allContexts: List<NamedContext>): KubeConfig {
+    private fun createClientConfig(currentContext: NamedContext?, allContexts: List<NamedContext>): ClientConfig {
         return mock {
             on { contexts } doReturn allContexts
             on { this.currentContext } doReturn currentContext
@@ -253,7 +252,7 @@ class ContextsTest {
 
 	private class TestableContext(modelChange: IModelChangeObservable,
 								  factory: (IModelChangeObservable, NamedContext) -> IActiveContext<out HasMetadata, out KubernetesClient>,
-								  override val config: KubeConfig
+								  override val config: ClientConfig
 	): Contexts(modelChange, factory) {
 
 		override val all: MutableList<IContext> = spy(super.all)
