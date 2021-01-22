@@ -9,7 +9,7 @@ There are only a few guidelines that we need contributors to follow.
 1. Install prerequisites:
    * [Java Development Kit](https://adoptopenjdk.net/)
 2. Fork and clone the repository
-3. `cd intellij-tekton`
+3. `cd intellij-kubernetes`
 4. Import the folder as a project in JetBrains IntelliJ
 
 ## Run the plugin locally
@@ -20,6 +20,6 @@ There are only a few guidelines that we need contributors to follow.
     ```
 
 
-2. Once the plugin is installed and reloaded, there will be a Tekton Tab in the Tool Windows list (left).
+2. Once the plugin is installed and reloaded, there will be a Kubernetes Tab in the Tool Windows list (left).
 
 > If you have any questions or run into any problems, please post an issue - we'll be very happy to help.

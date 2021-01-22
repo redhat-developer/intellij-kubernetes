@@ -3,7 +3,8 @@
 ## Overview
 
 JetBrains IntelliJ plugin for interacting with Kubernetes and OpenShift clusters.
-The plugin tries to mimic the vscode-kubernetes-tools extension that exists for vscode.
+The plugin provides functionalities and user experiences that are very close to the Kubernetes extension for vscode (https://marketplace.visualstudio.com/items?itemName=ms-kubernetes-tools.vscode-kubernetes-tools).
+
 This plugin is currently in Preview Mode.
 
 ![](images/demo1.gif)
@@ -16,12 +17,12 @@ The tree is dynamically updated when external tools like kubectl, oc, etc. chang
 #### Current Context
 The tree displays resources that exist on the cluster that the current context points to. 
 The user can switch the current context and cluster by choosing any context that's listed and picking "Set as Current Cluster" in the context menu.
-OpenShift clusters are marked as such with a OpenShift icon instead of a Kubernetes icon.
+OpenShift clusters are marked as such with an OpenShift icon instead of a Kubernetes icon.
  
 #### Current Namespace/Project
-The tree displays resources that exist within the current namespace as specified in the kube config. 
-Resources that are not bound to a namespace/project are also listed.
-The user may switch the current namespace/project by choosing a namespace/project among the listed ones and choose "Use Namespace" or "Use Project" in the context menu.
+The tree displays resources that exist within the current namespace as specified in the kube config or that are not bound to a namespace/project.
+The user may switch the current namespace with the context menu item "Use Namespace". 
+In OpenShift clusters the tree also lists projects which behave in an equivalent manner. 
 
 #### Resource Categories
 Resources are organized in different categories.
@@ -29,12 +30,12 @@ Resources are organized in different categories.
 
 #### Pods
 Pods are marked as running if their icon has a green dot. 
-A red dot, on the contrary, indicates that a pod is either pending, succeeded (terminated), failed or whose state is unknown.
+A red dot, on the contrary, indicates that a pod is either pending, succeeded (terminated), failed or is in an unknown state.
 Pods also unveil their IP address and the number of running out of the total number of containers.
 ![img.png](images/pod.png)
 
 #### Delete Resources
-Any resource that's listed may be deleted via the context menu.
+Any resource that is listed may be deleted via the context menu.
 
 
 **NOTE:** This plugin is in Preview mode. The plugin support for Kubernetes or OpenShift clusters is strictly experimental - assumptions may break, commands and behavior may change!
