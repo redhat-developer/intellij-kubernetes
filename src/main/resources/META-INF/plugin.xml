@@ -1,7 +1,7 @@
 <idea-plugin>
     <id>com.redhat.devtools.intellij.kubernetes</id>
     <name>IntelliJ Kubernetes by Red Hat</name>
-    <vendor email="support@redhat.com" url="http://www.redhat.com">Red Hat</vendor>
+    <vendor email="developers@redhat.com" url="http://www.redhat.com">Red-Hat</vendor>
 
     <depends>com.intellij.modules.lang</depends>
 
