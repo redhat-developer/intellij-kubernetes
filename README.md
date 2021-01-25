@@ -1,8 +1,8 @@
-# IntelliJ Kubernetes
+# Kubernetes
 
 ## Overview
 
-JetBrains IntelliJ plugin for interacting with Kubernetes and OpenShift clusters.
+JetBrains IDEA plugin for interacting with Kubernetes and OpenShift clusters.
 The plugin provides functionalities and user experiences that are very close to the Kubernetes extension for vscode (https://marketplace.visualstudio.com/items?itemName=ms-kubernetes-tools.vscode-kubernetes-tools).
 
 This plugin is currently in Preview Mode.

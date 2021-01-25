@@ -60,7 +60,7 @@ test {
 }
 
 intellij {
-    version ideaVersion //for a full list of IntelliJ IDEA releases please see https://www.jetbrains.com/intellij-repository/releases
+    version ideaVersion //for a full list of Jetbrains IDEA releases please see https://www.jetbrains.com/intellij-repository/releases
     pluginName 'com.redhat.devtools.intellij.kubernetes'
     updateSinceUntilBuild false
 }
