@@ -10,7 +10,7 @@ There are only a few guidelines that we need contributors to follow.
    * [Java Development Kit](https://adoptopenjdk.net/)
 2. Fork and clone the repository
 3. `cd intellij-kubernetes`
-4. Import the folder as a project in JetBrains IntelliJ
+4. Import the folder as a project in JetBrains IDEA
 
 ## Run the plugin locally
 
