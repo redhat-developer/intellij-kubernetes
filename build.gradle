@@ -69,7 +69,7 @@ patchPluginXml {
     sinceBuild sinceIdeaBuild
     group 'com.redhat.devtools.intellij'
     version projectVersion
-    pluginDescription description
+    pluginDescription pluginDescription
 }
 
 publishPlugin {
