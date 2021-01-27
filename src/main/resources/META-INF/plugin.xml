@@ -2,6 +2,12 @@
     <id>com.redhat.devtools.intellij.kubernetes</id>
     <name>Kubernetes by Red Hat</name>
     <vendor email="developers@redhat.com" url="http://www.redhat.com">Red-Hat</vendor>
+    <description>
+        <![CDATA[
+        <p>A plugin for interacting with Kubernetes and OpenShift clusters.</p>
+        <p>The plugin provides functionalities and user experiences that are very close to the Kubernetes extension for vscode (Visual Studio Code Kubernetes Tools).</p>
+        ]]>
+    </description>
 
     <depends>com.intellij.modules.lang</depends>
 
