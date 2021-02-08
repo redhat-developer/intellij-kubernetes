@@ -61,13 +61,11 @@ test {
 
 intellij {
     version ideaVersion //for a full list of Jetbrains IDEA releases please see https://www.jetbrains.com/intellij-repository/releases
-    pluginName 'com.redhat.devtools.intellij.kubernetes'
+    pluginName 'Kubernetes by Red Hat'
     updateSinceUntilBuild false
 }
 
 patchPluginXml {
-    version projectVersion
-    group 'com.redhat.devtools.intellij'
     sinceBuild sinceIdeaBuild
 }
 
@@ -83,3 +81,6 @@ repositories {
         url 'https://repository.jboss.org'
     }
 }
+    
+group 'com.redhat.devtools.intellij'
+version projectVersion
