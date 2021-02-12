@@ -6,13 +6,13 @@ plugins {
 
 dependencies {
     implementation(
-            "com.redhat.devtools.intellij:intellij-common:0.0.1-SNAPSHOT",
+            "com.redhat.devtools.intellij:intellij-common:0.0.2",
             "org.jetbrains.kotlin:kotlin-gradle-plugin",
             "org.jetbrains.kotlin:kotlin-stdlib-jdk8",
-            "io.fabric8:kubernetes-client:5.0.0",
-            "io.fabric8:kubernetes-model:5.0.0",
-            "io.fabric8:kubernetes-model-common:5.0.0",
-            "io.fabric8:openshift-client:5.0.0",
+            "io.fabric8:kubernetes-client:5.0.2",
+            "io.fabric8:kubernetes-model:5.0.2",
+            "io.fabric8:kubernetes-model-common:5.0.2",
+            "io.fabric8:openshift-client:5.0.2",
             "org.apache.commons:commons-lang3:3.10"
     )
     testImplementation(
