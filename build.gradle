@@ -6,7 +6,7 @@ plugins {
 
 dependencies {
     implementation(
-            "com.redhat.devtools.intellij:intellij-common:0.0.2-SNAPSHOT",
+            "com.redhat.devtools.intellij:intellij-common:0.0.2",
             "org.jetbrains.kotlin:kotlin-gradle-plugin",
             "org.jetbrains.kotlin:kotlin-stdlib-jdk8",
             "io.fabric8:kubernetes-client:5.0.2",
