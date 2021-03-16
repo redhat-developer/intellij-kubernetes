@@ -51,7 +51,7 @@
             <action class="com.redhat.devtools.intellij.kubernetes.actions.DeleteResourceAction"
                     id="com.redhat.devtools.intellij.kubernetes.actions.DeleteResourceAction"
                     text="Delete"
-                    icon="AllIcons.Modules.DeleteContentFolder"/>
+                    icon="AllIcons.Actions.Close"/>
         </group>
     </actions>
 
