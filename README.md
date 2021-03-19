@@ -26,12 +26,14 @@ In OpenShift clusters the tree also lists projects which behave in an equivalent
 
 #### Resource Categories
 Resources are organized in different categories.
+
 ![img.png](images/categories.png)
 
 #### Pods
 Pods are marked as running if their icon has a green dot. 
 A red dot, on the contrary, indicates that a pod is either pending, succeeded (terminated), failed or is in an unknown state.
 Pods also unveil their IP address and the number of running out of the total number of containers.
+
 ![img.png](images/pod.png)
 
 #### Delete Resources
