@@ -580,9 +580,11 @@ class KubernetesContextTest {
 		// given
 		// when
 		context.stopWatch(NamespacesProvider.KIND)
-		// then should not notify change because this would cause UI to reload and thus repopulate the cache immediately
-		// any operation that happens while the watch is not active would not be noticed and the cache thus present and
-		// wrong when the node is expanded
+		// then
+		// dont notify invalidation change because this would cause UI to reload
+		// and therefore to repopulate the cache immediately.
+		// Any resource operation that eventually happens while the watch is not active would cause the cache
+		// to become out-of-sync and it would therefore return invalid resources when asked to do so
 		verify(modelChange, never()).fireModified(NamespacesProvider.KIND)
 	}
 

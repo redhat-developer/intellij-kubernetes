@@ -272,6 +272,10 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
     override fun stopWatch(kind: ResourceKind<out HasMetadata>) {
         logger<ActiveContext<*, *>>().debug("Stop watching $kind resources.")
         watch.stopWatch(kind)
+        // dont notify invalidation change because this would cause UI to reload
+        // and therefore to repopulate the cache immediately.
+        // Any resource operation that eventually happens while the watch is not active would cause the cache
+        // to become out-of-sync and it would therefore return invalid resources when asked to do so
         invalidateProviders(kind);
     }
 
