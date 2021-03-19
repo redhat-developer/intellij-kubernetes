@@ -580,8 +580,9 @@ class KubernetesContextTest {
 		// given
 		// when
 		context.stopWatch(NamespacesProvider.KIND)
-		// then should not notify change because this would cause UI to reload immediately
-		// instead of only when node is expanded
+		// then should not notify change because this would cause UI to reload and thus repopulate the cache immediately
+		// any operation that happens while the watch is not active would not be noticed and the cache thus present and
+		// wrong when the node is expanded
 		verify(modelChange, never()).fireModified(NamespacesProvider.KIND)
 	}
 
