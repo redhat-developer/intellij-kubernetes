@@ -11,6 +11,7 @@
 package com.redhat.devtools.intellij.kubernetes.tree
 
 import com.intellij.ide.util.treeView.NodeDescriptor
+import com.intellij.openapi.project.Project
 import com.intellij.ui.tree.LeafState
 import io.fabric8.kubernetes.api.model.ConfigMap
 import io.fabric8.kubernetes.api.model.Namespace
@@ -138,8 +139,8 @@ class KubernetesStructure(model: IResourceModel) : AbstractTreeStructureContribu
 		}
 	}
 
-	override fun createDescriptor(element: Any, parent: NodeDescriptor<*>?): NodeDescriptor<*>? {
-		return KubernetesDescriptors.createDescriptor(element, parent, model)
+	override fun createDescriptor(element: Any, parent: NodeDescriptor<*>?, project: Project): NodeDescriptor<*>? {
+		return KubernetesDescriptors.createDescriptor(element, parent, model, project)
 	}
 
 	override fun canContribute() = true

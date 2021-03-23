@@ -145,23 +145,28 @@ class OpenShiftStructure(model: IResourceModel): AbstractTreeStructureContributi
         }
     }
 
-    override fun createDescriptor(element: Any, parent: NodeDescriptor<*>?): NodeDescriptor<*>? {
+    override fun createDescriptor(element: Any, parent: NodeDescriptor<*>?, project: com.intellij.openapi.project.Project
+    ): NodeDescriptor<*>? {
         return when(element) {
-            is OpenShiftContext -> OpenShiftContextDescriptor(element, model)
-            is Project -> ProjectDescriptor(element, parent, model)
+            is OpenShiftContext -> OpenShiftContextDescriptor(element, model, project)
+            is Project -> ProjectDescriptor(element, parent, model, project)
             is ImageStream,
             is DeploymentConfig,
             is ReplicationController,
             is BuildConfig,
-            is Build -> ResourceDescriptor(element as HasMetadata, parent, model)
+            is Build -> ResourceDescriptor(element as HasMetadata, parent, model, project)
             else -> null
         }
     }
 
-    private class OpenShiftContextDescriptor(context: OpenShiftContext, model: IResourceModel)
-        : TreeStructure.ContextDescriptor<OpenShiftContext>(
-            context = context,
-            model = model
+    private class OpenShiftContextDescriptor(
+        context: OpenShiftContext,
+        model: IResourceModel,
+        project: com.intellij.openapi.project.Project
+    ) : TreeStructure.ContextDescriptor<OpenShiftContext>(
+        context = context,
+        model = model,
+        project = project
     ) {
         override fun getIcon(element: OpenShiftContext): Icon? {
             return IconLoader.getIcon("/icons/openshift-cluster.svg")
@@ -169,10 +174,11 @@ class OpenShiftStructure(model: IResourceModel): AbstractTreeStructureContributi
     }
 
     private class ProjectDescriptor(
-            element: Project,
-            parent: NodeDescriptor<*>?,
-            model: IResourceModel)
-        : ResourceDescriptor<Project>(element, parent, model) {
+        element: Project,
+        parent: NodeDescriptor<*>?,
+        model: IResourceModel,
+        project: com.intellij.openapi.project.Project
+    ) : ResourceDescriptor<Project>(element, parent, model, project) {
 
         override fun getLabel(element: Project): String {
             var label = element.metadata.name

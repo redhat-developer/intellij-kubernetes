@@ -18,6 +18,7 @@ import com.intellij.ide.util.treeView.PresentableNodeDescriptor
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.editor.colors.CodeInsightColors
 import com.intellij.openapi.extensions.ExtensionPointName
+import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.IconLoader
 import com.intellij.ui.tree.LeafState
 import io.fabric8.kubernetes.api.model.HasMetadata
@@ -36,6 +37,7 @@ import javax.swing.Icon
  * @see PresentableNodeDescriptor
  */
 open class TreeStructure(
+        private val project: Project,
         private val model: IResourceModel,
         private val extensionPoint: ExtensionPointName<ITreeStructureContributionFactory> =
                 ExtensionPointName.create("com.redhat.devtools.intellij.kubernetes.structureContribution"))
@@ -90,16 +92,16 @@ open class TreeStructure(
     override fun createDescriptor(element: Any, parent: NodeDescriptor<*>?): NodeDescriptor<*> {
         val descriptor: NodeDescriptor<*>? =
                 getValidContributions()
-                        .map { it.createDescriptor(element, parent) }
+                        .map { it.createDescriptor(element, parent, project) }
                         .find { it != null }
         if (descriptor != null) {
             return descriptor
         }
         return when (element) {
-            is IContext -> ContextDescriptor(element, parent, model)
-            is Exception -> ErrorDescriptor(element, parent, model)
-            is Folder -> FolderDescriptor(element, parent, model)
-            else -> Descriptor(element, parent, model)
+            is IContext -> ContextDescriptor(element, parent, model, project)
+            is Exception -> ErrorDescriptor(element, parent, model, project)
+            is Folder -> FolderDescriptor(element, parent, model, project)
+            else -> Descriptor(element, parent, model, project)
         }
     }
 
@@ -144,11 +146,12 @@ open class TreeStructure(
     open class ContextDescriptor<C : IContext>(
             context: C,
             parent: NodeDescriptor<*>? = null,
-            model: IResourceModel)
-        : Descriptor<C>(
-            context,
-            parent,
-            model
+            model: IResourceModel,
+            project: Project) : Descriptor<C>(
+        context,
+        parent,
+        model,
+        project
     ) {
         override fun getLabel(element: C): String {
             return if (element.context.context == null) {
@@ -164,13 +167,15 @@ open class TreeStructure(
     }
 
     open class ResourcePropertyDescriptor<T>(
-            element: T,
-            parent: NodeDescriptor<*>?,
-            model: IResourceModel
+        element: T,
+        parent: NodeDescriptor<*>?,
+        model: IResourceModel,
+        project: Project
     ) : Descriptor<T>(
-            element,
-            parent,
-            model
+        element,
+        parent,
+        model,
+        project
     ) {
         /**
          * Returns {@code null} so that resource property descriptor has no children
@@ -182,11 +187,16 @@ open class TreeStructure(
         }
     }
 
-    private class FolderDescriptor(element: Folder, parent: NodeDescriptor<*>?, model: IResourceModel)
-        : Descriptor<Folder>(
-            element,
-            parent,
-            model
+    private class FolderDescriptor(
+        element: Folder,
+        parent: NodeDescriptor<*>?,
+        model: IResourceModel,
+        project: Project
+    ) : Descriptor<Folder>(
+        element,
+        parent,
+        model,
+        project
     ) {
         override fun isMatching(element: Any?): Boolean {
             // change in resource category is notified as change of resource kind
@@ -212,11 +222,16 @@ open class TreeStructure(
         }
     }
 
-    private class ErrorDescriptor(exception: java.lang.Exception, parent: NodeDescriptor<*>?, model: IResourceModel)
-        : Descriptor<java.lang.Exception>(
-            exception,
-            parent,
-            model
+    private class ErrorDescriptor(
+        exception: java.lang.Exception,
+        parent: NodeDescriptor<*>?,
+        model: IResourceModel,
+        project: Project
+    ) : Descriptor<java.lang.Exception>(
+        exception,
+        parent,
+        model,
+        project
     ) {
         override fun getLabel(element: java.lang.Exception): String {
             return "Error: " + element.message
@@ -228,9 +243,11 @@ open class TreeStructure(
     }
 
     open class ResourceDescriptor<T : HasMetadata>(
-            element: T,
-            parent: NodeDescriptor<*>?,
-            model: IResourceModel) : Descriptor<T>(element, parent, model) {
+        element: T,
+        parent: NodeDescriptor<*>?,
+        model: IResourceModel,
+        project: Project
+    ) : Descriptor<T>(element, parent, model, project) {
 
         override fun getLabel(element: T): String {
             return element.metadata.name
@@ -251,8 +268,9 @@ open class TreeStructure(
     open class Descriptor<T>(
             private val element: T,
             parent: NodeDescriptor<*>?,
-            protected val model: IResourceModel
-    ) : PresentableNodeDescriptor<T>(null, parent) {
+            protected val model: IResourceModel,
+            project: Project
+    ) : PresentableNodeDescriptor<T>(project, parent) {
 
         override fun update(presentation: PresentationData) {
             updateLabel(getLabel(element), presentation)

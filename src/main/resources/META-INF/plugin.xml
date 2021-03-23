@@ -30,6 +30,7 @@
         ]]>
     </change-notes>
     <depends>com.intellij.modules.lang</depends>
+    <depends>org.jetbrains.plugins.yaml</depends>
 
     <extensions defaultExtensionNs="com.intellij">
         <toolWindow id="Kubernetes"
@@ -72,6 +73,10 @@
                     id="com.redhat.devtools.intellij.kubernetes.actions.DeleteResourceAction"
                     text="Delete"
                     icon="AllIcons.Actions.Close"/>
+            <action class="com.redhat.devtools.intellij.kubernetes.actions.EditResourceAction"
+                    id="com.redhat.devtools.intellij.kubernetes.actions.EditResourceAction"
+                    text="Edit..."
+                    icon="AllIcons.Actions.Edit"/>
         </group>
     </actions>
 

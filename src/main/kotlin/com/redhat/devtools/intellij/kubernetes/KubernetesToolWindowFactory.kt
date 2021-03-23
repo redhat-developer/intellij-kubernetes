@@ -39,7 +39,7 @@ class KubernetesToolWindowFactory: ToolWindowFactory {
 
     private fun createTree(project: Project): Tree {
         val resourceModel = ServiceManager.getService(IResourceModel::class.java)
-        val structure = TreeStructure(resourceModel)
+        val structure = TreeStructure(project, resourceModel)
         val treeModel = StructureTreeModelFactory.create(structure, project)
         TreeUpdater(treeModel, structure, resourceModel)
         val tree = Tree(AsyncTreeModel(treeModel, project))

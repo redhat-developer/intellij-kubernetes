@@ -13,7 +13,6 @@ package com.redhat.devtools.intellij.kubernetes.actions
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.progress.Progressive
-import com.redhat.devtools.intellij.common.actions.StructureTreeAction
 import io.fabric8.kubernetes.api.model.Namespace
 import com.redhat.devtools.intellij.kubernetes.tree.ResourceWatchController
 import javax.swing.tree.TreePath

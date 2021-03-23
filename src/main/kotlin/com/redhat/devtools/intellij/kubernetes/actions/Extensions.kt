@@ -11,11 +11,13 @@
 package com.redhat.devtools.intellij.kubernetes.actions
 
 import com.intellij.openapi.actionSystem.AnAction
+import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.components.ServiceManager
 import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.progress.ProgressManager
 import com.intellij.openapi.progress.Progressive
 import com.intellij.openapi.progress.Task
+import com.intellij.openapi.project.Project
 import com.redhat.devtools.intellij.kubernetes.model.IResourceModel
 import org.jetbrains.annotations.NotNull
 import javax.swing.tree.DefaultMutableTreeNode
@@ -48,12 +50,19 @@ inline fun <reified T> Any.getElement(): T? {
 }
 
 fun AnAction.run(title: String, canBeCancelled: Boolean, runnable: Progressive) {
+    run(title, null, canBeCancelled, runnable);
+}
+
+fun AnAction.run(title: String, project: Project?, canBeCancelled: Boolean, runnable: Progressive) {
     ProgressManager.getInstance().run(object :
-        Task.Backgroundable(null, title, canBeCancelled){
+        Task.Backgroundable(project, title, canBeCancelled){
 
         override fun run(@NotNull progress: ProgressIndicator) {
             runnable.run(progress)
         }
     })
+}
 
+fun Any.invokeLater(runnable: Runnable) {
+    ApplicationManager.getApplication().invokeLater(runnable)
 }
