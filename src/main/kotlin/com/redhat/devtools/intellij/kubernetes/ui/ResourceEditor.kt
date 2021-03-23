@@ -10,6 +10,8 @@
  ******************************************************************************/
 package com.redhat.devtools.intellij.kubernetes.ui
 
+import com.intellij.ide.scratch.ScratchFileService
+import com.intellij.ide.scratch.ScratchRootType
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.progress.ProgressIndicator
@@ -17,16 +19,14 @@ import com.intellij.openapi.progress.ProgressManager
 import com.intellij.openapi.progress.Task
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Key
-import com.intellij.openapi.vfs.LocalFileSystem
 import com.intellij.openapi.vfs.VirtualFile
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.Namespace
 import io.fabric8.kubernetes.client.utils.Serialization
-import org.apache.commons.io.FileUtils
+import org.jetbrains.yaml.YAMLLanguage
 import org.slf4j.LoggerFactory
-import java.io.File
 import java.io.IOException
-import java.nio.charset.StandardCharsets
+
 
 object ResourceEditor {
 
@@ -35,17 +35,8 @@ object ResourceEditor {
 
 	@Throws(IOException::class)
 	fun open(project: Project, resource: HasMetadata) {
-		ProgressManager.getInstance().run(
-			object : Task.Backgroundable(project, "Saving resource to file...", true) {
-
-				@Throws(IOException::class)
-				override fun run(progress: ProgressIndicator) {
-					val file = createVirtualFile(resource) ?: return;
-					ApplicationManager.getApplication().invokeLater {
-						openEditor(project, resource, file)
-					}
-				}
-			})
+		val file = createVirtualFile(resource, project) ?: return
+		openEditor(project, resource, file)
 	}
 
 	private fun openEditor(project: Project, resource: HasMetadata, file: VirtualFile) {
@@ -54,23 +45,20 @@ object ResourceEditor {
 	}
 
 	@Throws(IOException::class)
-	private fun createVirtualFile(resource: HasMetadata): VirtualFile? {
-		val file: File = createTempFile(resource)
-		return LocalFileSystem.getInstance().refreshAndFindFileByIoFile(file)
-	}
-
-	@Throws(IOException::class)
-	private fun createTempFile(resource: HasMetadata): File {
-		val file = File(FileUtils.getTempDirectory(), getId(resource) + ".yml")
-		if (file.exists()) {
-			return file
+	private fun createVirtualFile(resource: HasMetadata, project: Project): VirtualFile? {
+		val name = getName(resource)
+		val file = ScratchRootType.getInstance().findFile(project, name, ScratchFileService.Option.existing_only)
+		return if (file != null
+			&& file.exists()) {
+			file
+		} else {
+			ScratchRootType.getInstance().createScratchFile(
+				project, name, YAMLLanguage.INSTANCE, Serialization.asYaml(resource)
+			)
 		}
-		FileUtils.write(file, Serialization.asYaml(resource), StandardCharsets.UTF_8)
-		file.deleteOnExit()
-		return file
 	}
 
-	private fun getId(resource: HasMetadata): String {
+	private fun getName(resource: HasMetadata): String {
 		return when(resource) {
 			is Namespace,
 			is Project
