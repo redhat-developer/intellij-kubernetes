@@ -11,6 +11,7 @@
 package com.redhat.devtools.intellij.kubernetes.tree
 
 import com.intellij.openapi.extensions.ExtensionPointName
+import com.intellij.openapi.project.Project
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.doAnswer
 import com.nhaarman.mockitokotlin2.doReturn
@@ -29,7 +30,8 @@ class TreeStructureExtensionTest {
 
 	private val model: IResourceModel = resourceModel()
 	private val extensionPoint: ExtensionPointName<ITreeStructureContributionFactory> = mock()
-	private val structure: TreeStructure = TestableTreeStructure(model, extensionPoint)
+	private val project: Project = mock();
+	private val structure: TreeStructure = TestableTreeStructure(project, model, extensionPoint)
 
 	@Test
 	fun `#getChildElements should only return children of extensions that can contribute`() {
@@ -161,8 +163,8 @@ class TreeStructureExtensionTest {
 						.toList())
 	}
 
-	class TestableTreeStructure(model: IResourceModel, extensionPoint: ExtensionPointName<ITreeStructureContributionFactory>)
-		: TreeStructure(model, extensionPoint) {
+	class TestableTreeStructure(project: Project, model: IResourceModel, extensionPoint: ExtensionPointName<ITreeStructureContributionFactory>)
+		: TreeStructure(project, model, extensionPoint) {
 
 		public override fun getTreeStructureDefaults(model: IResourceModel): List<ITreeStructureContribution> {
 			return emptyList()
