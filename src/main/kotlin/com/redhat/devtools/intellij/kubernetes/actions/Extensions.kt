@@ -22,6 +22,7 @@ import com.redhat.devtools.intellij.kubernetes.tree.TreeStructure
 import org.jetbrains.annotations.NotNull
 import javax.swing.tree.DefaultMutableTreeNode
 import com.redhat.devtools.intellij.kubernetes.tree.TreeStructure.Descriptor
+import javax.swing.tree.MutableTreeNode
 
 fun AnAction.getResourceModel(): IResourceModel? {
     return ServiceManager.getService(IResourceModel::class.java)
@@ -37,7 +38,11 @@ fun Any.getDescriptor(): Descriptor<*>? {
 }
 
 inline fun <reified T> Any.getElement(): T? {
-    val element = getDescriptor()?.element
+    val element = when (this) {
+        is DefaultMutableTreeNode -> getDescriptor()?.element
+        is Descriptor<*> -> this.element
+        else -> this
+    }
     return if (element is T) {
         element
     } else {
