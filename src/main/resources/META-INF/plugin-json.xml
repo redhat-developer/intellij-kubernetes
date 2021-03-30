@@ -1,0 +1,5 @@
+<idea-plugin>
+    <extensions defaultExtensionNs="JavaScript.JsonSchema">
+        <ProviderFactory implementation="com.redhat.devtools.intellij.kubernetes.validation.KubernetesSchemasProviderFactory"/>
+    </extensions>
+</idea-plugin>
