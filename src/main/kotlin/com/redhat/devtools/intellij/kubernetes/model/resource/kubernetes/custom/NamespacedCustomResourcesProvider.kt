@@ -47,6 +47,7 @@ class NamespacedCustomResourcesProvider(
     }
 
 	override fun delete(resources: List<HasMetadata>): Boolean {
+		@Suppress("UNCHECKED_CAST")
 		val toDelete = resources as? List<GenericCustomResource> ?: return false
 		return toDelete.stream()
 			.map { delete(it.metadata.namespace, it.metadata.name) }

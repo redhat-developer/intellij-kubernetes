@@ -179,10 +179,10 @@ object KubernetesDescriptors {
 				parent,
 				model
 		) {
-			override fun getLabel(pod: Pod): String {
-				val total = PodStatusUtil.getContainerStatus(pod).size
-				val ready = PodStatusUtil.getContainerStatus(pod).filter { it.ready }.size
-				val state = pod.status.phase
+			override fun getLabel(element: Pod): String {
+				val total = PodStatusUtil.getContainerStatus(element).size
+				val ready = PodStatusUtil.getContainerStatus(element).filter { it.ready }.size
+				val state = element.status.phase
 				return "$state ($ready/$total)"
 			}
 		}

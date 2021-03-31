@@ -42,6 +42,7 @@ class Clients<C: Client>(private val client: C) {
     }
 
     fun <T: Client> get(type: Class<T>): T {
+        @Suppress("UNCHECKED_CAST")
         return if (type.isAssignableFrom(client::class.java)) {
             client as T
         } else {

@@ -32,6 +32,7 @@ abstract class AbstractResourcesProvider<R : HasMetadata> : IResourcesProvider<R
         logger<AbstractResourcesProvider<*>>().debug("Adding resource ${resource.metadata.name}.")
         // don't add resource if different instance of same resource is already contained
         synchronized(_allResources) {
+            @Suppress("UNCHECKED_CAST")
             return when (val existing = _allResources.find { resource.sameResource(it) }) {
                 null -> _allResources.add(resource as R)
                 resource -> false
@@ -69,6 +70,7 @@ abstract class AbstractResourcesProvider<R : HasMetadata> : IResourcesProvider<R
         if (indexOf < 0) {
             return false
         }
+        @Suppress("UNCHECKED_CAST")
         _allResources[indexOf] = replaceBy as R
         return true
     }

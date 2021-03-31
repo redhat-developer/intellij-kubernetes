@@ -40,6 +40,7 @@ abstract class NonNamespacedResourcesProvider<R : HasMetadata, C : Client>(
     }
 
     override fun getWatchable(): Supplier<Watchable<Watcher<R>>?> {
+        @Suppress("UNCHECKED_CAST")
         return getOperation() as Supplier<Watchable<Watcher<R>>?>
     }
 
@@ -48,6 +49,7 @@ abstract class NonNamespacedResourcesProvider<R : HasMetadata, C : Client>(
     }
 
     override fun delete(resources: List<HasMetadata>): Boolean {
+        @Suppress("UNCHECKED_CAST")
         val toDelete = resources as? List<R> ?: return false
         return getOperation().get()?.delete(toDelete) ?: false
     }

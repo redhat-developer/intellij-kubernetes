@@ -33,6 +33,7 @@ object GenericCustomResourceFactory {
 	const val UID = "uid"
 
 	fun createResources(resourcesList: Map<String, Any?>): List<GenericCustomResource> {
+		@Suppress("UNCHECKED_CAST")
 		val items = resourcesList[ITEMS] as? List<Map<String, Any?>> ?: return emptyList()
 		return createResources(items)
 	}
@@ -44,6 +45,7 @@ object GenericCustomResourceFactory {
 	}
 
 	private fun createResource(item: Map<String, Any?>): GenericCustomResource {
+		@Suppress("UNCHECKED_CAST")
 		return GenericCustomResource(
 			item[KIND] as? String,
 			item[API_VERSION] as? String,

@@ -192,6 +192,7 @@ class KubernetesContextTest {
 				.map { it.kind }
 		whenever(context.watch.stopWatchAll(any()))
 			.doReturn(removed)
+		@Suppress("UNCHECKED_CAST", "UNCHECKED_CAST")
 		val reWatched: Array<Pair<ResourceKind<out HasMetadata>, Supplier<Watchable<Watcher<in HasMetadata>>?>>> =
 			context.namespacedProviders.values
 				.filter { removed.contains(it.kind) }
@@ -510,6 +511,7 @@ class KubernetesContextTest {
 		// when
 		context.watch(ResourceKind.create(namespacedDefinition))
 		// then
+		@Suppress("UNCHECKED_CAST")
 		verify(context.watch, times(1)).watch(namespacedCustomResourcesProvider.kind, watchableSupplier1
 				as Supplier<Watchable<Watcher<in HasMetadata>>?>)
 	}
@@ -523,6 +525,7 @@ class KubernetesContextTest {
 		// when
 		context.watch(ResourceKind.create(clusterwideDefinition))
 		// then
+		@Suppress("UNCHECKED_CAST")
 		verify(context.watch, times(1)).watch(nonNamespacedCustomResourcesProvider.kind, watchableSupplier2
 				as Supplier<Watchable<Watcher<in HasMetadata>>?>)
 	}
@@ -965,9 +968,11 @@ class KubernetesContextTest {
 				.doReturn(kind)
 		}
 		if (resourceProvider is INamespacedResourcesProvider<*, *>) {
+			@Suppress("UNCHECKED_CAST")
 			context.namespacedProviders[kind] =
 				resourceProvider as INamespacedResourcesProvider<*, NamespacedKubernetesClient>
 		} else if (resourceProvider is INonNamespacedResourcesProvider<*, *>) {
+			@Suppress("UNCHECKED_CAST")
 			context.nonNamespacedProviders[kind] =
 				resourceProvider as INonNamespacedResourcesProvider<*, NamespacedKubernetesClient>
 		}
