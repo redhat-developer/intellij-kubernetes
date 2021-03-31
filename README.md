@@ -56,6 +56,13 @@ Feedback & Questions
 If you discover an issue please file a bug and we will fix it as soon as possible.
 * File a bug in [GitHub Issues](https://github.com/redhat-developer/intellij-kubernetes/issues).
 
+UI Testing
+==========
+You can perform UI testing by running the following command:
+```sh
+./gradlew clean runIdeForUiTests -PideaVersion=2020.2& ./gradlew integrationTest 
+```
+
 License
 =======
 EPL 2.0, See [LICENSE](LICENSE) for more information.
