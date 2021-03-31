@@ -16,13 +16,10 @@ import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.progress.ProgressManager
 import com.intellij.openapi.progress.Progressive
 import com.intellij.openapi.progress.Task
-import io.fabric8.kubernetes.api.model.HasMetadata
 import com.redhat.devtools.intellij.kubernetes.model.IResourceModel
-import com.redhat.devtools.intellij.kubernetes.tree.TreeStructure
 import org.jetbrains.annotations.NotNull
 import javax.swing.tree.DefaultMutableTreeNode
 import com.redhat.devtools.intellij.kubernetes.tree.TreeStructure.Descriptor
-import javax.swing.tree.MutableTreeNode
 
 fun AnAction.getResourceModel(): IResourceModel? {
     return ServiceManager.getService(IResourceModel::class.java)

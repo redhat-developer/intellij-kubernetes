@@ -25,11 +25,11 @@ import io.fabric8.kubernetes.api.model.Namespace
 import io.fabric8.kubernetes.api.model.Pod
 import io.fabric8.kubernetes.api.model.apiextensions.v1beta1.CustomResourceDefinition
 import io.fabric8.kubernetes.client.KubernetesClient
-import io.fabric8.kubernetes.client.NamespacedKubernetesClient
 import org.assertj.core.api.Assertions.assertThat
 import com.redhat.devtools.intellij.kubernetes.model.context.IActiveContext
 import com.redhat.devtools.intellij.kubernetes.model.context.IActiveContext.ResourcesIn
 import com.redhat.devtools.intellij.kubernetes.model.context.IContext
+import com.redhat.devtools.intellij.kubernetes.model.context.create
 import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.POD1
 import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.POD2
 import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.POD3
@@ -45,7 +45,7 @@ import java.util.function.Predicate
 
 class ResourceModelTest {
 
-    private val modelChange: IModelChangeObservable = mock()
+    private val observable: IModelChangeObservable = mock()
     private val namespace: Namespace = resource("papa smurf")
     private val activeContext: IActiveContext<HasMetadata, KubernetesClient> = activeContext(namespace, mock())
     private val contextFactory: (IModelChangeObservable, NamedContext?) -> IActiveContext<HasMetadata, KubernetesClient> =
@@ -63,7 +63,10 @@ class ResourceModelTest {
             activeContext,
             context(namedContext3)
     ))
-    private val model: ResourceModel = ResourceModel(modelChange, contexts)
+    private val model: ResourceModel = object : ResourceModel() {
+        override val observable: IModelChangeObservable = this@ResourceModelTest.observable
+        override val contexts: IContexts = this@ResourceModelTest.contexts
+    }
 
     @Test
     fun `#getResources(kind, CURRENT_NAMESPACE) should call context#getResources(kind, CURRENT_NAMESPACE)`() {
@@ -143,7 +146,7 @@ class ResourceModelTest {
         // when
         model.invalidate(model)
         // then
-        verify(modelChange, times(1)).fireModified(model)
+        verify(observable, times(1)).fireModified(model)
     }
 
     @Test
@@ -154,7 +157,7 @@ class ResourceModelTest {
         // when
         model.invalidate(model)
         // then
-        verify(modelChange, never()).fireModified(model)
+        verify(observable, never()).fireModified(model)
     }
 
     @Test
@@ -238,7 +241,7 @@ class ResourceModelTest {
         // when
         model.setCurrentContext(mock())
         // then
-        verify(modelChange, times(1))
+        verify(observable, times(1))
             .fireModified(model)
     }
 
@@ -250,7 +253,7 @@ class ResourceModelTest {
         // when
         model.setCurrentContext(mock())
         // then
-        verify(modelChange, never())
+        verify(observable, never())
             .fireModified(model)
     }
 

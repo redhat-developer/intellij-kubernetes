@@ -40,10 +40,25 @@ interface IResourceModel {
     fun addListener(listener: ModelChangeObservable.IResourceChangeListener)
 }
 
-open class ResourceModel(
-    private val observable: IModelChangeObservable = com.redhat.devtools.intellij.kubernetes.model.ModelChangeObservable(),
-    private val contexts: IContexts = Contexts(observable, ::create)
-) : IResourceModel {
+/**
+ * The single resource model that UI can query for all resources and use to create, modify them.
+ *
+ * <h3>WARNING<h3>: no argument constructor required because this class is instantiated by IJ ServiceManager
+ *
+ * @see https://github.com/redhat-developer/intellij-kubernetes/issues/180
+ * @see KubernetesToolWindowFactory#createTree
+ * @see Extensions#getResourceModel
+ * @see ServiceManager#getService
+ */
+open class ResourceModel : IResourceModel {
+
+    protected open val observable: IModelChangeObservable by lazy {
+        ModelChangeObservable()
+    }
+
+    protected open val contexts: IContexts by lazy {
+        Contexts(observable, ::create)
+    }
 
     override fun setCurrentContext(context: IContext) {
         if (contexts.setCurrent(context)) {
