@@ -127,6 +127,7 @@ class TreeStructureExtensionTest {
 		return mock {
 			on { canContribute() } doReturn canContribute
 			on { getChildElements(any()) } doAnswer {
+				@Suppress("UNCHECKED_CAST")
 				when (children) {
 					// throw exception
 					is Exception -> throw children

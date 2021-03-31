@@ -141,6 +141,7 @@ open class ResourceWatch(
             return if (watchable == null) {
               return null
             } else {
+                @Suppress("UNCHECKED_CAST")
                 (watchable as Watchable<Watcher<in R>>).watch(ResourceWatcher(addOperation, removeOperation, replaceOperation))
             }
         }

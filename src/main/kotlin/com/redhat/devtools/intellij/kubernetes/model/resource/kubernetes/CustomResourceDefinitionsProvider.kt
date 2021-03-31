@@ -27,6 +27,7 @@ class CustomResourceDefinitionsProvider(client: KubernetesClient)
     override val kind = KIND
 
     override fun getOperation(): Supplier<WatchableListableDeletable<CustomResourceDefinition>> {
+        @Suppress("UNCHECKED_CAST")
         return Supplier { client.customResourceDefinitions() }
     }
 }

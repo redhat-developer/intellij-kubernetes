@@ -63,6 +63,7 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
         getAllResourceProviders(INonNamespacedResourcesProvider::class.java)
     }
     protected open val namespacedProviders: MutableMap<ResourceKind<out HasMetadata>, INamespacedResourcesProvider<out HasMetadata, C>> by lazy {
+        @Suppress("UNCHECKED_CAST")
         val providers = getAllResourceProviders(INamespacedResourcesProvider::class.java)
                 as MutableMap<ResourceKind<out HasMetadata>, INamespacedResourcesProvider<out HasMetadata, C>>
         setCurrentNamespace(providers.values)
@@ -93,6 +94,7 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
 
     private fun setCurrentNamespace(providers: Collection<INamespacedResourcesProvider<*, *>>) {
         try {
+            @Suppress("UNCHECKED_CAST")
             val namespacesProvider: INonNamespacedResourcesProvider<N, C> = nonNamespacedProviders[getNamespacesKind()]
                     as INonNamespacedResourcesProvider<N, C>
             val namespace = getCurrentNamespace(namespacesProvider.allResources)
@@ -151,9 +153,11 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
     ) {
         when (resourcesIn) {
             CURRENT_NAMESPACE ->
+                @Suppress("UNCHECKED_CAST")
                 namespacedProviders[kind] = provider as INamespacedResourcesProvider<out HasMetadata, C>
             ANY_NAMESPACE,
             NO_NAMESPACE ->
+                @Suppress("UNCHECKED_CAST")
                 nonNamespacedProviders[kind] = provider as INonNamespacedResourcesProvider<out HasMetadata, C>
         }
     }
@@ -161,10 +165,12 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
     private fun <R: HasMetadata> getProvider(kind: ResourceKind<R>, resourcesIn: ResourcesIn): IResourcesProvider<R>? {
         return when(resourcesIn) {
             CURRENT_NAMESPACE -> {
+                @Suppress("UNCHECKED_CAST")
                 namespacedProviders[kind] as IResourcesProvider<R>?
             }
             ANY_NAMESPACE,
             NO_NAMESPACE ->
+                @Suppress("UNCHECKED_CAST")
                 nonNamespacedProviders[kind] as IResourcesProvider<R>?
         }
     }
@@ -256,6 +262,8 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
         val watchables = namespacedProviders.entries.toList()
             .filter { kinds.contains(it.key) }
             .map { Pair(it.value.kind, it.value.getWatchable()) }
+
+        @Suppress("UNCHECKED_CAST")
         watch.watchAll(watchables
                 as Collection<Pair<ResourceKind<out HasMetadata>, Supplier<Watchable<Watcher<in HasMetadata>>?>>>)
     }
@@ -265,6 +273,7 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
             return
         }
 
+        @Suppress("UNCHECKED_CAST")
         watch.watch(provider.kind, provider.getWatchable()
                 as Supplier<Watchable<Watcher<in HasMetadata>>?>)
     }

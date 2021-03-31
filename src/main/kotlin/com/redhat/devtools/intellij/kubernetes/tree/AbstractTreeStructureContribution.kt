@@ -55,11 +55,13 @@ abstract class AbstractTreeStructureContribution(override val model: IResourceMo
         }
 
         fun getChildElements(element: Any): Collection<Any> {
+            @Suppress("UNCHECKED_CAST")
             val typedElement = element as? T ?: return emptyList()
             return childElementsProvider?.invoke(typedElement) ?: return emptyList()
         }
 
         fun getParentElements(element: Any): Any? {
+            @Suppress("UNCHECKED_CAST")
             val typedElement = element as? T ?: return null
             return parentElementsProvider?.invoke(typedElement)
         }

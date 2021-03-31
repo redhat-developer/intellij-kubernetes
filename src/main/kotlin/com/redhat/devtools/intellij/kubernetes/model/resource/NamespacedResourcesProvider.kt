@@ -62,6 +62,7 @@ abstract class NamespacedResourcesProvider<R : HasMetadata, C: Client>(
             logger<NamespacedResourcesProvider<*, *>>().debug("Returned empty watch for $kind: no namespace set.")
             return Supplier { null }
         }
+        @Suppress("UNCHECKED_CAST")
         return getOperation(namespace!!) as Supplier<Watchable<Watcher<R>>?>
     }
 
@@ -73,6 +74,7 @@ abstract class NamespacedResourcesProvider<R : HasMetadata, C: Client>(
         if (namespace == null) {
             return false
         }
+        @Suppress("UNCHECKED_CAST")
         val toDelete = resources as? List<R> ?: return false
         return getOperation(namespace!!).get()?.delete(toDelete) ?: false
     }
