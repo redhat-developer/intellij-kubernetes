@@ -20,6 +20,7 @@ import com.jetbrains.jsonSchema.extension.JsonSchemaFileProvider
 import com.jetbrains.jsonSchema.extension.JsonSchemaProviderFactory
 import com.redhat.devtools.intellij.common.validation.KubernetesTypeInfo
 import org.slf4j.LoggerFactory
+import java.io.InputStream
 import java.nio.file.Path
 import java.nio.file.Paths
 import java.util.stream.Collectors
@@ -66,28 +67,37 @@ class KubernetesSchemasProviderFactory : JsonSchemaProviderFactory {
 
     private fun createKubernetesTypeInfo(path: Path): KubernetesTypeInfo? {
         try {
-            val file = javaClass.getResourceAsStream(path.toString()) ?: return null
-            val content: Map<String, Any> = ObjectMapper().readValue(file, object : TypeReference<Map<String, Any>>() {})
-            if (content.isEmpty()) {
-                return null
-            }
-            // if has no x-kubernetes-group-version-kind it's not an openapi type
-            val groupVersionKinds = content["x-kubernetes-group-version-kind"] as? List<Map<String, String>>
-            if (groupVersionKinds == null
-                || groupVersionKinds.isEmpty()) {
-                return null
-            }
-            val groupVersionKind = groupVersionKinds[0] // 1st entry
-            val apiGroup = getApiGroup(
-                groupVersionKind["group"],
-                groupVersionKind["version"]
-            )
-            val kind = groupVersionKind["kind"]
-            return KubernetesTypeInfo(apiGroup, kind)
+            val schema = javaClass.getResourceAsStream(path.toString()) ?: return null
+            val apiGroupKind = getApiGroupKind(schema) ?: return null
+            return KubernetesTypeInfo(apiGroupKind.first, apiGroupKind.second)
         } catch (e: Exception) {
             logger<KubernetesSchemasProviderFactory>().warn("Could not parse json schema file ${path}.")
             return null
         }
+    }
+
+    private fun getApiGroupKind(schema: InputStream): Pair<String, String>? {
+        val json: Map<String, Any> = ObjectMapper().readValue(schema, object : TypeReference<Map<String, Any>>() {})
+        if (json.isEmpty()) {
+            return null
+        }
+        // if has no x-kubernetes-group-version-kind it's not an openapi type
+        val groupVersionKinds = json["x-kubernetes-group-version-kind"] as? List<Map<String, String>>
+        if (groupVersionKinds == null
+            || groupVersionKinds.isEmpty()) {
+            return null
+        }
+        val groupVersionKind = groupVersionKinds[0] // 1st entry
+        val apiGroup = getApiGroup(
+            groupVersionKind["group"],
+            groupVersionKind["version"]
+        )
+        val kind = groupVersionKind["kind"]
+        if (apiGroup == null
+            || kind == null) {
+            return null
+        }
+        return Pair(apiGroup, kind);
     }
 
     private fun getApiGroup(group: String?, version: String?): String? {

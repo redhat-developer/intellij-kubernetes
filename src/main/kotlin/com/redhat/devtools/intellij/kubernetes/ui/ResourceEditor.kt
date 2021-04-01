@@ -55,7 +55,7 @@ object ResourceEditor {
 			is Project
 				-> "${resource.metadata.name}"
 			else
-				-> "${resource.metadata.name}@${resource.metadata.name}"
+				-> "${resource.metadata.name}@${resource.metadata.namespace}"
 		}
 		return "$name.$FILE_EXTENSION"
 	}
