@@ -114,6 +114,73 @@ integrationTest {
     useJUnitPlatform()
 }
 
+task generateSchema {
+
+    final LATEST_VERSION_SCHEMA = "v1.20.5"
+    final SCHEMA_BASEURL = "https://raw.githubusercontent.com/kubernetes/kubernetes"
+    final SCHEMA_DIR = "src/main/resources/schemas/"
+    final K8S_DIR = "k8s.io"
+
+    doLast {
+        def schemaVersion = getProjectProperty("schemaVersion", LATEST_VERSION_SCHEMA)
+        def url = "${SCHEMA_BASEURL}/${schemaVersion}/api/openapi-spec/swagger.json"
+        def destination = "${SCHEMA_DIR}/${K8S_DIR}"
+        file("${projectDir}/${destination}").deleteDir()
+        println("Generating schemas ${schemaVersion} from openapi at ${url} \ninto ${SCHEMA_DIR}")
+        /*
+         * openapi2jsonschema -o src/main/resources/schemas/k8s.io --kubernetes --expanded --stand-alone https://raw.githubusercontent.com/kubernetes/kubernetes/v1.20.5/api/openapi-spec/swagger.json
+         */
+        exec {
+            executable 'openapi2jsonschema'
+            args '-o', destination, "--kubernetes", "--expanded", "--stand-alone", url
+        }
+        createIndexFile("${projectDir}/${destination}")
+    }
+
+    ext.createIndexFile = { destination ->
+        def indexFilename = "index.txt"
+        def index = file("${destination}/${indexFilename}")
+        index.createNewFile()
+        files { file("${destination}").listFiles() }
+                .filter { file ->
+                    !file.name.endsWith(indexFilename) ||
+                            !file.name.endsWith("all.json") ||
+                            !file.name.endsWith("_definitions.json") ||
+                            !file.name.contains(".v")
+                }
+                .each { file ->
+                    index.text += "${file.name}\n"
+                }
+        return index
+    }
+
+    ext.isSuccess = { exitValue ->
+        return exitValue == 0
+    }
+}
+
+private def getProjectProperty(String key, String defaultValue) {
+    def value = defaultValue
+    if (project.hasProperty(key)) {
+        schemaVersion = project.getProperty(key)
+    }
+    return value;
+}
+
+private colorize(String color, String message) {
+    final colors = [
+            black: 30,
+            red: 31,
+            green: 32,
+            yellow: 33,
+            blue: 34,
+            magenta: 35,
+            cyan: 36,
+            white: 37
+    ]
+    return new String((char) 27) + "[${colors[color]}m${message}" + new String((char) 27) + "[0m"
+}
+
 repositories {
     mavenLocal()
     mavenCentral()
