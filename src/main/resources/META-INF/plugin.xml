@@ -11,12 +11,12 @@
     <change-notes>
         <![CDATA[
         <p></p>
-        <h3>1.4.0</h3>
+        <h3>0.1.4</h3>
         <ul>
             <li><a href="https://github.com/redhat-developer/intellij-kubernetes/issues/181">Switch project/namespace command not showing up'</a></li>
             <li><a href="https://github.com/redhat-developer/intellij-kubernetes/issues/180">Error when opening new plugin version</a></li>
         </ul>
-        <h3>1.3.0</h3>
+        <h3>0.1.3</h3>
         <ul>
             <li><a href="https://github.com/redhat-developer/intellij-kubernetes/issues/172">PluginException: Icon cannot be found in 'AllIcons.Modules.DeleteContentFolder'</a></li>
             <li><a href="https://github.com/redhat-developer/intellij-kubernetes/issues/132">Should stop watching resources when tree node is collapsed </a></li>
@@ -32,7 +32,7 @@
                     factoryClass="com.redhat.devtools.intellij.kubernetes.KubernetesToolWindowFactory"
                     icon="/META-INF/pluginIcon13x13.svg"/>
         <applicationService serviceInterface="com.redhat.devtools.intellij.kubernetes.model.IResourceModel"
-                        serviceImplementation="com.redhat.devtools.intellij.kubernetes.model.ResourceModel" />
+                            serviceImplementation="com.redhat.devtools.intellij.kubernetes.model.ResourceModel"/>
     </extensions>
 
     <extensionPoints>
