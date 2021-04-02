@@ -42,7 +42,7 @@ class KubernetesToolWindowFactory: ToolWindowFactory {
         val structure = TreeStructure(resourceModel)
         val treeModel = StructureTreeModelFactory.create(structure, project)
         TreeUpdater(treeModel, structure, resourceModel)
-        val tree = Tree(AsyncTreeModel(treeModel))
+        val tree = Tree(AsyncTreeModel(treeModel, project))
         tree.isRootVisible = false
         tree.cellRenderer = NodeRenderer()
         ResourceWatchController.install(tree)
