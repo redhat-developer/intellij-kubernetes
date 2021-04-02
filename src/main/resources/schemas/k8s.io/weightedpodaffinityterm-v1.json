@@ -43,7 +43,8 @@
                 "type": [
                   "object",
                   "null"
-                ]
+                ],
+                "additionalProperties": false
               },
               "type": [
                 "array",
@@ -68,7 +69,8 @@
             "object",
             "null"
           ],
-          "x-kubernetes-map-type": "atomic"
+          "x-kubernetes-map-type": "atomic",
+          "additionalProperties": false
         },
         "namespaces": {
           "description": "namespaces specifies which namespaces the labelSelector applies to (matches against); null or empty list means \"this pod's namespace\"",
@@ -94,7 +96,8 @@
       "type": [
         "object",
         "null"
-      ]
+      ],
+      "additionalProperties": false
     },
     "weight": {
       "description": "weight associated with matching the corresponding podAffinityTerm, in the range 1-100.",
@@ -110,5 +113,6 @@
     "podAffinityTerm"
   ],
   "type": "object",
+  "additionalProperties": false,
   "$schema": "http://json-schema.org/schema#"
 }

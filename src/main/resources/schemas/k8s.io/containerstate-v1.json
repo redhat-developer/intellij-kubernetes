@@ -16,7 +16,8 @@
       "type": [
         "object",
         "null"
-      ]
+      ],
+      "additionalProperties": false
     },
     "terminated": {
       "description": "ContainerStateTerminated is a terminated state of a container.",
@@ -78,7 +79,8 @@
       "type": [
         "object",
         "null"
-      ]
+      ],
+      "additionalProperties": false
     },
     "waiting": {
       "description": "ContainerStateWaiting is a waiting state of a container.",
@@ -101,9 +103,11 @@
       "type": [
         "object",
         "null"
-      ]
+      ],
+      "additionalProperties": false
     }
   },
   "type": "object",
+  "additionalProperties": false,
   "$schema": "http://json-schema.org/schema#"
 }

@@ -23,7 +23,8 @@
       "type": [
         "object",
         "null"
-      ]
+      ],
+      "additionalProperties": false
     },
     "attached": {
       "description": "Indicates the volume is successfully attached. This field must only be set by the entity completing the attach operation, i.e. the external-attacher.",
@@ -67,12 +68,14 @@
       "type": [
         "object",
         "null"
-      ]
+      ],
+      "additionalProperties": false
     }
   },
   "required": [
     "attached"
   ],
   "type": "object",
+  "additionalProperties": false,
   "$schema": "http://json-schema.org/schema#"
 }

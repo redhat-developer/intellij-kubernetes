@@ -162,7 +162,8 @@
             "type": [
               "object",
               "null"
-            ]
+            ],
+            "additionalProperties": false
           },
           "type": [
             "array",
@@ -228,7 +229,8 @@
             "type": [
               "object",
               "null"
-            ]
+            ],
+            "additionalProperties": false
           },
           "type": [
             "array",
@@ -262,7 +264,8 @@
       "type": [
         "object",
         "null"
-      ]
+      ],
+      "additionalProperties": false
     },
     "spec": {
       "description": "ResourceQuotaSpec defines the desired hard limits to enforce for Quota.",
@@ -327,7 +330,8 @@
                 "type": [
                   "object",
                   "null"
-                ]
+                ],
+                "additionalProperties": false
               },
               "type": [
                 "array",
@@ -338,7 +342,8 @@
           "type": [
             "object",
             "null"
-          ]
+          ],
+          "additionalProperties": false
         },
         "scopes": {
           "description": "A collection of filters that must match each object tracked by a quota. If not specified, the quota matches all objects.",
@@ -357,7 +362,8 @@
       "type": [
         "object",
         "null"
-      ]
+      ],
+      "additionalProperties": false
     },
     "status": {
       "description": "ResourceQuotaStatus defines the enforced hard limits and observed use.",
@@ -412,7 +418,8 @@
       "type": [
         "object",
         "null"
-      ]
+      ],
+      "additionalProperties": false
     }
   },
   "type": "object",
@@ -423,5 +430,6 @@
       "version": "v1"
     }
   ],
+  "additionalProperties": false,
   "$schema": "http://json-schema.org/schema#"
 }

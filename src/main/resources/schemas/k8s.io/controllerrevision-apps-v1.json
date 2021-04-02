@@ -169,7 +169,8 @@
             "type": [
               "object",
               "null"
-            ]
+            ],
+            "additionalProperties": false
           },
           "type": [
             "array",
@@ -235,7 +236,8 @@
             "type": [
               "object",
               "null"
-            ]
+            ],
+            "additionalProperties": false
           },
           "type": [
             "array",
@@ -269,7 +271,8 @@
       "type": [
         "object",
         "null"
-      ]
+      ],
+      "additionalProperties": false
     },
     "revision": {
       "description": "Revision indicates the revision of the state represented by Data.",
@@ -291,5 +294,6 @@
       "version": "v1"
     }
   ],
+  "additionalProperties": false,
   "$schema": "http://json-schema.org/schema#"
 }

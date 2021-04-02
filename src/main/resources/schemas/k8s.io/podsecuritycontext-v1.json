@@ -74,7 +74,8 @@
       "type": [
         "object",
         "null"
-      ]
+      ],
+      "additionalProperties": false
     },
     "seccompProfile": {
       "description": "SeccompProfile defines a pod/container's seccomp profile settings. Only one profile source may be set.",
@@ -105,7 +106,8 @@
             "localhostProfile": "LocalhostProfile"
           }
         }
-      ]
+      ],
+      "additionalProperties": false
     },
     "supplementalGroups": {
       "description": "A list of groups applied to the first process run in each container, in addition to the container's primary GID.  If unspecified, no groups will be added to any container.",
@@ -142,7 +144,8 @@
         "type": [
           "object",
           "null"
-        ]
+        ],
+        "additionalProperties": false
       },
       "type": [
         "array",
@@ -177,9 +180,11 @@
       "type": [
         "object",
         "null"
-      ]
+      ],
+      "additionalProperties": false
     }
   },
   "type": "object",
+  "additionalProperties": false,
   "$schema": "http://json-schema.org/schema#"
 }

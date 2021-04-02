@@ -162,7 +162,8 @@
             "type": [
               "object",
               "null"
-            ]
+            ],
+            "additionalProperties": false
           },
           "type": [
             "array",
@@ -228,7 +229,8 @@
             "type": [
               "object",
               "null"
-            ]
+            ],
+            "additionalProperties": false
           },
           "type": [
             "array",
@@ -262,7 +264,8 @@
       "type": [
         "object",
         "null"
-      ]
+      ],
+      "additionalProperties": false
     },
     "spec": {
       "description": "specification of a horizontal pod autoscaler.",
@@ -303,7 +306,8 @@
             "kind",
             "name"
           ],
-          "type": "object"
+          "type": "object",
+          "additionalProperties": false
         },
         "targetCPUUtilizationPercentage": {
           "description": "target average CPU utilization (represented as a percentage of requested CPU) over all the pods; if not specified the default autoscaling policy will be used.",
@@ -321,7 +325,8 @@
       "type": [
         "object",
         "null"
-      ]
+      ],
+      "additionalProperties": false
     },
     "status": {
       "description": "current status of a horizontal pod autoscaler",
@@ -368,7 +373,8 @@
       "type": [
         "object",
         "null"
-      ]
+      ],
+      "additionalProperties": false
     }
   },
   "type": "object",
@@ -379,5 +385,6 @@
       "version": "v1"
     }
   ],
+  "additionalProperties": false,
   "$schema": "http://json-schema.org/schema#"
 }

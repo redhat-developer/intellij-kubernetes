@@ -29,7 +29,8 @@
       "type": [
         "object",
         "null"
-      ]
+      ],
+      "additionalProperties": false
     },
     "volumeName": {
       "description": "VolumeName is the human-readable name of the StorageOS volume.  Volume names are only unique within a namespace.",
@@ -47,5 +48,6 @@
     }
   },
   "type": "object",
+  "additionalProperties": false,
   "$schema": "http://json-schema.org/schema#"
 }

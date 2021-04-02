@@ -22,7 +22,8 @@
       "type": [
         "object",
         "null"
-      ]
+      ],
+      "additionalProperties": false
     },
     "controllerPublishSecretRef": {
       "description": "SecretReference represents a Secret Reference. It has enough information to retrieve secret in any namespace",
@@ -45,7 +46,8 @@
       "type": [
         "object",
         "null"
-      ]
+      ],
+      "additionalProperties": false
     },
     "driver": {
       "description": "Driver is the name of the driver to use for this volume. Required.",
@@ -82,7 +84,8 @@
       "type": [
         "object",
         "null"
-      ]
+      ],
+      "additionalProperties": false
     },
     "nodeStageSecretRef": {
       "description": "SecretReference represents a Secret Reference. It has enough information to retrieve secret in any namespace",
@@ -105,7 +108,8 @@
       "type": [
         "object",
         "null"
-      ]
+      ],
+      "additionalProperties": false
     },
     "readOnly": {
       "description": "Optional: The value to pass to ControllerPublishVolumeRequest. Defaults to false (read/write).",
@@ -140,5 +144,6 @@
     "volumeHandle"
   ],
   "type": "object",
+  "additionalProperties": false,
   "$schema": "http://json-schema.org/schema#"
 }

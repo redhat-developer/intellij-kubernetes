@@ -43,7 +43,8 @@
       "type": [
         "object",
         "null"
-      ]
+      ],
+      "additionalProperties": false
     },
     "sslEnabled": {
       "description": "Flag to enable/disable SSL communication with Gateway, default false",
@@ -87,5 +88,6 @@
     "secretRef"
   ],
   "type": "object",
+  "additionalProperties": false,
   "$schema": "http://json-schema.org/schema#"
 }

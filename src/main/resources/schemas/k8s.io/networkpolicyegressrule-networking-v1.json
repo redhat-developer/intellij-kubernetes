@@ -33,7 +33,8 @@
         "type": [
           "object",
           "null"
-        ]
+        ],
+        "additionalProperties": false
       },
       "type": [
         "array",
@@ -72,7 +73,8 @@
             "type": [
               "object",
               "null"
-            ]
+            ],
+            "additionalProperties": false
           },
           "namespaceSelector": {
             "description": "A label selector is a label query over a set of resources. The result of matchLabels and matchExpressions are ANDed. An empty label selector matches all objects. A null label selector matches no objects.",
@@ -113,7 +115,8 @@
                   "type": [
                     "object",
                     "null"
-                  ]
+                  ],
+                  "additionalProperties": false
                 },
                 "type": [
                   "array",
@@ -138,7 +141,8 @@
               "object",
               "null"
             ],
-            "x-kubernetes-map-type": "atomic"
+            "x-kubernetes-map-type": "atomic",
+            "additionalProperties": false
           },
           "podSelector": {
             "description": "A label selector is a label query over a set of resources. The result of matchLabels and matchExpressions are ANDed. An empty label selector matches all objects. A null label selector matches no objects.",
@@ -179,7 +183,8 @@
                   "type": [
                     "object",
                     "null"
-                  ]
+                  ],
+                  "additionalProperties": false
                 },
                 "type": [
                   "array",
@@ -204,13 +209,15 @@
               "object",
               "null"
             ],
-            "x-kubernetes-map-type": "atomic"
+            "x-kubernetes-map-type": "atomic",
+            "additionalProperties": false
           }
         },
         "type": [
           "object",
           "null"
-        ]
+        ],
+        "additionalProperties": false
       },
       "type": [
         "array",
@@ -219,5 +226,6 @@
     }
   },
   "type": "object",
+  "additionalProperties": false,
   "$schema": "http://json-schema.org/schema#"
 }

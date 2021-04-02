@@ -24,7 +24,8 @@
         "type": [
           "object",
           "null"
-        ]
+        ],
+        "additionalProperties": false
       },
       "type": [
         "array",
@@ -40,5 +41,6 @@
     }
   },
   "type": "object",
+  "additionalProperties": false,
   "$schema": "http://json-schema.org/schema#"
 }

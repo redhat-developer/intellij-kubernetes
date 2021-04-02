@@ -29,7 +29,8 @@
         "type": [
           "object",
           "null"
-        ]
+        ],
+        "additionalProperties": false
       },
       "type": [
         "array",
@@ -71,5 +72,6 @@
     "port"
   ],
   "type": "object",
+  "additionalProperties": false,
   "$schema": "http://json-schema.org/schema#"
 }

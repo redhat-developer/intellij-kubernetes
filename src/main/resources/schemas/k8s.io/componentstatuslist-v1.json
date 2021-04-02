@@ -61,7 +61,8 @@
               "type": [
                 "object",
                 "null"
-              ]
+              ],
+              "additionalProperties": false
             },
             "type": [
               "array",
@@ -221,7 +222,8 @@
                   "type": [
                     "object",
                     "null"
-                  ]
+                  ],
+                  "additionalProperties": false
                 },
                 "type": [
                   "array",
@@ -287,7 +289,8 @@
                   "type": [
                     "object",
                     "null"
-                  ]
+                  ],
+                  "additionalProperties": false
                 },
                 "type": [
                   "array",
@@ -321,7 +324,8 @@
             "type": [
               "object",
               "null"
-            ]
+            ],
+            "additionalProperties": false
           }
         },
         "type": [
@@ -334,7 +338,8 @@
             "kind": "ComponentStatus",
             "version": "v1"
           }
-        ]
+        ],
+        "additionalProperties": false
       },
       "type": [
         "array",
@@ -387,7 +392,8 @@
       "type": [
         "object",
         "null"
-      ]
+      ],
+      "additionalProperties": false
     }
   },
   "required": [
@@ -401,5 +407,6 @@
       "version": "v1"
     }
   ],
+  "additionalProperties": false,
   "$schema": "http://json-schema.org/schema#"
 }

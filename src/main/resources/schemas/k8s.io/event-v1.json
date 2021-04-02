@@ -98,7 +98,8 @@
       "type": [
         "object",
         "null"
-      ]
+      ],
+      "additionalProperties": false
     },
     "kind": {
       "description": "Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds",
@@ -266,7 +267,8 @@
             "type": [
               "object",
               "null"
-            ]
+            ],
+            "additionalProperties": false
           },
           "type": [
             "array",
@@ -332,7 +334,8 @@
             "type": [
               "object",
               "null"
-            ]
+            ],
+            "additionalProperties": false
           },
           "type": [
             "array",
@@ -366,7 +369,8 @@
       "type": [
         "object",
         "null"
-      ]
+      ],
+      "additionalProperties": false
     },
     "reason": {
       "description": "This should be a short, machine understandable string that gives the reason for the transition into the object's current status.",
@@ -431,7 +435,8 @@
       "type": [
         "object",
         "null"
-      ]
+      ],
+      "additionalProperties": false
     },
     "reportingComponent": {
       "description": "Name of the controller that emitted this Event, e.g. `kubernetes.io/kubelet`.",
@@ -470,7 +475,8 @@
       "type": [
         "object",
         "null"
-      ]
+      ],
+      "additionalProperties": false
     },
     "source": {
       "description": "EventSource contains information for an event.",
@@ -493,7 +499,8 @@
       "type": [
         "object",
         "null"
-      ]
+      ],
+      "additionalProperties": false
     },
     "type": {
       "description": "Type of this event (Normal, Warning), new types could be added in the future",
@@ -515,5 +522,6 @@
       "version": "v1"
     }
   ],
+  "additionalProperties": false,
   "$schema": "http://json-schema.org/schema#"
 }

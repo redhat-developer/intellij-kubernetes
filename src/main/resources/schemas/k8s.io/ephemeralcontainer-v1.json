@@ -74,7 +74,8 @@
                 "type": [
                   "object",
                   "null"
-                ]
+                ],
+                "additionalProperties": false
               },
               "fieldRef": {
                 "description": "ObjectFieldSelector selects an APIVersioned field of an object.",
@@ -97,7 +98,8 @@
                 "type": [
                   "object",
                   "null"
-                ]
+                ],
+                "additionalProperties": false
               },
               "resourceFieldRef": {
                 "description": "ResourceFieldSelector represents container resources (cpu, memory) and their output format",
@@ -136,7 +138,8 @@
                 "type": [
                   "object",
                   "null"
-                ]
+                ],
+                "additionalProperties": false
               },
               "secretKeyRef": {
                 "description": "SecretKeySelector selects a key of a Secret.",
@@ -166,13 +169,15 @@
                 "type": [
                   "object",
                   "null"
-                ]
+                ],
+                "additionalProperties": false
               }
             },
             "type": [
               "object",
               "null"
-            ]
+            ],
+            "additionalProperties": false
           }
         },
         "required": [
@@ -181,7 +186,8 @@
         "type": [
           "object",
           "null"
-        ]
+        ],
+        "additionalProperties": false
       },
       "type": [
         "array",
@@ -216,7 +222,8 @@
             "type": [
               "object",
               "null"
-            ]
+            ],
+            "additionalProperties": false
           },
           "prefix": {
             "description": "An optional identifier to prepend to each key in the ConfigMap. Must be a C_IDENTIFIER.",
@@ -246,13 +253,15 @@
             "type": [
               "object",
               "null"
-            ]
+            ],
+            "additionalProperties": false
           }
         },
         "type": [
           "object",
           "null"
-        ]
+        ],
+        "additionalProperties": false
       },
       "type": [
         "array",
@@ -299,7 +308,8 @@
               "type": [
                 "object",
                 "null"
-              ]
+              ],
+              "additionalProperties": false
             },
             "httpGet": {
               "description": "HTTPGetAction describes an action based on HTTP Get requests.",
@@ -332,7 +342,8 @@
                     "type": [
                       "object",
                       "null"
-                    ]
+                    ],
+                    "additionalProperties": false
                   },
                   "type": [
                     "array",
@@ -376,7 +387,8 @@
               "type": [
                 "object",
                 "null"
-              ]
+              ],
+              "additionalProperties": false
             },
             "tcpSocket": {
               "description": "TCPSocketAction describes an action based on opening a socket",
@@ -411,13 +423,15 @@
               "type": [
                 "object",
                 "null"
-              ]
+              ],
+              "additionalProperties": false
             }
           },
           "type": [
             "object",
             "null"
-          ]
+          ],
+          "additionalProperties": false
         },
         "preStop": {
           "description": "Handler defines a specific action that should be taken",
@@ -442,7 +456,8 @@
               "type": [
                 "object",
                 "null"
-              ]
+              ],
+              "additionalProperties": false
             },
             "httpGet": {
               "description": "HTTPGetAction describes an action based on HTTP Get requests.",
@@ -475,7 +490,8 @@
                     "type": [
                       "object",
                       "null"
-                    ]
+                    ],
+                    "additionalProperties": false
                   },
                   "type": [
                     "array",
@@ -519,7 +535,8 @@
               "type": [
                 "object",
                 "null"
-              ]
+              ],
+              "additionalProperties": false
             },
             "tcpSocket": {
               "description": "TCPSocketAction describes an action based on opening a socket",
@@ -554,19 +571,22 @@
               "type": [
                 "object",
                 "null"
-              ]
+              ],
+              "additionalProperties": false
             }
           },
           "type": [
             "object",
             "null"
-          ]
+          ],
+          "additionalProperties": false
         }
       },
       "type": [
         "object",
         "null"
-      ]
+      ],
+      "additionalProperties": false
     },
     "livenessProbe": {
       "description": "Probe describes a health check to be performed against a container to determine whether it is alive or ready to receive traffic.",
@@ -591,7 +611,8 @@
           "type": [
             "object",
             "null"
-          ]
+          ],
+          "additionalProperties": false
         },
         "failureThreshold": {
           "description": "Minimum consecutive failures for the probe to be considered failed after having succeeded. Defaults to 3. Minimum value is 1.",
@@ -632,7 +653,8 @@
                 "type": [
                   "object",
                   "null"
-                ]
+                ],
+                "additionalProperties": false
               },
               "type": [
                 "array",
@@ -676,7 +698,8 @@
           "type": [
             "object",
             "null"
-          ]
+          ],
+          "additionalProperties": false
         },
         "initialDelaySeconds": {
           "description": "Number of seconds after the container has started before liveness probes are initiated. More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes",
@@ -735,7 +758,8 @@
           "type": [
             "object",
             "null"
-          ]
+          ],
+          "additionalProperties": false
         },
         "timeoutSeconds": {
           "description": "Number of seconds after which the probe times out. Defaults to 1 second. Minimum value is 1. More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes",
@@ -749,7 +773,8 @@
       "type": [
         "object",
         "null"
-      ]
+      ],
+      "additionalProperties": false
     },
     "name": {
       "description": "Name of the ephemeral container specified as a DNS_LABEL. This name must be unique among all containers, init containers and ephemeral containers.",
@@ -804,7 +829,8 @@
         "type": [
           "object",
           "null"
-        ]
+        ],
+        "additionalProperties": false
       },
       "type": [
         "array",
@@ -834,7 +860,8 @@
           "type": [
             "object",
             "null"
-          ]
+          ],
+          "additionalProperties": false
         },
         "failureThreshold": {
           "description": "Minimum consecutive failures for the probe to be considered failed after having succeeded. Defaults to 3. Minimum value is 1.",
@@ -875,7 +902,8 @@
                 "type": [
                   "object",
                   "null"
-                ]
+                ],
+                "additionalProperties": false
               },
               "type": [
                 "array",
@@ -919,7 +947,8 @@
           "type": [
             "object",
             "null"
-          ]
+          ],
+          "additionalProperties": false
         },
         "initialDelaySeconds": {
           "description": "Number of seconds after the container has started before liveness probes are initiated. More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes",
@@ -978,7 +1007,8 @@
           "type": [
             "object",
             "null"
-          ]
+          ],
+          "additionalProperties": false
         },
         "timeoutSeconds": {
           "description": "Number of seconds after which the probe times out. Defaults to 1 second. Minimum value is 1. More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes",
@@ -992,7 +1022,8 @@
       "type": [
         "object",
         "null"
-      ]
+      ],
+      "additionalProperties": false
     },
     "resources": {
       "description": "ResourceRequirements describes the compute resource requirements.",
@@ -1047,7 +1078,8 @@
       "type": [
         "object",
         "null"
-      ]
+      ],
+      "additionalProperties": false
     },
     "securityContext": {
       "description": "SecurityContext holds security configuration that will be applied to a container. Some fields are present in both SecurityContext and PodSecurityContext.  When both are set, the values in SecurityContext take precedence.",
@@ -1092,7 +1124,8 @@
           "type": [
             "object",
             "null"
-          ]
+          ],
+          "additionalProperties": false
         },
         "privileged": {
           "description": "Run container in privileged mode. Processes in privileged containers are essentially equivalent to root on the host. Defaults to false.",
@@ -1173,7 +1206,8 @@
           "type": [
             "object",
             "null"
-          ]
+          ],
+          "additionalProperties": false
         },
         "seccompProfile": {
           "description": "SeccompProfile defines a pod/container's seccomp profile settings. Only one profile source may be set.",
@@ -1204,7 +1238,8 @@
                 "localhostProfile": "LocalhostProfile"
               }
             }
-          ]
+          ],
+          "additionalProperties": false
         },
         "windowsOptions": {
           "description": "WindowsSecurityContextOptions contain Windows-specific options and credentials.",
@@ -1234,13 +1269,15 @@
           "type": [
             "object",
             "null"
-          ]
+          ],
+          "additionalProperties": false
         }
       },
       "type": [
         "object",
         "null"
-      ]
+      ],
+      "additionalProperties": false
     },
     "startupProbe": {
       "description": "Probe describes a health check to be performed against a container to determine whether it is alive or ready to receive traffic.",
@@ -1265,7 +1302,8 @@
           "type": [
             "object",
             "null"
-          ]
+          ],
+          "additionalProperties": false
         },
         "failureThreshold": {
           "description": "Minimum consecutive failures for the probe to be considered failed after having succeeded. Defaults to 3. Minimum value is 1.",
@@ -1306,7 +1344,8 @@
                 "type": [
                   "object",
                   "null"
-                ]
+                ],
+                "additionalProperties": false
               },
               "type": [
                 "array",
@@ -1350,7 +1389,8 @@
           "type": [
             "object",
             "null"
-          ]
+          ],
+          "additionalProperties": false
         },
         "initialDelaySeconds": {
           "description": "Number of seconds after the container has started before liveness probes are initiated. More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes",
@@ -1409,7 +1449,8 @@
           "type": [
             "object",
             "null"
-          ]
+          ],
+          "additionalProperties": false
         },
         "timeoutSeconds": {
           "description": "Number of seconds after which the probe times out. Defaults to 1 second. Minimum value is 1. More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes",
@@ -1423,7 +1464,8 @@
       "type": [
         "object",
         "null"
-      ]
+      ],
+      "additionalProperties": false
     },
     "stdin": {
       "description": "Whether this container should allocate a buffer for stdin in the container runtime. If this is not set, reads from stdin in the container will always result in EOF. Default is false.",
@@ -1488,7 +1530,8 @@
         "type": [
           "object",
           "null"
-        ]
+        ],
+        "additionalProperties": false
       },
       "type": [
         "array",
@@ -1546,7 +1589,8 @@
         "type": [
           "object",
           "null"
-        ]
+        ],
+        "additionalProperties": false
       },
       "type": [
         "array",
@@ -1567,5 +1611,6 @@
     "name"
   ],
   "type": "object",
+  "additionalProperties": false,
   "$schema": "http://json-schema.org/schema#"
 }

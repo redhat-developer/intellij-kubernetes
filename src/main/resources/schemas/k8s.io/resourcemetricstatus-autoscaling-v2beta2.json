@@ -48,7 +48,8 @@
       "type": [
         "object",
         "null"
-      ]
+      ],
+      "additionalProperties": false
     },
     "name": {
       "description": "Name is the name of the resource in question.",
@@ -63,5 +64,6 @@
     "current"
   ],
   "type": "object",
+  "additionalProperties": false,
   "$schema": "http://json-schema.org/schema#"
 }

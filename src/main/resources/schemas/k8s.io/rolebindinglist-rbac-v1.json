@@ -177,7 +177,8 @@
                   "type": [
                     "object",
                     "null"
-                  ]
+                  ],
+                  "additionalProperties": false
                 },
                 "type": [
                   "array",
@@ -243,7 +244,8 @@
                   "type": [
                     "object",
                     "null"
-                  ]
+                  ],
+                  "additionalProperties": false
                 },
                 "type": [
                   "array",
@@ -277,7 +279,8 @@
             "type": [
               "object",
               "null"
-            ]
+            ],
+            "additionalProperties": false
           },
           "roleRef": {
             "description": "RoleRef contains information that points to the role being used",
@@ -300,7 +303,8 @@
               "kind",
               "name"
             ],
-            "type": "object"
+            "type": "object",
+            "additionalProperties": false
           },
           "subjects": {
             "description": "Subjects holds references to the objects the role applies to.",
@@ -337,7 +341,8 @@
               "type": [
                 "object",
                 "null"
-              ]
+              ],
+              "additionalProperties": false
             },
             "type": [
               "array",
@@ -358,7 +363,8 @@
             "kind": "RoleBinding",
             "version": "v1"
           }
-        ]
+        ],
+        "additionalProperties": false
       },
       "type": [
         "array",
@@ -411,7 +417,8 @@
       "type": [
         "object",
         "null"
-      ]
+      ],
+      "additionalProperties": false
     }
   },
   "required": [
@@ -425,5 +432,6 @@
       "version": "v1"
     }
   ],
+  "additionalProperties": false,
   "$schema": "http://json-schema.org/schema#"
 }

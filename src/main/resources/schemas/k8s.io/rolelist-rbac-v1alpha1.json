@@ -177,7 +177,8 @@
                   "type": [
                     "object",
                     "null"
-                  ]
+                  ],
+                  "additionalProperties": false
                 },
                 "type": [
                   "array",
@@ -243,7 +244,8 @@
                   "type": [
                     "object",
                     "null"
-                  ]
+                  ],
+                  "additionalProperties": false
                 },
                 "type": [
                   "array",
@@ -277,7 +279,8 @@
             "type": [
               "object",
               "null"
-            ]
+            ],
+            "additionalProperties": false
           },
           "rules": {
             "description": "Rules holds all the PolicyRules for this Role",
@@ -353,7 +356,8 @@
               "type": [
                 "object",
                 "null"
-              ]
+              ],
+              "additionalProperties": false
             },
             "type": [
               "array",
@@ -371,7 +375,8 @@
             "kind": "Role",
             "version": "v1alpha1"
           }
-        ]
+        ],
+        "additionalProperties": false
       },
       "type": [
         "array",
@@ -424,7 +429,8 @@
       "type": [
         "object",
         "null"
-      ]
+      ],
+      "additionalProperties": false
     }
   },
   "required": [
@@ -438,5 +444,6 @@
       "version": "v1alpha1"
     }
   ],
+  "additionalProperties": false,
   "$schema": "http://json-schema.org/schema#"
 }

@@ -40,7 +40,8 @@
               "type": [
                 "object",
                 "null"
-              ]
+              ],
+              "additionalProperties": false
             },
             "type": [
               "array",
@@ -81,7 +82,8 @@
               "type": [
                 "object",
                 "null"
-              ]
+              ],
+              "additionalProperties": false
             },
             "type": [
               "array",
@@ -92,7 +94,8 @@
         "type": [
           "object",
           "null"
-        ]
+        ],
+        "additionalProperties": false
       },
       "type": [
         "array",
@@ -104,5 +107,6 @@
     "nodeSelectorTerms"
   ],
   "type": "object",
+  "additionalProperties": false,
   "$schema": "http://json-schema.org/schema#"
 }

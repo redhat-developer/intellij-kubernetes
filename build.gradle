@@ -114,8 +114,7 @@ integrationTest {
     useJUnitPlatform()
 }
 
-task generateSchema {
-
+task generateSchemas {
     final LATEST_VERSION_SCHEMA = "v1.20.5"
     final SCHEMA_BASEURL = "https://raw.githubusercontent.com/kubernetes/kubernetes"
     final SCHEMA_DIR = "src/main/resources/schemas/"
@@ -126,15 +125,23 @@ task generateSchema {
         def url = "${SCHEMA_BASEURL}/${schemaVersion}/api/openapi-spec/swagger.json"
         def destination = "${SCHEMA_DIR}/${K8S_DIR}"
         file("${projectDir}/${destination}").deleteDir()
+
         println("Generating schemas ${schemaVersion} from openapi at ${url} \ninto ${SCHEMA_DIR}")
         /*
-         * openapi2jsonschema -o src/main/resources/schemas/k8s.io --kubernetes --expanded --stand-alone https://raw.githubusercontent.com/kubernetes/kubernetes/v1.20.5/api/openapi-spec/swagger.json
+         * openapi2jsonschema -o src/main/resources/schemas/k8s.io --kubernetes --expanded --stand-alone --strict https://raw.githubusercontent.com/kubernetes/kubernetes/v1.20.5/api/openapi-spec/swagger.json
          */
-        exec {
+        def process = exec {
             executable 'openapi2jsonschema'
-            args '-o', destination, "--kubernetes", "--expanded", "--stand-alone", url
+            args '-o', destination, "--kubernetes", "--expanded", "--stand-alone", "--strict", url
         }
-        createIndexFile("${projectDir}/${destination}")
+        if (isSuccess(process.exitValue)) {
+            createIndexFile("${projectDir}/${destination}")
+        } else {
+            println(colorize("yellow",
+                    """Generating schema failed. Please make sure that you have 'openapi2jsonschema' installed.
+                    Make sure you have python installed and then run 'pip install openapi2jsonschema'.
+                    Further info is available at https://pypi.org/project/openapi2jsonschema/"""))
+        }
     }
 
     ext.createIndexFile = { destination ->

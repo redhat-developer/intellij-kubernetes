@@ -54,7 +54,8 @@
       "type": [
         "object",
         "null"
-      ]
+      ],
+      "additionalProperties": false
     },
     "resourceAttributes": {
       "description": "ResourceAttributes includes the authorization attributes available for resource requests to the Authorizer interface",
@@ -112,7 +113,8 @@
       "type": [
         "object",
         "null"
-      ]
+      ],
+      "additionalProperties": false
     },
     "uid": {
       "description": "UID information about the requesting user.",
@@ -130,5 +132,6 @@
     }
   },
   "type": "object",
+  "additionalProperties": false,
   "$schema": "http://json-schema.org/schema#"
 }

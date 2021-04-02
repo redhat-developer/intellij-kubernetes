@@ -27,7 +27,8 @@
       "type": [
         "object",
         "null"
-      ]
+      ],
+      "additionalProperties": false
     },
     "serviceName": {
       "description": "Specifies the name of the referenced service.",
@@ -54,5 +55,6 @@
     }
   },
   "type": "object",
+  "additionalProperties": false,
   "$schema": "http://json-schema.org/schema#"
 }

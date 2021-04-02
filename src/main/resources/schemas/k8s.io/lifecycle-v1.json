@@ -24,7 +24,8 @@
           "type": [
             "object",
             "null"
-          ]
+          ],
+          "additionalProperties": false
         },
         "httpGet": {
           "description": "HTTPGetAction describes an action based on HTTP Get requests.",
@@ -57,7 +58,8 @@
                 "type": [
                   "object",
                   "null"
-                ]
+                ],
+                "additionalProperties": false
               },
               "type": [
                 "array",
@@ -101,7 +103,8 @@
           "type": [
             "object",
             "null"
-          ]
+          ],
+          "additionalProperties": false
         },
         "tcpSocket": {
           "description": "TCPSocketAction describes an action based on opening a socket",
@@ -136,13 +139,15 @@
           "type": [
             "object",
             "null"
-          ]
+          ],
+          "additionalProperties": false
         }
       },
       "type": [
         "object",
         "null"
-      ]
+      ],
+      "additionalProperties": false
     },
     "preStop": {
       "description": "Handler defines a specific action that should be taken",
@@ -167,7 +172,8 @@
           "type": [
             "object",
             "null"
-          ]
+          ],
+          "additionalProperties": false
         },
         "httpGet": {
           "description": "HTTPGetAction describes an action based on HTTP Get requests.",
@@ -200,7 +206,8 @@
                 "type": [
                   "object",
                   "null"
-                ]
+                ],
+                "additionalProperties": false
               },
               "type": [
                 "array",
@@ -244,7 +251,8 @@
           "type": [
             "object",
             "null"
-          ]
+          ],
+          "additionalProperties": false
         },
         "tcpSocket": {
           "description": "TCPSocketAction describes an action based on opening a socket",
@@ -279,15 +287,18 @@
           "type": [
             "object",
             "null"
-          ]
+          ],
+          "additionalProperties": false
         }
       },
       "type": [
         "object",
         "null"
-      ]
+      ],
+      "additionalProperties": false
     }
   },
   "type": "object",
+  "additionalProperties": false,
   "$schema": "http://json-schema.org/schema#"
 }

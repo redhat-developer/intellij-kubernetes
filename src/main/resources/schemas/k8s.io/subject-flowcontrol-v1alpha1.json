@@ -15,7 +15,8 @@
       "type": [
         "object",
         "null"
-      ]
+      ],
+      "additionalProperties": false
     },
     "kind": {
       "description": "Required",
@@ -43,7 +44,8 @@
       "type": [
         "object",
         "null"
-      ]
+      ],
+      "additionalProperties": false
     },
     "user": {
       "description": "UserSubject holds detailed information for user-kind subject.",
@@ -59,7 +61,8 @@
       "type": [
         "object",
         "null"
-      ]
+      ],
+      "additionalProperties": false
     }
   },
   "required": [
@@ -76,5 +79,6 @@
       }
     }
   ],
+  "additionalProperties": false,
   "$schema": "http://json-schema.org/schema#"
 }
