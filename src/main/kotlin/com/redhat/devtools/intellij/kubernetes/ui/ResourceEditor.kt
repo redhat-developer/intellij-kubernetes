@@ -34,14 +34,14 @@ object ResourceEditor {
 
 	@Throws(IOException::class)
 	fun open(project: Project, resource: HasMetadata) {
-		val file = createVirtualFile(resource, project) ?: return
+		val file = createVirtualFile(resource) ?: return
 		file.putUserData(Key(KEY_RESOURCE), resource)
 		file.putUserData(AllowNonProjectEditing.ALLOW_NON_PROJECT_EDITING, true);
 		FileEditorManager.getInstance(project).openFile(file, true)
 	}
 
 	@Throws(IOException::class)
-	private fun createVirtualFile(resource: HasMetadata, project: Project): VirtualFile? {
+	private fun createVirtualFile(resource: HasMetadata): VirtualFile? {
 		val name = getName(resource)
 		val file = File(FileUtils.getTempDirectory(), name)
 		FileUtils.write(file, Serialization.asYaml(resource), StandardCharsets.UTF_8)

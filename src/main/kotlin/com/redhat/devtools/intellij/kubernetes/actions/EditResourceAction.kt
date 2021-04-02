@@ -27,8 +27,8 @@ class EditResourceAction: StructureTreeAction() {
 
     override fun actionPerformed(event: AnActionEvent?, path: Array<out TreePath>?, selected: Array<out Any>?) {
         val descriptor = selected?.get(0)?.getDescriptor() ?: return
-        val project = descriptor?.project ?: return
-        val toEdit: HasMetadata = descriptor?.element as? HasMetadata? ?: return
+        val project = descriptor.project ?: return
+        val toEdit: HasMetadata = descriptor.element as? HasMetadata? ?: return
         ResourceEditor.open(project, toEdit);
     }
 
