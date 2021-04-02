@@ -11,7 +11,7 @@
     <change-notes>
         <![CDATA[
         <p></p>
-        <h3>0.1.4</h3>
+        <h3>0.1.5</h3>
         <ul>
             <li><a href="https://github.com/redhat-developer/intellij-kubernetes/issues/181">Switch project/namespace command not showing up'</a></li>
             <li><a href="https://github.com/redhat-developer/intellij-kubernetes/issues/180">Error when opening new plugin version</a></li>
