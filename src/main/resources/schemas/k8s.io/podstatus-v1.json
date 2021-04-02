@@ -52,7 +52,8 @@
         "type": [
           "object",
           "null"
-        ]
+        ],
+        "additionalProperties": false
       },
       "type": [
         "array",
@@ -99,7 +100,8 @@
                 "type": [
                   "object",
                   "null"
-                ]
+                ],
+                "additionalProperties": false
               },
               "terminated": {
                 "description": "ContainerStateTerminated is a terminated state of a container.",
@@ -161,7 +163,8 @@
                 "type": [
                   "object",
                   "null"
-                ]
+                ],
+                "additionalProperties": false
               },
               "waiting": {
                 "description": "ContainerStateWaiting is a waiting state of a container.",
@@ -184,13 +187,15 @@
                 "type": [
                   "object",
                   "null"
-                ]
+                ],
+                "additionalProperties": false
               }
             },
             "type": [
               "object",
               "null"
-            ]
+            ],
+            "additionalProperties": false
           },
           "name": {
             "description": "This must be a DNS_LABEL. Each container in a pod must have a unique name. Cannot be updated.",
@@ -230,7 +235,8 @@
                 "type": [
                   "object",
                   "null"
-                ]
+                ],
+                "additionalProperties": false
               },
               "terminated": {
                 "description": "ContainerStateTerminated is a terminated state of a container.",
@@ -292,7 +298,8 @@
                 "type": [
                   "object",
                   "null"
-                ]
+                ],
+                "additionalProperties": false
               },
               "waiting": {
                 "description": "ContainerStateWaiting is a waiting state of a container.",
@@ -315,13 +322,15 @@
                 "type": [
                   "object",
                   "null"
-                ]
+                ],
+                "additionalProperties": false
               }
             },
             "type": [
               "object",
               "null"
-            ]
+            ],
+            "additionalProperties": false
           }
         },
         "required": [
@@ -334,7 +343,8 @@
         "type": [
           "object",
           "null"
-        ]
+        ],
+        "additionalProperties": false
       },
       "type": [
         "array",
@@ -379,7 +389,8 @@
                 "type": [
                   "object",
                   "null"
-                ]
+                ],
+                "additionalProperties": false
               },
               "terminated": {
                 "description": "ContainerStateTerminated is a terminated state of a container.",
@@ -441,7 +452,8 @@
                 "type": [
                   "object",
                   "null"
-                ]
+                ],
+                "additionalProperties": false
               },
               "waiting": {
                 "description": "ContainerStateWaiting is a waiting state of a container.",
@@ -464,13 +476,15 @@
                 "type": [
                   "object",
                   "null"
-                ]
+                ],
+                "additionalProperties": false
               }
             },
             "type": [
               "object",
               "null"
-            ]
+            ],
+            "additionalProperties": false
           },
           "name": {
             "description": "This must be a DNS_LABEL. Each container in a pod must have a unique name. Cannot be updated.",
@@ -510,7 +524,8 @@
                 "type": [
                   "object",
                   "null"
-                ]
+                ],
+                "additionalProperties": false
               },
               "terminated": {
                 "description": "ContainerStateTerminated is a terminated state of a container.",
@@ -572,7 +587,8 @@
                 "type": [
                   "object",
                   "null"
-                ]
+                ],
+                "additionalProperties": false
               },
               "waiting": {
                 "description": "ContainerStateWaiting is a waiting state of a container.",
@@ -595,13 +611,15 @@
                 "type": [
                   "object",
                   "null"
-                ]
+                ],
+                "additionalProperties": false
               }
             },
             "type": [
               "object",
               "null"
-            ]
+            ],
+            "additionalProperties": false
           }
         },
         "required": [
@@ -614,7 +632,8 @@
         "type": [
           "object",
           "null"
-        ]
+        ],
+        "additionalProperties": false
       },
       "type": [
         "array",
@@ -666,7 +685,8 @@
                 "type": [
                   "object",
                   "null"
-                ]
+                ],
+                "additionalProperties": false
               },
               "terminated": {
                 "description": "ContainerStateTerminated is a terminated state of a container.",
@@ -728,7 +748,8 @@
                 "type": [
                   "object",
                   "null"
-                ]
+                ],
+                "additionalProperties": false
               },
               "waiting": {
                 "description": "ContainerStateWaiting is a waiting state of a container.",
@@ -751,13 +772,15 @@
                 "type": [
                   "object",
                   "null"
-                ]
+                ],
+                "additionalProperties": false
               }
             },
             "type": [
               "object",
               "null"
-            ]
+            ],
+            "additionalProperties": false
           },
           "name": {
             "description": "This must be a DNS_LABEL. Each container in a pod must have a unique name. Cannot be updated.",
@@ -797,7 +820,8 @@
                 "type": [
                   "object",
                   "null"
-                ]
+                ],
+                "additionalProperties": false
               },
               "terminated": {
                 "description": "ContainerStateTerminated is a terminated state of a container.",
@@ -859,7 +883,8 @@
                 "type": [
                   "object",
                   "null"
-                ]
+                ],
+                "additionalProperties": false
               },
               "waiting": {
                 "description": "ContainerStateWaiting is a waiting state of a container.",
@@ -882,13 +907,15 @@
                 "type": [
                   "object",
                   "null"
-                ]
+                ],
+                "additionalProperties": false
               }
             },
             "type": [
               "object",
               "null"
-            ]
+            ],
+            "additionalProperties": false
           }
         },
         "required": [
@@ -901,7 +928,8 @@
         "type": [
           "object",
           "null"
-        ]
+        ],
+        "additionalProperties": false
       },
       "type": [
         "array",
@@ -952,7 +980,8 @@
         "type": [
           "object",
           "null"
-        ]
+        ],
+        "additionalProperties": false
       },
       "type": [
         "array",
@@ -985,5 +1014,6 @@
     }
   },
   "type": "object",
+  "additionalProperties": false,
   "$schema": "http://json-schema.org/schema#"
 }

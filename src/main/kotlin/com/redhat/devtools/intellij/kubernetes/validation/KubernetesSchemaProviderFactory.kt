@@ -82,6 +82,7 @@ class KubernetesSchemasProviderFactory : JsonSchemaProviderFactory {
             return null
         }
         // if has no x-kubernetes-group-version-kind it's not an openapi type
+        @Suppress("UNCHECKED_CAST")
         val groupVersionKinds = json["x-kubernetes-group-version-kind"] as? List<Map<String, String>>
         if (groupVersionKinds == null
             || groupVersionKinds.isEmpty()) {

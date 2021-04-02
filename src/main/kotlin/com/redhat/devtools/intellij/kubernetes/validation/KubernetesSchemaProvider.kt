@@ -36,9 +36,10 @@ class KubernetesSchemaProvider(
 				val psiFile = PsiManager.getInstance(project!!).findFile(file)
 				if (psiFile == null) {
 					false
+				} else {
+					val fileInfo = KubernetesTypeInfo.extractMeta(psiFile)
+					info == fileInfo
 				}
-				val fileInfo = KubernetesTypeInfo.extractMeta(psiFile)
-				info == fileInfo
 			})
 	}
 

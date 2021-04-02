@@ -162,7 +162,8 @@
             "type": [
               "object",
               "null"
-            ]
+            ],
+            "additionalProperties": false
           },
           "type": [
             "array",
@@ -228,7 +229,8 @@
             "type": [
               "object",
               "null"
-            ]
+            ],
+            "additionalProperties": false
           },
           "type": [
             "array",
@@ -262,7 +264,8 @@
       "type": [
         "object",
         "null"
-      ]
+      ],
+      "additionalProperties": false
     },
     "spec": {
       "description": "CronJobSpec describes how the job execution will look like and when it will actually run.",
@@ -426,7 +429,8 @@
                     "type": [
                       "object",
                       "null"
-                    ]
+                    ],
+                    "additionalProperties": false
                   },
                   "type": [
                     "array",
@@ -492,7 +496,8 @@
                     "type": [
                       "object",
                       "null"
-                    ]
+                    ],
+                    "additionalProperties": false
                   },
                   "type": [
                     "array",
@@ -526,7 +531,8 @@
               "type": [
                 "object",
                 "null"
-              ]
+              ],
+              "additionalProperties": false
             },
             "spec": {
               "description": "JobSpec describes how the job execution will look like.",
@@ -609,7 +615,8 @@
                         "type": [
                           "object",
                           "null"
-                        ]
+                        ],
+                        "additionalProperties": false
                       },
                       "type": [
                         "array",
@@ -634,7 +641,8 @@
                     "object",
                     "null"
                   ],
-                  "x-kubernetes-map-type": "atomic"
+                  "x-kubernetes-map-type": "atomic",
+                  "additionalProperties": false
                 },
                 "template": {
                   "description": "PodTemplateSpec describes the data a pod should have when created from a template",
@@ -780,7 +788,8 @@
                             "type": [
                               "object",
                               "null"
-                            ]
+                            ],
+                            "additionalProperties": false
                           },
                           "type": [
                             "array",
@@ -846,7 +855,8 @@
                             "type": [
                               "object",
                               "null"
-                            ]
+                            ],
+                            "additionalProperties": false
                           },
                           "type": [
                             "array",
@@ -880,7 +890,8 @@
                       "type": [
                         "object",
                         "null"
-                      ]
+                      ],
+                      "additionalProperties": false
                     },
                     "spec": {
                       "description": "PodSpec is a description of a pod.",
@@ -941,7 +952,8 @@
                                               "type": [
                                                 "object",
                                                 "null"
-                                              ]
+                                              ],
+                                              "additionalProperties": false
                                             },
                                             "type": [
                                               "array",
@@ -982,7 +994,8 @@
                                               "type": [
                                                 "object",
                                                 "null"
-                                              ]
+                                              ],
+                                              "additionalProperties": false
                                             },
                                             "type": [
                                               "array",
@@ -990,7 +1003,8 @@
                                             ]
                                           }
                                         },
-                                        "type": "object"
+                                        "type": "object",
+                                        "additionalProperties": false
                                       },
                                       "weight": {
                                         "description": "Weight associated with matching the corresponding nodeSelectorTerm, in the range 1-100.",
@@ -1005,7 +1019,8 @@
                                     "type": [
                                       "object",
                                       "null"
-                                    ]
+                                    ],
+                                    "additionalProperties": false
                                   },
                                   "type": [
                                     "array",
@@ -1054,7 +1069,8 @@
                                               "type": [
                                                 "object",
                                                 "null"
-                                              ]
+                                              ],
+                                              "additionalProperties": false
                                             },
                                             "type": [
                                               "array",
@@ -1095,7 +1111,8 @@
                                               "type": [
                                                 "object",
                                                 "null"
-                                              ]
+                                              ],
+                                              "additionalProperties": false
                                             },
                                             "type": [
                                               "array",
@@ -1106,7 +1123,8 @@
                                         "type": [
                                           "object",
                                           "null"
-                                        ]
+                                        ],
+                                        "additionalProperties": false
                                       },
                                       "type": "array"
                                     }
@@ -1117,13 +1135,15 @@
                                   "type": [
                                     "object",
                                     "null"
-                                  ]
+                                  ],
+                                  "additionalProperties": false
                                 }
                               },
                               "type": [
                                 "object",
                                 "null"
-                              ]
+                              ],
+                              "additionalProperties": false
                             },
                             "podAffinity": {
                               "description": "Pod affinity is a group of inter pod affinity scheduling rules.",
@@ -1175,7 +1195,8 @@
                                                   "type": [
                                                     "object",
                                                     "null"
-                                                  ]
+                                                  ],
+                                                  "additionalProperties": false
                                                 },
                                                 "type": [
                                                   "array",
@@ -1200,7 +1221,8 @@
                                               "object",
                                               "null"
                                             ],
-                                            "x-kubernetes-map-type": "atomic"
+                                            "x-kubernetes-map-type": "atomic",
+                                            "additionalProperties": false
                                           },
                                           "namespaces": {
                                             "description": "namespaces specifies which namespaces the labelSelector applies to (matches against); null or empty list means \"this pod's namespace\"",
@@ -1223,7 +1245,8 @@
                                         "required": [
                                           "topologyKey"
                                         ],
-                                        "type": "object"
+                                        "type": "object",
+                                        "additionalProperties": false
                                       },
                                       "weight": {
                                         "description": "weight associated with matching the corresponding podAffinityTerm, in the range 1-100.",
@@ -1238,7 +1261,8 @@
                                     "type": [
                                       "object",
                                       "null"
-                                    ]
+                                    ],
+                                    "additionalProperties": false
                                   },
                                   "type": [
                                     "array",
@@ -1289,7 +1313,8 @@
                                               "type": [
                                                 "object",
                                                 "null"
-                                              ]
+                                              ],
+                                              "additionalProperties": false
                                             },
                                             "type": [
                                               "array",
@@ -1314,7 +1339,8 @@
                                           "object",
                                           "null"
                                         ],
-                                        "x-kubernetes-map-type": "atomic"
+                                        "x-kubernetes-map-type": "atomic",
+                                        "additionalProperties": false
                                       },
                                       "namespaces": {
                                         "description": "namespaces specifies which namespaces the labelSelector applies to (matches against); null or empty list means \"this pod's namespace\"",
@@ -1340,7 +1366,8 @@
                                     "type": [
                                       "object",
                                       "null"
-                                    ]
+                                    ],
+                                    "additionalProperties": false
                                   },
                                   "type": [
                                     "array",
@@ -1351,7 +1378,8 @@
                               "type": [
                                 "object",
                                 "null"
-                              ]
+                              ],
+                              "additionalProperties": false
                             },
                             "podAntiAffinity": {
                               "description": "Pod anti affinity is a group of inter pod anti affinity scheduling rules.",
@@ -1403,7 +1431,8 @@
                                                   "type": [
                                                     "object",
                                                     "null"
-                                                  ]
+                                                  ],
+                                                  "additionalProperties": false
                                                 },
                                                 "type": [
                                                   "array",
@@ -1428,7 +1457,8 @@
                                               "object",
                                               "null"
                                             ],
-                                            "x-kubernetes-map-type": "atomic"
+                                            "x-kubernetes-map-type": "atomic",
+                                            "additionalProperties": false
                                           },
                                           "namespaces": {
                                             "description": "namespaces specifies which namespaces the labelSelector applies to (matches against); null or empty list means \"this pod's namespace\"",
@@ -1451,7 +1481,8 @@
                                         "required": [
                                           "topologyKey"
                                         ],
-                                        "type": "object"
+                                        "type": "object",
+                                        "additionalProperties": false
                                       },
                                       "weight": {
                                         "description": "weight associated with matching the corresponding podAffinityTerm, in the range 1-100.",
@@ -1466,7 +1497,8 @@
                                     "type": [
                                       "object",
                                       "null"
-                                    ]
+                                    ],
+                                    "additionalProperties": false
                                   },
                                   "type": [
                                     "array",
@@ -1517,7 +1549,8 @@
                                               "type": [
                                                 "object",
                                                 "null"
-                                              ]
+                                              ],
+                                              "additionalProperties": false
                                             },
                                             "type": [
                                               "array",
@@ -1542,7 +1575,8 @@
                                           "object",
                                           "null"
                                         ],
-                                        "x-kubernetes-map-type": "atomic"
+                                        "x-kubernetes-map-type": "atomic",
+                                        "additionalProperties": false
                                       },
                                       "namespaces": {
                                         "description": "namespaces specifies which namespaces the labelSelector applies to (matches against); null or empty list means \"this pod's namespace\"",
@@ -1568,7 +1602,8 @@
                                     "type": [
                                       "object",
                                       "null"
-                                    ]
+                                    ],
+                                    "additionalProperties": false
                                   },
                                   "type": [
                                     "array",
@@ -1579,13 +1614,15 @@
                               "type": [
                                 "object",
                                 "null"
-                              ]
+                              ],
+                              "additionalProperties": false
                             }
                           },
                           "type": [
                             "object",
                             "null"
-                          ]
+                          ],
+                          "additionalProperties": false
                         },
                         "automountServiceAccountToken": {
                           "description": "AutomountServiceAccountToken indicates whether a service account token should be automatically mounted.",
@@ -1672,7 +1709,8 @@
                                           "type": [
                                             "object",
                                             "null"
-                                          ]
+                                          ],
+                                          "additionalProperties": false
                                         },
                                         "fieldRef": {
                                           "description": "ObjectFieldSelector selects an APIVersioned field of an object.",
@@ -1695,7 +1733,8 @@
                                           "type": [
                                             "object",
                                             "null"
-                                          ]
+                                          ],
+                                          "additionalProperties": false
                                         },
                                         "resourceFieldRef": {
                                           "description": "ResourceFieldSelector represents container resources (cpu, memory) and their output format",
@@ -1734,7 +1773,8 @@
                                           "type": [
                                             "object",
                                             "null"
-                                          ]
+                                          ],
+                                          "additionalProperties": false
                                         },
                                         "secretKeyRef": {
                                           "description": "SecretKeySelector selects a key of a Secret.",
@@ -1764,13 +1804,15 @@
                                           "type": [
                                             "object",
                                             "null"
-                                          ]
+                                          ],
+                                          "additionalProperties": false
                                         }
                                       },
                                       "type": [
                                         "object",
                                         "null"
-                                      ]
+                                      ],
+                                      "additionalProperties": false
                                     }
                                   },
                                   "required": [
@@ -1779,7 +1821,8 @@
                                   "type": [
                                     "object",
                                     "null"
-                                  ]
+                                  ],
+                                  "additionalProperties": false
                                 },
                                 "type": [
                                   "array",
@@ -1814,7 +1857,8 @@
                                       "type": [
                                         "object",
                                         "null"
-                                      ]
+                                      ],
+                                      "additionalProperties": false
                                     },
                                     "prefix": {
                                       "description": "An optional identifier to prepend to each key in the ConfigMap. Must be a C_IDENTIFIER.",
@@ -1844,13 +1888,15 @@
                                       "type": [
                                         "object",
                                         "null"
-                                      ]
+                                      ],
+                                      "additionalProperties": false
                                     }
                                   },
                                   "type": [
                                     "object",
                                     "null"
-                                  ]
+                                  ],
+                                  "additionalProperties": false
                                 },
                                 "type": [
                                   "array",
@@ -1897,7 +1943,8 @@
                                         "type": [
                                           "object",
                                           "null"
-                                        ]
+                                        ],
+                                        "additionalProperties": false
                                       },
                                       "httpGet": {
                                         "description": "HTTPGetAction describes an action based on HTTP Get requests.",
@@ -1930,7 +1977,8 @@
                                               "type": [
                                                 "object",
                                                 "null"
-                                              ]
+                                              ],
+                                              "additionalProperties": false
                                             },
                                             "type": [
                                               "array",
@@ -1974,7 +2022,8 @@
                                         "type": [
                                           "object",
                                           "null"
-                                        ]
+                                        ],
+                                        "additionalProperties": false
                                       },
                                       "tcpSocket": {
                                         "description": "TCPSocketAction describes an action based on opening a socket",
@@ -2009,13 +2058,15 @@
                                         "type": [
                                           "object",
                                           "null"
-                                        ]
+                                        ],
+                                        "additionalProperties": false
                                       }
                                     },
                                     "type": [
                                       "object",
                                       "null"
-                                    ]
+                                    ],
+                                    "additionalProperties": false
                                   },
                                   "preStop": {
                                     "description": "Handler defines a specific action that should be taken",
@@ -2040,7 +2091,8 @@
                                         "type": [
                                           "object",
                                           "null"
-                                        ]
+                                        ],
+                                        "additionalProperties": false
                                       },
                                       "httpGet": {
                                         "description": "HTTPGetAction describes an action based on HTTP Get requests.",
@@ -2073,7 +2125,8 @@
                                               "type": [
                                                 "object",
                                                 "null"
-                                              ]
+                                              ],
+                                              "additionalProperties": false
                                             },
                                             "type": [
                                               "array",
@@ -2117,7 +2170,8 @@
                                         "type": [
                                           "object",
                                           "null"
-                                        ]
+                                        ],
+                                        "additionalProperties": false
                                       },
                                       "tcpSocket": {
                                         "description": "TCPSocketAction describes an action based on opening a socket",
@@ -2152,19 +2206,22 @@
                                         "type": [
                                           "object",
                                           "null"
-                                        ]
+                                        ],
+                                        "additionalProperties": false
                                       }
                                     },
                                     "type": [
                                       "object",
                                       "null"
-                                    ]
+                                    ],
+                                    "additionalProperties": false
                                   }
                                 },
                                 "type": [
                                   "object",
                                   "null"
-                                ]
+                                ],
+                                "additionalProperties": false
                               },
                               "livenessProbe": {
                                 "description": "Probe describes a health check to be performed against a container to determine whether it is alive or ready to receive traffic.",
@@ -2189,7 +2246,8 @@
                                     "type": [
                                       "object",
                                       "null"
-                                    ]
+                                    ],
+                                    "additionalProperties": false
                                   },
                                   "failureThreshold": {
                                     "description": "Minimum consecutive failures for the probe to be considered failed after having succeeded. Defaults to 3. Minimum value is 1.",
@@ -2230,7 +2288,8 @@
                                           "type": [
                                             "object",
                                             "null"
-                                          ]
+                                          ],
+                                          "additionalProperties": false
                                         },
                                         "type": [
                                           "array",
@@ -2274,7 +2333,8 @@
                                     "type": [
                                       "object",
                                       "null"
-                                    ]
+                                    ],
+                                    "additionalProperties": false
                                   },
                                   "initialDelaySeconds": {
                                     "description": "Number of seconds after the container has started before liveness probes are initiated. More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes",
@@ -2333,7 +2393,8 @@
                                     "type": [
                                       "object",
                                       "null"
-                                    ]
+                                    ],
+                                    "additionalProperties": false
                                   },
                                   "timeoutSeconds": {
                                     "description": "Number of seconds after which the probe times out. Defaults to 1 second. Minimum value is 1. More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes",
@@ -2347,7 +2408,8 @@
                                 "type": [
                                   "object",
                                   "null"
-                                ]
+                                ],
+                                "additionalProperties": false
                               },
                               "name": {
                                 "description": "Name of the container specified as a DNS_LABEL. Each container in a pod must have a unique name (DNS_LABEL). Cannot be updated.",
@@ -2399,7 +2461,8 @@
                                   "type": [
                                     "object",
                                     "null"
-                                  ]
+                                  ],
+                                  "additionalProperties": false
                                 },
                                 "type": [
                                   "array",
@@ -2436,7 +2499,8 @@
                                     "type": [
                                       "object",
                                       "null"
-                                    ]
+                                    ],
+                                    "additionalProperties": false
                                   },
                                   "failureThreshold": {
                                     "description": "Minimum consecutive failures for the probe to be considered failed after having succeeded. Defaults to 3. Minimum value is 1.",
@@ -2477,7 +2541,8 @@
                                           "type": [
                                             "object",
                                             "null"
-                                          ]
+                                          ],
+                                          "additionalProperties": false
                                         },
                                         "type": [
                                           "array",
@@ -2521,7 +2586,8 @@
                                     "type": [
                                       "object",
                                       "null"
-                                    ]
+                                    ],
+                                    "additionalProperties": false
                                   },
                                   "initialDelaySeconds": {
                                     "description": "Number of seconds after the container has started before liveness probes are initiated. More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes",
@@ -2580,7 +2646,8 @@
                                     "type": [
                                       "object",
                                       "null"
-                                    ]
+                                    ],
+                                    "additionalProperties": false
                                   },
                                   "timeoutSeconds": {
                                     "description": "Number of seconds after which the probe times out. Defaults to 1 second. Minimum value is 1. More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes",
@@ -2594,7 +2661,8 @@
                                 "type": [
                                   "object",
                                   "null"
-                                ]
+                                ],
+                                "additionalProperties": false
                               },
                               "resources": {
                                 "description": "ResourceRequirements describes the compute resource requirements.",
@@ -2649,7 +2717,8 @@
                                 "type": [
                                   "object",
                                   "null"
-                                ]
+                                ],
+                                "additionalProperties": false
                               },
                               "securityContext": {
                                 "description": "SecurityContext holds security configuration that will be applied to a container. Some fields are present in both SecurityContext and PodSecurityContext.  When both are set, the values in SecurityContext take precedence.",
@@ -2694,7 +2763,8 @@
                                     "type": [
                                       "object",
                                       "null"
-                                    ]
+                                    ],
+                                    "additionalProperties": false
                                   },
                                   "privileged": {
                                     "description": "Run container in privileged mode. Processes in privileged containers are essentially equivalent to root on the host. Defaults to false.",
@@ -2775,7 +2845,8 @@
                                     "type": [
                                       "object",
                                       "null"
-                                    ]
+                                    ],
+                                    "additionalProperties": false
                                   },
                                   "seccompProfile": {
                                     "description": "SeccompProfile defines a pod/container's seccomp profile settings. Only one profile source may be set.",
@@ -2806,7 +2877,8 @@
                                           "localhostProfile": "LocalhostProfile"
                                         }
                                       }
-                                    ]
+                                    ],
+                                    "additionalProperties": false
                                   },
                                   "windowsOptions": {
                                     "description": "WindowsSecurityContextOptions contain Windows-specific options and credentials.",
@@ -2836,13 +2908,15 @@
                                     "type": [
                                       "object",
                                       "null"
-                                    ]
+                                    ],
+                                    "additionalProperties": false
                                   }
                                 },
                                 "type": [
                                   "object",
                                   "null"
-                                ]
+                                ],
+                                "additionalProperties": false
                               },
                               "startupProbe": {
                                 "description": "Probe describes a health check to be performed against a container to determine whether it is alive or ready to receive traffic.",
@@ -2867,7 +2941,8 @@
                                     "type": [
                                       "object",
                                       "null"
-                                    ]
+                                    ],
+                                    "additionalProperties": false
                                   },
                                   "failureThreshold": {
                                     "description": "Minimum consecutive failures for the probe to be considered failed after having succeeded. Defaults to 3. Minimum value is 1.",
@@ -2908,7 +2983,8 @@
                                           "type": [
                                             "object",
                                             "null"
-                                          ]
+                                          ],
+                                          "additionalProperties": false
                                         },
                                         "type": [
                                           "array",
@@ -2952,7 +3028,8 @@
                                     "type": [
                                       "object",
                                       "null"
-                                    ]
+                                    ],
+                                    "additionalProperties": false
                                   },
                                   "initialDelaySeconds": {
                                     "description": "Number of seconds after the container has started before liveness probes are initiated. More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes",
@@ -3011,7 +3088,8 @@
                                     "type": [
                                       "object",
                                       "null"
-                                    ]
+                                    ],
+                                    "additionalProperties": false
                                   },
                                   "timeoutSeconds": {
                                     "description": "Number of seconds after which the probe times out. Defaults to 1 second. Minimum value is 1. More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes",
@@ -3025,7 +3103,8 @@
                                 "type": [
                                   "object",
                                   "null"
-                                ]
+                                ],
+                                "additionalProperties": false
                               },
                               "stdin": {
                                 "description": "Whether this container should allocate a buffer for stdin in the container runtime. If this is not set, reads from stdin in the container will always result in EOF. Default is false.",
@@ -3083,7 +3162,8 @@
                                   "type": [
                                     "object",
                                     "null"
-                                  ]
+                                  ],
+                                  "additionalProperties": false
                                 },
                                 "type": [
                                   "array",
@@ -3141,7 +3221,8 @@
                                   "type": [
                                     "object",
                                     "null"
-                                  ]
+                                  ],
+                                  "additionalProperties": false
                                 },
                                 "type": [
                                   "array",
@@ -3164,7 +3245,8 @@
                             "type": [
                               "object",
                               "null"
-                            ]
+                            ],
+                            "additionalProperties": false
                           },
                           "type": "array",
                           "x-kubernetes-patch-merge-key": "name",
@@ -3208,7 +3290,8 @@
                                 "type": [
                                   "object",
                                   "null"
-                                ]
+                                ],
+                                "additionalProperties": false
                               },
                               "type": [
                                 "array",
@@ -3232,7 +3315,8 @@
                           "type": [
                             "object",
                             "null"
-                          ]
+                          ],
+                          "additionalProperties": false
                         },
                         "dnsPolicy": {
                           "description": "Set DNS policy for the pod. Defaults to \"ClusterFirst\". Valid values are 'ClusterFirstWithHostNet', 'ClusterFirst', 'Default' or 'None'. DNS parameters given in DNSConfig will be merged with the policy selected with DNSPolicy. To have DNS options set along with hostNetwork, you have to specify DNS policy explicitly to 'ClusterFirstWithHostNet'.",
@@ -3326,7 +3410,8 @@
                                           "type": [
                                             "object",
                                             "null"
-                                          ]
+                                          ],
+                                          "additionalProperties": false
                                         },
                                         "fieldRef": {
                                           "description": "ObjectFieldSelector selects an APIVersioned field of an object.",
@@ -3349,7 +3434,8 @@
                                           "type": [
                                             "object",
                                             "null"
-                                          ]
+                                          ],
+                                          "additionalProperties": false
                                         },
                                         "resourceFieldRef": {
                                           "description": "ResourceFieldSelector represents container resources (cpu, memory) and their output format",
@@ -3388,7 +3474,8 @@
                                           "type": [
                                             "object",
                                             "null"
-                                          ]
+                                          ],
+                                          "additionalProperties": false
                                         },
                                         "secretKeyRef": {
                                           "description": "SecretKeySelector selects a key of a Secret.",
@@ -3418,13 +3505,15 @@
                                           "type": [
                                             "object",
                                             "null"
-                                          ]
+                                          ],
+                                          "additionalProperties": false
                                         }
                                       },
                                       "type": [
                                         "object",
                                         "null"
-                                      ]
+                                      ],
+                                      "additionalProperties": false
                                     }
                                   },
                                   "required": [
@@ -3433,7 +3522,8 @@
                                   "type": [
                                     "object",
                                     "null"
-                                  ]
+                                  ],
+                                  "additionalProperties": false
                                 },
                                 "type": [
                                   "array",
@@ -3468,7 +3558,8 @@
                                       "type": [
                                         "object",
                                         "null"
-                                      ]
+                                      ],
+                                      "additionalProperties": false
                                     },
                                     "prefix": {
                                       "description": "An optional identifier to prepend to each key in the ConfigMap. Must be a C_IDENTIFIER.",
@@ -3498,13 +3589,15 @@
                                       "type": [
                                         "object",
                                         "null"
-                                      ]
+                                      ],
+                                      "additionalProperties": false
                                     }
                                   },
                                   "type": [
                                     "object",
                                     "null"
-                                  ]
+                                  ],
+                                  "additionalProperties": false
                                 },
                                 "type": [
                                   "array",
@@ -3551,7 +3644,8 @@
                                         "type": [
                                           "object",
                                           "null"
-                                        ]
+                                        ],
+                                        "additionalProperties": false
                                       },
                                       "httpGet": {
                                         "description": "HTTPGetAction describes an action based on HTTP Get requests.",
@@ -3584,7 +3678,8 @@
                                               "type": [
                                                 "object",
                                                 "null"
-                                              ]
+                                              ],
+                                              "additionalProperties": false
                                             },
                                             "type": [
                                               "array",
@@ -3628,7 +3723,8 @@
                                         "type": [
                                           "object",
                                           "null"
-                                        ]
+                                        ],
+                                        "additionalProperties": false
                                       },
                                       "tcpSocket": {
                                         "description": "TCPSocketAction describes an action based on opening a socket",
@@ -3663,13 +3759,15 @@
                                         "type": [
                                           "object",
                                           "null"
-                                        ]
+                                        ],
+                                        "additionalProperties": false
                                       }
                                     },
                                     "type": [
                                       "object",
                                       "null"
-                                    ]
+                                    ],
+                                    "additionalProperties": false
                                   },
                                   "preStop": {
                                     "description": "Handler defines a specific action that should be taken",
@@ -3694,7 +3792,8 @@
                                         "type": [
                                           "object",
                                           "null"
-                                        ]
+                                        ],
+                                        "additionalProperties": false
                                       },
                                       "httpGet": {
                                         "description": "HTTPGetAction describes an action based on HTTP Get requests.",
@@ -3727,7 +3826,8 @@
                                               "type": [
                                                 "object",
                                                 "null"
-                                              ]
+                                              ],
+                                              "additionalProperties": false
                                             },
                                             "type": [
                                               "array",
@@ -3771,7 +3871,8 @@
                                         "type": [
                                           "object",
                                           "null"
-                                        ]
+                                        ],
+                                        "additionalProperties": false
                                       },
                                       "tcpSocket": {
                                         "description": "TCPSocketAction describes an action based on opening a socket",
@@ -3806,19 +3907,22 @@
                                         "type": [
                                           "object",
                                           "null"
-                                        ]
+                                        ],
+                                        "additionalProperties": false
                                       }
                                     },
                                     "type": [
                                       "object",
                                       "null"
-                                    ]
+                                    ],
+                                    "additionalProperties": false
                                   }
                                 },
                                 "type": [
                                   "object",
                                   "null"
-                                ]
+                                ],
+                                "additionalProperties": false
                               },
                               "livenessProbe": {
                                 "description": "Probe describes a health check to be performed against a container to determine whether it is alive or ready to receive traffic.",
@@ -3843,7 +3947,8 @@
                                     "type": [
                                       "object",
                                       "null"
-                                    ]
+                                    ],
+                                    "additionalProperties": false
                                   },
                                   "failureThreshold": {
                                     "description": "Minimum consecutive failures for the probe to be considered failed after having succeeded. Defaults to 3. Minimum value is 1.",
@@ -3884,7 +3989,8 @@
                                           "type": [
                                             "object",
                                             "null"
-                                          ]
+                                          ],
+                                          "additionalProperties": false
                                         },
                                         "type": [
                                           "array",
@@ -3928,7 +4034,8 @@
                                     "type": [
                                       "object",
                                       "null"
-                                    ]
+                                    ],
+                                    "additionalProperties": false
                                   },
                                   "initialDelaySeconds": {
                                     "description": "Number of seconds after the container has started before liveness probes are initiated. More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes",
@@ -3987,7 +4094,8 @@
                                     "type": [
                                       "object",
                                       "null"
-                                    ]
+                                    ],
+                                    "additionalProperties": false
                                   },
                                   "timeoutSeconds": {
                                     "description": "Number of seconds after which the probe times out. Defaults to 1 second. Minimum value is 1. More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes",
@@ -4001,7 +4109,8 @@
                                 "type": [
                                   "object",
                                   "null"
-                                ]
+                                ],
+                                "additionalProperties": false
                               },
                               "name": {
                                 "description": "Name of the ephemeral container specified as a DNS_LABEL. This name must be unique among all containers, init containers and ephemeral containers.",
@@ -4053,7 +4162,8 @@
                                   "type": [
                                     "object",
                                     "null"
-                                  ]
+                                  ],
+                                  "additionalProperties": false
                                 },
                                 "type": [
                                   "array",
@@ -4083,7 +4193,8 @@
                                     "type": [
                                       "object",
                                       "null"
-                                    ]
+                                    ],
+                                    "additionalProperties": false
                                   },
                                   "failureThreshold": {
                                     "description": "Minimum consecutive failures for the probe to be considered failed after having succeeded. Defaults to 3. Minimum value is 1.",
@@ -4124,7 +4235,8 @@
                                           "type": [
                                             "object",
                                             "null"
-                                          ]
+                                          ],
+                                          "additionalProperties": false
                                         },
                                         "type": [
                                           "array",
@@ -4168,7 +4280,8 @@
                                     "type": [
                                       "object",
                                       "null"
-                                    ]
+                                    ],
+                                    "additionalProperties": false
                                   },
                                   "initialDelaySeconds": {
                                     "description": "Number of seconds after the container has started before liveness probes are initiated. More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes",
@@ -4227,7 +4340,8 @@
                                     "type": [
                                       "object",
                                       "null"
-                                    ]
+                                    ],
+                                    "additionalProperties": false
                                   },
                                   "timeoutSeconds": {
                                     "description": "Number of seconds after which the probe times out. Defaults to 1 second. Minimum value is 1. More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes",
@@ -4241,7 +4355,8 @@
                                 "type": [
                                   "object",
                                   "null"
-                                ]
+                                ],
+                                "additionalProperties": false
                               },
                               "resources": {
                                 "description": "ResourceRequirements describes the compute resource requirements.",
@@ -4296,7 +4411,8 @@
                                 "type": [
                                   "object",
                                   "null"
-                                ]
+                                ],
+                                "additionalProperties": false
                               },
                               "securityContext": {
                                 "description": "SecurityContext holds security configuration that will be applied to a container. Some fields are present in both SecurityContext and PodSecurityContext.  When both are set, the values in SecurityContext take precedence.",
@@ -4341,7 +4457,8 @@
                                     "type": [
                                       "object",
                                       "null"
-                                    ]
+                                    ],
+                                    "additionalProperties": false
                                   },
                                   "privileged": {
                                     "description": "Run container in privileged mode. Processes in privileged containers are essentially equivalent to root on the host. Defaults to false.",
@@ -4422,7 +4539,8 @@
                                     "type": [
                                       "object",
                                       "null"
-                                    ]
+                                    ],
+                                    "additionalProperties": false
                                   },
                                   "seccompProfile": {
                                     "description": "SeccompProfile defines a pod/container's seccomp profile settings. Only one profile source may be set.",
@@ -4453,7 +4571,8 @@
                                           "localhostProfile": "LocalhostProfile"
                                         }
                                       }
-                                    ]
+                                    ],
+                                    "additionalProperties": false
                                   },
                                   "windowsOptions": {
                                     "description": "WindowsSecurityContextOptions contain Windows-specific options and credentials.",
@@ -4483,13 +4602,15 @@
                                     "type": [
                                       "object",
                                       "null"
-                                    ]
+                                    ],
+                                    "additionalProperties": false
                                   }
                                 },
                                 "type": [
                                   "object",
                                   "null"
-                                ]
+                                ],
+                                "additionalProperties": false
                               },
                               "startupProbe": {
                                 "description": "Probe describes a health check to be performed against a container to determine whether it is alive or ready to receive traffic.",
@@ -4514,7 +4635,8 @@
                                     "type": [
                                       "object",
                                       "null"
-                                    ]
+                                    ],
+                                    "additionalProperties": false
                                   },
                                   "failureThreshold": {
                                     "description": "Minimum consecutive failures for the probe to be considered failed after having succeeded. Defaults to 3. Minimum value is 1.",
@@ -4555,7 +4677,8 @@
                                           "type": [
                                             "object",
                                             "null"
-                                          ]
+                                          ],
+                                          "additionalProperties": false
                                         },
                                         "type": [
                                           "array",
@@ -4599,7 +4722,8 @@
                                     "type": [
                                       "object",
                                       "null"
-                                    ]
+                                    ],
+                                    "additionalProperties": false
                                   },
                                   "initialDelaySeconds": {
                                     "description": "Number of seconds after the container has started before liveness probes are initiated. More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes",
@@ -4658,7 +4782,8 @@
                                     "type": [
                                       "object",
                                       "null"
-                                    ]
+                                    ],
+                                    "additionalProperties": false
                                   },
                                   "timeoutSeconds": {
                                     "description": "Number of seconds after which the probe times out. Defaults to 1 second. Minimum value is 1. More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes",
@@ -4672,7 +4797,8 @@
                                 "type": [
                                   "object",
                                   "null"
-                                ]
+                                ],
+                                "additionalProperties": false
                               },
                               "stdin": {
                                 "description": "Whether this container should allocate a buffer for stdin in the container runtime. If this is not set, reads from stdin in the container will always result in EOF. Default is false.",
@@ -4737,7 +4863,8 @@
                                   "type": [
                                     "object",
                                     "null"
-                                  ]
+                                  ],
+                                  "additionalProperties": false
                                 },
                                 "type": [
                                   "array",
@@ -4795,7 +4922,8 @@
                                   "type": [
                                     "object",
                                     "null"
-                                  ]
+                                  ],
+                                  "additionalProperties": false
                                 },
                                 "type": [
                                   "array",
@@ -4818,7 +4946,8 @@
                             "type": [
                               "object",
                               "null"
-                            ]
+                            ],
+                            "additionalProperties": false
                           },
                           "type": [
                             "array",
@@ -4856,7 +4985,8 @@
                             "type": [
                               "object",
                               "null"
-                            ]
+                            ],
+                            "additionalProperties": false
                           },
                           "type": [
                             "array",
@@ -4909,7 +5039,8 @@
                             "type": [
                               "object",
                               "null"
-                            ]
+                            ],
+                            "additionalProperties": false
                           },
                           "type": [
                             "array",
@@ -4996,7 +5127,8 @@
                                           "type": [
                                             "object",
                                             "null"
-                                          ]
+                                          ],
+                                          "additionalProperties": false
                                         },
                                         "fieldRef": {
                                           "description": "ObjectFieldSelector selects an APIVersioned field of an object.",
@@ -5019,7 +5151,8 @@
                                           "type": [
                                             "object",
                                             "null"
-                                          ]
+                                          ],
+                                          "additionalProperties": false
                                         },
                                         "resourceFieldRef": {
                                           "description": "ResourceFieldSelector represents container resources (cpu, memory) and their output format",
@@ -5058,7 +5191,8 @@
                                           "type": [
                                             "object",
                                             "null"
-                                          ]
+                                          ],
+                                          "additionalProperties": false
                                         },
                                         "secretKeyRef": {
                                           "description": "SecretKeySelector selects a key of a Secret.",
@@ -5088,13 +5222,15 @@
                                           "type": [
                                             "object",
                                             "null"
-                                          ]
+                                          ],
+                                          "additionalProperties": false
                                         }
                                       },
                                       "type": [
                                         "object",
                                         "null"
-                                      ]
+                                      ],
+                                      "additionalProperties": false
                                     }
                                   },
                                   "required": [
@@ -5103,7 +5239,8 @@
                                   "type": [
                                     "object",
                                     "null"
-                                  ]
+                                  ],
+                                  "additionalProperties": false
                                 },
                                 "type": [
                                   "array",
@@ -5138,7 +5275,8 @@
                                       "type": [
                                         "object",
                                         "null"
-                                      ]
+                                      ],
+                                      "additionalProperties": false
                                     },
                                     "prefix": {
                                       "description": "An optional identifier to prepend to each key in the ConfigMap. Must be a C_IDENTIFIER.",
@@ -5168,13 +5306,15 @@
                                       "type": [
                                         "object",
                                         "null"
-                                      ]
+                                      ],
+                                      "additionalProperties": false
                                     }
                                   },
                                   "type": [
                                     "object",
                                     "null"
-                                  ]
+                                  ],
+                                  "additionalProperties": false
                                 },
                                 "type": [
                                   "array",
@@ -5221,7 +5361,8 @@
                                         "type": [
                                           "object",
                                           "null"
-                                        ]
+                                        ],
+                                        "additionalProperties": false
                                       },
                                       "httpGet": {
                                         "description": "HTTPGetAction describes an action based on HTTP Get requests.",
@@ -5254,7 +5395,8 @@
                                               "type": [
                                                 "object",
                                                 "null"
-                                              ]
+                                              ],
+                                              "additionalProperties": false
                                             },
                                             "type": [
                                               "array",
@@ -5298,7 +5440,8 @@
                                         "type": [
                                           "object",
                                           "null"
-                                        ]
+                                        ],
+                                        "additionalProperties": false
                                       },
                                       "tcpSocket": {
                                         "description": "TCPSocketAction describes an action based on opening a socket",
@@ -5333,13 +5476,15 @@
                                         "type": [
                                           "object",
                                           "null"
-                                        ]
+                                        ],
+                                        "additionalProperties": false
                                       }
                                     },
                                     "type": [
                                       "object",
                                       "null"
-                                    ]
+                                    ],
+                                    "additionalProperties": false
                                   },
                                   "preStop": {
                                     "description": "Handler defines a specific action that should be taken",
@@ -5364,7 +5509,8 @@
                                         "type": [
                                           "object",
                                           "null"
-                                        ]
+                                        ],
+                                        "additionalProperties": false
                                       },
                                       "httpGet": {
                                         "description": "HTTPGetAction describes an action based on HTTP Get requests.",
@@ -5397,7 +5543,8 @@
                                               "type": [
                                                 "object",
                                                 "null"
-                                              ]
+                                              ],
+                                              "additionalProperties": false
                                             },
                                             "type": [
                                               "array",
@@ -5441,7 +5588,8 @@
                                         "type": [
                                           "object",
                                           "null"
-                                        ]
+                                        ],
+                                        "additionalProperties": false
                                       },
                                       "tcpSocket": {
                                         "description": "TCPSocketAction describes an action based on opening a socket",
@@ -5476,19 +5624,22 @@
                                         "type": [
                                           "object",
                                           "null"
-                                        ]
+                                        ],
+                                        "additionalProperties": false
                                       }
                                     },
                                     "type": [
                                       "object",
                                       "null"
-                                    ]
+                                    ],
+                                    "additionalProperties": false
                                   }
                                 },
                                 "type": [
                                   "object",
                                   "null"
-                                ]
+                                ],
+                                "additionalProperties": false
                               },
                               "livenessProbe": {
                                 "description": "Probe describes a health check to be performed against a container to determine whether it is alive or ready to receive traffic.",
@@ -5513,7 +5664,8 @@
                                     "type": [
                                       "object",
                                       "null"
-                                    ]
+                                    ],
+                                    "additionalProperties": false
                                   },
                                   "failureThreshold": {
                                     "description": "Minimum consecutive failures for the probe to be considered failed after having succeeded. Defaults to 3. Minimum value is 1.",
@@ -5554,7 +5706,8 @@
                                           "type": [
                                             "object",
                                             "null"
-                                          ]
+                                          ],
+                                          "additionalProperties": false
                                         },
                                         "type": [
                                           "array",
@@ -5598,7 +5751,8 @@
                                     "type": [
                                       "object",
                                       "null"
-                                    ]
+                                    ],
+                                    "additionalProperties": false
                                   },
                                   "initialDelaySeconds": {
                                     "description": "Number of seconds after the container has started before liveness probes are initiated. More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes",
@@ -5657,7 +5811,8 @@
                                     "type": [
                                       "object",
                                       "null"
-                                    ]
+                                    ],
+                                    "additionalProperties": false
                                   },
                                   "timeoutSeconds": {
                                     "description": "Number of seconds after which the probe times out. Defaults to 1 second. Minimum value is 1. More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes",
@@ -5671,7 +5826,8 @@
                                 "type": [
                                   "object",
                                   "null"
-                                ]
+                                ],
+                                "additionalProperties": false
                               },
                               "name": {
                                 "description": "Name of the container specified as a DNS_LABEL. Each container in a pod must have a unique name (DNS_LABEL). Cannot be updated.",
@@ -5723,7 +5879,8 @@
                                   "type": [
                                     "object",
                                     "null"
-                                  ]
+                                  ],
+                                  "additionalProperties": false
                                 },
                                 "type": [
                                   "array",
@@ -5760,7 +5917,8 @@
                                     "type": [
                                       "object",
                                       "null"
-                                    ]
+                                    ],
+                                    "additionalProperties": false
                                   },
                                   "failureThreshold": {
                                     "description": "Minimum consecutive failures for the probe to be considered failed after having succeeded. Defaults to 3. Minimum value is 1.",
@@ -5801,7 +5959,8 @@
                                           "type": [
                                             "object",
                                             "null"
-                                          ]
+                                          ],
+                                          "additionalProperties": false
                                         },
                                         "type": [
                                           "array",
@@ -5845,7 +6004,8 @@
                                     "type": [
                                       "object",
                                       "null"
-                                    ]
+                                    ],
+                                    "additionalProperties": false
                                   },
                                   "initialDelaySeconds": {
                                     "description": "Number of seconds after the container has started before liveness probes are initiated. More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes",
@@ -5904,7 +6064,8 @@
                                     "type": [
                                       "object",
                                       "null"
-                                    ]
+                                    ],
+                                    "additionalProperties": false
                                   },
                                   "timeoutSeconds": {
                                     "description": "Number of seconds after which the probe times out. Defaults to 1 second. Minimum value is 1. More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes",
@@ -5918,7 +6079,8 @@
                                 "type": [
                                   "object",
                                   "null"
-                                ]
+                                ],
+                                "additionalProperties": false
                               },
                               "resources": {
                                 "description": "ResourceRequirements describes the compute resource requirements.",
@@ -5973,7 +6135,8 @@
                                 "type": [
                                   "object",
                                   "null"
-                                ]
+                                ],
+                                "additionalProperties": false
                               },
                               "securityContext": {
                                 "description": "SecurityContext holds security configuration that will be applied to a container. Some fields are present in both SecurityContext and PodSecurityContext.  When both are set, the values in SecurityContext take precedence.",
@@ -6018,7 +6181,8 @@
                                     "type": [
                                       "object",
                                       "null"
-                                    ]
+                                    ],
+                                    "additionalProperties": false
                                   },
                                   "privileged": {
                                     "description": "Run container in privileged mode. Processes in privileged containers are essentially equivalent to root on the host. Defaults to false.",
@@ -6099,7 +6263,8 @@
                                     "type": [
                                       "object",
                                       "null"
-                                    ]
+                                    ],
+                                    "additionalProperties": false
                                   },
                                   "seccompProfile": {
                                     "description": "SeccompProfile defines a pod/container's seccomp profile settings. Only one profile source may be set.",
@@ -6130,7 +6295,8 @@
                                           "localhostProfile": "LocalhostProfile"
                                         }
                                       }
-                                    ]
+                                    ],
+                                    "additionalProperties": false
                                   },
                                   "windowsOptions": {
                                     "description": "WindowsSecurityContextOptions contain Windows-specific options and credentials.",
@@ -6160,13 +6326,15 @@
                                     "type": [
                                       "object",
                                       "null"
-                                    ]
+                                    ],
+                                    "additionalProperties": false
                                   }
                                 },
                                 "type": [
                                   "object",
                                   "null"
-                                ]
+                                ],
+                                "additionalProperties": false
                               },
                               "startupProbe": {
                                 "description": "Probe describes a health check to be performed against a container to determine whether it is alive or ready to receive traffic.",
@@ -6191,7 +6359,8 @@
                                     "type": [
                                       "object",
                                       "null"
-                                    ]
+                                    ],
+                                    "additionalProperties": false
                                   },
                                   "failureThreshold": {
                                     "description": "Minimum consecutive failures for the probe to be considered failed after having succeeded. Defaults to 3. Minimum value is 1.",
@@ -6232,7 +6401,8 @@
                                           "type": [
                                             "object",
                                             "null"
-                                          ]
+                                          ],
+                                          "additionalProperties": false
                                         },
                                         "type": [
                                           "array",
@@ -6276,7 +6446,8 @@
                                     "type": [
                                       "object",
                                       "null"
-                                    ]
+                                    ],
+                                    "additionalProperties": false
                                   },
                                   "initialDelaySeconds": {
                                     "description": "Number of seconds after the container has started before liveness probes are initiated. More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes",
@@ -6335,7 +6506,8 @@
                                     "type": [
                                       "object",
                                       "null"
-                                    ]
+                                    ],
+                                    "additionalProperties": false
                                   },
                                   "timeoutSeconds": {
                                     "description": "Number of seconds after which the probe times out. Defaults to 1 second. Minimum value is 1. More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes",
@@ -6349,7 +6521,8 @@
                                 "type": [
                                   "object",
                                   "null"
-                                ]
+                                ],
+                                "additionalProperties": false
                               },
                               "stdin": {
                                 "description": "Whether this container should allocate a buffer for stdin in the container runtime. If this is not set, reads from stdin in the container will always result in EOF. Default is false.",
@@ -6407,7 +6580,8 @@
                                   "type": [
                                     "object",
                                     "null"
-                                  ]
+                                  ],
+                                  "additionalProperties": false
                                 },
                                 "type": [
                                   "array",
@@ -6465,7 +6639,8 @@
                                   "type": [
                                     "object",
                                     "null"
-                                  ]
+                                  ],
+                                  "additionalProperties": false
                                 },
                                 "type": [
                                   "array",
@@ -6488,7 +6663,8 @@
                             "type": [
                               "object",
                               "null"
-                            ]
+                            ],
+                            "additionalProperties": false
                           },
                           "type": [
                             "array",
@@ -6578,7 +6754,8 @@
                             "type": [
                               "object",
                               "null"
-                            ]
+                            ],
+                            "additionalProperties": false
                           },
                           "type": [
                             "array",
@@ -6682,7 +6859,8 @@
                               "type": [
                                 "object",
                                 "null"
-                              ]
+                              ],
+                              "additionalProperties": false
                             },
                             "seccompProfile": {
                               "description": "SeccompProfile defines a pod/container's seccomp profile settings. Only one profile source may be set.",
@@ -6713,7 +6891,8 @@
                                     "localhostProfile": "LocalhostProfile"
                                   }
                                 }
-                              ]
+                              ],
+                              "additionalProperties": false
                             },
                             "supplementalGroups": {
                               "description": "A list of groups applied to the first process run in each container, in addition to the container's primary GID.  If unspecified, no groups will be added to any container.",
@@ -6750,7 +6929,8 @@
                                 "type": [
                                   "object",
                                   "null"
-                                ]
+                                ],
+                                "additionalProperties": false
                               },
                               "type": [
                                 "array",
@@ -6785,13 +6965,15 @@
                               "type": [
                                 "object",
                                 "null"
-                              ]
+                              ],
+                              "additionalProperties": false
                             }
                           },
                           "type": [
                             "object",
                             "null"
-                          ]
+                          ],
+                          "additionalProperties": false
                         },
                         "serviceAccount": {
                           "description": "DeprecatedServiceAccount is a depreciated alias for ServiceAccountName. Deprecated: Use serviceAccountName instead.",
@@ -6881,7 +7063,8 @@
                             "type": [
                               "object",
                               "null"
-                            ]
+                            ],
+                            "additionalProperties": false
                           },
                           "type": [
                             "array",
@@ -6932,7 +7115,8 @@
                                       "type": [
                                         "object",
                                         "null"
-                                      ]
+                                      ],
+                                      "additionalProperties": false
                                     },
                                     "type": [
                                       "array",
@@ -6957,7 +7141,8 @@
                                   "object",
                                   "null"
                                 ],
-                                "x-kubernetes-map-type": "atomic"
+                                "x-kubernetes-map-type": "atomic",
+                                "additionalProperties": false
                               },
                               "maxSkew": {
                                 "description": "MaxSkew describes the degree to which pods may be unevenly distributed. When `whenUnsatisfiable=DoNotSchedule`, it is the maximum permitted difference between the number of matching pods in the target topology and the global minimum. For example, in a 3-zone cluster, MaxSkew is set to 1, and pods with the same labelSelector spread as 1/1/0: | zone1 | zone2 | zone3 | |   P   |   P   |       | - if MaxSkew is 1, incoming pod can only be scheduled to zone3 to become 1/1/1; scheduling it onto zone1(zone2) would make the ActualSkew(2-0) on zone1(zone2) violate MaxSkew(1). - if MaxSkew is 2, incoming pod can be scheduled onto any zone. When `whenUnsatisfiable=ScheduleAnyway`, it is used to give higher precedence to topologies that satisfy it. It's a required field. Default value is 1 and 0 is not allowed.",
@@ -6981,7 +7166,8 @@
                             "type": [
                               "object",
                               "null"
-                            ]
+                            ],
+                            "additionalProperties": false
                           },
                           "type": [
                             "array",
@@ -7036,7 +7222,8 @@
                                 "type": [
                                   "object",
                                   "null"
-                                ]
+                                ],
+                                "additionalProperties": false
                               },
                               "azureDisk": {
                                 "description": "AzureDisk represents an Azure Data Disk mount on the host and bind mount to the pod.",
@@ -7085,7 +7272,8 @@
                                 "type": [
                                   "object",
                                   "null"
-                                ]
+                                ],
+                                "additionalProperties": false
                               },
                               "azureFile": {
                                 "description": "AzureFile represents an Azure File Service mount on the host and bind mount to the pod.",
@@ -7113,7 +7301,8 @@
                                 "type": [
                                   "object",
                                   "null"
-                                ]
+                                ],
+                                "additionalProperties": false
                               },
                               "cephfs": {
                                 "description": "Represents a Ceph Filesystem mount that lasts the lifetime of a pod Cephfs volumes do not support ownership management or SELinux relabeling.",
@@ -7163,7 +7352,8 @@
                                     "type": [
                                       "object",
                                       "null"
-                                    ]
+                                    ],
+                                    "additionalProperties": false
                                   },
                                   "user": {
                                     "description": "Optional: User is the rados user name, default is admin More info: https://examples.k8s.io/volumes/cephfs/README.md#how-to-use-it",
@@ -7179,7 +7369,8 @@
                                 "type": [
                                   "object",
                                   "null"
-                                ]
+                                ],
+                                "additionalProperties": false
                               },
                               "cinder": {
                                 "description": "Represents a cinder volume resource in Openstack. A Cinder volume must exist before mounting to a container. The volume must also be in the same region as the kubelet. Cinder volumes support ownership management and SELinux relabeling.",
@@ -7212,7 +7403,8 @@
                                     "type": [
                                       "object",
                                       "null"
-                                    ]
+                                    ],
+                                    "additionalProperties": false
                                   },
                                   "volumeID": {
                                     "description": "volume id used to identify the volume in cinder. More info: https://examples.k8s.io/mysql-cinder-pd/README.md",
@@ -7225,7 +7417,8 @@
                                 "type": [
                                   "object",
                                   "null"
-                                ]
+                                ],
+                                "additionalProperties": false
                               },
                               "configMap": {
                                 "description": "Adapts a ConfigMap into a volume.\n\nThe contents of the target ConfigMap's Data field will be presented in a volume as files using the keys in the Data field as the file names, unless the items element is populated with specific mappings of keys to paths. ConfigMap volumes support ownership management and SELinux relabeling.",
@@ -7267,7 +7460,8 @@
                                       "type": [
                                         "object",
                                         "null"
-                                      ]
+                                      ],
+                                      "additionalProperties": false
                                     },
                                     "type": [
                                       "array",
@@ -7292,7 +7486,8 @@
                                 "type": [
                                   "object",
                                   "null"
-                                ]
+                                ],
+                                "additionalProperties": false
                               },
                               "csi": {
                                 "description": "Represents a source location of a volume to mount, managed by an external CSI driver",
@@ -7322,7 +7517,8 @@
                                     "type": [
                                       "object",
                                       "null"
-                                    ]
+                                    ],
+                                    "additionalProperties": false
                                   },
                                   "readOnly": {
                                     "description": "Specifies a read-only configuration for the volume. Defaults to false (read/write).",
@@ -7351,7 +7547,8 @@
                                 "type": [
                                   "object",
                                   "null"
-                                ]
+                                ],
+                                "additionalProperties": false
                               },
                               "downwardAPI": {
                                 "description": "DownwardAPIVolumeSource represents a volume containing downward API info. Downward API volumes support ownership management and SELinux relabeling.",
@@ -7390,7 +7587,8 @@
                                           "type": [
                                             "object",
                                             "null"
-                                          ]
+                                          ],
+                                          "additionalProperties": false
                                         },
                                         "mode": {
                                           "description": "Optional: mode bits used to set permissions on this file, must be an octal value between 0000 and 0777 or a decimal value between 0 and 511. YAML accepts both octal and decimal values, JSON requires decimal values for mode bits. If not specified, the volume defaultMode will be used. This might be in conflict with other options that affect the file mode, like fsGroup, and the result can be other mode bits set.",
@@ -7441,7 +7639,8 @@
                                           "type": [
                                             "object",
                                             "null"
-                                          ]
+                                          ],
+                                          "additionalProperties": false
                                         }
                                       },
                                       "required": [
@@ -7450,7 +7649,8 @@
                                       "type": [
                                         "object",
                                         "null"
-                                      ]
+                                      ],
+                                      "additionalProperties": false
                                     },
                                     "type": [
                                       "array",
@@ -7461,7 +7661,8 @@
                                 "type": [
                                   "object",
                                   "null"
-                                ]
+                                ],
+                                "additionalProperties": false
                               },
                               "emptyDir": {
                                 "description": "Represents an empty directory for a pod. Empty directory volumes support ownership management and SELinux relabeling.",
@@ -7493,7 +7694,8 @@
                                 "type": [
                                   "object",
                                   "null"
-                                ]
+                                ],
+                                "additionalProperties": false
                               },
                               "ephemeral": {
                                 "description": "Represents an ephemeral volume that is handled by a normal storage driver.",
@@ -7649,7 +7851,8 @@
                                               "type": [
                                                 "object",
                                                 "null"
-                                              ]
+                                              ],
+                                              "additionalProperties": false
                                             },
                                             "type": [
                                               "array",
@@ -7715,7 +7918,8 @@
                                               "type": [
                                                 "object",
                                                 "null"
-                                              ]
+                                              ],
+                                              "additionalProperties": false
                                             },
                                             "type": [
                                               "array",
@@ -7749,7 +7953,8 @@
                                         "type": [
                                           "object",
                                           "null"
-                                        ]
+                                        ],
+                                        "additionalProperties": false
                                       },
                                       "spec": {
                                         "description": "PersistentVolumeClaimSpec describes the common attributes of storage devices and allows a Source for provider-specific attributes",
@@ -7793,7 +7998,8 @@
                                             "type": [
                                               "object",
                                               "null"
-                                            ]
+                                            ],
+                                            "additionalProperties": false
                                           },
                                           "resources": {
                                             "description": "ResourceRequirements describes the compute resource requirements.",
@@ -7848,7 +8054,8 @@
                                             "type": [
                                               "object",
                                               "null"
-                                            ]
+                                            ],
+                                            "additionalProperties": false
                                           },
                                           "selector": {
                                             "description": "A label selector is a label query over a set of resources. The result of matchLabels and matchExpressions are ANDed. An empty label selector matches all objects. A null label selector matches no objects.",
@@ -7889,7 +8096,8 @@
                                                   "type": [
                                                     "object",
                                                     "null"
-                                                  ]
+                                                  ],
+                                                  "additionalProperties": false
                                                 },
                                                 "type": [
                                                   "array",
@@ -7914,7 +8122,8 @@
                                               "object",
                                               "null"
                                             ],
-                                            "x-kubernetes-map-type": "atomic"
+                                            "x-kubernetes-map-type": "atomic",
+                                            "additionalProperties": false
                                           },
                                           "storageClassName": {
                                             "description": "Name of the StorageClass required by the claim. More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#class-1",
@@ -7938,7 +8147,8 @@
                                             ]
                                           }
                                         },
-                                        "type": "object"
+                                        "type": "object",
+                                        "additionalProperties": false
                                       }
                                     },
                                     "required": [
@@ -7947,13 +8157,15 @@
                                     "type": [
                                       "object",
                                       "null"
-                                    ]
+                                    ],
+                                    "additionalProperties": false
                                   }
                                 },
                                 "type": [
                                   "object",
                                   "null"
-                                ]
+                                ],
+                                "additionalProperties": false
                               },
                               "fc": {
                                 "description": "Represents a Fibre Channel volume. Fibre Channel volumes can only be mounted as read/write once. Fibre Channel volumes support ownership management and SELinux relabeling.",
@@ -8010,7 +8222,8 @@
                                 "type": [
                                   "object",
                                   "null"
-                                ]
+                                ],
+                                "additionalProperties": false
                               },
                               "flexVolume": {
                                 "description": "FlexVolume represents a generic volume resource that is provisioned/attached using an exec based plugin.",
@@ -8060,7 +8273,8 @@
                                     "type": [
                                       "object",
                                       "null"
-                                    ]
+                                    ],
+                                    "additionalProperties": false
                                   }
                                 },
                                 "required": [
@@ -8069,7 +8283,8 @@
                                 "type": [
                                   "object",
                                   "null"
-                                ]
+                                ],
+                                "additionalProperties": false
                               },
                               "flocker": {
                                 "description": "Represents a Flocker volume mounted by the Flocker agent. One and only one of datasetName and datasetUUID should be set. Flocker volumes do not support ownership management or SELinux relabeling.",
@@ -8092,7 +8307,8 @@
                                 "type": [
                                   "object",
                                   "null"
-                                ]
+                                ],
+                                "additionalProperties": false
                               },
                               "gcePersistentDisk": {
                                 "description": "Represents a Persistent Disk resource in Google Compute Engine.\n\nA GCE PD must exist before mounting to a container. The disk must also be in the same GCE project and zone as the kubelet. A GCE PD can only be mounted as read/write once or read-only many times. GCE PDs support ownership management and SELinux relabeling.",
@@ -8130,7 +8346,8 @@
                                 "type": [
                                   "object",
                                   "null"
-                                ]
+                                ],
+                                "additionalProperties": false
                               },
                               "gitRepo": {
                                 "description": "Represents a volume that is populated with the contents of a git repository. Git repo volumes do not support ownership management. Git repo volumes support SELinux relabeling.\n\nDEPRECATED: GitRepo is deprecated. To provision a container with a git repo, mount an EmptyDir into an InitContainer that clones the repo using git, then mount the EmptyDir into the Pod's container.",
@@ -8160,7 +8377,8 @@
                                 "type": [
                                   "object",
                                   "null"
-                                ]
+                                ],
+                                "additionalProperties": false
                               },
                               "glusterfs": {
                                 "description": "Represents a Glusterfs mount that lasts the lifetime of a pod. Glusterfs volumes do not support ownership management or SELinux relabeling.",
@@ -8188,7 +8406,8 @@
                                 "type": [
                                   "object",
                                   "null"
-                                ]
+                                ],
+                                "additionalProperties": false
                               },
                               "hostPath": {
                                 "description": "Represents a host path mapped into a pod. Host path volumes do not support ownership management or SELinux relabeling.",
@@ -8211,7 +8430,8 @@
                                 "type": [
                                   "object",
                                   "null"
-                                ]
+                                ],
+                                "additionalProperties": false
                               },
                               "iscsi": {
                                 "description": "Represents an ISCSI disk. ISCSI volumes can only be mounted as read/write once. ISCSI volumes support ownership management and SELinux relabeling.",
@@ -8294,7 +8514,8 @@
                                     "type": [
                                       "object",
                                       "null"
-                                    ]
+                                    ],
+                                    "additionalProperties": false
                                   },
                                   "targetPortal": {
                                     "description": "iSCSI Target Portal. The Portal is either an IP or ip_addr:port if the port is other than default (typically TCP ports 860 and 3260).",
@@ -8309,7 +8530,8 @@
                                 "type": [
                                   "object",
                                   "null"
-                                ]
+                                ],
+                                "additionalProperties": false
                               },
                               "name": {
                                 "description": "Volume's name. Must be a DNS_LABEL and unique within the pod. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names",
@@ -8341,7 +8563,8 @@
                                 "type": [
                                   "object",
                                   "null"
-                                ]
+                                ],
+                                "additionalProperties": false
                               },
                               "persistentVolumeClaim": {
                                 "description": "PersistentVolumeClaimVolumeSource references the user's PVC in the same namespace. This volume finds the bound PV and mounts that volume for the pod. A PersistentVolumeClaimVolumeSource is, essentially, a wrapper around another type of volume that is owned by someone else (the system).",
@@ -8364,7 +8587,8 @@
                                 "type": [
                                   "object",
                                   "null"
-                                ]
+                                ],
+                                "additionalProperties": false
                               },
                               "photonPersistentDisk": {
                                 "description": "Represents a Photon Controller persistent disk resource.",
@@ -8387,7 +8611,8 @@
                                 "type": [
                                   "object",
                                   "null"
-                                ]
+                                ],
+                                "additionalProperties": false
                               },
                               "portworxVolume": {
                                 "description": "PortworxVolumeSource represents a Portworx volume resource.",
@@ -8417,7 +8642,8 @@
                                 "type": [
                                   "object",
                                   "null"
-                                ]
+                                ],
+                                "additionalProperties": false
                               },
                               "projected": {
                                 "description": "Represents a projected volume source",
@@ -8467,7 +8693,8 @@
                                                 "type": [
                                                   "object",
                                                   "null"
-                                                ]
+                                                ],
+                                                "additionalProperties": false
                                               },
                                               "type": [
                                                 "array",
@@ -8492,7 +8719,8 @@
                                           "type": [
                                             "object",
                                             "null"
-                                          ]
+                                          ],
+                                          "additionalProperties": false
                                         },
                                         "downwardAPI": {
                                           "description": "Represents downward API info for projecting into a projected volume. Note that this is identical to a downwardAPI volume source without the default mode.",
@@ -8523,7 +8751,8 @@
                                                     "type": [
                                                       "object",
                                                       "null"
-                                                    ]
+                                                    ],
+                                                    "additionalProperties": false
                                                   },
                                                   "mode": {
                                                     "description": "Optional: mode bits used to set permissions on this file, must be an octal value between 0000 and 0777 or a decimal value between 0 and 511. YAML accepts both octal and decimal values, JSON requires decimal values for mode bits. If not specified, the volume defaultMode will be used. This might be in conflict with other options that affect the file mode, like fsGroup, and the result can be other mode bits set.",
@@ -8574,7 +8803,8 @@
                                                     "type": [
                                                       "object",
                                                       "null"
-                                                    ]
+                                                    ],
+                                                    "additionalProperties": false
                                                   }
                                                 },
                                                 "required": [
@@ -8583,7 +8813,8 @@
                                                 "type": [
                                                   "object",
                                                   "null"
-                                                ]
+                                                ],
+                                                "additionalProperties": false
                                               },
                                               "type": [
                                                 "array",
@@ -8594,7 +8825,8 @@
                                           "type": [
                                             "object",
                                             "null"
-                                          ]
+                                          ],
+                                          "additionalProperties": false
                                         },
                                         "secret": {
                                           "description": "Adapts a secret into a projected volume.\n\nThe contents of the target Secret's Data field will be presented in a projected volume as files using the keys in the Data field as the file names. Note that this is identical to a secret volume source without the default mode.",
@@ -8628,7 +8860,8 @@
                                                 "type": [
                                                   "object",
                                                   "null"
-                                                ]
+                                                ],
+                                                "additionalProperties": false
                                               },
                                               "type": [
                                                 "array",
@@ -8653,7 +8886,8 @@
                                           "type": [
                                             "object",
                                             "null"
-                                          ]
+                                          ],
+                                          "additionalProperties": false
                                         },
                                         "serviceAccountToken": {
                                           "description": "ServiceAccountTokenProjection represents a projected service account token volume. This projection can be used to insert a service account token into the pods runtime filesystem for use against APIs (Kubernetes API Server or otherwise).",
@@ -8684,13 +8918,15 @@
                                           "type": [
                                             "object",
                                             "null"
-                                          ]
+                                          ],
+                                          "additionalProperties": false
                                         }
                                       },
                                       "type": [
                                         "object",
                                         "null"
-                                      ]
+                                      ],
+                                      "additionalProperties": false
                                     },
                                     "type": [
                                       "array",
@@ -8701,7 +8937,8 @@
                                 "type": [
                                   "object",
                                   "null"
-                                ]
+                                ],
+                                "additionalProperties": false
                               },
                               "quobyte": {
                                 "description": "Represents a Quobyte mount that lasts the lifetime of a pod. Quobyte volumes do not support ownership management or SELinux relabeling.",
@@ -8750,7 +8987,8 @@
                                 "type": [
                                   "object",
                                   "null"
-                                ]
+                                ],
+                                "additionalProperties": false
                               },
                               "rbd": {
                                 "description": "Represents a Rados Block Device mount that lasts the lifetime of a pod. RBD volumes support ownership management and SELinux relabeling.",
@@ -8811,7 +9049,8 @@
                                     "type": [
                                       "object",
                                       "null"
-                                    ]
+                                    ],
+                                    "additionalProperties": false
                                   },
                                   "user": {
                                     "description": "The rados user name. Default is admin. More info: https://examples.k8s.io/volumes/rbd/README.md#how-to-use-it",
@@ -8828,7 +9067,8 @@
                                 "type": [
                                   "object",
                                   "null"
-                                ]
+                                ],
+                                "additionalProperties": false
                               },
                               "scaleIO": {
                                 "description": "ScaleIOVolumeSource represents a persistent ScaleIO volume",
@@ -8869,7 +9109,8 @@
                                         ]
                                       }
                                     },
-                                    "type": "object"
+                                    "type": "object",
+                                    "additionalProperties": false
                                   },
                                   "sslEnabled": {
                                     "description": "Flag to enable/disable SSL communication with Gateway, default false",
@@ -8912,7 +9153,8 @@
                                 "type": [
                                   "object",
                                   "null"
-                                ]
+                                ],
+                                "additionalProperties": false
                               },
                               "secret": {
                                 "description": "Adapts a Secret into a volume.\n\nThe contents of the target Secret's Data field will be presented in a volume as files using the keys in the Data field as the file names. Secret volumes support ownership management and SELinux relabeling.",
@@ -8954,7 +9196,8 @@
                                       "type": [
                                         "object",
                                         "null"
-                                      ]
+                                      ],
+                                      "additionalProperties": false
                                     },
                                     "type": [
                                       "array",
@@ -8979,7 +9222,8 @@
                                 "type": [
                                   "object",
                                   "null"
-                                ]
+                                ],
+                                "additionalProperties": false
                               },
                               "storageos": {
                                 "description": "Represents a StorageOS persistent volume resource.",
@@ -9012,7 +9256,8 @@
                                     "type": [
                                       "object",
                                       "null"
-                                    ]
+                                    ],
+                                    "additionalProperties": false
                                   },
                                   "volumeName": {
                                     "description": "VolumeName is the human-readable name of the StorageOS volume.  Volume names are only unique within a namespace.",
@@ -9032,7 +9277,8 @@
                                 "type": [
                                   "object",
                                   "null"
-                                ]
+                                ],
+                                "additionalProperties": false
                               },
                               "vsphereVolume": {
                                 "description": "Represents a vSphere volume resource.",
@@ -9069,7 +9315,8 @@
                                 "type": [
                                   "object",
                                   "null"
-                                ]
+                                ],
+                                "additionalProperties": false
                               }
                             },
                             "required": [
@@ -9078,7 +9325,8 @@
                             "type": [
                               "object",
                               "null"
-                            ]
+                            ],
+                            "additionalProperties": false
                           },
                           "type": [
                             "array",
@@ -9094,10 +9342,12 @@
                       "type": [
                         "object",
                         "null"
-                      ]
+                      ],
+                      "additionalProperties": false
                     }
                   },
-                  "type": "object"
+                  "type": "object",
+                  "additionalProperties": false
                 },
                 "ttlSecondsAfterFinished": {
                   "description": "ttlSecondsAfterFinished limits the lifetime of a Job that has finished execution (either Complete or Failed). If this field is set, ttlSecondsAfterFinished after the Job finishes, it is eligible to be automatically deleted. When the Job is being deleted, its lifecycle guarantees (e.g. finalizers) will be honored. If this field is unset, the Job won't be automatically deleted. If this field is set to zero, the Job becomes eligible to be deleted immediately after it finishes. This field is alpha-level and is only honored by servers that enable the TTLAfterFinished feature.",
@@ -9114,10 +9364,12 @@
               "type": [
                 "object",
                 "null"
-              ]
+              ],
+              "additionalProperties": false
             }
           },
-          "type": "object"
+          "type": "object",
+          "additionalProperties": false
         },
         "schedule": {
           "description": "The schedule in Cron format, see https://en.wikipedia.org/wiki/Cron.",
@@ -9154,7 +9406,8 @@
       "type": [
         "object",
         "null"
-      ]
+      ],
+      "additionalProperties": false
     },
     "status": {
       "description": "CronJobStatus represents the current state of a cron job.",
@@ -9217,7 +9470,8 @@
             "type": [
               "object",
               "null"
-            ]
+            ],
+            "additionalProperties": false
           },
           "type": [
             "array",
@@ -9236,7 +9490,8 @@
       "type": [
         "object",
         "null"
-      ]
+      ],
+      "additionalProperties": false
     }
   },
   "type": "object",
@@ -9247,5 +9502,6 @@
       "version": "v1beta1"
     }
   ],
+  "additionalProperties": false,
   "$schema": "http://json-schema.org/schema#"
 }

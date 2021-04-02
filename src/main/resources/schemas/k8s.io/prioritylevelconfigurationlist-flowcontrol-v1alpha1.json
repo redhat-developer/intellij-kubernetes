@@ -177,7 +177,8 @@
                   "type": [
                     "object",
                     "null"
-                  ]
+                  ],
+                  "additionalProperties": false
                 },
                 "type": [
                   "array",
@@ -243,7 +244,8 @@
                   "type": [
                     "object",
                     "null"
-                  ]
+                  ],
+                  "additionalProperties": false
                 },
                 "type": [
                   "array",
@@ -277,7 +279,8 @@
             "type": [
               "object",
               "null"
-            ]
+            ],
+            "additionalProperties": false
           },
           "spec": {
             "description": "PriorityLevelConfigurationSpec specifies the configuration of a priority level.",
@@ -327,7 +330,8 @@
                         "type": [
                           "object",
                           "null"
-                        ]
+                        ],
+                        "additionalProperties": false
                       },
                       "type": {
                         "description": "`type` is \"Queue\" or \"Reject\". \"Queue\" means that requests that can not be executed upon arrival are held in a queue until they can be executed or a queuing limit is reached. \"Reject\" means that requests that can not be executed upon arrival are rejected. Required.",
@@ -348,13 +352,15 @@
                           "queuing": "Queuing"
                         }
                       }
-                    ]
+                    ],
+                    "additionalProperties": false
                   }
                 },
                 "type": [
                   "object",
                   "null"
-                ]
+                ],
+                "additionalProperties": false
               },
               "type": {
                 "description": "`type` indicates whether this priority level is subject to limitation on request execution.  A value of `\"Exempt\"` means that requests of this priority level are not subject to a limit (and thus are never queued) and do not detract from the capacity made available to other priority levels.  A value of `\"Limited\"` means that (a) requests of this priority level _are_ subject to limits and (b) some of the server's limited capacity is made available exclusively to this priority level. Required.",
@@ -375,7 +381,8 @@
                   "limited": "Limited"
                 }
               }
-            ]
+            ],
+            "additionalProperties": false
           },
           "status": {
             "description": "PriorityLevelConfigurationStatus represents the current state of a \"request-priority\".",
@@ -425,7 +432,8 @@
                   "type": [
                     "object",
                     "null"
-                  ]
+                  ],
+                  "additionalProperties": false
                 },
                 "type": [
                   "array",
@@ -440,7 +448,8 @@
             "type": [
               "object",
               "null"
-            ]
+            ],
+            "additionalProperties": false
           }
         },
         "type": [
@@ -453,7 +462,8 @@
             "kind": "PriorityLevelConfiguration",
             "version": "v1alpha1"
           }
-        ]
+        ],
+        "additionalProperties": false
       },
       "type": [
         "array",
@@ -506,7 +516,8 @@
       "type": [
         "object",
         "null"
-      ]
+      ],
+      "additionalProperties": false
     }
   },
   "required": [
@@ -520,5 +531,6 @@
       "version": "v1alpha1"
     }
   ],
+  "additionalProperties": false,
   "$schema": "http://json-schema.org/schema#"
 }

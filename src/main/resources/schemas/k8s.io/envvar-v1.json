@@ -46,7 +46,8 @@
           "type": [
             "object",
             "null"
-          ]
+          ],
+          "additionalProperties": false
         },
         "fieldRef": {
           "description": "ObjectFieldSelector selects an APIVersioned field of an object.",
@@ -69,7 +70,8 @@
           "type": [
             "object",
             "null"
-          ]
+          ],
+          "additionalProperties": false
         },
         "resourceFieldRef": {
           "description": "ResourceFieldSelector represents container resources (cpu, memory) and their output format",
@@ -108,7 +110,8 @@
           "type": [
             "object",
             "null"
-          ]
+          ],
+          "additionalProperties": false
         },
         "secretKeyRef": {
           "description": "SecretKeySelector selects a key of a Secret.",
@@ -138,18 +141,21 @@
           "type": [
             "object",
             "null"
-          ]
+          ],
+          "additionalProperties": false
         }
       },
       "type": [
         "object",
         "null"
-      ]
+      ],
+      "additionalProperties": false
     }
   },
   "required": [
     "name"
   ],
   "type": "object",
+  "additionalProperties": false,
   "$schema": "http://json-schema.org/schema#"
 }
