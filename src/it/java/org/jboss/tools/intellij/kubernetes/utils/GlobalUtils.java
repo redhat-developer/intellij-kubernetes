@@ -58,8 +58,6 @@ import static org.jboss.tools.intellij.kubernetes.utils.HelperUtils.listOfRemote
  */
 public class GlobalUtils {
 
-    public static String projectPath = "";
-
     public static RemoteRobot getRemoteRobotConnection(int port) throws InterruptedException {
         RemoteRobot remoteRobot = new RemoteRobot("http://127.0.0.1:" + port);
         for (int i = 0; i < 60; i++) {
@@ -129,7 +127,7 @@ public class GlobalUtils {
             int numberOfExceptions = Integer.parseInt(exceptionNumberLabel.substring(5));
 
             for (int i = 0; i < numberOfExceptions; i++) {
-                String exceptionStackTrace = HelperUtils.listOfRemoteTextToString(ideFatalErrorsDialogFixture.exceptionDescriptionJTextArea().findAllText());
+                HelperUtils.listOfRemoteTextToString(ideFatalErrorsDialogFixture.exceptionDescriptionJTextArea().findAllText());
 
                 if (i + 1 < numberOfExceptions) {
                     ideFatalErrorsDialogFixture.nextExceptionButton().click();
@@ -247,17 +245,14 @@ public class GlobalUtils {
             }
             File screenshotFile = new File(screenshotPathname);
             ImageIO.write(screenshotBufferedImage, filetype, screenshotFile);
-        } catch (AWTException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
+        } catch (AWTException | IOException e) {
             e.printStackTrace();
         }
     }
 
     private static BufferedImage getScreenshotAsBufferedImage() throws AWTException {
         Rectangle fullscreenRect = new Rectangle(Toolkit.getDefaultToolkit().getScreenSize());
-        BufferedImage screenshot = new Robot().createScreenCapture(fullscreenRect);
-        return screenshot;
+        return new Robot().createScreenCapture(fullscreenRect);
     }
 
     private static String getTimeNowAsString(String format) {
