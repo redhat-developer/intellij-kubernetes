@@ -41,7 +41,7 @@ interface IActiveContext<N: HasMetadata, C: KubernetesClient>: IContext {
      *
      * @param namespace
      */
-    fun setCurrentNamespace(namespace: String)
+    fun setCurrentNamespace(namespace: String): Boolean
 
     /**
      * Returns the current namespace for this context or {@code null} if there's none.

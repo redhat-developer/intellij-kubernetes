@@ -79,7 +79,7 @@ open class ResourceModel : IResourceModel {
     }
 
     override fun setCurrentNamespace(namespace: String) {
-        contexts.current?.setCurrentNamespace(namespace)
+        contexts.setCurrentNamespace(namespace)
     }
 
     override fun getCurrentNamespace(): String? {

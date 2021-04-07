@@ -16,6 +16,8 @@ import io.fabric8.kubernetes.api.model.NamedContext
 import io.fabric8.kubernetes.client.Config
 import io.fabric8.kubernetes.client.ConfigAware
 import io.fabric8.kubernetes.client.DefaultKubernetesClient
+import io.fabric8.kubernetes.client.internal.KubeConfigUtils
+import java.io.File
 import java.nio.file.Paths
 import java.util.concurrent.Executors
 
@@ -33,6 +35,60 @@ open class ClientConfig(private val refreshOperation: () -> Unit) {
 		get() {
 			return config?.contexts ?: emptyList()
 		}
+
+	fun setCurrentContext(context: NamedContext) {
+		config?.currentContext = context
+	}
+
+	fun setCurrentNamespace(namespace: String) {
+		config?.namespace = namespace
+		config?.currentContext?.context?.namespace = namespace
+	}
+
+	fun save() {
+		val file = File(Config.getKubeconfigFilename())
+		if (!file.exists()
+			|| config == null) {
+			return
+		}
+		val kubeConfig = KubeConfigUtils.parseConfig(file)
+		val currentContext = config?.currentContext
+		val kubeConfigCurrentContext = KubeConfigUtils.getCurrentContext(kubeConfig)
+		if (updateCurrentContext(currentContext, kubeConfigCurrentContext, kubeConfig)
+				.or(updateCurrentNamespace(currentContext, kubeConfigCurrentContext))) {
+			KubeConfigUtils.persistKubeConfigIntoFile(kubeConfig, Config.getKubeconfigFilename())
+		}
+	}
+
+
+	private fun updateCurrentContext(
+		currentContext: NamedContext?,
+		kubeConfigCurrentContext: NamedContext?,
+		kubeConfig: io.fabric8.kubernetes.api.model.Config
+	): Boolean {
+		return if (currentContext != null
+			&& !ConfigHelper.areEqual(currentContext, kubeConfigCurrentContext)
+		) {
+			kubeConfig.currentContext = currentContext.name
+			true
+		} else {
+			false
+		}
+	}
+
+	private fun updateCurrentNamespace(
+		currentContext: NamedContext?,
+		kubeConfigCurrentContext: NamedContext
+	): Boolean {
+		return if (currentContext != null
+			&& currentContext.context?.namespace != null
+		) {
+			kubeConfigCurrentContext.context.namespace = currentContext.context?.namespace
+			true
+		} else {
+			false
+		}
+	}
 
 	private val config: Config?
 		get() {

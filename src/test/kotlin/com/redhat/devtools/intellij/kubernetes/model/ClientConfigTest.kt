@@ -287,8 +287,8 @@ class ClientConfigTest {
 			return client
 		}
 
-		public override fun onConfigChange(watcher: ConfigWatcher, config: io.fabric8.kubernetes.api.model.Config) {
-			super.onConfigChange(watcher, config)
+		public override fun onConfigChange(watcher: ConfigWatcher, fileConfig: io.fabric8.kubernetes.api.model.Config) {
+			super.onConfigChange(watcher, fileConfig)
 		}
 	}
 }
