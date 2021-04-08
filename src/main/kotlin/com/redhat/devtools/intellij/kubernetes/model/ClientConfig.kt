@@ -17,7 +17,6 @@ import io.fabric8.kubernetes.client.Config
 import io.fabric8.kubernetes.client.ConfigAware
 import io.fabric8.kubernetes.client.DefaultKubernetesClient
 import io.fabric8.kubernetes.client.internal.KubeConfigUtils
-import java.io.File
 import java.nio.file.Paths
 import java.util.concurrent.Executors
 
@@ -36,6 +35,10 @@ open class ClientConfig(private val refreshOperation: () -> Unit) {
 			return config?.contexts ?: emptyList()
 		}
 
+	open val kubeConfig: KubeConfig by lazy {
+		KubeConfig()
+	}
+
 	fun setCurrentContext(context: NamedContext) {
 		config?.currentContext = context
 	}
@@ -46,20 +49,16 @@ open class ClientConfig(private val refreshOperation: () -> Unit) {
 	}
 
 	fun save() {
-		val file = File(Config.getKubeconfigFilename())
-		if (!file.exists()
+		if (!kubeConfig.exists()
 			|| config == null) {
 			return
 		}
-		val kubeConfig = KubeConfigUtils.parseConfig(file)
-		val currentContext = config?.currentContext
-		val kubeConfigCurrentContext = KubeConfigUtils.getCurrentContext(kubeConfig)
-		if (updateCurrentContext(currentContext, kubeConfigCurrentContext, kubeConfig)
-				.or(updateCurrentNamespace(currentContext, kubeConfigCurrentContext))) {
-			KubeConfigUtils.persistKubeConfigIntoFile(kubeConfig, Config.getKubeconfigFilename())
+		val kubeConfigContent = kubeConfig.get() ?: return
+		if (updateCurrentContext(currentContext, KubeConfigUtils.getCurrentContext(kubeConfigContent), kubeConfigContent)
+				.or(updateCurrentNamespace(currentContext, KubeConfigUtils.getCurrentContext(kubeConfigContent)))) {
+				kubeConfig.save(kubeConfigContent)
 		}
 	}
-
 
 	private fun updateCurrentContext(
 		currentContext: NamedContext?,
@@ -78,10 +77,12 @@ open class ClientConfig(private val refreshOperation: () -> Unit) {
 
 	private fun updateCurrentNamespace(
 		currentContext: NamedContext?,
-		kubeConfigCurrentContext: NamedContext
+		kubeConfigCurrentContext: NamedContext?
 	): Boolean {
-		return if (currentContext != null
+		return if (kubeConfigCurrentContext != null
+			&& currentContext != null
 			&& currentContext.context?.namespace != null
+			&& currentContext.context.namespace != kubeConfigCurrentContext.context?.namespace
 		) {
 			kubeConfigCurrentContext.context.namespace = currentContext.context?.namespace
 			true
