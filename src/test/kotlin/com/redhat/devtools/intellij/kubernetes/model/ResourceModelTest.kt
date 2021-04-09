@@ -112,12 +112,12 @@ class ResourceModelTest {
     }
 
     @Test
-    fun `#setCurrentNamespace(name) should call context#setCurrentNamespace(name)`() {
+    fun `#setCurrentNamespace(name) should call contexts#setCurrentNamespace(name)`() {
         // given
         // when
         model.setCurrentNamespace("papa-smurf")
         // then
-        verify(activeContext).setCurrentNamespace("papa-smurf")
+        verify(contexts).setCurrentNamespace("papa-smurf")
     }
 
     @Test

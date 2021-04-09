@@ -21,6 +21,7 @@ interface IContexts {
 	val current: IActiveContext<out HasMetadata, out KubernetesClient>?
 	val all: List<IContext>
 	fun setCurrent(context: IContext): Boolean
+	fun setCurrentNamespace(namespace: String): Boolean
 	fun clear(): Boolean
 }
 
@@ -72,6 +73,20 @@ open class Contexts(
 			val newContext = create(context.context)
 			current = newContext
 			replaceContext(newContext, all)
+			config.setCurrentContext(context.context)
+			config.save()
+		}
+		return true
+	}
+
+	override fun setCurrentNamespace(namespace: String): Boolean {
+		synchronized(this) {
+			if (current == null
+				|| !current!!.setCurrentNamespace(namespace)) {
+				return false
+			}
+			config.setCurrentNamespace(namespace)
+			config.save()
 		}
 		return true
 	}

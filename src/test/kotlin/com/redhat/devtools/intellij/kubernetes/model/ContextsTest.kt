@@ -10,16 +10,7 @@
  ******************************************************************************/
 package com.redhat.devtools.intellij.kubernetes.model
 
-import com.nhaarman.mockitokotlin2.any
-import com.nhaarman.mockitokotlin2.anyOrNull
-import com.nhaarman.mockitokotlin2.clearInvocations
-import com.nhaarman.mockitokotlin2.doReturn
-import com.nhaarman.mockitokotlin2.eq
-import com.nhaarman.mockitokotlin2.mock
-import com.nhaarman.mockitokotlin2.never
-import com.nhaarman.mockitokotlin2.spy
-import com.nhaarman.mockitokotlin2.times
-import com.nhaarman.mockitokotlin2.verify
+import com.nhaarman.mockitokotlin2.*
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.NamedContext
 import io.fabric8.kubernetes.api.model.Namespace
@@ -240,7 +231,84 @@ class ContextsTest {
 		verify(currentContext).close()
 	}
 
-    private fun createClientConfig(currentContext: NamedContext?, allContexts: List<NamedContext>): ClientConfig {
+	@Test
+	fun `#setCurrentNamespace(namespace) should call config#setCurrentNamespace`() {
+		// given
+		contexts.current // create current context
+		whenever(currentContext.setCurrentNamespace(any()))
+			.doReturn(true)
+		clearInvocations(contextFactory) // clear invocation so that it's not counted
+		val newNamespace = "42"
+		// when
+		contexts.setCurrentNamespace(newNamespace)
+		// then
+		verify(config).setCurrentNamespace(newNamespace)
+	}
+
+	@Test
+	fun `#setCurrentNamespace(namespace) should return true if new namespace was set`() {
+		// given
+		contexts.current // create current context
+		whenever(currentContext.setCurrentNamespace(any()))
+			.doReturn(true)
+		clearInvocations(contextFactory) // clear invocation so that it's not counted
+		// when
+		val success = contexts.setCurrentNamespace("42")
+		// then
+		assertThat(success).isTrue()
+	}
+
+	@Test
+	fun `#setCurrentNamespace(namespace) should call clientConfig#save if new namespace was set`() {
+		// given
+		whenever(currentContext.setCurrentNamespace(any()))
+			.doReturn(true)
+		contexts.current // create current context
+		clearInvocations(contextFactory) // clear invocation so that it's not counted
+		// when
+		contexts.setCurrentNamespace("azrael")
+		// then
+		verify(config).save()
+	}
+
+	@Test
+	fun `#setCurrentNamespace(namespace) should NOT call config#setCurrentNamespace if currentContext#setCurrentNamespace returned false`() {
+		// given
+		whenever(currentContext.setCurrentNamespace(any()))
+			.doReturn(false)
+		contexts.current // create current context
+		val newNamespace = "42"
+		// when
+		contexts.setCurrentNamespace(newNamespace)
+		// then
+		verify(config, never()).setCurrentNamespace(newNamespace)
+	}
+
+	@Test
+	fun `#setCurrentNamespace(namespace) should return false if new namespace was not set`() {
+		// given
+		whenever(currentContext.setCurrentNamespace(any()))
+			.doReturn(false)
+		contexts.current // create current context
+		// when
+		val success = contexts.setCurrentNamespace("42")
+		// then
+		assertThat(success).isFalse()
+	}
+
+	@Test
+	fun `#setCurrentNamespace(namespace) should not save client config if new namespace was not set`() {
+		// given
+		whenever(currentContext.setCurrentNamespace(any()))
+			.doReturn(false)
+		contexts.current // create current context
+		// when
+		contexts.setCurrentNamespace("42")
+		// then
+		verify(config, never()).save()
+	}
+
+	private fun createClientConfig(currentContext: NamedContext?, allContexts: List<NamedContext>): ClientConfig {
         return mock {
             on { contexts } doReturn allContexts
             on { this.currentContext } doReturn currentContext
@@ -250,10 +318,11 @@ class ContextsTest {
         }
     }
 
-	private class TestableContext(modelChange: IModelChangeObservable,
-								  factory: (IModelChangeObservable, NamedContext) -> IActiveContext<out HasMetadata, out KubernetesClient>,
-								  override val config: ClientConfig
-	): Contexts(modelChange, factory) {
+	private class TestableContext(
+		modelChange: IModelChangeObservable,
+		factory: (IModelChangeObservable, NamedContext) -> IActiveContext<out HasMetadata, out KubernetesClient>,
+		override val config: ClientConfig
+	) : Contexts(modelChange, factory) {
 
 		override val all: MutableList<IContext> = spy(super.all)
 

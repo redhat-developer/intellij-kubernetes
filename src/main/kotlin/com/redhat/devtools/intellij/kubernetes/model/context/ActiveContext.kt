@@ -12,6 +12,7 @@ package com.redhat.devtools.intellij.kubernetes.model.context
 
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.extensions.ExtensionPointName
+import com.redhat.devtools.intellij.kubernetes.model.Contexts
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.NamedContext
 import io.fabric8.kubernetes.api.model.apiextensions.v1beta1.CustomResourceDefinition
@@ -41,6 +42,9 @@ import com.redhat.devtools.intellij.kubernetes.model.util.ResourceException
 import com.redhat.devtools.intellij.kubernetes.model.util.sameResource
 import com.redhat.devtools.intellij.kubernetes.model.util.setWillBeDeleted
 import com.redhat.devtools.intellij.kubernetes.model.util.toMessage
+import io.fabric8.kubernetes.client.Config
+import io.fabric8.kubernetes.client.internal.KubeConfigUtils
+import java.io.File
 import java.net.URL
 import java.util.function.Supplier
 
@@ -78,18 +82,24 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
 
     protected open val notification: Notification = Notification()
 
-    override fun setCurrentNamespace(namespace: String) {
+    override fun setCurrentNamespace(namespace: String): Boolean {
         val currentNamespace = getCurrentNamespace()
         if (namespace == currentNamespace) {
-            return
+            return false
         }
         logger<ActiveContext<*, *>>().debug("Setting current namespace to $namespace.")
 
         val stopped = stopWatch(currentNamespace)
-        clients.get().configuration.namespace = namespace
+        val configuration = clients.get().configuration
+        setCurrentNamespace(namespace, configuration)
         setCurrentNamespace(namespace, namespacedProviders.values)
         watchAll(stopped)
         modelChange.fireCurrentNamespace(namespace)
+        return true
+    }
+
+    private fun setCurrentNamespace(namespace: String, configuration: Config) {
+        configuration.namespace = namespace
     }
 
     private fun setCurrentNamespace(providers: Collection<INamespacedResourcesProvider<*, *>>) {

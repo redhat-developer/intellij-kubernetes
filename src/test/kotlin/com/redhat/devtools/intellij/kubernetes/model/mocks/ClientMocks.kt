@@ -128,7 +128,7 @@ object ClientMocks {
     }
 
     fun namedContext(name: String, namespace: String, cluster: String, user: String): NamedContext {
-        val context: Context = kubeconfigContext(namespace, cluster, user)
+        val context: Context = kubeConfigContext(namespace, cluster, user)
         return namedContext(name, context)
     }
 
@@ -139,7 +139,7 @@ object ClientMocks {
         }
     }
 
-    fun kubeconfigContext(namespace: String, cluster: String, user: String): Context {
+    fun kubeConfigContext(namespace: String, cluster: String, user: String): Context {
         return mock {
             on { this.namespace } doReturn namespace
             on { this.cluster } doReturn cluster
@@ -152,6 +152,13 @@ object ClientMocks {
             on { mock.currentContext } doReturn currentContext
             on { mock.contexts } doReturn contexts
         }
+    }
+
+    fun changeConfig(currentContext: NamedContext?, contexts: List<NamedContext>, config: Config) {
+        doReturn(contexts)
+            .whenever(config).contexts
+        doReturn(currentContext)
+            .whenever(config).currentContext
     }
 
     fun apiConfig(currentContext: String, contexts: List<NamedContext>): io.fabric8.kubernetes.api.model.Config {
