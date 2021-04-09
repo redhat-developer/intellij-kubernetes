@@ -91,7 +91,7 @@ open class ClientConfig(private val refreshOperation: () -> Unit) {
 		}
 	}
 
-	private val config: Config?
+	private val  config: Config?
 		get() {
 			if (client == null) {
 				initWatcher()

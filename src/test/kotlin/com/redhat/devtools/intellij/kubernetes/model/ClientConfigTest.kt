@@ -11,6 +11,7 @@
 package com.redhat.devtools.intellij.kubernetes.model
 
 import com.nhaarman.mockitokotlin2.any
+import com.nhaarman.mockitokotlin2.argThat
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.never
@@ -26,8 +27,10 @@ import io.fabric8.kubernetes.client.Config
 import io.fabric8.kubernetes.client.ConfigAware
 import org.assertj.core.api.Assertions.assertThat
 import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks
-import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.apiConfig
+import io.fabric8.kubernetes.api.model.ConfigBuilder
+import io.fabric8.kubernetes.client.internal.KubeConfigUtils
 import org.junit.Test
+import org.mockito.ArgumentCaptor
 
 class ClientConfigTest {
 
@@ -44,7 +47,6 @@ class ClientConfigTest {
 	private val refreshOperation: () -> Unit = mock()
 	private val apiConfig: io.fabric8.kubernetes.api.model.Config = apiConfig(currentContext.name, allContexts)
 	private val kubeConfig: KubeConfig = kubeConfig(true, apiConfig)
-
 	private val clientConfig = spy(TestableClientConfig(refreshOperation, client, kubeConfig))
 
 	@Test
@@ -230,7 +232,7 @@ class ClientConfigTest {
 	}
 
 	@Test
-	fun `save should NOT save if kubeConfig doesnt exist`() {
+	fun `#save should NOT save if kubeConfig doesnt exist`() {
 		// given
 		doReturn(false)
 			.whenever(kubeConfig).exists()
@@ -241,7 +243,7 @@ class ClientConfigTest {
 	}
 
 	@Test
-	fun `save should NOT save if kubeConfig has same current context same namespace and same current context as client config`() {
+	fun `#save should NOT save if kubeConfig has same current context same namespace and same current context as client config`() {
 		// given
 		// when
 		clientConfig.save()
@@ -250,11 +252,10 @@ class ClientConfigTest {
 	}
 
 	@Test
-	fun `save should save if kubeConfig has different current context as client config`() {
+	fun `#save should save if kubeConfig has different current context as client config`() {
 		// given
 		assertThat(currentContext).isNotEqualTo(namedContext3)
-		whenever(apiConfig.currentContext)
-			.doReturn(namedContext3.name)
+		apiConfig.currentContext = namedContext3.name
 		// when
 		clientConfig.save()
 		// then
@@ -262,7 +263,7 @@ class ClientConfigTest {
 	}
 
 	@Test
-	fun `save should save if kubeConfig has same current context but different current namespace as client config`() {
+	fun `#save should save if kubeConfig has same current context but different current namespace as client config`() {
 		// given
 		val newCurrentContext = context(
 			currentContext.name,
@@ -272,12 +273,59 @@ class ClientConfigTest {
 		val newAllContexts = mutableListOf(*allContexts.toTypedArray())
 		newAllContexts.removeIf { it.name == currentContext.name }
 		newAllContexts.add(newCurrentContext)
-		whenever(apiConfig.contexts)
-			.doReturn(newAllContexts)
+		apiConfig.contexts = newAllContexts
 		// when
 		clientConfig.save()
 		// then
 		verify(kubeConfig).save(any())
+	}
+
+	@Test
+	fun `#save should update current context in kube config if differs from current context in client config`() {
+		// given
+		val newCurrentContext = namedContext3
+		doReturn(newCurrentContext)
+			.whenever(config).currentContext
+		assertThat(KubeConfigUtils.getCurrentContext(apiConfig))
+			.isNotEqualTo(config.currentContext)
+		// when
+		clientConfig.save()
+		// then
+		verify(kubeConfig).save(argThat {
+			this.currentContext == newCurrentContext.name
+		})
+	}
+
+	@Test
+	fun `#save should update current namespace in kube config if only differs from current name in client config but not in current context`() {
+		// given
+		val newCurrentContext = context(currentContext.name,
+		"RD-2D",
+		currentContext.context.cluster,
+		currentContext.context.user)
+		val newAllContexts = replaceCurrentContext(newCurrentContext, currentContext.name, allContexts)
+		ClientMocks.changeConfig(newCurrentContext, newAllContexts, config)
+		assertThat(KubeConfigUtils.getCurrentContext(apiConfig).context.namespace)
+			.isNotEqualTo(config.currentContext.context.namespace)
+		// when
+		clientConfig.save()
+		// then
+		verify(kubeConfig).save(argThat {
+			this.currentContext == this@ClientConfigTest.currentContext.name
+			KubeConfigUtils.getCurrentContext(this).context.namespace == newCurrentContext.context.namespace
+		})
+	}
+
+	private fun replaceCurrentContext(
+		newContext: NamedContext,
+		currentContext: String,
+		allContexts: List<NamedContext>
+	): List<NamedContext> {
+		val newAllContexts = mutableListOf(*allContexts.toTypedArray())
+		val existingContext = config.contexts.find { it.name == currentContext }
+		newAllContexts.remove(existingContext)
+		newAllContexts.add(newContext)
+		return newAllContexts
 	}
 
 	private fun clientConfig(
@@ -333,6 +381,13 @@ class ClientConfigTest {
 			on { mock.exists() } doReturn exists
 			on { mock.get() } doReturn config
 		}
+	}
+
+	private fun apiConfig(currentContext: String, allContexts: List<NamedContext>): io.fabric8.kubernetes.api.model.Config {
+		return ConfigBuilder()
+			.withCurrentContext(currentContext)
+			.withContexts(allContexts)
+			.build()
 	}
 
 	private class TestableClientConfig(

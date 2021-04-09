@@ -154,6 +154,13 @@ object ClientMocks {
         }
     }
 
+    fun changeConfig(currentContext: NamedContext?, contexts: List<NamedContext>, config: Config) {
+        doReturn(contexts)
+            .whenever(config).contexts
+        doReturn(currentContext)
+            .whenever(config).currentContext
+    }
+
     fun apiConfig(currentContext: String, contexts: List<NamedContext>): io.fabric8.kubernetes.api.model.Config {
         return mock {
             on { mock.currentContext } doReturn currentContext

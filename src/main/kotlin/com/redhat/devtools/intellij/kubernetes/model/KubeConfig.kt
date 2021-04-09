@@ -37,6 +37,6 @@ class KubeConfig {
     }
 
     fun save(config: Config) {
-        KubeConfigUtils.persistKubeConfigIntoFile(config, io.fabric8.kubernetes.client.Config.getKubeconfigFilename())
+        KubeConfigUtils.persistKubeConfigIntoFile(config, file.absolutePath)
     }
 }
