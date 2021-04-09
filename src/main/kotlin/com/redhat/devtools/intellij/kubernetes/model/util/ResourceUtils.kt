@@ -10,14 +10,25 @@
  ******************************************************************************/
 package com.redhat.devtools.intellij.kubernetes.model.util
 
+import com.fasterxml.jackson.databind.ObjectMapper
+import com.intellij.json.JsonFileType
+import com.intellij.openapi.diagnostic.logger
+import com.intellij.openapi.vfs.VirtualFile
+import com.redhat.devtools.intellij.kubernetes.ui.ResourceEditorSaveListener
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.apiextensions.v1beta1.CustomResourceDefinition
 import io.fabric8.kubernetes.api.model.apiextensions.v1beta1.CustomResourceDefinitionSpec
+import io.fabric8.kubernetes.client.KubernetesClientException
 import io.fabric8.kubernetes.client.dsl.base.CustomResourceDefinitionContext
 import io.fabric8.kubernetes.client.utils.KubernetesVersionPriority
+import io.fabric8.kubernetes.client.utils.Serialization
 import io.fabric8.kubernetes.model.annotation.Group
 import io.fabric8.kubernetes.model.annotation.Version
 import io.fabric8.kubernetes.model.util.Helper
+import org.apache.commons.io.FileUtils
+import org.jetbrains.yaml.YAMLFileType
+import java.io.File
+import java.nio.charset.StandardCharsets
 import java.util.stream.Collectors
 
 const val MARKER_WILL_BE_DELETED = "willBeDeleted"
@@ -59,6 +70,14 @@ fun HasMetadata.sameSelfLink(resource: HasMetadata): Boolean {
 		return false
 	}
 	return this.metadata?.selfLink == resource.metadata?.selfLink
+}
+
+fun HasMetadata.sameRevision(resource: HasMetadata): Boolean {
+	if (this.metadata?.resourceVersion == null
+		&& resource.metadata?.resourceVersion == null) {
+		return false
+	}
+	return this.metadata?.resourceVersion != resource.metadata?.resourceVersion
 }
 
 /**
@@ -165,3 +184,27 @@ fun trimWithEllipsis(value: String, length: Int): String {
 		else -> "${value.take(length - 6)}...${value.takeLast(3)}"
 	}
 }
+
+fun toResource(file: VirtualFile): HasMetadata? {
+	return try {
+		val mapper = getMapper(file) ?: return null
+		return file.inputStream.use { Serialization.unmarshal(it, mapper) }
+	} catch (e: KubernetesClientException) {
+		logger<ResourceEditorSaveListener>().debug("Could not parse ${file.presentableUrl}. Only valid Json or Yaml supported.", e.cause)
+		null
+	}
+}
+
+private fun getMapper(file: VirtualFile): ObjectMapper? {
+	return when(file.fileType) {
+		YAMLFileType.YML -> Serialization.yamlMapper()
+		JsonFileType.INSTANCE -> Serialization.jsonMapper()
+		else -> null
+	}
+}
+
+fun writeFile(resource: HasMetadata, file: File) {
+	val content = Serialization.asYaml(resource)
+	FileUtils.write(file, content, StandardCharsets.UTF_8, false)
+}
+

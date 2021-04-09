@@ -14,7 +14,7 @@ import io.fabric8.kubernetes.api.model.batch.Job
 import io.fabric8.kubernetes.client.BatchAPIGroupClient
 import com.redhat.devtools.intellij.kubernetes.model.resource.NamespacedResourcesProvider
 import com.redhat.devtools.intellij.kubernetes.model.resource.ResourceKind
-import com.redhat.devtools.intellij.kubernetes.model.resource.WatchableListableDeletable
+import com.redhat.devtools.intellij.kubernetes.model.resource.ResourceOperation
 import java.util.function.Supplier
 
 class JobsProvider(client: BatchAPIGroupClient)
@@ -26,7 +26,11 @@ class JobsProvider(client: BatchAPIGroupClient)
 
     override val kind = KIND
 
-    override fun getOperation(namespace: String): Supplier<WatchableListableDeletable<Job>> {
+    override fun getNamespacedOperation(namespace: String): Supplier<ResourceOperation<Job>?> {
         return Supplier { client.jobs().inNamespace(namespace) }
+    }
+
+    override fun getNonNamespacedOperation(): Supplier<ResourceOperation<Job>?> {
+        return Supplier { client.jobs().inAnyNamespace() as ResourceOperation<Job> }
     }
 }

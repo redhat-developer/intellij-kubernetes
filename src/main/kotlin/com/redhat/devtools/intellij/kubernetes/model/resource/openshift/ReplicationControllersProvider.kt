@@ -14,7 +14,7 @@ import io.fabric8.kubernetes.api.model.ReplicationController
 import io.fabric8.openshift.client.OpenShiftClient
 import com.redhat.devtools.intellij.kubernetes.model.resource.NamespacedResourcesProvider
 import com.redhat.devtools.intellij.kubernetes.model.resource.ResourceKind
-import com.redhat.devtools.intellij.kubernetes.model.resource.WatchableListableDeletable
+import com.redhat.devtools.intellij.kubernetes.model.resource.ResourceOperation
 import java.util.function.Supplier
 
 class ReplicationControllersProvider(client: OpenShiftClient)
@@ -26,7 +26,12 @@ class ReplicationControllersProvider(client: OpenShiftClient)
 
     override val kind = KIND
 
-    override fun getOperation(namespace: String): Supplier<WatchableListableDeletable<ReplicationController>> {
+    override fun getNamespacedOperation(namespace: String): Supplier<ResourceOperation<ReplicationController>?> {
         return Supplier { client.replicationControllers().inNamespace(namespace) }
     }
+
+    override fun getNonNamespacedOperation(): Supplier<ResourceOperation<ReplicationController>?> {
+        return Supplier { client.replicationControllers().inAnyNamespace() as ResourceOperation<ReplicationController> }
+    }
+
 }

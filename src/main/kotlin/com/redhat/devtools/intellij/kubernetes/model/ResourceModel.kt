@@ -37,7 +37,9 @@ interface IResourceModel {
     fun stopWatch(definition: CustomResourceDefinition)
     fun invalidate(element: Any?)
     fun delete(resources: List<HasMetadata>)
+    fun createOrReplace(resource: HasMetadata)
     fun addListener(listener: ModelChangeObservable.IResourceChangeListener)
+    fun resource(resource: HasMetadata): HasMetadata?
 }
 
 /**
@@ -45,10 +47,10 @@ interface IResourceModel {
  *
  * <h3>WARNING<h3>: no argument constructor required because this class is instantiated by IJ ServiceManager
  *
- * @see https://github.com/redhat-developer/intellij-kubernetes/issues/180
- * @see KubernetesToolWindowFactory#createTree
- * @see Extensions#getResourceModel
- * @see ServiceManager#getService
+ * @see [issue 180](https://github.com/redhat-developer/intellij-kubernetes/issues/180)
+ * @see [com.redhat.devtools.intellij.kubernetes.KubernetesToolWindowFactory.createTree]
+ * @see [com.redhat.devtools.intellij.kubernetes.actions.Extensions.getResourceModel]
+ * @see [com.intellij.openapi.components.ServiceManager.getService]
  */
 open class ResourceModel : IResourceModel {
 
@@ -181,8 +183,16 @@ open class ResourceModel : IResourceModel {
         contexts.current?.delete(resources)
     }
 
+    override fun createOrReplace(resource: HasMetadata) {
+        contexts.current?.createOrReplace(resource)
+    }
+
     private fun isNotFound(e: KubernetesClientException): Boolean {
         return e.code == 404
+    }
+
+    override fun resource(resource: HasMetadata): HasMetadata? {
+        return contexts.current?.getResource(resource)
     }
 
 }

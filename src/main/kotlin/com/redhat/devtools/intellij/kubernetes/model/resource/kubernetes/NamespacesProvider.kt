@@ -14,7 +14,7 @@ import io.fabric8.kubernetes.api.model.Namespace
 import io.fabric8.kubernetes.client.KubernetesClient
 import com.redhat.devtools.intellij.kubernetes.model.resource.NonNamespacedResourcesProvider
 import com.redhat.devtools.intellij.kubernetes.model.resource.ResourceKind
-import com.redhat.devtools.intellij.kubernetes.model.resource.WatchableListableDeletable
+import com.redhat.devtools.intellij.kubernetes.model.resource.ResourceOperation
 import java.util.function.Supplier
 
 class NamespacesProvider(client: KubernetesClient)
@@ -26,7 +26,7 @@ class NamespacesProvider(client: KubernetesClient)
 
     override val kind = KIND
 
-    override fun getOperation(): Supplier<WatchableListableDeletable<Namespace>> {
+    override fun getOperation(): Supplier<ResourceOperation<Namespace>?> {
         return Supplier { client.namespaces() }
     }
 }

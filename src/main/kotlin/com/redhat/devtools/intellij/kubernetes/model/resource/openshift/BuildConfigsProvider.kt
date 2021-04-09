@@ -14,7 +14,7 @@ import io.fabric8.openshift.api.model.BuildConfig
 import io.fabric8.openshift.client.OpenShiftClient
 import com.redhat.devtools.intellij.kubernetes.model.resource.NamespacedResourcesProvider
 import com.redhat.devtools.intellij.kubernetes.model.resource.ResourceKind
-import com.redhat.devtools.intellij.kubernetes.model.resource.WatchableListableDeletable
+import com.redhat.devtools.intellij.kubernetes.model.resource.ResourceOperation
 import java.util.function.Supplier
 
 class BuildConfigsProvider(client: OpenShiftClient)
@@ -26,8 +26,11 @@ class BuildConfigsProvider(client: OpenShiftClient)
 
     override val kind = KIND
 
-    override fun getOperation(namespace: String): Supplier<WatchableListableDeletable<BuildConfig>> {
+    override fun getNamespacedOperation(namespace: String): Supplier<ResourceOperation<BuildConfig>?> {
         return Supplier { client.buildConfigs().inNamespace(namespace) }
     }
 
+    override fun getNonNamespacedOperation(): Supplier<ResourceOperation<BuildConfig>?> {
+        return Supplier { client.buildConfigs().inAnyNamespace() as ResourceOperation<BuildConfig> }
+    }
 }

@@ -10,11 +10,11 @@
  ******************************************************************************/
 package com.redhat.devtools.intellij.kubernetes.model.resource.openshift
 
-import io.fabric8.openshift.api.model.Build
-import io.fabric8.openshift.client.OpenShiftClient
 import com.redhat.devtools.intellij.kubernetes.model.resource.NamespacedResourcesProvider
 import com.redhat.devtools.intellij.kubernetes.model.resource.ResourceKind
-import com.redhat.devtools.intellij.kubernetes.model.resource.WatchableListableDeletable
+import com.redhat.devtools.intellij.kubernetes.model.resource.ResourceOperation
+import io.fabric8.openshift.api.model.Build
+import io.fabric8.openshift.client.OpenShiftClient
 import java.util.function.Supplier
 
 class BuildsProvider(client: OpenShiftClient)
@@ -26,8 +26,11 @@ class BuildsProvider(client: OpenShiftClient)
 
     override val kind = KIND
 
-    override fun getOperation(namespace: String): Supplier<WatchableListableDeletable<Build>> {
+    override fun getNamespacedOperation(namespace: String): Supplier<ResourceOperation<Build>?> {
         return Supplier { client.builds().inNamespace(namespace) }
     }
 
+    override fun getNonNamespacedOperation(): Supplier<ResourceOperation<Build>?> {
+        return Supplier { client.builds().inAnyNamespace() as ResourceOperation<Build> }
+    }
 }

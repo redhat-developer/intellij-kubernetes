@@ -14,7 +14,10 @@ import io.fabric8.kubernetes.api.model.apps.StatefulSet
 import io.fabric8.kubernetes.client.AppsAPIGroupClient
 import com.redhat.devtools.intellij.kubernetes.model.resource.NamespacedResourcesProvider
 import com.redhat.devtools.intellij.kubernetes.model.resource.ResourceKind
-import com.redhat.devtools.intellij.kubernetes.model.resource.WatchableListableDeletable
+import com.redhat.devtools.intellij.kubernetes.model.resource.ResourceOperation
+import io.fabric8.kubernetes.api.model.KubernetesResourceList
+import io.fabric8.kubernetes.client.dsl.NonNamespaceOperation
+import io.fabric8.kubernetes.client.dsl.Resource
 import java.util.function.Supplier
 
 class StatefulSetsProvider(client: AppsAPIGroupClient)
@@ -26,7 +29,11 @@ class StatefulSetsProvider(client: AppsAPIGroupClient)
 
     override val kind = KIND
 
-    override fun getOperation(namespace: String): Supplier<WatchableListableDeletable<StatefulSet>> {
+    override fun getNamespacedOperation(namespace: String): Supplier<ResourceOperation<StatefulSet>?> {
         return Supplier { client.statefulSets().inNamespace(namespace) }
+    }
+
+    override fun getNonNamespacedOperation(): Supplier<ResourceOperation<StatefulSet>?> {
+        return Supplier { client.statefulSets().inAnyNamespace() as ResourceOperation<StatefulSet> }
     }
 }

@@ -1007,7 +1007,7 @@ class KubernetesContextTest {
 				return super.nonNamespacedProviders
 			}
 
-		override fun getInternalResourceProviders(supplier: Clients<NamespacedKubernetesClient>)
+		override fun getInternalResourceProviders(clients: Clients<NamespacedKubernetesClient>)
 				: List<IResourcesProvider<out HasMetadata>> {
 			return internalResourceProviders
 		}

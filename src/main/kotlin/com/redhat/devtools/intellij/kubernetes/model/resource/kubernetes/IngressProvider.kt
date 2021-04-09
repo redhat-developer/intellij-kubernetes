@@ -14,7 +14,7 @@ import io.fabric8.kubernetes.api.model.extensions.Ingress
 import io.fabric8.kubernetes.client.ExtensionsAPIGroupClient
 import com.redhat.devtools.intellij.kubernetes.model.resource.NamespacedResourcesProvider
 import com.redhat.devtools.intellij.kubernetes.model.resource.ResourceKind
-import com.redhat.devtools.intellij.kubernetes.model.resource.WatchableListableDeletable
+import com.redhat.devtools.intellij.kubernetes.model.resource.ResourceOperation
 import java.util.function.Supplier
 
 class IngressProvider(client: ExtensionsAPIGroupClient)
@@ -26,8 +26,11 @@ class IngressProvider(client: ExtensionsAPIGroupClient)
 
     override val kind = KIND
 
-    override fun getOperation(namespace: String): Supplier<WatchableListableDeletable<Ingress>> {
+    override fun getNamespacedOperation(namespace: String): Supplier<ResourceOperation<Ingress>?> {
         return Supplier { client.ingresses().inNamespace(namespace) }
     }
 
+    override fun getNonNamespacedOperation(): Supplier<ResourceOperation<Ingress>?> {
+        return Supplier { client.ingresses().inAnyNamespace() as ResourceOperation<Ingress> }
+    }
 }

@@ -13,11 +13,12 @@ package com.redhat.devtools.intellij.kubernetes.model.resource
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.KubernetesResourceList
 import io.fabric8.kubernetes.client.Watcher
-import io.fabric8.kubernetes.client.dsl.FilterWatchListMultiDeletable
+import io.fabric8.kubernetes.client.dsl.NonNamespaceOperation
+import io.fabric8.kubernetes.client.dsl.Resource
 import io.fabric8.kubernetes.client.dsl.Watchable
 import java.util.function.Supplier
 
-typealias WatchableListableDeletable<R> = FilterWatchListMultiDeletable<R, out KubernetesResourceList<R>>?
+typealias ResourceOperation<R> = NonNamespaceOperation<R, out KubernetesResourceList<R>, out Resource<R>>
 
 interface IResourcesProvider<R: HasMetadata> {
     val kind: ResourceKind<R>
@@ -28,4 +29,5 @@ interface IResourcesProvider<R: HasMetadata> {
     fun add(resource: HasMetadata): Boolean
     fun remove(resource: HasMetadata): Boolean
     fun delete(resources: List<HasMetadata>): Boolean
+    fun createOrReplace(resource: HasMetadata)
 }

@@ -10,11 +10,11 @@
  ******************************************************************************/
 package com.redhat.devtools.intellij.kubernetes.model.resource.openshift
 
-import io.fabric8.openshift.api.model.ImageStream
-import io.fabric8.openshift.client.OpenShiftClient
 import com.redhat.devtools.intellij.kubernetes.model.resource.NamespacedResourcesProvider
 import com.redhat.devtools.intellij.kubernetes.model.resource.ResourceKind
-import com.redhat.devtools.intellij.kubernetes.model.resource.WatchableListableDeletable
+import com.redhat.devtools.intellij.kubernetes.model.resource.ResourceOperation
+import io.fabric8.openshift.api.model.ImageStream
+import io.fabric8.openshift.client.OpenShiftClient
 import java.util.function.Supplier
 
 class ImageStreamsProvider(client: OpenShiftClient)
@@ -26,7 +26,11 @@ class ImageStreamsProvider(client: OpenShiftClient)
 
     override val kind = KIND
 
-    override fun getOperation(namespace: String): Supplier<WatchableListableDeletable<ImageStream>> {
+    override fun getNamespacedOperation(namespace: String): Supplier<ResourceOperation<ImageStream>?> {
         return Supplier { client.imageStreams().inNamespace(namespace) }
+    }
+
+    override fun getNonNamespacedOperation(): Supplier<ResourceOperation<ImageStream>?> {
+        return Supplier { client.imageStreams().inAnyNamespace() as ResourceOperation<ImageStream> }
     }
 }
