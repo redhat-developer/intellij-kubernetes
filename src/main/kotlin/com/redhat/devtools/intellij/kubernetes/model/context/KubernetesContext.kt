@@ -43,27 +43,27 @@ open class KubernetesContext(
 	context: NamedContext
 ) : ActiveContext<Namespace, NamespacedKubernetesClient>(modelChange, client, context) {
 
-	override fun getInternalResourceProviders(supplier: Clients<NamespacedKubernetesClient>)
+	override fun getInternalResourceProviders(clients: Clients<NamespacedKubernetesClient>)
 			: List<IResourcesProvider<out HasMetadata>> {
-		val client = supplier.get()
+		val client = clients.get()
 		return listOf(
 				NamespacesProvider(client),
 				NodesProvider(client),
 				AllPodsProvider(client),
-				DeploymentsProvider(supplier.getApps()),
-				StatefulSetsProvider(supplier.getApps()),
-				DaemonSetsProvider(supplier.getApps()),
-				JobsProvider(supplier.getBatch()),
-				CronJobsProvider(supplier.getBatch()),
+				DeploymentsProvider(clients.getApps()),
+				StatefulSetsProvider(clients.getApps()),
+				DaemonSetsProvider(clients.getApps()),
+				JobsProvider(clients.getBatch()),
+				CronJobsProvider(clients.getBatch()),
 				NamespacedPodsProvider(client),
 				ServicesProvider(client),
 				EndpointsProvider(client),
 				PersistentVolumesProvider(client),
 				PersistentVolumeClaimsProvider(client),
-				StorageClassesProvider(supplier.getStorage()),
+				StorageClassesProvider(clients.getStorage()),
 				ConfigMapsProvider(client),
 				SecretsProvider(client),
-				IngressProvider(supplier.getExtensions()),
+				IngressProvider(clients.getExtensions()),
 				CustomResourceDefinitionsProvider(client)
 		)
 	}

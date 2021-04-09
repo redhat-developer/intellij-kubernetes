@@ -14,7 +14,7 @@ import io.fabric8.kubernetes.api.model.storage.StorageClass
 import io.fabric8.kubernetes.client.StorageAPIGroupClient
 import com.redhat.devtools.intellij.kubernetes.model.resource.NonNamespacedResourcesProvider
 import com.redhat.devtools.intellij.kubernetes.model.resource.ResourceKind
-import com.redhat.devtools.intellij.kubernetes.model.resource.WatchableListableDeletable
+import com.redhat.devtools.intellij.kubernetes.model.resource.ResourceOperation
 import java.util.function.Supplier
 
 class StorageClassesProvider(client: StorageAPIGroupClient)
@@ -26,7 +26,8 @@ class StorageClassesProvider(client: StorageAPIGroupClient)
 
     override val kind = KIND
 
-    override fun getOperation(): Supplier<WatchableListableDeletable<StorageClass>> {
+    override fun getOperation(): Supplier<ResourceOperation<StorageClass>?> {
         return Supplier { client.storageClasses() }
     }
+
 }

@@ -95,7 +95,7 @@ class NamespacedPodsProviderTest {
         // when
         provider.getWatchable()
         // then
-        verify(provider, never()).getOperation(any())
+        verify(provider, never()).getNamespacedOperation(any())
     }
 
     @Test
@@ -168,7 +168,7 @@ class NamespacedPodsProviderTest {
         // when
         provider.getWatchable()
         // then
-        verify(provider).getOperation(namespaceCaptor.capture())
+        verify(provider).getNamespacedOperation(namespaceCaptor.capture())
         assertThat(namespaceCaptor.firstValue).isEqualTo(namespace)
     }
 
@@ -339,8 +339,8 @@ class NamespacedPodsProviderTest {
             return super.loadAllResources(namespace)
         }
 
-        public override fun getOperation(namespace: String): Supplier<WatchableListableDeletable<Pod>> {
-            return super.getOperation(namespace)
+        public override fun getNamespacedOperation(namespace: String): Supplier<WatchableListableDeletable<Pod>> {
+            return super.getNamespacedOperation(namespace)
         }
     }
 }

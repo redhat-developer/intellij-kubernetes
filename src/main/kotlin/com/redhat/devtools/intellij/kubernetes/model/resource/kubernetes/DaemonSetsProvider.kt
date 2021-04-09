@@ -10,11 +10,11 @@
  ******************************************************************************/
 package com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes
 
-import io.fabric8.kubernetes.api.model.apps.DaemonSet
-import io.fabric8.kubernetes.client.AppsAPIGroupClient
 import com.redhat.devtools.intellij.kubernetes.model.resource.NamespacedResourcesProvider
 import com.redhat.devtools.intellij.kubernetes.model.resource.ResourceKind
-import com.redhat.devtools.intellij.kubernetes.model.resource.WatchableListableDeletable
+import com.redhat.devtools.intellij.kubernetes.model.resource.ResourceOperation
+import io.fabric8.kubernetes.api.model.apps.DaemonSet
+import io.fabric8.kubernetes.client.AppsAPIGroupClient
 import java.util.function.Supplier
 
 class DaemonSetsProvider(client: AppsAPIGroupClient)
@@ -26,7 +26,12 @@ class DaemonSetsProvider(client: AppsAPIGroupClient)
 
 	override val kind = KIND
 
-	override fun getOperation(namespace: String): Supplier<WatchableListableDeletable<DaemonSet>> {
+	override fun getNamespacedOperation(namespace: String): Supplier<ResourceOperation<DaemonSet>?> {
 		return Supplier { client.daemonSets().inNamespace(namespace) }
 	}
+
+	override fun getNonNamespacedOperation(): Supplier<ResourceOperation<DaemonSet>?> {
+		return Supplier { client.daemonSets().inAnyNamespace() as ResourceOperation<DaemonSet> }
+	}
+
 }

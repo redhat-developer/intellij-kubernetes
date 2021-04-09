@@ -10,53 +10,94 @@
  ******************************************************************************/
 package com.redhat.devtools.intellij.kubernetes.ui
 
+import com.intellij.openapi.fileEditor.FileEditor
 import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.ui.Messages
 import com.intellij.openapi.util.Key
+import com.intellij.openapi.vfs.LocalFileSystem
 import com.intellij.openapi.vfs.VirtualFile
+import com.redhat.devtools.intellij.common.editor.AllowNonProjectEditing
+import com.redhat.devtools.intellij.kubernetes.model.util.writeFile
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.Namespace
-import io.fabric8.kubernetes.client.utils.Serialization
-import org.slf4j.LoggerFactory
-import java.io.IOException
-import com.intellij.openapi.vfs.LocalFileSystem
-import com.redhat.devtools.intellij.common.editor.AllowNonProjectEditing
 import org.apache.commons.io.FileUtils
+import org.slf4j.LoggerFactory
 import java.io.File
-import java.nio.charset.StandardCharsets
+import java.io.IOException
 
 
 object ResourceEditor {
 
+	public val USER_DATA_RESOURCE = Key<HasMetadata>("RESOURCE")
 	private const val FILE_EXTENSION = "yml"
 	private val LOGGER = LoggerFactory.getLogger(ResourceEditor::class.java)
-	private const val KEY_RESOURCE = "resource"
 
 	@Throws(IOException::class)
 	fun open(project: Project, resource: HasMetadata) {
-		val file = createVirtualFile(resource) ?: return
-		file.putUserData(Key(KEY_RESOURCE), resource)
-		file.putUserData(AllowNonProjectEditing.ALLOW_NON_PROJECT_EDITING, true);
-		FileEditorManager.getInstance(project).openFile(file, true)
+		val file = getFile(resource)
+		var virtualFile = LocalFileSystem.getInstance().refreshAndFindFileByIoFile(file)
+		if (virtualFile == null) {
+			writeFile(resource, file)
+		} else {
+			var editor = getOpenEditor(virtualFile, project)
+			if (editor == null) {
+				writeFile(resource, file)
+				virtualFile = LocalFileSystem.getInstance().refreshAndFindFileByIoFile(file)
+			}
+		}
+		FileUserData(virtualFile)
+			.put(AllowNonProjectEditing.ALLOW_NON_PROJECT_EDITING, true);
+		val editor = openEditor(virtualFile, project)
+		editor?.putUserData(USER_DATA_RESOURCE, resource)
 	}
 
-	@Throws(IOException::class)
-	private fun createVirtualFile(resource: HasMetadata): VirtualFile? {
-		val name = getName(resource)
-		val file = File(FileUtils.getTempDirectory(), name)
-		FileUtils.write(file, Serialization.asYaml(resource), StandardCharsets.UTF_8)
-		file.deleteOnExit()
-		return LocalFileSystem.getInstance().refreshAndFindFileByIoFile(file)
+	private fun openEditor(
+		virtualFile: VirtualFile?,
+		project: Project
+	): FileEditor? {
+		if (virtualFile == null) {
+			return null
+		}
+		val editors = FileEditorManager.getInstance(project).openFile(virtualFile, true, true)
+		return editors[0]
 	}
 
-	private fun getName(resource: HasMetadata): String {
+	private fun getOpenEditor(file: VirtualFile?, project: Project): FileEditor? {
+		if (file == null) {
+			return null
+		}
+		return FileEditorManager.getInstance(project).getEditors(file).getOrNull(0)
+	}
+
+	private fun getFile(resource: HasMetadata): File {
+		val name = getFileName(resource)
+		return File(FileUtils.getTempDirectory(), name)
+	}
+
+	private fun getFileName(resource: HasMetadata): String {
 		val name = when(resource) {
 			is Namespace,
 			is Project
 				-> "${resource.metadata.name}"
 			else
-				-> "${resource.metadata.name}@${resource.metadata.namespace}"
+				-> {
+				if (resource.metadata.namespace != null) {
+					"${resource.metadata.name}@${resource.metadata.namespace}"
+				} else {
+					"${resource.metadata.name}"
+				}
+			}
 		}
 		return "$name.$FILE_EXTENSION"
 	}
+
+	private fun confirmOverwrite(): Boolean {
+		val answer = Messages.showYesNoDialog(
+			"Editor content is out of date. Replace it?",
+			"Overwrite content?",
+			Messages.getQuestionIcon())
+		return answer == Messages.OK
+	}
+
 }

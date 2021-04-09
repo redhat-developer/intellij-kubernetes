@@ -10,11 +10,11 @@
  ******************************************************************************/
 package com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes
 
-import io.fabric8.kubernetes.api.model.apps.Deployment
-import io.fabric8.kubernetes.client.AppsAPIGroupClient
 import com.redhat.devtools.intellij.kubernetes.model.resource.NamespacedResourcesProvider
 import com.redhat.devtools.intellij.kubernetes.model.resource.ResourceKind
-import com.redhat.devtools.intellij.kubernetes.model.resource.WatchableListableDeletable
+import com.redhat.devtools.intellij.kubernetes.model.resource.ResourceOperation
+import io.fabric8.kubernetes.api.model.apps.Deployment
+import io.fabric8.kubernetes.client.AppsAPIGroupClient
 import java.util.function.Supplier
 
 class DeploymentsProvider(client: AppsAPIGroupClient)
@@ -26,8 +26,11 @@ class DeploymentsProvider(client: AppsAPIGroupClient)
 
     override val kind = KIND
 
-    override fun getOperation(namespace: String): Supplier<WatchableListableDeletable<Deployment>> {
+    override fun getNamespacedOperation(namespace: String): Supplier<ResourceOperation<Deployment>?> {
         return Supplier { client.deployments().inNamespace(namespace) }
     }
 
+    override fun getNonNamespacedOperation(): Supplier<ResourceOperation<Deployment>?> {
+        return Supplier { client.deployments().inAnyNamespace() as ResourceOperation<Deployment> }
+    }
 }

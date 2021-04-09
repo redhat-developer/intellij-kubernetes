@@ -49,11 +49,11 @@ inline fun <reified T> Any.getElement(): T? {
     }
 }
 
-fun AnAction.run(title: String, canBeCancelled: Boolean, runnable: Progressive) {
+fun run(title: String, canBeCancelled: Boolean, runnable: Progressive) {
     run(title, null, canBeCancelled, runnable);
 }
 
-fun AnAction.run(title: String, project: Project?, canBeCancelled: Boolean, runnable: Progressive) {
+fun run(title: String, project: Project?, canBeCancelled: Boolean, runnable: Progressive) {
     ProgressManager.getInstance().run(object :
         Task.Backgroundable(project, title, canBeCancelled){
 

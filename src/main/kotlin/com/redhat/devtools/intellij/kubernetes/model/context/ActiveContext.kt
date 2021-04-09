@@ -253,8 +253,8 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
 
     private fun toResourcesIn(resource: HasMetadata): ResourcesIn {
         return when (resource.metadata.namespace) {
-            null -> ANY_NAMESPACE
-            else -> CURRENT_NAMESPACE
+            getCurrentNamespace() -> CURRENT_NAMESPACE
+            else -> ANY_NAMESPACE
         }
     }
 
@@ -465,6 +465,13 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
         }
     }
 
+    override fun createOrReplace(resource: HasMetadata) {
+        val kind = ResourceKind.create(resource)
+        val scope = toResourcesIn(resource)
+        val provider = getProvider(kind, scope) ?: return
+        provider.createOrReplace(resource)
+    }
+
     override fun close() {
         logger<ActiveContext<*, *>>().debug("Closing context ${context.name}.")
         watch.close()
@@ -490,5 +497,9 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
     protected open fun getExtensionResourceProviders(supplier: Clients<C>): List<IResourcesProvider<out HasMetadata>> {
         return extensionName.extensionList
                 .map { it.create(supplier) }
+    }
+
+    override fun getResource(resource: HasMetadata): HasMetadata {
+        return clients.get().resource(resource).fromServer().get()
     }
 }

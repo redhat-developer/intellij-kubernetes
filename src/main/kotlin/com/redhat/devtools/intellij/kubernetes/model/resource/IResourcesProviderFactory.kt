@@ -15,6 +15,5 @@ import io.fabric8.kubernetes.client.Client
 import com.redhat.devtools.intellij.kubernetes.model.util.Clients
 
 interface IResourcesProviderFactory<N: HasMetadata, C: Client, P: IResourcesProvider<N>> {
-
     fun create(client: Clients<C>): P
 }

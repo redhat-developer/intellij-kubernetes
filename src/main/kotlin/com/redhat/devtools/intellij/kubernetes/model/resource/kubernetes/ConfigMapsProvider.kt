@@ -10,11 +10,11 @@
  ******************************************************************************/
 package com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes
 
-import io.fabric8.kubernetes.api.model.ConfigMap
-import io.fabric8.kubernetes.client.KubernetesClient
 import com.redhat.devtools.intellij.kubernetes.model.resource.NamespacedResourcesProvider
 import com.redhat.devtools.intellij.kubernetes.model.resource.ResourceKind
-import com.redhat.devtools.intellij.kubernetes.model.resource.WatchableListableDeletable
+import com.redhat.devtools.intellij.kubernetes.model.resource.ResourceOperation
+import io.fabric8.kubernetes.api.model.ConfigMap
+import io.fabric8.kubernetes.client.KubernetesClient
 import java.util.function.Supplier
 
 class ConfigMapsProvider(client: KubernetesClient)
@@ -26,8 +26,11 @@ class ConfigMapsProvider(client: KubernetesClient)
 
     override val kind = KIND
 
-    override fun getOperation(namespace: String): Supplier<WatchableListableDeletable<ConfigMap>> {
+    override fun getNamespacedOperation(namespace: String): Supplier<ResourceOperation<ConfigMap>?> {
         return Supplier { client.configMaps().inNamespace(namespace) }
     }
 
+    override fun getNonNamespacedOperation(): Supplier<out ResourceOperation<ConfigMap>?> {
+        return Supplier { client.configMaps().inAnyNamespace() as ResourceOperation<ConfigMap> }
+    }
 }

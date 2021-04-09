@@ -153,4 +153,8 @@ interface IActiveContext<N: HasMetadata, C: KubernetesClient>: IContext {
      * Closes and disposes this context.
      */
     fun close()
+
+    fun createOrReplace(resource: HasMetadata)
+
+    fun getResource(resource: HasMetadata): HasMetadata
 }

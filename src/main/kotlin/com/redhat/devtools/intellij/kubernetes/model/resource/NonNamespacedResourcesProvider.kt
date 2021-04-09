@@ -13,7 +13,6 @@ package com.redhat.devtools.intellij.kubernetes.model.resource
 import com.intellij.openapi.diagnostic.logger
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.client.Client
-import io.fabric8.kubernetes.client.Watch
 import io.fabric8.kubernetes.client.Watcher
 import io.fabric8.kubernetes.client.dsl.Watchable
 import java.util.function.Supplier
@@ -44,14 +43,20 @@ abstract class NonNamespacedResourcesProvider<R : HasMetadata, C : Client>(
         return getOperation() as Supplier<Watchable<Watcher<R>>?>
     }
 
-    protected open fun getOperation(): Supplier<WatchableListableDeletable<R>> {
-        return Supplier { null }
-    }
-
     override fun delete(resources: List<HasMetadata>): Boolean {
         @Suppress("UNCHECKED_CAST")
         val toDelete = resources as? List<R> ?: return false
         return getOperation().get()?.delete(toDelete) ?: false
+    }
+
+    override fun createOrReplace(resource: HasMetadata) {
+        @Suppress("UNCHECKED_CAST")
+        val toCreateOrReplace = resource as? R
+        getOperation().get()?.createOrReplace(toCreateOrReplace)
+    }
+
+    protected open fun getOperation(): Supplier<out ResourceOperation<R>?> {
+        return Supplier { null }
     }
 
 }

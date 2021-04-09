@@ -13,7 +13,6 @@ package com.redhat.devtools.intellij.kubernetes.model.resource
 import com.intellij.openapi.diagnostic.logger
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.client.Client
-import io.fabric8.kubernetes.client.Watch
 import io.fabric8.kubernetes.client.Watcher
 import io.fabric8.kubernetes.client.dsl.Watchable
 import java.util.function.Supplier
@@ -54,7 +53,7 @@ abstract class NamespacedResourcesProvider<R : HasMetadata, C: Client>(
 
     protected open fun loadAllResources(namespace: String): List<R> {
         logger<NamespacedResourcesProvider<*, *>>().debug("Loading $kind resources in namespace $namespace.")
-        return getOperation(namespace).get()?.list()?.items ?: emptyList()
+        return getNamespacedOperation(namespace).get()?.list()?.items ?: emptyList()
     }
 
     override fun getWatchable(): Supplier<Watchable<Watcher<R>>?> {
@@ -63,11 +62,7 @@ abstract class NamespacedResourcesProvider<R : HasMetadata, C: Client>(
             return Supplier { null }
         }
         @Suppress("UNCHECKED_CAST")
-        return getOperation(namespace!!) as Supplier<Watchable<Watcher<R>>?>
-    }
-
-    protected open fun getOperation(namespace: String): Supplier<WatchableListableDeletable<R>> {
-        return Supplier { null }
+        return getNamespacedOperation(namespace!!) as Supplier<Watchable<Watcher<R>>?>
     }
 
     override fun delete(resources: List<HasMetadata>): Boolean {
@@ -76,7 +71,20 @@ abstract class NamespacedResourcesProvider<R : HasMetadata, C: Client>(
         }
         @Suppress("UNCHECKED_CAST")
         val toDelete = resources as? List<R> ?: return false
-        return getOperation(namespace!!).get()?.delete(toDelete) ?: false
+        return getNamespacedOperation(namespace!!).get()?.delete(toDelete) ?: false
+    }
+
+    override fun createOrReplace(resource: HasMetadata) {
+        val toCreateOrReplace = resource as? R
+        getNonNamespacedOperation().get()?.createOrReplace(toCreateOrReplace)
+    }
+
+    protected open fun getNamespacedOperation(namespace: String): Supplier<ResourceOperation<R>?> {
+        return Supplier { null }
+    }
+
+    protected open fun getNonNamespacedOperation(): Supplier<out ResourceOperation<R>?> {
+        return Supplier { null }
     }
 
 }
