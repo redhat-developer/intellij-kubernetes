@@ -24,6 +24,7 @@ import io.fabric8.kubernetes.client.dsl.Watchable
 import com.redhat.devtools.intellij.kubernetes.model.IModelChangeObservable
 import com.redhat.devtools.intellij.kubernetes.model.Notification
 import com.redhat.devtools.intellij.kubernetes.model.ResourceWatch
+import com.redhat.devtools.intellij.kubernetes.model.ResourceWatch.*
 import com.redhat.devtools.intellij.kubernetes.model.context.IActiveContext.ResourcesIn
 import com.redhat.devtools.intellij.kubernetes.model.context.IActiveContext.ResourcesIn.ANY_NAMESPACE
 import com.redhat.devtools.intellij.kubernetes.model.context.IActiveContext.ResourcesIn.CURRENT_NAMESPACE
@@ -274,8 +275,9 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
             .map { Pair(it.value.kind, it.value.getWatchable()) }
 
         @Suppress("UNCHECKED_CAST")
-        watch.watchAll(watchables
-                as Collection<Pair<ResourceKind<out HasMetadata>, Supplier<Watchable<Watcher<in HasMetadata>>?>>>)
+        watch.watchAll(
+            watchables as Collection<Pair<ResourceKind<out HasMetadata>, Supplier<Watchable<Watcher<in HasMetadata>>?>>>,
+            WatchListeners({ add(it) }, { remove(it) }, { replace(it) }))
     }
 
     private fun watch(provider: IResourcesProvider<*>?) {
@@ -284,8 +286,12 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
         }
 
         @Suppress("UNCHECKED_CAST")
-        watch.watch(provider.kind, provider.getWatchable()
-                as Supplier<Watchable<Watcher<in HasMetadata>>?>)
+        watch.watch(
+            provider.kind,
+            provider.getWatchable()
+                as Supplier<Watchable<Watcher<in HasMetadata>>?>,
+            WatchListeners({ add(it) }, { remove(it) }, { replace(it) })
+        )
     }
 
     override fun stopWatch(kind: ResourceKind<out HasMetadata>) {

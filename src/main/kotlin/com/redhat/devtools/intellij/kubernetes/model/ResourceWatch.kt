@@ -44,11 +44,18 @@ open class ResourceWatch(
     private val executor: ExecutorService = Executors.newWorkStealingPool(10)
     private val watchOperationsRunner = executor.submit(watchOperationsRunner)
 
-    open fun watchAll(toWatch: Collection<Pair<ResourceKind<out HasMetadata>, Supplier<Watchable<Watcher<in HasMetadata>>?>>>) {
-        toWatch.forEach { watch(it.first, it.second) }
+    open fun watchAll(
+        toWatch: Collection<Pair<ResourceKind<out HasMetadata>, Supplier<Watchable<Watcher<in HasMetadata>>?>>>,
+        watchListeners: WatchListeners
+    ) {
+        toWatch.forEach { watch(it.first, it.second, watchListeners) }
     }
 
-    open fun watch(kind: ResourceKind<out HasMetadata>, supplier: Supplier<out Watchable<Watcher<in HasMetadata>>?>) {
+    open fun watch(
+        kind: ResourceKind<out HasMetadata>,
+        supplier: Supplier<out Watchable<Watcher<in HasMetadata>>?>,
+        watchListeners: WatchListeners
+    ) {
         val watchable = supplier.get() ?: return
         watches.computeIfAbsent(kind) {
             logger<ResourceWatch>().debug("Enqueueing watch for $kind resources in $watchable.")
@@ -56,9 +63,9 @@ open class ResourceWatch(
                     kind,
                     watchable,
                     watches,
-                    addOperation,
-                    removeOperation,
-                    replaceOperation)
+                    watchListeners.add,
+                    watchListeners.remove,
+                    watchListeners.replace)
             watchOperations.add(watchOperation) // enqueue watch operation
             WATCH_OPERATION_ENQUEUED // Marker: watch operation submitted
         }
@@ -180,4 +187,11 @@ open class ResourceWatch(
             logger<ResourceWatcher>().debug("watcher closed.", e)
         }
     }
+
+    class WatchListeners(
+        val add: (HasMetadata) -> Unit,
+        val remove: (HasMetadata) -> Unit,
+        val replace: (HasMetadata) -> Unit
+    )
+
 }
