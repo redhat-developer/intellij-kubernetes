@@ -11,9 +11,14 @@
     <change-notes>
         <![CDATA[
         <p></p>
+        <h3>0.1.6</h3>
+        <ul>
+            <li><a href="https://github.com/redhat-developer/intellij-kubernetes/issues/193">"Use Project/Namespace" & "Set as Current Cluster" should alter kubeconfig</a></li>
+            <li><a href="https://github.com/redhat-developer/intellij-kubernetes/issues/192">tool window: active context is not updated when unauthorized context is logged in</a></li>
+        </ul>
         <h3>0.1.5</h3>
         <ul>
-            <li><a href="https://github.com/redhat-developer/intellij-kubernetes/issues/181">Switch project/namespace command not showing up'</a></li>
+            <li><a href="https://github.com/redhat-developer/intellij-kubernetes/issues/181">Switch project/namespace command not showing up</a></li>
             <li><a href="https://github.com/redhat-developer/intellij-kubernetes/issues/180">Error when opening new plugin version</a></li>
         </ul>
         <h3>0.1.3</h3>
