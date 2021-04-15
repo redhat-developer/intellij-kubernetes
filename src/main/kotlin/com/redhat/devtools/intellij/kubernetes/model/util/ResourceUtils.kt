@@ -14,7 +14,6 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.intellij.json.JsonFileType
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.vfs.VirtualFile
-import com.redhat.devtools.intellij.kubernetes.ui.ResourceEditorSaveListener
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.apiextensions.v1beta1.CustomResourceDefinition
 import io.fabric8.kubernetes.api.model.apiextensions.v1beta1.CustomResourceDefinitionSpec
@@ -26,6 +25,7 @@ import io.fabric8.kubernetes.model.annotation.Group
 import io.fabric8.kubernetes.model.annotation.Version
 import io.fabric8.kubernetes.model.util.Helper
 import org.apache.commons.io.FileUtils
+import org.apache.log4j.lf5.util.ResourceUtils
 import org.jetbrains.yaml.YAMLFileType
 import java.io.File
 import java.nio.charset.StandardCharsets
@@ -190,7 +190,7 @@ fun toResource(file: VirtualFile): HasMetadata? {
 		val mapper = getMapper(file) ?: return null
 		return file.inputStream.use { Serialization.unmarshal(it, mapper) }
 	} catch (e: KubernetesClientException) {
-		logger<ResourceEditorSaveListener>().debug("Could not parse ${file.presentableUrl}. Only valid Json or Yaml supported.", e.cause)
+		logger<ResourceUtils>().debug("Could not parse ${file.presentableUrl}. Only valid Json or Yaml supported.", e.cause)
 		null
 	}
 }
@@ -201,10 +201,5 @@ private fun getMapper(file: VirtualFile): ObjectMapper? {
 		JsonFileType.INSTANCE -> Serialization.jsonMapper()
 		else -> null
 	}
-}
-
-fun writeFile(resource: HasMetadata, file: File) {
-	val content = Serialization.asYaml(resource)
-	FileUtils.write(file, content, StandardCharsets.UTF_8, false)
 }
 
