@@ -11,12 +11,10 @@
 package com.redhat.devtools.intellij.kubernetes.actions
 
 import com.intellij.openapi.actionSystem.AnActionEvent
-import com.intellij.openapi.progress.Progressive
-import com.intellij.openapi.project.ProjectManager
 import com.redhat.devtools.intellij.common.actions.StructureTreeAction
 import io.fabric8.kubernetes.api.model.HasMetadata
 import com.redhat.devtools.intellij.kubernetes.model.util.hasDeletionTimestamp
-import com.redhat.devtools.intellij.kubernetes.ui.ResourceEditor
+import com.redhat.devtools.intellij.kubernetes.ui.editor.ResourceEditor
 import javax.swing.tree.TreePath
 
 class EditResourceAction: StructureTreeAction() {
