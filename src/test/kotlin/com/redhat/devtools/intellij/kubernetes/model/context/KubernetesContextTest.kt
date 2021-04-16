@@ -607,10 +607,10 @@ class KubernetesContextTest {
 		// given
 		val namespace = resource<Namespace>("papa smurf namespace")
 		// when
-		context.add(namespace)
+		context.added(namespace)
 		// then
-		verify(namespacesProvider).add(namespace)
-		verify(namespacedPodsProvider, never()).add(namespace)
+		verify(namespacesProvider).added(namespace)
+		verify(namespacedPodsProvider, never()).added(namespace)
 	}
 
 	@Test
@@ -618,9 +618,9 @@ class KubernetesContextTest {
 		// given
 		val pod = resource<Pod>("pod", currentNamespace.metadata.name)
 		// when
-		context.add(pod)
+		context.added(pod)
 		// then
-		verify(namespacedPodsProvider).add(pod)
+		verify(namespacedPodsProvider).added(pod)
 	}
 
 	@Test
@@ -628,9 +628,9 @@ class KubernetesContextTest {
 		// given
 		val pod = resource<Pod>("pod", "gargamel namespace")
 		// when
-		context.add(pod)
+		context.added(pod)
 		// then
-		verify(allPodsProvider).add(pod)
+		verify(allPodsProvider).added(pod)
 	}
 
 	@Test
@@ -638,20 +638,20 @@ class KubernetesContextTest {
 		// given
 		val pod = resource<Pod>("pod", "gargamel namespace")
 		// when
-		context.add(pod)
+		context.added(pod)
 		// then
-		verify(namespacedPodsProvider, never()).add(pod)
+		verify(namespacedPodsProvider, never()).added(pod)
 	}
 
 	@Test
 	fun `#add(pod) should return true if pod was added to pods provider`() {
 		// given
 		val pod = resource<Pod>("pod", currentNamespace.metadata.name)
-		whenever(namespacedPodsProvider.add(pod))
+		whenever(namespacedPodsProvider.added(pod))
 			.thenReturn(true)
 
 		// when
-		val added = context.add(pod)
+		val added = context.added(pod)
 		// then
 		assertThat(added).isTrue()
 	}
@@ -660,10 +660,10 @@ class KubernetesContextTest {
 	fun `#add(namespace) should return true if namespace was added to namespace provider`() {
 		// given
 		val namespace = resource<Namespace>("pod")
-		whenever(namespacesProvider.add(namespace))
+		whenever(namespacesProvider.added(namespace))
 			.thenReturn(true)
 		// when
-		val added = context.add(namespace)
+		val added = context.added(namespace)
 		// then
 		assertThat(added).isTrue()
 	}
@@ -672,10 +672,10 @@ class KubernetesContextTest {
 	fun `#add(pod) should return false if pod was not added to pods provider`() {
 		// given
 		val pod = resource<Pod>("pod")
-		whenever(namespacedPodsProvider.add(pod))
+		whenever(namespacedPodsProvider.added(pod))
 			.thenReturn(false)
 		// when
-		val added = context.add(pod)
+		val added = context.added(pod)
 		// then
 		assertThat(added).isFalse()
 	}
@@ -684,10 +684,10 @@ class KubernetesContextTest {
 	fun `#add(pod) should fire if provider added pod`() {
 		// given
 		val pod = resource<Pod>("gargamel", currentNamespace.metadata.name)
-		whenever(namespacedPodsProvider.add(pod))
+		whenever(namespacedPodsProvider.added(pod))
 			.thenReturn(true)
 		// when
-		context.add(pod)
+		context.added(pod)
 		// then
 		verify(modelChange).fireAdded(pod)
 	}
@@ -696,10 +696,10 @@ class KubernetesContextTest {
 	fun `#add(pod) should not fire if provider did not add pod`() {
 		// given
 		val pod = resource<Pod>("gargamel")
-		whenever(namespacedPodsProvider.add(pod))
+		whenever(namespacedPodsProvider.added(pod))
 			.thenReturn(false)
 		// when
-		context.add(pod)
+		context.added(pod)
 		// then
 		verify(modelChange, never()).fireAdded(pod)
 	}
@@ -709,11 +709,11 @@ class KubernetesContextTest {
 		// given
 		val currentNamespace = currentNamespace.metadata.name
 		setNamespaceForResource(currentNamespace, namespacedDefinition)
-		whenever(customResourceDefinitionsProvider.add(namespacedDefinition))
+		whenever(customResourceDefinitionsProvider.added(namespacedDefinition))
 				.doReturn(true)
 		clearInvocations(context)
 		// when
-		context.add(namespacedDefinition)
+		context.added(namespacedDefinition)
 		// then
 		verify(context)
 				.createCustomResourcesProvider(
@@ -724,10 +724,10 @@ class KubernetesContextTest {
 	@Test
 	fun `#add(CustomResourceDefinition) should create clusterwide custom resources provider if definition was added`() {
 		// given
-		whenever(customResourceDefinitionsProvider.add(clusterwideDefinition))
+		whenever(customResourceDefinitionsProvider.added(clusterwideDefinition))
 				.doReturn(true)
 		// when
-		context.add(clusterwideDefinition)
+		context.added(clusterwideDefinition)
 		// then
 		verify(context, times(1))
 				.createCustomResourcesProvider(
@@ -738,10 +738,10 @@ class KubernetesContextTest {
 	@Test
 	fun `#add(CustomResourceDefinition) should NOT create custom resources provider if definition was NOT added`() {
 		// given
-		whenever(namespacedCustomResourcesProvider.add(clusterwideDefinition))
+		whenever(namespacedCustomResourcesProvider.added(clusterwideDefinition))
 				.doReturn(false)
 		// when
-		context.add(clusterwideDefinition)
+		context.added(clusterwideDefinition)
 		// then
 		verify(context, never()).createCustomResourcesProvider(eq(clusterwideDefinition), any())
 	}
@@ -751,10 +751,10 @@ class KubernetesContextTest {
 		// given
 		val pod = resource<Pod>("pod", currentNamespace.metadata.name)
 		// when
-		context.remove(pod)
+		context.removed(pod)
 		// then
-		verify(namespacedPodsProvider).remove(pod)
-		verify(namespacesProvider, never()).remove(pod)
+		verify(namespacedPodsProvider).removed(pod)
+		verify(namespacesProvider, never()).removed(pod)
 	}
 
 	@Test
@@ -762,10 +762,10 @@ class KubernetesContextTest {
 		// given
 		val pod = resource<Pod>("pod", currentNamespace.metadata.name)
 		// when
-		context.remove(pod)
+		context.removed(pod)
 		// then
-		verify(namespacedPodsProvider).remove(pod)
-		verify(allPodsProvider).remove(pod)
+		verify(namespacedPodsProvider).removed(pod)
+		verify(allPodsProvider).removed(pod)
 	}
 
 	@Test
@@ -773,10 +773,10 @@ class KubernetesContextTest {
 		// given
 		val pod = resource<Pod>("pod", "42")
 		// when
-		context.remove(pod)
+		context.removed(pod)
 		// then
-		verify(namespacedPodsProvider, never()).remove(pod)
-		verify(allPodsProvider).remove(pod)
+		verify(namespacedPodsProvider, never()).removed(pod)
+		verify(allPodsProvider).removed(pod)
 	}
 
 	@Test
@@ -784,20 +784,20 @@ class KubernetesContextTest {
 		// given
 		val namespace = NAMESPACE1
 		// when
-		context.remove(namespace)
+		context.removed(namespace)
 		// then
-		verify(namespacesProvider).remove(namespace)
-		verify(namespacedPodsProvider, never()).remove(namespace)
+		verify(namespacesProvider).removed(namespace)
+		verify(namespacedPodsProvider, never()).removed(namespace)
 	}
 
 	@Test
 	fun `#remove(pod) should fire if provider removed pod`() {
 		// given
 		val pod = resource<Pod>("gargamel", currentNamespace.metadata.name)
-		whenever(namespacedPodsProvider.remove(pod))
+		whenever(namespacedPodsProvider.removed(pod))
 			.thenReturn(true)
 		// when
-		context.remove(pod)
+		context.removed(pod)
 		// then
 		verify(modelChange).fireRemoved(pod)
 	}
@@ -806,10 +806,10 @@ class KubernetesContextTest {
 	fun `#remove(pod) should not fire if provider did not remove pod`() {
 		// given
 		val pod = resource<Pod>("gargamel")
-		whenever(namespacedPodsProvider.remove(pod))
+		whenever(namespacedPodsProvider.removed(pod))
 			.thenReturn(false)
 		// when
-		context.remove(pod)
+		context.removed(pod)
 		// then
 		verify(modelChange, never()).fireRemoved(pod)
 	}
@@ -821,7 +821,7 @@ class KubernetesContextTest {
 				customResourceDefinitionsProvider,
 				nonNamespacedCustomResourcesProvider)
 		// when
-		context.remove(clusterwideDefinition)
+		context.removed(clusterwideDefinition)
 		// then
 		assertThat(context.nonNamespacedProviders)
 				.doesNotContainValue(nonNamespacedCustomResourcesProvider)
@@ -835,7 +835,7 @@ class KubernetesContextTest {
 				nonNamespacedCustomResourcesProvider)
 		clearInvocations(resourceWatch)
 		// when
-		context.remove(clusterwideDefinition)
+		context.removed(clusterwideDefinition)
 		// then
 		verify(resourceWatch).stopWatch(nonNamespacedCustomResourcesProvider.kind)
 	}
@@ -847,7 +847,7 @@ class KubernetesContextTest {
 				customResourceDefinitionsProvider,
 				namespacedCustomResourcesProvider)
 		// when
-		context.remove(namespacedDefinition)
+		context.removed(namespacedDefinition)
 		// then
 		assertThat(context.namespacedProviders)
 				.doesNotContainValue(namespacedCustomResourcesProvider)
@@ -859,10 +859,10 @@ class KubernetesContextTest {
 		givenCustomResourceProvider(clusterwideDefinition,
 				customResourceDefinitionsProvider,
 				namespacedCustomResourcesProvider)
-		whenever(customResourceDefinitionsProvider.remove(clusterwideDefinition))
+		whenever(customResourceDefinitionsProvider.removed(clusterwideDefinition))
 				.doReturn(false) // was not removed
 		// when
-		context.remove(clusterwideDefinition)
+		context.removed(clusterwideDefinition)
 		// then
 		assertThat(context.namespacedProviders)
 				.containsValue(namespacedCustomResourcesProvider)
@@ -893,10 +893,10 @@ class KubernetesContextTest {
 		// given
 		val pod = allPods[0]
 		// when
-		context.replace(pod)
+		context.replaced(pod)
 		// then
-		verify(namespacesProvider, never()).replace(pod)
-		verify(namespacedPodsProvider).replace(pod)
+		verify(namespacesProvider, never()).replaced(pod)
+		verify(namespacedPodsProvider).replaced(pod)
 	}
 
 	@Test
@@ -904,10 +904,10 @@ class KubernetesContextTest {
 		// given
 		val namespace = allNamespaces[0]
 		// when
-		context.replace(namespace)
+		context.replaced(namespace)
 		// then
-		verify(namespacesProvider).replace(namespace)
-		verify(namespacedPodsProvider, never()).replace(namespace)
+		verify(namespacesProvider).replaced(namespace)
+		verify(namespacedPodsProvider, never()).replaced(namespace)
 	}
 
 	@Test
@@ -917,19 +917,19 @@ class KubernetesContextTest {
 				customResourceDefinitionsProvider,
 				namespacedCustomResourcesProvider)
 		// when
-		context.replace(namespacedCustomResource1)
+		context.replaced(namespacedCustomResource1)
 		// then
-		verify(namespacedCustomResourcesProvider).replace(namespacedCustomResource1)
+		verify(namespacedCustomResourcesProvider).replaced(namespacedCustomResource1)
 	}
 
 	@Test
 	fun `#replace(pod) should fire if provider replaced pod`() {
 		// given
 		val pod = resource<Pod>("gargamel")
-		whenever(namespacedPodsProvider.replace(pod))
+		whenever(namespacedPodsProvider.replaced(pod))
 			.thenReturn(true)
 		// when
-		context.replace(pod)
+		context.replaced(pod)
 		// then
 		verify(modelChange).fireModified(pod)
 	}
@@ -938,10 +938,10 @@ class KubernetesContextTest {
 	fun `#replace(pod) should not fire if provider did NOT replace pod`() {
 		// given
 		val pod = resource<Pod>("gargamel")
-		whenever(namespacedPodsProvider.replace(pod))
+		whenever(namespacedPodsProvider.replaced(pod))
 			.thenReturn(false)
 		// when
-		context.replace(pod)
+		context.replaced(pod)
 		// then
 		verify(modelChange, never()).fireModified(pod)
 	}
@@ -959,7 +959,7 @@ class KubernetesContextTest {
 			definition: CustomResourceDefinition,
 			definitionProvider: IResourcesProvider<CustomResourceDefinition>,
 			resourceProvider: IResourcesProvider<GenericCustomResource>?) {
-		whenever(definitionProvider.remove(definition))
+		whenever(definitionProvider.removed(definition))
 			.doReturn(true)
 
 		val kind = ResourceKind.create(definition.spec)

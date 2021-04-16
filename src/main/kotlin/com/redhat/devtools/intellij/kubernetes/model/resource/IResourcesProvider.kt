@@ -25,9 +25,9 @@ interface IResourcesProvider<R: HasMetadata> {
     val allResources: Collection<R>
     fun getWatchable(): Supplier<Watchable<Watcher<R>>?>
     fun invalidate()
-    fun replace(resource: HasMetadata): Boolean
-    fun add(resource: HasMetadata): Boolean
-    fun remove(resource: HasMetadata): Boolean
+    fun replaced(resource: HasMetadata): Boolean
+    fun added(resource: HasMetadata): Boolean
+    fun removed(resource: HasMetadata): Boolean
     fun delete(resources: List<HasMetadata>): Boolean
-    fun createOrReplace(resource: HasMetadata)
+    fun replace(resource: HasMetadata): HasMetadata?
 }

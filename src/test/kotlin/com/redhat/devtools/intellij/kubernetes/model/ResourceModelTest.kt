@@ -29,7 +29,6 @@ import org.assertj.core.api.Assertions.assertThat
 import com.redhat.devtools.intellij.kubernetes.model.context.IActiveContext
 import com.redhat.devtools.intellij.kubernetes.model.context.IActiveContext.ResourcesIn
 import com.redhat.devtools.intellij.kubernetes.model.context.IContext
-import com.redhat.devtools.intellij.kubernetes.model.context.create
 import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.POD1
 import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.POD2
 import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.POD3
@@ -189,7 +188,7 @@ class ResourceModelTest {
         // when
         model.invalidate(resource)
         // then
-        verify(activeContext).replace(resource)
+        verify(activeContext).replaced(resource)
     }
 
     @Test

@@ -37,7 +37,7 @@ interface IResourceModel {
     fun stopWatch(definition: CustomResourceDefinition)
     fun invalidate(element: Any?)
     fun delete(resources: List<HasMetadata>)
-    fun createOrReplace(resource: HasMetadata)
+    fun replace(resource: HasMetadata)
     fun addListener(listener: ModelChangeObservable.IResourceChangeListener)
     fun resource(resource: HasMetadata): HasMetadata?
 }
@@ -156,7 +156,7 @@ open class ResourceModel : IResourceModel {
             is ResourceModel -> invalidate()
             is IActiveContext<*, *> -> invalidate(element)
             is ResourceKind<*> -> invalidate(element)
-            is HasMetadata -> replace(element)
+            is HasMetadata -> replaced(element)
         }
     }
 
@@ -175,16 +175,16 @@ open class ResourceModel : IResourceModel {
         contexts.current?.invalidate(kind)
     }
 
-    private fun replace(resource: HasMetadata) {
-        contexts.current?.replace(resource)
+    private fun replaced(resource: HasMetadata) {
+        contexts.current?.replaced(resource)
     }
 
     override fun delete(resources: List<HasMetadata>) {
         contexts.current?.delete(resources)
     }
 
-    override fun createOrReplace(resource: HasMetadata) {
-        contexts.current?.createOrReplace(resource)
+    override fun replace(resource: HasMetadata) {
+        contexts.current?.replace(resource)
     }
 
     private fun isNotFound(e: KubernetesClientException): Boolean {

@@ -74,9 +74,10 @@ abstract class NamespacedResourcesProvider<R : HasMetadata, C: Client>(
         return getNamespacedOperation(namespace!!).get()?.delete(toDelete) ?: false
     }
 
-    override fun createOrReplace(resource: HasMetadata) {
-        val toCreateOrReplace = resource as? R
-        getNonNamespacedOperation().get()?.createOrReplace(toCreateOrReplace)
+    override fun replace(resource: HasMetadata): HasMetadata? {
+        @Suppress("UNCHECKED_CAST")
+        val toReplace = resource as? R ?: return null
+        return getNonNamespacedOperation().get()?.withName(toReplace.metadata.name)?.replace(toReplace)
     }
 
     protected open fun getNamespacedOperation(namespace: String): Supplier<ResourceOperation<R>?> {

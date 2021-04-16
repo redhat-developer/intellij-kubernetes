@@ -25,7 +25,7 @@ abstract class AbstractResourcesProvider<R : HasMetadata> : IResourcesProvider<R
         }
     }
 
-    override fun add(resource: HasMetadata): Boolean {
+    override fun added(resource: HasMetadata): Boolean {
         if (!isCorrectKind(resource)) {
             return false
         }
@@ -41,7 +41,7 @@ abstract class AbstractResourcesProvider<R : HasMetadata> : IResourcesProvider<R
         }
     }
 
-    override fun remove(resource: HasMetadata): Boolean {
+    override fun removed(resource: HasMetadata): Boolean {
         if (!isCorrectKind(resource)) {
             return false
         }
@@ -54,7 +54,7 @@ abstract class AbstractResourcesProvider<R : HasMetadata> : IResourcesProvider<R
         }
     }
 
-    override fun replace(resource: HasMetadata): Boolean {
+    override fun replaced(resource: HasMetadata): Boolean {
         if (!isCorrectKind(resource)) {
             return false
         }
