@@ -185,21 +185,7 @@ fun trimWithEllipsis(value: String, length: Int): String {
 	}
 }
 
-fun toResource(file: VirtualFile): HasMetadata? {
-	return try {
-		val mapper = getMapper(file) ?: return null
-		return file.inputStream.use { Serialization.unmarshal(it, mapper) }
-	} catch (e: KubernetesClientException) {
-		logger<ResourceUtils>().debug("Could not parse ${file.presentableUrl}. Only valid Json or Yaml supported.", e.cause)
-		null
-	}
-}
-
-private fun getMapper(file: VirtualFile): ObjectMapper? {
-	return when(file.fileType) {
-		YAMLFileType.YML -> Serialization.yamlMapper()
-		JsonFileType.INSTANCE -> Serialization.jsonMapper()
-		else -> null
-	}
+inline fun <reified T> toResource(json: String): T? {
+	return Serialization.unmarshal(json, T::class.java)
 }
 

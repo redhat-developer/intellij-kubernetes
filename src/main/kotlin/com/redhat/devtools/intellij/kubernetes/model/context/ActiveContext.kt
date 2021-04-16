@@ -12,7 +12,6 @@ package com.redhat.devtools.intellij.kubernetes.model.context
 
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.extensions.ExtensionPointName
-import com.redhat.devtools.intellij.kubernetes.model.Contexts
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.NamedContext
 import io.fabric8.kubernetes.api.model.apiextensions.v1beta1.CustomResourceDefinition
@@ -44,8 +43,6 @@ import com.redhat.devtools.intellij.kubernetes.model.util.sameResource
 import com.redhat.devtools.intellij.kubernetes.model.util.setWillBeDeleted
 import com.redhat.devtools.intellij.kubernetes.model.util.toMessage
 import io.fabric8.kubernetes.client.Config
-import io.fabric8.kubernetes.client.internal.KubeConfigUtils
-import java.io.File
 import java.net.URL
 import java.util.function.Supplier
 
@@ -76,9 +73,9 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
     }
 
     protected open var watch: ResourceWatch = ResourceWatch(
-            addOperation = { add(it) },
-            removeOperation = { remove(it) },
-            replaceOperation = { replace(it) }
+            addOperation = { added(it) },
+            removeOperation = { removed(it) },
+            replaceOperation = { replaced(it) }
     )
 
     protected open val notification: Notification = Notification()
@@ -277,7 +274,7 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
         @Suppress("UNCHECKED_CAST")
         watch.watchAll(
             watchables as Collection<Pair<ResourceKind<out HasMetadata>, Supplier<Watchable<Watcher<in HasMetadata>>?>>>,
-            WatchListeners({ add(it) }, { remove(it) }, { replace(it) }))
+            WatchListeners({ added(it) }, { removed(it) }, { replaced(it) }))
     }
 
     private fun watch(provider: IResourcesProvider<*>?) {
@@ -290,7 +287,7 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
             provider.kind,
             provider.getWatchable()
                 as Supplier<Watchable<Watcher<in HasMetadata>>?>,
-            WatchListeners({ add(it) }, { remove(it) }, { replace(it) })
+            WatchListeners({ added(it) }, { removed(it) }, { replaced(it) })
         )
     }
 
@@ -320,7 +317,7 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
         return watch.stopWatchAll(namespacedProviders(namespace).map { it.kind })
     }
 
-    override fun add(resource: HasMetadata): Boolean {
+    override fun added(resource: HasMetadata): Boolean {
         val added = when (resource) {
             is CustomResourceDefinition ->
                 addResource(resource)
@@ -355,10 +352,10 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
         if (provider == null) {
             return false
         }
-        return provider.add(resource)
+        return provider.added(resource)
     }
 
-    override fun remove(resource: HasMetadata): Boolean {
+    override fun removed(resource: HasMetadata): Boolean {
         val removed = if (resource is CustomResourceDefinition) {
             removeResource(resource)
         } else {
@@ -392,7 +389,7 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
         if (provider == null) {
             return false
         }
-        return provider.remove(resource)
+        return provider.removed(resource)
     }
 
     override fun invalidate() {
@@ -402,7 +399,7 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
         modelChange.fireModified(this)
     }
 
-    override fun replace(resource: HasMetadata): Boolean {
+    override fun replaced(resource: HasMetadata): Boolean {
         val replaced = when(resource) {
             is CustomResourceDefinition ->
                 replace(ResourceKind.create(resource.spec), resource)
@@ -416,8 +413,8 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
     }
 
     private fun replace(kind: ResourceKind<out HasMetadata>, resource: HasMetadata): Boolean {
-        val replaceNamespaced = namespacedProviders[kind]?.replace(resource) ?: false
-        val replaceNonNamespaced = nonNamespacedProviders[kind]?.replace(resource) ?: false
+        val replaceNamespaced = namespacedProviders[kind]?.replaced(resource) ?: false
+        val replaceNonNamespaced = nonNamespacedProviders[kind]?.replaced(resource) ?: false
         return replaceNamespaced
                 || replaceNonNamespaced
     }
@@ -471,11 +468,11 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
         }
     }
 
-    override fun createOrReplace(resource: HasMetadata) {
+    override fun replace(resource: HasMetadata) {
         val kind = ResourceKind.create(resource)
         val scope = toResourcesIn(resource)
         val provider = getProvider(kind, scope) ?: return
-        provider.createOrReplace(resource)
+        provider.replace(resource)
     }
 
     override fun close() {

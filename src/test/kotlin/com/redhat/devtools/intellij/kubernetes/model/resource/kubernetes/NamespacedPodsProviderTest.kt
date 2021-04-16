@@ -189,7 +189,7 @@ class NamespacedPodsProviderTest {
         val pod = resource<Pod>("lord vader", "sith", uid)
         assertThat(provider.allResources).doesNotContain(pod)
         // when
-        val replaced = provider.replace(pod)
+        val replaced = provider.replaced(pod)
         // then
         assertThat(replaced).isTrue()
         assertThat(provider.allResources).contains(pod)
@@ -202,7 +202,7 @@ class NamespacedPodsProviderTest {
         val pod = resource<Pod>("darth vader", namespace)
         assertThat(provider.allResources).doesNotContain(pod)
         // when
-        val replaced = provider.replace(pod)
+        val replaced = provider.replaced(pod)
         // then
         assertThat(replaced).isFalse()
         assertThat(provider.allResources).doesNotContain(pod)
@@ -215,7 +215,7 @@ class NamespacedPodsProviderTest {
         val pod = resource<Pod>(name, "sith")
         assertThat(provider.allResources).doesNotContain(pod)
         // when
-        val replaced = provider.replace(pod)
+        val replaced = provider.replaced(pod)
         // then
         assertThat(replaced).isFalse()
         assertThat(provider.allResources).doesNotContain(pod)
@@ -227,7 +227,7 @@ class NamespacedPodsProviderTest {
         val pod = resource<Pod>("papa-smurf")
         assertThat(provider.allResources).doesNotContain(pod)
         // when
-        provider.add(pod)
+        provider.added(pod)
         // then
         assertThat(provider.allResources).contains(pod)
     }
@@ -238,7 +238,7 @@ class NamespacedPodsProviderTest {
         val pod = provider.allResources.elementAt(0)
         // when
         val size = provider.allResources.size
-        provider.add(pod)
+        provider.added(pod)
         // then
         assertThat(provider.allResources).contains(pod)
         assertThat(provider.allResources.size).isEqualTo(size)
@@ -249,10 +249,10 @@ class NamespacedPodsProviderTest {
         // given
         val instance1 = resource<Pod>("gargamel", "smurfington", "uid-1-2-3")
         val instance2 = resource<Pod>("gargamel", "smurfington", "uid-1-2-3")
-        provider.add(instance1)
+        provider.added(instance1)
         assertThat(provider.allResources).contains(instance1)
         // when
-        provider.add(instance2)
+        provider.added(instance2)
         // then
         assertThat(provider.allResources).doesNotContain(instance1)
         assertThat(provider.allResources).contains(instance2)
@@ -264,7 +264,7 @@ class NamespacedPodsProviderTest {
         val pod = resource<Pod>("papa-smurf")
         assertThat(provider.allResources).doesNotContain(pod)
         // when
-        val added = provider.add(pod)
+        val added = provider.added(pod)
         // then
         assertThat(added).isTrue()
     }
@@ -274,7 +274,7 @@ class NamespacedPodsProviderTest {
         // given
         val pod = provider.allResources.elementAt(0)
         // when
-        val added = provider.add(pod)
+        val added = provider.added(pod)
         // then
         assertThat(added).isFalse()
     }
@@ -284,7 +284,7 @@ class NamespacedPodsProviderTest {
         // given
         val pod = provider.allResources.elementAt(0)
         // when
-        provider.remove(pod)
+        provider.removed(pod)
         // then
         assertThat(provider.allResources).doesNotContain(pod)
     }
@@ -295,7 +295,7 @@ class NamespacedPodsProviderTest {
         val pod1 = provider.allResources.elementAt(0)
         val pod2 = resource<Pod>("skywalker", "jedi", pod1.metadata.uid)
         // when
-        provider.remove(pod2)
+        provider.removed(pod2)
         // then
         assertThat(provider.allResources).doesNotContain(pod1)
     }
@@ -305,7 +305,7 @@ class NamespacedPodsProviderTest {
         // given
         val pod = provider.allResources.elementAt(0)
         // when
-        val removed = provider.remove(pod)
+        val removed = provider.removed(pod)
         // then
         assertThat(removed).isTrue()
     }
@@ -317,7 +317,7 @@ class NamespacedPodsProviderTest {
         assertThat(provider.allResources).doesNotContain(pod)
         // when
         val size = provider.allResources.size
-        provider.remove(pod)
+        provider.removed(pod)
         // then
         assertThat(provider.allResources).doesNotContain(pod)
         assertThat(provider.allResources.size).isEqualTo(size)
@@ -328,7 +328,7 @@ class NamespacedPodsProviderTest {
         // given
         val pod = resource<Pod>("papa-smurf")
         // when
-        val removed = provider.remove(pod)
+        val removed = provider.removed(pod)
         // then
         assertThat(removed).isFalse()
     }

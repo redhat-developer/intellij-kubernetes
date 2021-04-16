@@ -118,15 +118,16 @@ interface IActiveContext<N: HasMetadata, C: KubernetesClient>: IContext {
      * @param resource the resource to add
      * @return true if the resource was added
      */
-    fun add(resource: HasMetadata): Boolean
+    fun added(resource: HasMetadata): Boolean
 
     /**
+     * Notifies this context that the given resource was removed on the cluster.
      * Removes the given resource from this context.
      *
      * @param resource the resource to remove
      * @return true if the resource was removed
      */
-    fun remove(resource: HasMetadata): Boolean
+    fun removed(resource: HasMetadata): Boolean
 
     /**
      * Removes all resources of the given kind in (the cache of) this context.
@@ -142,19 +143,28 @@ interface IActiveContext<N: HasMetadata, C: KubernetesClient>: IContext {
     fun invalidate()
 
     /**
-     * Replaces any existing resource with the given new version.
+     * Notifies the context that the given resource was replaced in the cluster.
+     * Replaces the resource with the given new version if it exists.
+     * Does nothing otherwiese.
+     *
      *
      * @param resource the new (version) of the resource
      * @return true if the resource was replaced
      */
-    fun replace(resource: HasMetadata): Boolean
+    fun replaced(resource: HasMetadata): Boolean
 
     /**
      * Closes and disposes this context.
      */
     fun close()
 
-    fun createOrReplace(resource: HasMetadata)
+    /**
+     * Replaces the given resource on the cluster.
+     * Updates on the cluster will be notified by the resource watch via [replaced]
+     *
+     * @see [replaced]
+     */
+    fun replace(resource: HasMetadata)
 
     fun getResource(resource: HasMetadata): HasMetadata
 }

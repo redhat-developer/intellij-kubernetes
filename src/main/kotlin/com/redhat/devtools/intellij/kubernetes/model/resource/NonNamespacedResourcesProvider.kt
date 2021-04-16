@@ -49,13 +49,14 @@ abstract class NonNamespacedResourcesProvider<R : HasMetadata, C : Client>(
         return getOperation().get()?.delete(toDelete) ?: false
     }
 
-    override fun createOrReplace(resource: HasMetadata) {
+    override fun replace(resource: HasMetadata): HasMetadata? {
         @Suppress("UNCHECKED_CAST")
-        val toCreateOrReplace = resource as? R
-        getOperation().get()?.createOrReplace(toCreateOrReplace)
+        val toReplace = resource as? R ?: return null
+        return getOperation().get()?.withName(toReplace.metadata.name)?.replace(toReplace)
     }
 
     protected open fun getOperation(): Supplier<out ResourceOperation<R>?> {
+        // default nop implementation
         return Supplier { null }
     }
 
