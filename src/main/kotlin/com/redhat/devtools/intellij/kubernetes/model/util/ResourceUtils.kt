@@ -75,9 +75,9 @@ fun HasMetadata.sameSelfLink(resource: HasMetadata): Boolean {
 fun HasMetadata.sameRevision(resource: HasMetadata): Boolean {
 	if (this.metadata?.resourceVersion == null
 		&& resource.metadata?.resourceVersion == null) {
-		return false
+		return true
 	}
-	return this.metadata?.resourceVersion != resource.metadata?.resourceVersion
+	return this.metadata?.resourceVersion == resource.metadata?.resourceVersion
 }
 
 /**

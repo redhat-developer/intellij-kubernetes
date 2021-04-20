@@ -12,39 +12,33 @@ package com.redhat.devtools.intellij.kubernetes.ui.editor
 
 import com.intellij.openapi.application.WriteAction
 import com.intellij.openapi.components.ServiceManager
-import com.intellij.openapi.diagnostic.logger
-import com.intellij.openapi.editor.Document
 import com.intellij.openapi.fileEditor.FileDocumentManager
-import com.intellij.openapi.fileEditor.FileDocumentSynchronizationVetoer
 import com.intellij.openapi.fileEditor.FileEditor
 import com.intellij.openapi.fileEditor.FileEditorManager
-import com.intellij.openapi.fileEditor.FileEditorManagerEvent
-import com.intellij.openapi.fileEditor.FileEditorManagerListener
-import com.intellij.openapi.progress.Progressive
 import com.intellij.openapi.project.Project
-import com.intellij.openapi.ui.Messages
 import com.intellij.openapi.util.Key
+import com.intellij.openapi.vfs.LocalFileSystem
 import com.intellij.openapi.vfs.VirtualFile
-import com.redhat.devtools.intellij.common.CommonConstants
 import com.redhat.devtools.intellij.common.editor.AllowNonProjectEditing
 import com.redhat.devtools.intellij.kubernetes.model.IResourceModel
-import com.redhat.devtools.intellij.kubernetes.model.Notification
-import com.redhat.devtools.intellij.kubernetes.model.util.MultiResourceException
 import com.redhat.devtools.intellij.kubernetes.model.util.sameRevision
-import com.redhat.devtools.intellij.kubernetes.model.util.toMessage
-import com.redhat.devtools.intellij.kubernetes.model.util.toResource
 import com.redhat.devtools.intellij.kubernetes.ui.FileUserData
 import io.fabric8.kubernetes.api.model.HasMetadata
-import io.fabric8.kubernetes.client.KubernetesClientException
+import io.fabric8.kubernetes.api.model.Namespace
 import io.fabric8.kubernetes.client.utils.Serialization
-import org.apache.log4j.lf5.util.ResourceUtils
+import org.apache.commons.io.FileUtils
+import org.jetbrains.yaml.YAMLFileType
 import org.slf4j.LoggerFactory
+import java.io.File
 import java.io.IOException
+import java.nio.charset.StandardCharsets
 
 object ResourceEditor {
 
-    private val KEY_RESOURCE = Key<HasMetadata>("RESOURCE")
+    val KEY_RESOURCE = Key<HasMetadata>("RESOURCE")
+
     private val LOGGER = LoggerFactory.getLogger(ResourceEditor::class.java)
+    private val model = ServiceManager.getService(IResourceModel::class.java)
 
     @Throws(IOException::class)
     fun open(project: Project, resource: HasMetadata) {
@@ -52,7 +46,7 @@ object ResourceEditor {
         FileUserData(file)
             .put(AllowNonProjectEditing.ALLOW_NON_PROJECT_EDITING, true);
         val editor = openEditor(file, project)
-        putUserDataResource(resource, editor)
+        putUserData(KEY_RESOURCE, resource, editor)
     }
 
     private fun openEditor(virtualFile: VirtualFile?, project: Project): FileEditor? {
@@ -63,122 +57,93 @@ object ResourceEditor {
         return editors.getOrNull(0)
     }
 
-    fun getUserDataResource(editor: FileEditor): HasMetadata? {
-        return editor?.getUserData(KEY_RESOURCE)
+    fun isFile(file: VirtualFile?): Boolean {
+        return ResourceEditorFile.matches(file)
     }
 
-    fun putUserDataResource(resource: HasMetadata?, editor: FileEditor?) {
-        editor?.putUserData(KEY_RESOURCE, resource)
+    fun delete(file: VirtualFile) {
+        ResourceEditorFile.delete(file)
     }
 
-    class ManagerListener(private val project: Project) : FileEditorManagerListener {
+    fun create(resource: HasMetadata, file: File) {
+        ResourceEditorFile.create(resource, file)
+    }
 
-        private val model = ServiceManager.getService(IResourceModel::class.java)
+    fun <T> getUserData(key: Key<T>, editor: FileEditor?): T? {
+        return editor?.getUserData(key)
+    }
 
-        override fun selectionChanged(event: FileEditorManagerEvent) {
-            if (event.newEditor == null
-                || !ResourceEditorFile.matches(event.newFile)
-            ) {
-                return
-            }
-            val editor = event.newEditor!!
-            val resource = getResource(editor) ?: return
-            val latestRevision = model.resource(resource) ?: return
-            if (!resource.sameRevision(latestRevision)) {
-                ReloadNotification.show(editor, resource, project)
+    fun <T> putUserData(key: Key<T>, value: T?, editor: FileEditor?) {
+        editor?.putUserData(key, value)
+    }
+
+    fun compareToCluster(editor: FileEditor, project: Project) {
+        val resource = getResource(editor) ?: return
+        val latestRevision = model.resource(resource)
+        if (latestRevision == null) {
+            DeletedNotification.show(editor, resource, project)
+        } else if (!resource.sameRevision(latestRevision)) {
+            ReloadNotification.show(editor, resource, project)
+        }
+    }
+
+    private fun getResource(editor: FileEditor): HasMetadata? {
+        var resource = getUserData(KEY_RESOURCE, editor)
+        if (resource == null
+            && editor.file != null
+        ) {
+            val document = FileDocumentManager.getInstance().getDocument(editor.file!!)
+            if (document?.text != null) {
+                resource = Serialization.unmarshal(document.text, HasMetadata::class.java)
+                putUserData(KEY_RESOURCE, resource, editor)
             }
         }
+        return resource
+    }
 
-        override fun fileClosed(source: FileEditorManager, file: VirtualFile) {
+    object ResourceEditorFile {
+
+        private val EXTENSION = YAMLFileType.DEFAULT_EXTENSION
+
+        fun get(resource: HasMetadata): VirtualFile? {
+            val name = getName(resource)
+            val file = File(FileUtils.getTempDirectory(), name)
+            if (!file.exists()) {
+                create(resource, file)
+            }
+            return LocalFileSystem.getInstance().refreshAndFindFileByIoFile(file)
+        }
+
+        fun matches(file: VirtualFile?): Boolean {
+            return file?.path?.endsWith(EXTENSION, true) ?: false
+                    && file?.path?.startsWith(FileUtils.getTempDirectoryPath()) ?: false
+        }
+
+        fun create(resource: HasMetadata, file: File) {
+            val content = Serialization.asYaml(resource)
+            FileUtils.write(file, content, StandardCharsets.UTF_8, false)
+        }
+
+        fun delete(file: VirtualFile) {
             WriteAction.compute<Unit, Exception> { file.delete(this) }
         }
 
-        private fun getResource(editor: FileEditor): HasMetadata? {
-            var resource = getUserDataResource(editor)
-            if (resource == null
-                && editor.file != null
-            ) {
-                val document = FileDocumentManager.getInstance().getDocument(editor.file!!)
-                if (document?.text != null) {
-                    resource = Serialization.unmarshal(document.text, HasMetadata::class.java)
-                    putUserDataResource(resource, editor)
-                }
-            }
-            return resource
-        }
-    }
-
-    class SaveListener : FileDocumentSynchronizationVetoer() {
-
-        override fun maySaveDocument(document: Document, isSaveExplicit: Boolean): Boolean {
-            if (!isSaveExplicit) {
-                return true
-            }
-            val file = FileDocumentManager.getInstance().getFile(document) ?: return true
-            val fileData = FileUserData(file)
-            if (!isModified(document, fileData)) {
-                return true
-            }
-            try {
-                val resource: HasMetadata? = toResource(document.text)
-                if (resource == null) {
-                    Notification().error(
-                        "Invalid content",
-                        "Could not parse ${file.presentableUrl}. Only valid Json or Yaml supported."
-                    )
-                    return true
-                }
-                val resourceModel = ServiceManager.getService(IResourceModel::class.java) ?: return true
-                val cluster = resourceModel.getCurrentContext()?.masterUrl?.toString()
-                if (confirmSave(resource, cluster)) {
-                    save(resource, resourceModel, fileData, document.modificationStamp, cluster)
-                }
-                return true
-            } catch (e: KubernetesClientException) {
-                logger<ResourceUtils>().debug(
-                    "Could not parse ${file.presentableUrl}. Only valid Json or Yaml supported.",
-                    e.cause
-                )
-                return true
-            }
-        }
-
-        private fun save(
-            resource: HasMetadata,
-            resourceModel: IResourceModel,
-            fileData: FileUserData,
-            modificationStamp: Long,
-            cluster: String?
-        ) {
-            com.redhat.devtools.intellij.kubernetes.actions.run("Saving to cluster...", true,
-                Progressive {
-                    try {
-                        //Executors.newCachedThreadPool().submit { resourceModel.createOrReplace(resource) }
-                        resourceModel.replace(resource)
-                        fileData.put(CommonConstants.LAST_MODIFICATION_STAMP, modificationStamp)
-                    } catch (e: MultiResourceException) {
-                        val message = "Could not save ${resource.metadata.name} to cluster at $cluster"
-                        logger<SaveListener>().error(message, e)
-                        Notification().error("Save Error", message)
+        private fun getName(resource: HasMetadata): String {
+            val name = when(resource) {
+                is Namespace,
+                is Project
+                -> "${resource.metadata.name}"
+                else
+                -> {
+                    if (resource.metadata.namespace != null) {
+                        "${resource.metadata.name}@${resource.metadata.namespace}"
+                    } else {
+                        "${resource.metadata.name}"
                     }
-                })
+                }
+            }
+            return "$name.${EXTENSION}"
         }
-
-        private fun isModified(document: Document, fileData: FileUserData): Boolean {
-            val lastModificationStamp = fileData.get(CommonConstants.LAST_MODIFICATION_STAMP) ?: return true
-            return lastModificationStamp == null
-                    || lastModificationStamp != document.modificationStamp
-        }
-
-        private fun confirmSave(resource: HasMetadata, cluster: String?): Boolean {
-            val answer = Messages.showYesNoDialog(
-                "Save ${toMessage(resource, 30)} ${if (cluster != null) "to $cluster" else ""}?",
-                "Save resource?",
-                Messages.getQuestionIcon()
-            )
-            return answer == Messages.OK
-        }
-
     }
 }
 

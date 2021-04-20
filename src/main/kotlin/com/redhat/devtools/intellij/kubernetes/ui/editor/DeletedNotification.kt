@@ -11,19 +11,17 @@
 package com.redhat.devtools.intellij.kubernetes.ui.editor
 
 import com.intellij.openapi.editor.colors.EditorColors
-import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.fileEditor.FileEditor
 import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Key
 import com.intellij.ui.EditorNotificationPanel
 import io.fabric8.kubernetes.api.model.HasMetadata
-import java.io.File
 import javax.swing.JComponent
 
-object ReloadNotification {
+object DeletedNotification {
 
-    private val KEY_PANEL = Key<JComponent>(ReloadNotification::javaClass.name)
+    private val KEY_PANEL = Key<JComponent>(DeletedNotification::javaClass.name)
 
     fun show(editor: FileEditor, resource: HasMetadata, project: Project) {
         editor.showNotification(KEY_PANEL, { createPanel(editor, resource, project) }, project)
@@ -31,16 +29,13 @@ object ReloadNotification {
 
     private fun createPanel(editor: FileEditor, resource: HasMetadata, project: Project): EditorNotificationPanel {
         val panel = EditorNotificationPanel(EditorColors.NOTIFICATION_BACKGROUND)
-        panel.setText("${resource.metadata.name} changed on server. Reload content?")
-        panel.createActionLabel("Reload now") {
+        panel.setText("${resource.metadata.name} was deleted on server. Keep content?")
+        panel.createActionLabel("Close Editor") {
             val file = editor.file
             if (file != null
                 && !project.isDisposed) {
-                ResourceEditor.create(resource, File(file.canonicalPath))
-                file.refresh(false, true)
-                ResourceEditor.putUserData(ResourceEditor.KEY_RESOURCE, null, editor)
-                FileDocumentManager.getInstance().reloadFiles(editor.file!!)
-                FileEditorManager.getInstance(project).removeTopComponent(editor, panel)
+                FileEditorManager.getInstance(project).closeFile(file)
+                ResourceEditor.delete(file)
             }
         }
 
