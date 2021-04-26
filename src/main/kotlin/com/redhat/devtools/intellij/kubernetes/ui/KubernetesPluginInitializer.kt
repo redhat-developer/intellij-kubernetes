@@ -25,7 +25,6 @@ class KubernetesPluginInitializer : StartupActivity {
         )
         val selectedEditor = FileEditorManager.getInstance(project).selectedEditor ?: return
         if (ResourceEditor.isResourceEditor(selectedEditor)) {
-            ResourceEditor.watchResource(selectedEditor, project)
             ResourceEditor.showNotifications(selectedEditor, project)
         }
     }

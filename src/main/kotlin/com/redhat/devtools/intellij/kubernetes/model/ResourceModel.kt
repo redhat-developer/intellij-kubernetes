@@ -34,15 +34,11 @@ interface IResourceModel {
     fun resources(definition: CustomResourceDefinition): ListableCustomResources
     fun watch(kind: ResourceKind<out HasMetadata>)
     fun watch(definition: CustomResourceDefinition)
-    fun watch(resource: HasMetadata)
     fun stopWatch(kind: ResourceKind<out HasMetadata>)
     fun stopWatch(definition: CustomResourceDefinition)
-    fun stopWatch(resource: HasMetadata)
     fun invalidate(element: Any?)
     fun delete(resources: List<HasMetadata>)
-    fun replace(resource: HasMetadata)
     fun addListener(listener: ModelChangeObservable.IResourceChangeListener)
-    fun resource(resource: HasMetadata): HasMetadata?
 }
 
 /**
@@ -146,20 +142,12 @@ open class ResourceModel : IResourceModel {
         contexts.current?.watch(definition)
     }
 
-    override fun watch(resource: HasMetadata) {
-        contexts.current?.watch(resource)
-    }
-
     override fun stopWatch(kind: ResourceKind<out HasMetadata>) {
         contexts.current?.stopWatch(kind)
     }
 
     override fun stopWatch(definition: CustomResourceDefinition) {
         contexts.current?.stopWatch(definition)
-    }
-
-    override fun stopWatch(resource: HasMetadata) {
-        contexts.current?.stopWatch(resource)
     }
 
     override fun invalidate(element: Any?) {
@@ -194,16 +182,7 @@ open class ResourceModel : IResourceModel {
         contexts.current?.delete(resources)
     }
 
-    override fun replace(resource: HasMetadata) {
-        contexts.current?.replace(resource)
-    }
-
     private fun isNotFound(e: KubernetesClientException): Boolean {
         return e.code == 404
     }
-
-    override fun resource(resource: HasMetadata): HasMetadata? {
-        return contexts.current?.getResource(resource)
-    }
-
 }

@@ -20,17 +20,15 @@ class EditorListener(private val project: Project) : FileEditorManagerListener {
 
         override fun selectionChanged(event: FileEditorManagerEvent) {
             if (event.newEditor == null
-                || !ResourceEditor.isFile(event.newFile)
-            ) {
+                || !ResourceEditor.isFile(event.newFile)) {
                 return
             }
             val editor = event.newEditor!!
-            ResourceEditor.watchResource(editor, project)
             ResourceEditor.showNotifications(editor, project)
         }
 
         override fun fileClosed(source: FileEditorManager, file: VirtualFile) {
-            ResourceEditor.delete(source, file)
+            ResourceEditor.delete(source, file, project)
         }
     }
 

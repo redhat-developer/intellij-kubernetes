@@ -23,7 +23,16 @@ interface IActiveContext<N: HasMetadata, C: KubernetesClient>: IContext {
      * The scope in which resources may exist.
      */
     enum class ResourcesIn {
-        CURRENT_NAMESPACE, ANY_NAMESPACE, NO_NAMESPACE
+        CURRENT_NAMESPACE, ANY_NAMESPACE, NO_NAMESPACE;
+
+        companion object {
+            fun valueOf(resource: HasMetadata, currentNamespace: String?): ResourcesIn {
+                return when (resource.metadata.namespace) {
+                    currentNamespace -> CURRENT_NAMESPACE
+                    else -> ANY_NAMESPACE
+                }
+            }
+        }
     }
 
     /**
@@ -96,13 +105,6 @@ interface IActiveContext<N: HasMetadata, C: KubernetesClient>: IContext {
     fun watch(definition: CustomResourceDefinition)
 
     /**
-     * Watches the given resource
-     *
-     * @param resource the resource to watch
-     */
-    fun <R : HasMetadata> watch(resource: R)
-
-    /**
      * Stops watching resources of the given resource kind
      *
      * @param kind the kind of resources to ignore
@@ -118,13 +120,6 @@ interface IActiveContext<N: HasMetadata, C: KubernetesClient>: IContext {
      * @see CustomResourceDefinitionSpec
      */
     fun stopWatch(definition: CustomResourceDefinition)
-
-    /**
-     * Stops watching the given resource. Does nothing if the resource isn't watched.
-     *
-     * @param resource the resource that should not be watched any more
-     */
-    fun stopWatch(resource: HasMetadata)
 
     /**
      * Adds the given resource to this context.
@@ -171,14 +166,4 @@ interface IActiveContext<N: HasMetadata, C: KubernetesClient>: IContext {
      * Closes and disposes this context.
      */
     fun close()
-
-    /**
-     * Replaces the given resource on the cluster.
-     * Updates on the cluster will be notified by the resource watch via [replaced]
-     *
-     * @see [replaced]
-     */
-    fun replace(resource: HasMetadata)
-
-    fun getResource(resource: HasMetadata): HasMetadata
 }

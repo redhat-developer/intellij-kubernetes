@@ -10,15 +10,18 @@
  ******************************************************************************/
 package com.redhat.devtools.intellij.kubernetes.ui.editor
 
-import com.intellij.openapi.components.ServiceManager
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.editor.Document
 import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.fileEditor.FileDocumentSynchronizationVetoer
+import com.intellij.openapi.fileEditor.FileEditor
+import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.progress.Progressive
+import com.intellij.openapi.project.Project
+import com.intellij.openapi.project.ProjectManager
 import com.intellij.openapi.ui.Messages
+import com.intellij.openapi.vfs.VirtualFile
 import com.redhat.devtools.intellij.common.CommonConstants
-import com.redhat.devtools.intellij.kubernetes.model.IResourceModel
 import com.redhat.devtools.intellij.kubernetes.model.Notification
 import com.redhat.devtools.intellij.kubernetes.model.util.MultiResourceException
 import com.redhat.devtools.intellij.kubernetes.model.util.toMessage
@@ -35,9 +38,6 @@ class SaveListener : FileDocumentSynchronizationVetoer() {
             }
             val file = FileDocumentManager.getInstance().getFile(document) ?: return true
             val fileData = FileUserData(file)
-            if (!isModified(document, fileData)) {
-                return true
-            }
             try {
                 val resource: HasMetadata? = toResource(document.text)
                 if (resource == null) {
@@ -47,10 +47,14 @@ class SaveListener : FileDocumentSynchronizationVetoer() {
                     )
                     return true
                 }
-                val resourceModel = ServiceManager.getService(IResourceModel::class.java) ?: return true
-                val cluster = resourceModel.getCurrentContext()?.masterUrl?.toString()
-                if (confirmSave(resource, cluster)) {
-                    save(resource, resourceModel, fileData, document.modificationStamp, cluster)
+                val editor = getEditor(file)
+                if (editor != null) {
+                    val editorModel = ResourceEditor.getEditorModel(editor.second, editor.first)
+                    if (editorModel != null) {
+                        if (confirmSave(resource, editorModel.cluster.toString())) {
+                            save(resource, editorModel, fileData, document.modificationStamp, editorModel.cluster.toString())
+                        }
+                    }
                 }
                 return true
             } catch (e: KubernetesClientException) {
@@ -64,7 +68,7 @@ class SaveListener : FileDocumentSynchronizationVetoer() {
 
         private fun save(
             resource: HasMetadata,
-            resourceModel: IResourceModel,
+            editorModel: ResourceEditorModel,
             fileData: FileUserData,
             modificationStamp: Long,
             cluster: String?
@@ -72,7 +76,7 @@ class SaveListener : FileDocumentSynchronizationVetoer() {
             com.redhat.devtools.intellij.kubernetes.actions.run("Saving to cluster...", true,
                 Progressive {
                     try {
-                        resourceModel.replace(resource)
+                        editorModel.replace(resource)
                         fileData.put(CommonConstants.LAST_MODIFICATION_STAMP, modificationStamp)
                     } catch (e: MultiResourceException) {
                         val message = "Could not save ${resource.metadata.name} to cluster at $cluster"
@@ -80,11 +84,6 @@ class SaveListener : FileDocumentSynchronizationVetoer() {
                         Notification().error("Save Error", message)
                     }
                 })
-        }
-
-        private fun isModified(document: Document, fileData: FileUserData): Boolean {
-            val lastModificationStamp = fileData.get(CommonConstants.LAST_MODIFICATION_STAMP) ?: return true
-            return lastModificationStamp != document.modificationStamp
         }
 
         private fun confirmSave(resource: HasMetadata, cluster: String?): Boolean {
@@ -98,4 +97,14 @@ class SaveListener : FileDocumentSynchronizationVetoer() {
             return answer == Messages.OK
         }
 
+    private fun getEditor(file: VirtualFile): Pair<Project, FileEditor>? {
+        return ProjectManager.getInstance().openProjects
+            .filter { project -> !project.isInitialized || project.isDisposed }
+            .flatMap { project ->
+                FileEditorManager.getInstance(project).getEditors(file).toList()
+                    .mapNotNull { Pair<Project, FileEditor>(project, it) }
+            }
+            .firstOrNull()
     }
+
+}
