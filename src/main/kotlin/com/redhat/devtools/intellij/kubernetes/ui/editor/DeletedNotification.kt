@@ -35,7 +35,7 @@ object DeletedNotification {
             if (file != null
                 && !project.isDisposed) {
                 FileEditorManager.getInstance(project).closeFile(file)
-                ResourceEditor.delete(file)
+                ResourceEditor.delete(FileEditorManager.getInstance(project), file)
             }
         }
 

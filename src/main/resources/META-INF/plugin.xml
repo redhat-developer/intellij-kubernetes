@@ -46,8 +46,8 @@
     </extensions>
 
     <extensionPoints>
-        <extensionPoint name="resourceProvider"
-                        interface="com.redhat.devtools.intellij.kubernetes.model.resource.IResourcesProviderFactory"/>
+        <extensionPoint name="resourceOperators"
+                        interface="com.redhat.devtools.intellij.kubernetes.model.resource.IResourceOperatorFactory"/>
         <extensionPoint name="structureContribution"
                         interface="com.redhat.devtools.intellij.kubernetes.tree.ITreeStructureContributionFactory"/>
     </extensionPoints>

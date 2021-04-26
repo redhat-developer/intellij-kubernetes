@@ -15,26 +15,26 @@ import io.fabric8.kubernetes.api.model.NamedContext
 import io.fabric8.kubernetes.api.model.Namespace
 import io.fabric8.kubernetes.client.NamespacedKubernetesClient
 import com.redhat.devtools.intellij.kubernetes.model.IModelChangeObservable
-import com.redhat.devtools.intellij.kubernetes.model.resource.IResourcesProvider
+import com.redhat.devtools.intellij.kubernetes.model.resource.IResourceOperator
 import com.redhat.devtools.intellij.kubernetes.model.resource.ResourceKind
-import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.AllPodsProvider
-import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.ConfigMapsProvider
-import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.CronJobsProvider
-import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.CustomResourceDefinitionsProvider
-import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.DaemonSetsProvider
-import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.DeploymentsProvider
-import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.EndpointsProvider
-import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.IngressProvider
-import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.JobsProvider
-import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.NamespacedPodsProvider
-import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.NamespacesProvider
-import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.NodesProvider
-import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.PersistentVolumeClaimsProvider
-import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.PersistentVolumesProvider
-import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.SecretsProvider
-import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.ServicesProvider
-import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.StatefulSetsProvider
-import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.StorageClassesProvider
+import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.AllPodsOperator
+import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.ConfigMapsOperator
+import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.CronJobsOperator
+import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.CustomResourceDefinitionsOperator
+import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.DaemonSetsOperator
+import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.DeploymentsOperator
+import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.EndpointsOperator
+import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.IngressOperator
+import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.JobsOperator
+import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.NamespacedPodsOperator
+import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.NamespacesOperator
+import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.NodesOperator
+import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.PersistentVolumeClaimsOperator
+import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.PersistentVolumesOperator
+import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.SecretsOperator
+import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.ServicesOperator
+import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.StatefulSetsOperator
+import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.StorageClassesOperator
 import com.redhat.devtools.intellij.kubernetes.model.util.Clients
 
 open class KubernetesContext(
@@ -43,33 +43,33 @@ open class KubernetesContext(
 	context: NamedContext
 ) : ActiveContext<Namespace, NamespacedKubernetesClient>(modelChange, client, context) {
 
-	override fun getInternalResourceProviders(clients: Clients<NamespacedKubernetesClient>)
-			: List<IResourcesProvider<out HasMetadata>> {
+	override fun getInternalResourceOperators(clients: Clients<NamespacedKubernetesClient>)
+			: List<IResourceOperator<out HasMetadata>> {
 		val client = clients.get()
 		return listOf(
-				NamespacesProvider(client),
-				NodesProvider(client),
-				AllPodsProvider(client),
-				DeploymentsProvider(clients.getApps()),
-				StatefulSetsProvider(clients.getApps()),
-				DaemonSetsProvider(clients.getApps()),
-				JobsProvider(clients.getBatch()),
-				CronJobsProvider(clients.getBatch()),
-				NamespacedPodsProvider(client),
-				ServicesProvider(client),
-				EndpointsProvider(client),
-				PersistentVolumesProvider(client),
-				PersistentVolumeClaimsProvider(client),
-				StorageClassesProvider(clients.getStorage()),
-				ConfigMapsProvider(client),
-				SecretsProvider(client),
-				IngressProvider(clients.getExtensions()),
-				CustomResourceDefinitionsProvider(client)
+				NamespacesOperator(client),
+				NodesOperator(client),
+				AllPodsOperator(client),
+				DeploymentsOperator(clients.getApps()),
+				StatefulSetsOperator(clients.getApps()),
+				DaemonSetsOperator(clients.getApps()),
+				JobsOperator(clients.getBatch()),
+				CronJobsOperator(clients.getBatch()),
+				NamespacedPodsOperator(client),
+				ServicesOperator(client),
+				EndpointsOperator(client),
+				PersistentVolumesOperator(client),
+				PersistentVolumeClaimsOperator(client),
+				StorageClassesOperator(clients.getStorage()),
+				ConfigMapsOperator(client),
+				SecretsOperator(client),
+				IngressOperator(clients.getExtensions()),
+				CustomResourceDefinitionsOperator(client)
 		)
 	}
 
 	override fun getNamespacesKind(): ResourceKind<Namespace> {
-		return NamespacesProvider.KIND
+		return NamespacesOperator.KIND
 	}
 
 	override fun isOpenShift() = false

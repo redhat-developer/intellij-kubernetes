@@ -84,8 +84,7 @@ class SaveListener : FileDocumentSynchronizationVetoer() {
 
         private fun isModified(document: Document, fileData: FileUserData): Boolean {
             val lastModificationStamp = fileData.get(CommonConstants.LAST_MODIFICATION_STAMP) ?: return true
-            return lastModificationStamp == null
-                    || lastModificationStamp != document.modificationStamp
+            return lastModificationStamp != document.modificationStamp
         }
 
         private fun confirmSave(resource: HasMetadata, cluster: String?): Boolean {

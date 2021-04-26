@@ -14,16 +14,19 @@ import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.fileEditor.FileEditorManagerListener
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.startup.StartupActivity
-import com.redhat.devtools.intellij.kubernetes.ui.editor.ManagerListener
+import com.redhat.devtools.intellij.kubernetes.ui.editor.EditorListener
 import com.redhat.devtools.intellij.kubernetes.ui.editor.ResourceEditor
 
 class KubernetesPluginInitializer : StartupActivity {
 
     override fun runActivity(project: Project) {
         project.messageBus.connect().subscribe(FileEditorManagerListener.FILE_EDITOR_MANAGER,
-            ManagerListener(project)
+            EditorListener(project)
         )
         val selectedEditor = FileEditorManager.getInstance(project).selectedEditor ?: return
-        ResourceEditor.compareToCluster(selectedEditor, project)
+        if (ResourceEditor.isResourceEditor(selectedEditor)) {
+            ResourceEditor.watchResource(selectedEditor, project)
+            ResourceEditor.showNotifications(selectedEditor, project)
+        }
     }
 }

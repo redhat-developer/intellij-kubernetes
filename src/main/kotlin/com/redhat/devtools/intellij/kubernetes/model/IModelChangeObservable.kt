@@ -27,9 +27,12 @@ open class ModelChangeObservable: IModelChangeObservable {
         fun modified(modified: Any) = Unit
     }
 
-    private var listeners = mutableListOf<IResourceChangeListener>()
+    protected open val listeners = mutableListOf<IResourceChangeListener>()
 
     override fun addListener(listener: IResourceChangeListener) {
+        if (listeners.contains(listener)) {
+            return
+        }
         listeners.add(listener)
     }
 

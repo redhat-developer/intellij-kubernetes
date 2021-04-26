@@ -11,6 +11,7 @@
 package com.redhat.devtools.intellij.kubernetes.model
 
 import com.intellij.openapi.diagnostic.logger
+import com.redhat.devtools.intellij.kubernetes.model.ResourceWatch.WatchListeners
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.apiextensions.v1beta1.CustomResourceDefinition
 import io.fabric8.kubernetes.client.KubernetesClient
@@ -33,8 +34,10 @@ interface IResourceModel {
     fun resources(definition: CustomResourceDefinition): ListableCustomResources
     fun watch(kind: ResourceKind<out HasMetadata>)
     fun watch(definition: CustomResourceDefinition)
+    fun watch(resource: HasMetadata)
     fun stopWatch(kind: ResourceKind<out HasMetadata>)
     fun stopWatch(definition: CustomResourceDefinition)
+    fun stopWatch(resource: HasMetadata)
     fun invalidate(element: Any?)
     fun delete(resources: List<HasMetadata>)
     fun replace(resource: HasMetadata)
@@ -143,12 +146,20 @@ open class ResourceModel : IResourceModel {
         contexts.current?.watch(definition)
     }
 
+    override fun watch(resource: HasMetadata) {
+        contexts.current?.watch(resource)
+    }
+
     override fun stopWatch(kind: ResourceKind<out HasMetadata>) {
         contexts.current?.stopWatch(kind)
     }
 
     override fun stopWatch(definition: CustomResourceDefinition) {
         contexts.current?.stopWatch(definition)
+    }
+
+    override fun stopWatch(resource: HasMetadata) {
+        contexts.current?.stopWatch(resource)
     }
 
     override fun invalidate(element: Any?) {

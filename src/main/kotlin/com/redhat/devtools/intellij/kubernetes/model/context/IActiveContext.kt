@@ -82,28 +82,35 @@ interface IActiveContext<N: HasMetadata, C: KubernetesClient>: IContext {
     fun getAllResources(definition: CustomResourceDefinition): Collection<GenericCustomResource>
 
     /**
-     * Watches resources of the given resource kind
+     * Watches all resources of the given resource kind
      *
      * @param kind the kind of resources to ignore
      */
     fun watch(kind: ResourceKind<out HasMetadata>)
 
     /**
-     * Watches resources of the kind specified by the given custom resource definition
+     * Watches all resources of the kind specified by the given custom resource definition
      *
      * @param definition the custom resource definition that specifies the custom resources to watch
      */
     fun watch(definition: CustomResourceDefinition)
 
     /**
-     * Ignores (stops watching) resources of the given resource kind
+     * Watches the given resource
+     *
+     * @param resource the resource to watch
+     */
+    fun <R : HasMetadata> watch(resource: R)
+
+    /**
+     * Stops watching resources of the given resource kind
      *
      * @param kind the kind of resources to ignore
      */
     fun stopWatch(kind: ResourceKind<out HasMetadata>)
 
     /**
-     * Ignores (stops watching) resources of the kind specified by the given custom resource definition
+     * Stops watching resources of the kind specified by the given custom resource definition
      *
      * @param definition the custom resource definition that specifies the custom resources to watch
      *
@@ -111,6 +118,13 @@ interface IActiveContext<N: HasMetadata, C: KubernetesClient>: IContext {
      * @see CustomResourceDefinitionSpec
      */
     fun stopWatch(definition: CustomResourceDefinition)
+
+    /**
+     * Stops watching the given resource. Does nothing if the resource isn't watched.
+     *
+     * @param resource the resource that should not be watched any more
+     */
+    fun stopWatch(resource: HasMetadata)
 
     /**
      * Adds the given resource to this context.
