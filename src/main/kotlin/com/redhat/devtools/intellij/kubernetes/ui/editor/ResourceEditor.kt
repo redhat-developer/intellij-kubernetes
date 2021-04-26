@@ -19,12 +19,16 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Key
 import com.intellij.openapi.vfs.LocalFileSystem
 import com.intellij.openapi.vfs.VirtualFile
+import com.intellij.ui.EditorNotificationPanel
 import com.redhat.devtools.intellij.common.editor.AllowNonProjectEditing
 import com.redhat.devtools.intellij.kubernetes.model.IResourceModel
+import com.redhat.devtools.intellij.kubernetes.model.ModelChangeObservable
+import com.redhat.devtools.intellij.kubernetes.model.ResourceWatch.WatchListeners
 import com.redhat.devtools.intellij.kubernetes.model.util.sameRevision
 import com.redhat.devtools.intellij.kubernetes.ui.FileUserData
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.Namespace
+import io.fabric8.kubernetes.client.Watch
 import io.fabric8.kubernetes.client.utils.Serialization
 import org.apache.commons.io.FileUtils
 import org.jetbrains.yaml.YAMLFileType
@@ -32,10 +36,11 @@ import org.slf4j.LoggerFactory
 import java.io.File
 import java.io.IOException
 import java.nio.charset.StandardCharsets
+import javax.swing.JComponent
 
 object ResourceEditor {
 
-    val KEY_RESOURCE = Key<HasMetadata>("RESOURCE")
+    val KEY_RESOURCE = Key<HasMetadata>("${ResourceEditor::class.java.name}.RESOURCE")
 
     private val LOGGER = LoggerFactory.getLogger(ResourceEditor::class.java)
     private val model = ServiceManager.getService(IResourceModel::class.java)
@@ -45,8 +50,9 @@ object ResourceEditor {
         val file = ResourceEditorFile.get(resource)
         FileUserData(file)
             .put(AllowNonProjectEditing.ALLOW_NON_PROJECT_EDITING, true);
-        val editor = openEditor(file, project)
+        val editor = openEditor(file, project) ?: return
         putUserData(KEY_RESOURCE, resource, editor)
+        watchResource(editor, project)
     }
 
     private fun openEditor(virtualFile: VirtualFile?, project: Project): FileEditor? {
@@ -57,12 +63,27 @@ object ResourceEditor {
         return editors.getOrNull(0)
     }
 
+    fun isResourceEditor(editor: FileEditor): Boolean {
+        return isFile(editor.file)
+    }
+
     fun isFile(file: VirtualFile?): Boolean {
         return ResourceEditorFile.matches(file)
     }
 
-    fun delete(file: VirtualFile) {
+    fun delete(manager: FileEditorManager, file: VirtualFile) {
+        val editor = manager.getEditors(file).firstOrNull()
+        stopWatch(editor)
         ResourceEditorFile.delete(file)
+    }
+
+    private fun stopWatch(editor: FileEditor?) {
+        if (editor != null) {
+            val resource = getResource(editor)
+            if (resource != null) {
+                model.stopWatch(resource)
+            }
+        }
     }
 
     fun create(resource: HasMetadata, file: File) {
@@ -77,13 +98,34 @@ object ResourceEditor {
         editor?.putUserData(key, value)
     }
 
-    fun compareToCluster(editor: FileEditor, project: Project) {
+    fun showNotifications(editor: FileEditor, project: Project) {
         val resource = getResource(editor) ?: return
         val latestRevision = model.resource(resource)
         if (latestRevision == null) {
             DeletedNotification.show(editor, resource, project)
         } else if (!resource.sameRevision(latestRevision)) {
             ReloadNotification.show(editor, resource, project)
+        }
+    }
+
+    fun watchResource(editor: FileEditor, project: Project) {
+        val resource = getResource(editor) ?: return
+        model.addListener(onResourceChanged(editor, resource, project))
+        model.watch(resource)
+    }
+
+    private fun onResourceChanged(editor: FileEditor, resource: HasMetadata, project: Project): ModelChangeObservable.IResourceChangeListener {
+        return object: ModelChangeObservable.IResourceChangeListener {
+            override fun added(added: Any) {
+            }
+
+            override fun removed(removed: Any) {
+                DeletedNotification.show(editor, resource, project)
+            }
+
+            override fun modified(modified: Any) {
+                ReloadNotification.show(editor, resource, project)
+            }
         }
     }
 
@@ -103,7 +145,7 @@ object ResourceEditor {
 
     object ResourceEditorFile {
 
-        private val EXTENSION = YAMLFileType.DEFAULT_EXTENSION
+        private const val EXTENSION = YAMLFileType.DEFAULT_EXTENSION
 
         fun get(resource: HasMetadata): VirtualFile? {
             val name = getName(resource)
@@ -146,4 +188,25 @@ object ResourceEditor {
         }
     }
 }
+
+fun FileEditor.showNotification(
+    key: Key<JComponent>,
+    panelFactory: () -> EditorNotificationPanel,
+    project: Project
+) {
+    if (this.getUserData(key) != null) {
+        return
+    }
+    val panel = panelFactory.invoke()
+    this.putUserData(key, panel)
+    FileEditorManager.getInstance(project).addTopComponent(this, panel)
+}
+
+fun FileEditor.hideNotification(key: Key<JComponent>, project: Project) {
+    val panel = this.getUserData(key)
+    if (panel != null) {
+        FileEditorManager.getInstance(project).removeTopComponent(this, panel)
+    }
+}
+
 

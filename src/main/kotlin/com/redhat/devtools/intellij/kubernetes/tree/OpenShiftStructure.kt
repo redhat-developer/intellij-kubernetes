@@ -14,7 +14,6 @@ import com.intellij.ide.util.treeView.NodeDescriptor
 import com.intellij.openapi.util.IconLoader
 import com.intellij.ui.tree.LeafState
 import io.fabric8.kubernetes.api.model.HasMetadata
-import io.fabric8.kubernetes.api.model.Namespace
 import io.fabric8.kubernetes.api.model.Node
 import io.fabric8.kubernetes.api.model.ReplicationController
 import io.fabric8.openshift.api.model.Build
@@ -29,12 +28,12 @@ import com.redhat.devtools.intellij.kubernetes.model.resource.BuildConfigFor
 import com.redhat.devtools.intellij.kubernetes.model.resource.BuildFor
 import com.redhat.devtools.intellij.kubernetes.model.resource.DeploymentConfigFor
 import com.redhat.devtools.intellij.kubernetes.model.resource.ReplicationControllerFor
-import com.redhat.devtools.intellij.kubernetes.model.resource.openshift.BuildConfigsProvider
-import com.redhat.devtools.intellij.kubernetes.model.resource.openshift.BuildsProvider
-import com.redhat.devtools.intellij.kubernetes.model.resource.openshift.DeploymentConfigsProvider
-import com.redhat.devtools.intellij.kubernetes.model.resource.openshift.ImageStreamsProvider
-import com.redhat.devtools.intellij.kubernetes.model.resource.openshift.ProjectsProvider
-import com.redhat.devtools.intellij.kubernetes.model.resource.openshift.ReplicationControllersProvider
+import com.redhat.devtools.intellij.kubernetes.model.resource.openshift.BuildConfigsOperator
+import com.redhat.devtools.intellij.kubernetes.model.resource.openshift.BuildsOperator
+import com.redhat.devtools.intellij.kubernetes.model.resource.openshift.DeploymentConfigsOperator
+import com.redhat.devtools.intellij.kubernetes.model.resource.openshift.ImageStreamsOperator
+import com.redhat.devtools.intellij.kubernetes.model.resource.openshift.ProjectsOperator
+import com.redhat.devtools.intellij.kubernetes.model.resource.openshift.ReplicationControllersOperator
 import com.redhat.devtools.intellij.kubernetes.model.resourceName
 import com.redhat.devtools.intellij.kubernetes.tree.KubernetesStructure.Folders.NODES
 import com.redhat.devtools.intellij.kubernetes.tree.KubernetesStructure.Folders.WORKLOADS
@@ -45,10 +44,10 @@ import javax.swing.Icon
 class OpenShiftStructure(model: IResourceModel): AbstractTreeStructureContribution(model) {
 
     companion object Folders {
-        val PROJECTS = Folder("Projects", ProjectsProvider.KIND)
-        val IMAGESTREAMS = Folder("ImageStreams", ImageStreamsProvider.KIND)
-        val DEPLOYMENTCONFIGS = Folder("DeploymentConfigs", DeploymentConfigsProvider.KIND)
-        val BUILDCONFIGS = Folder("BuildConfigs", BuildConfigsProvider.KIND)
+        val PROJECTS = Folder("Projects", ProjectsOperator.KIND)
+        val IMAGESTREAMS = Folder("ImageStreams", ImageStreamsOperator.KIND)
+        val DEPLOYMENTCONFIGS = Folder("DeploymentConfigs", DeploymentConfigsOperator.KIND)
+        val BUILDCONFIGS = Folder("BuildConfigs", BuildConfigsOperator.KIND)
     }
 
     override fun canContribute(): Boolean {
@@ -65,33 +64,33 @@ class OpenShiftStructure(model: IResourceModel): AbstractTreeStructureContributi
                         DEPLOYMENTCONFIGS,
                         BUILDCONFIGS)
             is DeploymentConfig ->
-                model.resources(ReplicationControllersProvider.KIND)
+                model.resources(ReplicationControllersOperator.KIND)
                         .inCurrentNamespace()
                         .filtered(ReplicationControllerFor(element))
                         .list()
                         .sortedBy(resourceName)
             is BuildConfig ->
-                model.resources(BuildsProvider.KIND)
+                model.resources(BuildsOperator.KIND)
                         .inCurrentNamespace()
                         .filtered(BuildFor(element))
                         .list()
                         .sortedBy(resourceName)
             PROJECTS ->
-                model.resources(ProjectsProvider.KIND)
+                model.resources(ProjectsOperator.KIND)
                         .inNoNamespace()
                         .list()
                         .sortedBy(resourceName)
             IMAGESTREAMS ->
-                model.resources(ImageStreamsProvider.KIND)
+                model.resources(ImageStreamsOperator.KIND)
                         .inCurrentNamespace()
                         .list()
             DEPLOYMENTCONFIGS ->
-                model.resources(DeploymentConfigsProvider.KIND)
+                model.resources(DeploymentConfigsOperator.KIND)
                         .inCurrentNamespace()
                         .list()
                         .sortedBy(resourceName)
             BUILDCONFIGS ->
-                model.resources(BuildConfigsProvider.KIND)
+                model.resources(BuildConfigsOperator.KIND)
                         .inCurrentNamespace()
                         .list()
                         .sortedBy(resourceName)
@@ -121,17 +120,17 @@ class OpenShiftStructure(model: IResourceModel): AbstractTreeStructureContributi
                 DEPLOYMENTCONFIGS ->
                     WORKLOADS
                 is ReplicationController ->
-                    model.resources(DeploymentConfigsProvider.KIND)
+                    model.resources(DeploymentConfigsOperator.KIND)
                             .inCurrentNamespace()
                             .filtered(DeploymentConfigFor(element))
                             .list()
                             .sortedBy(resourceName)
                 is BuildConfig ->
-                    BuildConfigsProvider
+                    BuildConfigsOperator
                 BUILDCONFIGS ->
                     WORKLOADS
                 is Build ->
-                    model.resources(BuildConfigsProvider.KIND)
+                    model.resources(BuildConfigsOperator.KIND)
                             .inCurrentNamespace()
                             .filtered(BuildConfigFor(element))
                             .list()
