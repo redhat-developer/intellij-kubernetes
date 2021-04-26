@@ -27,6 +27,10 @@ object DeletedNotification {
         editor.showNotification(KEY_PANEL, { createPanel(editor, resource, project) }, project)
     }
 
+    fun hide(editor: FileEditor, project: Project) {
+        editor.hideNotification(KEY_PANEL, project)
+    }
+
     private fun createPanel(editor: FileEditor, resource: HasMetadata, project: Project): EditorNotificationPanel {
         val panel = EditorNotificationPanel(EditorColors.NOTIFICATION_BACKGROUND)
         panel.setText("${resource.metadata.name} was deleted on server. Keep content?")
@@ -35,7 +39,6 @@ object DeletedNotification {
             if (file != null
                 && !project.isDisposed) {
                 FileEditorManager.getInstance(project).closeFile(file)
-                ResourceEditor.delete(FileEditorManager.getInstance(project), file)
             }
         }
 
@@ -44,4 +47,6 @@ object DeletedNotification {
         }
         return panel
     }
+
+
 }

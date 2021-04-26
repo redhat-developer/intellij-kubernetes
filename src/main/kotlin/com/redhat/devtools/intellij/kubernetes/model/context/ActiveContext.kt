@@ -51,7 +51,7 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
 ) : Context(context), IActiveContext<N, C> {
 
     override val active: Boolean = true
-    private val clients = Clients(client)
+    val clients = Clients(client)
     override val masterUrl: URL
         get() {
             return clients.get().masterUrl
@@ -244,13 +244,6 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
         }
     }
 
-    private fun toResourcesIn(resource: HasMetadata): ResourcesIn {
-        return when (resource.metadata.namespace) {
-            getCurrentNamespace() -> CURRENT_NAMESPACE
-            else -> ANY_NAMESPACE
-        }
-    }
-
     override fun watch(kind: ResourceKind<out HasMetadata>) {
         logger<ActiveContext<*, *>>().debug("Watching $kind resources.")
         watch(namespacedOperators[kind])
@@ -259,23 +252,6 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
 
     override fun watch(definition: CustomResourceDefinition) {
         watch(getOperator(definition))
-    }
-
-    override fun <R: HasMetadata> watch(
-        resource: R
-    ) {
-        logger<ActiveContext<*, *>>().debug("Watching resource ${resource.metadata.namespace}/${resource.metadata.name}.")
-        val kind = ResourceKind.create(resource)
-        val resourcesIn = toResourcesIn(resource)
-        val operator = getOperator(kind, resourcesIn) ?: return
-        watch.watch(
-            resource,
-            { watcher -> operator.watch(resource, watcher) },
-            WatchListeners(
-                {  },
-                { modelChange.fireRemoved(it) },
-                { modelChange.fireModified(it) })
-        )
     }
 
     private fun watchAll(kinds: Collection<Any>) {
@@ -315,10 +291,6 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
     override fun stopWatch(definition: CustomResourceDefinition) {
         val kind = ResourceKind.create(definition.spec)
         stopWatch(kind)
-    }
-
-    override fun stopWatch(resource: HasMetadata) {
-        watch.stopWatch(resource)
     }
 
     /**
@@ -417,9 +389,9 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
     override fun replaced(resource: HasMetadata): Boolean {
         val replaced = when(resource) {
             is CustomResourceDefinition ->
-                replace(ResourceKind.create(resource.spec), resource)
+                replaced(ResourceKind.create(resource.spec), resource)
             else ->
-                replace(ResourceKind.create(resource), resource)
+                replaced(ResourceKind.create(resource), resource)
         }
         if (replaced) {
             modelChange.fireModified(resource)
@@ -427,7 +399,7 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
         return replaced
     }
 
-    private fun replace(kind: ResourceKind<out HasMetadata>, resource: HasMetadata): Boolean {
+    private fun replaced(kind: ResourceKind<out HasMetadata>, resource: HasMetadata): Boolean {
         val replaceNamespaced = namespacedOperators[kind]?.replaced(resource) ?: false
         val replaceNonNamespaced = nonNamespacedOperators[kind]?.replaced(resource) ?: false
         return replaceNamespaced
@@ -453,7 +425,7 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
     override fun delete(resources: List<HasMetadata>) {
         val exceptions = resources
             .distinct()
-            .groupBy { Pair(ResourceKind.create(it), toResourcesIn(it)) }
+            .groupBy { Pair(ResourceKind.create(it), ResourcesIn.valueOf(it, getCurrentNamespace())) }
             .mapNotNull {
                 try {
                     delete(it.key.first, it.key.second, it.value)
@@ -483,20 +455,13 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
         }
     }
 
-    override fun replace(resource: HasMetadata) {
-        val kind = ResourceKind.create(resource)
-        val scope = toResourcesIn(resource)
-        val operator = getOperator(kind, scope) ?: return
-        operator.replace(resource)
-    }
-
     override fun close() {
         logger<ActiveContext<*, *>>().debug("Closing context ${context.name}.")
         watch.close()
         clients.close()
     }
 
-    private fun <P: IResourceOperator<out HasMetadata>> getAllResourceOperators(type: Class<P>)
+    fun <P: IResourceOperator<out HasMetadata>> getAllResourceOperators(type: Class<P>)
             : MutableMap<ResourceKind<out HasMetadata>, P> {
         val operators = mutableMapOf<ResourceKind<out HasMetadata>, P>()
         operators.putAll(
@@ -515,9 +480,5 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
     protected open fun getExtensionResourceOperators(supplier: Clients<C>): List<IResourceOperator<out HasMetadata>> {
         return extensionName.extensionList
                 .map { it.create(supplier) }
-    }
-
-    override fun getResource(resource: HasMetadata): HasMetadata {
-        return clients.get().resource(resource).fromServer().get()
     }
 }

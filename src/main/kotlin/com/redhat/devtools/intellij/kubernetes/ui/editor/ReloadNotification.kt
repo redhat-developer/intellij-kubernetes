@@ -18,7 +18,6 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Key
 import com.intellij.ui.EditorNotificationPanel
 import io.fabric8.kubernetes.api.model.HasMetadata
-import java.io.File
 import javax.swing.JComponent
 
 object ReloadNotification {
@@ -29,18 +28,23 @@ object ReloadNotification {
         editor.showNotification(KEY_PANEL, { createPanel(editor, resource, project) }, project)
     }
 
+    fun hide(editor: FileEditor, project: Project) {
+        editor.hideNotification(KEY_PANEL, project)
+    }
+
     private fun createPanel(editor: FileEditor, resource: HasMetadata, project: Project): EditorNotificationPanel {
         val panel = EditorNotificationPanel(EditorColors.NOTIFICATION_BACKGROUND)
-        panel.setText("${resource.metadata.name} changed on server. Reload content?")
+        panel.setText("${resource.metadata.name} changed on server. Reload?")
         panel.createActionLabel("Reload now") {
             val file = editor.file
             if (file != null
                 && !project.isDisposed) {
-                ResourceEditor.create(resource, File(file.canonicalPath))
-                file.refresh(false, true)
-                ResourceEditor.putUserData(ResourceEditor.KEY_RESOURCE, null, editor)
-                FileDocumentManager.getInstance().reloadFiles(editor.file!!)
-                FileEditorManager.getInstance(project).removeTopComponent(editor, panel)
+                val editorModel = ResourceEditor.getEditorModel(editor, project)
+                if (editorModel != null) {
+                    ResourceEditorFile.create(editorModel.getLatestRevision(), file)
+                    FileDocumentManager.getInstance().reloadFiles(editor.file!!)
+                    FileEditorManager.getInstance(project).removeTopComponent(editor, panel)
+                }
             }
         }
 
