@@ -10,9 +10,9 @@
  ******************************************************************************/
 package com.redhat.devtools.intellij.kubernetes.ui.editor
 
+import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.editor.Document
-import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.fileEditor.FileDocumentSynchronizationVetoer
 import com.intellij.openapi.fileEditor.FileEditor
 import com.intellij.openapi.fileEditor.FileEditorManager
@@ -21,85 +21,79 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.project.ProjectManager
 import com.intellij.openapi.ui.Messages
 import com.intellij.openapi.vfs.VirtualFile
-import com.redhat.devtools.intellij.common.CommonConstants
 import com.redhat.devtools.intellij.kubernetes.model.Notification
-import com.redhat.devtools.intellij.kubernetes.model.util.MultiResourceException
 import com.redhat.devtools.intellij.kubernetes.model.util.toMessage
 import com.redhat.devtools.intellij.kubernetes.model.util.toResource
-import com.redhat.devtools.intellij.kubernetes.ui.FileUserData
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.client.KubernetesClientException
 
 class SaveListener : FileDocumentSynchronizationVetoer() {
 
-        override fun maySaveDocument(document: Document, isSaveExplicit: Boolean): Boolean {
-            if (!isSaveExplicit) {
-                return true
-            }
-            val file = FileDocumentManager.getInstance().getFile(document) ?: return true
-            val fileData = FileUserData(file)
-            try {
-                val resource: HasMetadata? = toResource(document.text)
-                if (resource == null) {
-                    Notification().error(
-                        "Invalid content",
-                        "Could not parse ${file.presentableUrl}. Only valid Json or Yaml supported."
-                    )
-                    return true
-                }
-                val editor = getEditor(file)
-                if (editor != null) {
-                    val editorModel = ResourceEditor.getEditorModel(editor.second, editor.first)
-                    if (editorModel != null) {
-                        if (confirmSave(resource, editorModel.cluster.toString())) {
-                            save(resource, editorModel, fileData, document.modificationStamp, editorModel.cluster.toString())
-                        }
-                    }
-                }
-                return true
-            } catch (e: KubernetesClientException) {
-                logger<SaveListener>().debug(
-                    "Could not parse ${file.presentableUrl}. Only valid Json or Yaml supported.",
-                    e.cause
+    override fun maySaveDocument(document: Document, isSaveExplicit: Boolean): Boolean {
+        if (!isSaveExplicit) {
+            return true
+        }
+        val file = ResourceEditor.getResourceFile(document) ?: return true
+        try {
+            val resource: HasMetadata? = toResource(document.text)
+            if (resource == null) {
+                Notification().error(
+                    "Invalid content",
+                    "Could not parse ${file.presentableUrl}. Only valid Json or Yaml supported."
                 )
                 return true
             }
-        }
-
-        private fun save(
-            resource: HasMetadata,
-            editorModel: ResourceEditorModel,
-            fileData: FileUserData,
-            modificationStamp: Long,
-            cluster: String?
-        ) {
-            com.redhat.devtools.intellij.kubernetes.actions.run("Saving to cluster...", true,
-                Progressive {
-                    try {
-                        editorModel.replace(resource)
-                        fileData.put(CommonConstants.LAST_MODIFICATION_STAMP, modificationStamp)
-                    } catch (e: MultiResourceException) {
-                        val message = "Could not save ${resource.metadata.name} to cluster at $cluster"
-                        logger<SaveListener>().error(message, e)
-                        Notification().error("Save Error", message)
-                    }
-                })
-        }
-
-        private fun confirmSave(resource: HasMetadata, cluster: String?): Boolean {
-            val answer = Messages.showYesNoDialog(
-                "Save ${toMessage(resource, 30)} " +
-                        "to namespace ${resource.metadata.name} " +
-                        "${if (cluster != null) "on $cluster" else ""}?",
-                "Save resource?",
-                Messages.getQuestionIcon()
+            val projectEditor = getEditor(file) ?: return true
+            val contextName = ResourceEditor.getContextName(projectEditor.second, projectEditor.first) ?: return true
+            if (confirmSave(resource, contextName)) {
+                save(resource, contextName, projectEditor.second, projectEditor.first)
+            }
+            return true
+        } catch (e: KubernetesClientException) {
+            logger<SaveListener>().debug(
+                "Could not parse ${file.presentableUrl}. Only valid Json or Yaml supported.",
+                e.cause
             )
-            return answer == Messages.OK
+            return true
         }
+    }
+
+    private fun confirmSave(resource: HasMetadata, contextName: String?): Boolean {
+        val answer = Messages.showYesNoDialog(
+            "Save ${toMessage(resource, 30)} " +
+                    "in namespace ${resource.metadata.name} " +
+                    "${if (contextName != null) "to $contextName" else ""}?",
+            "Save resource?",
+            Messages.getQuestionIcon()
+        )
+        return answer == Messages.OK
+    }
+
+    private fun save(resource: HasMetadata, contextName: String?, editor: FileEditor?, project: Project) {
+        com.redhat.devtools.intellij.kubernetes.actions.run("Saving to cluster...", true,
+            Progressive {
+                try {
+                    val updatedResource = ResourceEditor.replaceResource(resource, editor, project)
+                    if (updatedResource != null) {
+                        val file = editor?.file
+                        if (file != null) {
+                            ApplicationManager.getApplication().invokeAndWait {
+                                ResourceEditor.replaceFile(updatedResource, file, project)
+                            }
+                        }
+                    }
+                } catch (e: KubernetesClientException) {
+                    val message = "Could not save ${resource.metadata.name} to cluster at $contextName"
+                    logger<SaveListener>().warn(message, e)
+                    Notification().error("Could not Save", message)
+                }
+            })
+    }
+
 
     private fun getEditor(file: VirtualFile): Pair<Project, FileEditor>? {
         return ProjectManager.getInstance().openProjects
-            .filter { project -> !project.isInitialized || project.isDisposed }
+            .filter { project -> project.isInitialized && !project.isDisposed }
             .flatMap { project ->
                 FileEditorManager.getInstance(project).getEditors(file).toList()
                     .mapNotNull { Pair<Project, FileEditor>(project, it) }

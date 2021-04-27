@@ -70,7 +70,7 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
         operators
     }
 
-    protected open var watch: ResourceWatch = ResourceWatch()
+    protected open var watch = ResourceWatch<ResourceKind<out HasMetadata>>()
     protected open val watchListener = WatchListeners({ added(it) }, { removed(it) }, { replaced(it) })
 
     protected open val notification: Notification = Notification()

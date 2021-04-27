@@ -8,28 +8,40 @@
  * Contributors:
  * Red Hat, Inc. - initial API and implementation
  ******************************************************************************/
-package com.redhat.devtools.intellij.kubernetes.ui.editor
+package com.redhat.devtools.intellij.kubernetes.ui.editor.notification
 
 import com.intellij.openapi.editor.colors.EditorColors
-import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.fileEditor.FileEditor
-import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Key
+import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.ui.EditorNotificationPanel
+import com.redhat.devtools.intellij.kubernetes.ui.editor.ResourceEditor
+import com.redhat.devtools.intellij.kubernetes.ui.editor.hideNotification
+import com.redhat.devtools.intellij.kubernetes.ui.editor.showNotification
 import io.fabric8.kubernetes.api.model.HasMetadata
 import javax.swing.JComponent
 
 object ReloadNotification {
 
     private val KEY_PANEL = Key<JComponent>(ReloadNotification::javaClass.name)
+    private val panel: EditorNotificationPanel? = null
+
 
     fun show(editor: FileEditor, resource: HasMetadata, project: Project) {
-        editor.showNotification(KEY_PANEL, { createPanel(editor, resource, project) }, project)
+        editor.showNotification(KEY_PANEL, { getOrCreatePanel(editor, resource, project) }, project)
     }
 
     fun hide(editor: FileEditor, project: Project) {
         editor.hideNotification(KEY_PANEL, project)
+    }
+
+    private fun getOrCreatePanel(
+        editor: FileEditor,
+        resource: HasMetadata,
+        project: Project
+    ): EditorNotificationPanel {
+        return panel ?: createPanel(editor, resource, project)
     }
 
     private fun createPanel(editor: FileEditor, resource: HasMetadata, project: Project): EditorNotificationPanel {
@@ -39,12 +51,7 @@ object ReloadNotification {
             val file = editor.file
             if (file != null
                 && !project.isDisposed) {
-                val editorModel = ResourceEditor.getEditorModel(editor, project)
-                if (editorModel != null) {
-                    ResourceEditorFile.create(editorModel.getLatestRevision(), file)
-                    FileDocumentManager.getInstance().reloadFiles(editor.file!!)
-                    FileEditorManager.getInstance(project).removeTopComponent(editor, panel)
-                }
+                reloadEditor(editor, project, file)
             }
         }
 
@@ -52,5 +59,12 @@ object ReloadNotification {
             editor.hideNotification(KEY_PANEL, project)
         }
         return panel
+    }
+
+    private fun reloadEditor(editor: FileEditor, project: Project, file: VirtualFile) {
+        val latestRevision = ResourceEditor.getLatestResource(editor, project)
+        if (latestRevision != null) {
+            ResourceEditor.replaceFile(latestRevision, file, project)
+        }
     }
 }

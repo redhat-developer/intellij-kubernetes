@@ -16,45 +16,42 @@ import io.fabric8.kubernetes.client.KubernetesClientException
 import io.fabric8.kubernetes.client.Watch
 import io.fabric8.kubernetes.client.Watcher
 import io.fabric8.kubernetes.client.WatcherException
-import io.fabric8.kubernetes.client.dsl.Watchable
-import com.redhat.devtools.intellij.kubernetes.model.resource.ResourceKind
 import java.util.concurrent.BlockingDeque
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import java.util.concurrent.LinkedBlockingDeque
-import java.util.function.Supplier
 
 /**
  * A watch that listens for changes on the kubernetes cluster and operates actions on a model accordingly.
  * The model is only visible to this watcher by operations that the former provides (addOperation, removeOperation).
  */
-open class ResourceWatch(
-        protected val watchOperations: BlockingDeque<WatchOperation> = LinkedBlockingDeque(),
+open class ResourceWatch<T>(
+        protected val watchOperations: BlockingDeque<WatchOperation<*>> = LinkedBlockingDeque(),
         watchOperationsRunner: Runnable = WatchOperationsRunner(watchOperations)
 ) {
     companion object {
         @JvmField val WATCH_OPERATION_ENQUEUED: Watch = Watch {  }
     }
 
-    protected open val watches: ConcurrentHashMap<Any, Watch?> = ConcurrentHashMap()
+    protected open val watches: ConcurrentHashMap<T, Watch?> = ConcurrentHashMap()
     private val executor: ExecutorService = Executors.newWorkStealingPool(10)
     private val thread = executor.submit(watchOperationsRunner)
 
     open fun watchAll(
-        toWatch: Collection<Pair<ResourceKind<out HasMetadata>, (watcher: Watcher<out HasMetadata>) -> Watch?>>,
+        toWatch: Collection<Pair<T, (watcher: Watcher<out HasMetadata>) -> Watch?>>,
         watchListeners: WatchListeners
     ) {
         toWatch.forEach { watch(it.first, it.second, watchListeners) }
     }
 
     open fun watch(
-        key: Any,
+        key: T,
         watchOperation: (watcher: Watcher<out HasMetadata>) -> Watch?,
         watchListeners: WatchListeners
     ) {
         watches.computeIfAbsent(key) {
-            logger<ResourceWatch>().debug("Enqueueing watch for $key resources.")
+            logger<ResourceWatch<*>>().debug("Enqueueing watch for $key resources.")
             val watchOperation = WatchOperation(
                     key,
                     watchOperation,
@@ -67,41 +64,28 @@ open class ResourceWatch(
         }
     }
 
-    fun stopWatchAll(kinds: Collection<ResourceKind<*>>): Collection<Any> {
-        val existing = watches.entries.filter { kinds.contains(it.key) }
+    fun stopWatchAll(keys: Collection<T>): Collection<T> {
+        val existing = watches.entries.filter { keys.contains(it.key) }
         closeAll(existing)
         return existing.map { it.key }
     }
 
-    fun stopWatch(kind: ResourceKind<*>) {
+    fun stopWatch(key: T) {
         try {
-            logger<ResourceWatch>().debug("Closing watch for $kind resources.")
-            stopWatch(kind)
+            logger<ResourceWatch<*>>().debug("Closing watch for $key resource(s).")
+            val watch = watches[key] ?: return
+            watch.close()
+            watches.remove(key)
         } catch (e: Exception) {
-            logger<ResourceWatch>().warn("Could not close watch for $kind resources", e)
+            logger<ResourceWatch<*>>().warn("Could not close watch for $key resources", e)
         }
-    }
-
-    fun stopWatch(resource: HasMetadata) {
-        try {
-            logger<ResourceWatch>().debug("Closing watch for resource ${resource.metadata.namespace}/${resource.metadata.name}.")
-            stopWatch(resource)
-        } catch (e: Exception) {
-            logger<ResourceWatch>().warn("Could not close watch for resource ${resource.metadata.namespace}/${resource.metadata.name}", e)
-        }
-    }
-
-    private fun stopWatch(key: Any) {
-        val watch = watches[key] ?: return
-        watch.close()
-        watches.remove(key)
     }
 
     fun close() {
         closeAll(watches.entries.toList())
     }
 
-    private fun closeAll(entries: List<MutableMap.MutableEntry<Any, Watch?>>) {
+    private fun closeAll(entries: Collection<MutableMap.MutableEntry<T, Watch?>>) {
         val closed = entries.filter {
             val watch = it.value
             if (watch == null) {
@@ -113,31 +97,31 @@ open class ResourceWatch(
         closed.forEach { watches.remove(it.key) }
     }
 
-    private fun safeClose(type: Any, watch: Watch): Boolean {
+    private fun safeClose(type: T, watch: Watch): Boolean {
         return try {
-            logger<ResourceWatch>().debug("Closing watch for $type resources.")
+            logger<ResourceWatch<*>>().debug("Closing watch for $type resources.")
             watch.close()
             true
         } catch (e: KubernetesClientException) {
-            logger<ResourceWatch>().warn("Failed to close watch for $type resources.", e)
+            logger<ResourceWatch<*>>().warn("Failed to close watch for $type resources.", e)
             false
         }
     }
 
-    private class WatchOperationsRunner(private val watchOperations: BlockingDeque<WatchOperation>) : Runnable {
+    private class WatchOperationsRunner(private val watchOperations: BlockingDeque<WatchOperation<*>>) : Runnable {
         override fun run() {
             while (true) {
                 val op = watchOperations.take()
-                logger<ResourceWatch>().debug("Executing watch operation for ${op.key} resource(s).")
+                logger<ResourceWatch<*>>().debug("Executing watch operation for ${op.key} resource(s).")
                 op.run()
             }
         }
     }
 
-    class WatchOperation(
-            val key: Any,
+    class WatchOperation<T>(
+            val key: T,
             private val watchOperation: (watcher: Watcher<out HasMetadata>) -> Watch?,
-            private val watches: MutableMap<Any, Watch?>,
+            private val watches: MutableMap<T, Watch?>,
             private val addOperation: (HasMetadata) -> Unit,
             private val removeOperation: (HasMetadata) -> Unit,
             private val replaceOperation: (HasMetadata) -> Unit

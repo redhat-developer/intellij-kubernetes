@@ -8,14 +8,16 @@
  * Contributors:
  * Red Hat, Inc. - initial API and implementation
  ******************************************************************************/
-package com.redhat.devtools.intellij.kubernetes.ui.editor
+package com.redhat.devtools.intellij.kubernetes.ui.editor.notification
 
 import com.intellij.openapi.editor.colors.EditorColors
 import com.intellij.openapi.fileEditor.FileEditor
-import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Key
 import com.intellij.ui.EditorNotificationPanel
+import com.redhat.devtools.intellij.kubernetes.ui.editor.ResourceEditor
+import com.redhat.devtools.intellij.kubernetes.ui.editor.hideNotification
+import com.redhat.devtools.intellij.kubernetes.ui.editor.showNotification
 import io.fabric8.kubernetes.api.model.HasMetadata
 import javax.swing.JComponent
 
@@ -38,7 +40,7 @@ object DeletedNotification {
             val file = editor.file
             if (file != null
                 && !project.isDisposed) {
-                FileEditorManager.getInstance(project).closeFile(file)
+                ResourceEditor.close(file, project)
             }
         }
 

@@ -19,53 +19,71 @@ import com.redhat.devtools.intellij.kubernetes.model.resource.ResourceKind
 import com.redhat.devtools.intellij.kubernetes.model.util.sameRevision
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.client.KubernetesClient
-import java.net.URL
 
-class ResourceEditorModel(var resource: HasMetadata, context: ActiveContext<out HasMetadata, out KubernetesClient>) {
+class ClusterResource(resource: HasMetadata, context: ActiveContext<out HasMetadata, out KubernetesClient>) {
 
+    private var resource: HasMetadata = resource
+    val contextName: String = context.context.name
     private val operators = context.getAllResourceOperators(IResourceOperator::class.java)
-    private val clients = context.clients
-    val cluster: URL = clients.get().masterUrl
-    private val watch = ResourceWatch()
+    private val client = context.clients.get()
+    private val watch = ResourceWatch<HasMetadata>()
     private val modelChange = ModelChangeObservable()
 
-    fun isUpdatedOnCluster(): Boolean {
-        val latestRevision = getLatestRevision() ?: return false
-        return !resource.sameRevision(latestRevision)
-    }
-
-    fun isDeletedOnCluster(): Boolean {
-        return getLatestRevision() == null
-    }
-
-    fun getLatestRevision(): HasMetadata? {
-        val latest = clients.get().resource(resource).fromServer().get()
-        if (latest != null) {
-            resource = latest
+    fun get(): HasMetadata {
+        synchronized(this) {
+            return resource
         }
-        return latest
     }
 
-    fun replace(resource: HasMetadata) {
-        val operator = getOperator(resource) ?: return
-        operator.replace(resource)
+    fun set(resource: HasMetadata) {
+        synchronized(this) {
+            this.resource = resource
+        }
+    }
+
+    fun isUpdated(): Boolean {
+        val latestRevision = getLatest() ?: return false
+        return !get().sameRevision(latestRevision)
+    }
+
+    fun isDeleted(): Boolean {
+        return getLatest() == null
+    }
+
+    fun getLatest(): HasMetadata? {
+        return client.resource(get()).fromServer().get()
+    }
+
+    fun replace(resource: HasMetadata): HasMetadata? {
+        val operator = getOperator(resource) ?: return null
+        return operator.replace(resource)
     }
 
     fun watch() {
-        logger<ActiveContext<*, *>>().debug("Watching ${resource.kind} ${ resource.metadata.name }.")
-        val operator = getOperator(resource) ?: return
+        logger<ClusterResource>().debug("Watching ${get().kind} ${ get().metadata.name }.")
+        val operator = getOperator(get()) ?: return
         watch.watch(
-            resource,
-            { watcher -> operator.watch(resource, watcher) },
+            get(),
+            { watcher -> operator.watch(get(), watcher) },
             ResourceWatch.WatchListeners(
-                { },
-                { modelChange.fireRemoved(it) },
-                { modelChange.fireModified(it) })
+                {},
+                {
+                    modelChange.fireRemoved(it)
+                },
+                {
+                    set(it)
+                    modelChange.fireModified(it)
+                })
         )
     }
 
     fun stopWatch() {
-        watch.stopWatch(resource)
+        logger<ClusterResource>().debug("Stopping watch for ${resource.kind} ${ resource.metadata.name }.")
+        watch.stopWatch(get())
+    }
+
+    fun close() {
+        watch.close()
     }
 
 
