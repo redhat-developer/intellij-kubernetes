@@ -96,8 +96,7 @@ class TreeUpdater<Structure: AbstractTreeStructure>(
             } else {
                 findTreePath(element, treeModel.root as? DefaultMutableTreeNode)
             }
-//        return path ?: TreePath(treeModel.root)
-        return path ?: null
+        return path ?: TreePath(treeModel.root)
     }
 
     private fun isRootNode(element: Any?): Boolean {
