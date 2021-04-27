@@ -67,12 +67,17 @@ abstract class NamespacedResourceOperator<R : HasMetadata, C: Client>(
         }
         @Suppress("UNCHECKED_CAST")
         val typedWatcher = watcher as? Watcher<R> ?: return null
-        return getOperation()?.inNamespace(namespace!!)?.watch(typedWatcher)
+        return getOperation()
+            ?.inNamespace(namespace!!)
+            ?.watch(typedWatcher)
     }
 
     override fun watch(resource: HasMetadata, watcher: Watcher<out HasMetadata>): Watch? {
         val typedWatcher = watcher as? Watcher<R> ?: return null
-        return getOperation()?.inNamespace(namespace!!)?.withName(resource.metadata.name)?.watch(typedWatcher)
+        return getOperation()
+            ?.inNamespace(resource.metadata.namespace)
+            ?.withName(resource.metadata.name)
+            ?.watch(typedWatcher)
     }
 
     override fun delete(resources: List<HasMetadata>): Boolean {

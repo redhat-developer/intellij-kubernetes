@@ -10,6 +10,7 @@
  ******************************************************************************/
 package com.redhat.devtools.intellij.kubernetes.ui.editor
 
+import com.intellij.openapi.fileEditor.FileEditor
 import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.fileEditor.FileEditorManagerEvent
 import com.intellij.openapi.fileEditor.FileEditorManagerListener
@@ -18,17 +19,32 @@ import com.intellij.openapi.vfs.VirtualFile
 
 class EditorListener(private val project: Project) : FileEditorManagerListener {
 
-        override fun selectionChanged(event: FileEditorManagerEvent) {
-            if (event.newEditor == null
-                || !ResourceEditor.isFile(event.newFile)) {
-                return
-            }
-            val editor = event.newEditor!!
-            ResourceEditor.showNotifications(editor, project)
-        }
-
-        override fun fileClosed(source: FileEditorManager, file: VirtualFile) {
-            ResourceEditor.delete(source, file, project)
-        }
+    override fun selectionChanged(event: FileEditorManagerEvent) {
+        handleSelectionLost(event.oldEditor, event.oldFile, project)
+        handleSelectionGained(event.newEditor, event.newFile, project)
     }
+
+    override fun fileClosed(source: FileEditorManager, file: VirtualFile) {
+        val editor = source.getEditors(file).firstOrNull() ?: return
+        ResourceEditor.dispose(editor, file, project)
+    }
+
+    private fun handleSelectionLost(editor: FileEditor?, file: VirtualFile?, project: Project) {
+        if (editor == null
+            || !ResourceEditor.isResourceFile(file)) {
+            return
+        }
+        ResourceEditor.stopWatch(editor, project)
+    }
+
+    private fun handleSelectionGained(editor: FileEditor?, file: VirtualFile?, project: Project) {
+        if (editor == null
+            || !ResourceEditor.isResourceFile(file)) {
+            return
+        }
+        ResourceEditor.startWatch(editor, project)
+        ResourceEditor.showNotifications(editor, project)
+    }
+
+}
 

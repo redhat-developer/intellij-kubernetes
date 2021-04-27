@@ -27,7 +27,7 @@ class EditResourceAction: StructureTreeAction() {
         val descriptor = selected?.get(0)?.getDescriptor() ?: return
         val project = descriptor.project ?: return
         val toEdit: HasMetadata = descriptor.element as? HasMetadata? ?: return
-        ResourceEditor.open(project, toEdit);
+        ResourceEditor.open(toEdit, project)
     }
 
     override fun isVisible(selected: Array<out Any>?): Boolean {
