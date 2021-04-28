@@ -8,14 +8,14 @@
  * Contributors:
  * Red Hat, Inc. - initial API and implementation
  ******************************************************************************/
-package com.redhat.devtools.intellij.kubernetes.ui
+package com.redhat.devtools.intellij.kubernetes
 
 import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.fileEditor.FileEditorManagerListener
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.startup.StartupActivity
-import com.redhat.devtools.intellij.kubernetes.ui.editor.EditorListener
-import com.redhat.devtools.intellij.kubernetes.ui.editor.ResourceEditor
+import com.redhat.devtools.intellij.kubernetes.editor.EditorListener
+import com.redhat.devtools.intellij.kubernetes.editor.ResourceEditor
 
 class KubernetesPluginInitializer : StartupActivity {
 
@@ -23,9 +23,13 @@ class KubernetesPluginInitializer : StartupActivity {
         project.messageBus.connect().subscribe(FileEditorManagerListener.FILE_EDITOR_MANAGER,
             EditorListener(project)
         )
-        val selectedEditor = FileEditorManager.getInstance(project).selectedEditor ?: return
-        if (ResourceEditor.isResourceEditor(selectedEditor)) {
-            ResourceEditor.showNotifications(selectedEditor, project)
+        showResourceEditorNotifications(project)
+    }
+
+    private fun showResourceEditorNotifications(project: Project) {
+        val selected = FileEditorManager.getInstance(project).selectedEditor ?: return
+        if (ResourceEditor.isResourceEditor(selected)) {
+            ResourceEditor.showNotifications(selected, project)
         }
     }
 }

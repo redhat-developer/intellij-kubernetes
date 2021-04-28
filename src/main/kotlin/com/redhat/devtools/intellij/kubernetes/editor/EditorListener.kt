@@ -8,7 +8,7 @@
  * Contributors:
  * Red Hat, Inc. - initial API and implementation
  ******************************************************************************/
-package com.redhat.devtools.intellij.kubernetes.ui.editor
+package com.redhat.devtools.intellij.kubernetes.editor
 
 import com.intellij.openapi.fileEditor.FileEditor
 import com.intellij.openapi.fileEditor.FileEditorManager
@@ -31,7 +31,8 @@ class EditorListener(private val project: Project) : FileEditorManagerListener {
 
     private fun handleSelectionLost(editor: FileEditor?, file: VirtualFile?, project: Project) {
         if (editor == null
-            || !ResourceEditor.isResourceFile(file)) {
+            || !ResourceEditor.isResourceFile(file)
+        ) {
             return
         }
         ResourceEditor.stopWatch(editor, project)
@@ -39,7 +40,8 @@ class EditorListener(private val project: Project) : FileEditorManagerListener {
 
     private fun handleSelectionGained(editor: FileEditor?, file: VirtualFile?, project: Project) {
         if (editor == null
-            || !ResourceEditor.isResourceFile(file)) {
+            || !ResourceEditor.isResourceFile(file)
+        ) {
             return
         }
         ResourceEditor.startWatch(editor, project)
