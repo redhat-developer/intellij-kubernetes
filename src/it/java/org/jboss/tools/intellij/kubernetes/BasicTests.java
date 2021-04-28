@@ -55,7 +55,7 @@ public class BasicTests {
             final KubernetesToolsFixture kubernetesToolsFixture = robot.find(KubernetesToolsFixture.class);
             waitFor(Duration.ofSeconds(15), Duration.ofSeconds(1), "Kubernetes Tree View is not available.", () -> isKubernetesViewTreeAvailable(kubernetesToolsFixture));
             String clusterText = kubernetesToolsFixture.kubernetesViewTree().findAllText().get(0).getText();
-            assertTrue(clusterText.contains("default"));
+            assertTrue(clusterText.contains("minikube"));
     	});
  	}
 
