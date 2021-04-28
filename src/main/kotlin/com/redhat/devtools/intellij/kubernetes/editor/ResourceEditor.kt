@@ -130,10 +130,10 @@ object ResourceEditor {
         if (editor == null) {
             return null
         }
-        var clusterResource: ClusterResource? = getUserData(KEY_CLUSTER_RESOURCE, editor)
+        var clusterResource: ClusterResource? = editor?.getUserData(KEY_CLUSTER_RESOURCE)
         if (clusterResource == null) {
             clusterResource = createClusterResource(editor) ?: return null
-            putUserData(KEY_CLUSTER_RESOURCE, clusterResource, editor)
+            editor?.putUserData(KEY_CLUSTER_RESOURCE, clusterResource)
             clusterResource.addListener(onResourceChanged(editor, project))
             clusterResource.watch()
         }
@@ -146,10 +146,12 @@ object ResourceEditor {
         val document = FileDocumentManager.getInstance().getDocument(file)
         if (document?.text != null) {
             val resource = toResource<HasMetadata>(document.text)
+            // context may be wrong for editors that are restored after restart
+            // we would have to store the context in order for those to be restored correctly
             val context = resourceModel.getCurrentContext() as? ActiveContext
             if (context != null
                 && resource != null) {
-                clusterResource = ClusterResource(resource, context)
+                clusterResource = ClusterResource(resource, context.context.name)
             }
         }
         return clusterResource
@@ -168,14 +170,6 @@ object ResourceEditor {
                 showNotifications(editor, project)
             }
         }
-    }
-
-    private fun <T> getUserData(key: Key<T>, editor: FileEditor?): T? {
-        return editor?.getUserData(key)
-    }
-
-    private fun <T> putUserData(key: Key<T>, value: T?, editor: FileEditor?) {
-        editor?.putUserData(key, value)
     }
 
     private object ResourceFile {
