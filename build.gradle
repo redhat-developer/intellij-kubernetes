@@ -107,6 +107,7 @@ publishPlugin {
 
 runIdeForUiTests {
     systemProperty "robot-server.port", "8082" // default port 8080
+    systemProperties['com.redhat.devtools.intellij.telemetry.mode'] = 'debug'
 }
 
 integrationTest {
