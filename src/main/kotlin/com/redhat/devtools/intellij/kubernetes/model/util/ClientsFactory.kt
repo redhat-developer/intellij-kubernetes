@@ -8,41 +8,28 @@
  * Contributors:
  * Red Hat, Inc. - initial API and implementation
  ******************************************************************************/
-package com.redhat.devtools.intellij.kubernetes.model.context
+package com.redhat.devtools.intellij.kubernetes.model.util
 
-import io.fabric8.kubernetes.api.model.HasMetadata
-import io.fabric8.kubernetes.api.model.NamedContext
 import io.fabric8.kubernetes.client.Config
 import io.fabric8.kubernetes.client.DefaultKubernetesClient
 import io.fabric8.kubernetes.client.KubernetesClient
 import io.fabric8.kubernetes.client.KubernetesClientException
 import io.fabric8.openshift.client.NamespacedOpenShiftClient
 import io.fabric8.openshift.client.OpenShiftNotAvailableException
-import com.redhat.devtools.intellij.kubernetes.model.IModelChangeObservable
-import com.redhat.devtools.intellij.kubernetes.model.util.Clients
 
-fun create(
-	observable: IModelChangeObservable,
-	context: NamedContext
-): IActiveContext<out HasMetadata, out KubernetesClient> {
-	val config = Config.autoConfigure(context.name)
+fun createClients(
+	context: String
+): Clients<out KubernetesClient> {
+	val config = Config.autoConfigure(context)
 	val k8Client = DefaultKubernetesClient(config)
-	try {
+	return try {
 		val osClient = k8Client.adapt(NamespacedOpenShiftClient::class.java)
-		return OpenShiftContext(
-			observable,
-			Clients(osClient),
-			context
-		)
+		Clients(osClient)
 	} catch (e: RuntimeException) {
 		when (e) {
 			is KubernetesClientException,
 			is OpenShiftNotAvailableException ->
-				return KubernetesContext(
-					observable,
-					Clients(k8Client),
-					context
-				)
+				Clients(k8Client)
 			else -> throw e
 		}
 	}

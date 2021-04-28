@@ -11,19 +11,21 @@
 package com.redhat.devtools.intellij.kubernetes.model
 
 import com.intellij.openapi.diagnostic.logger
-import com.redhat.devtools.intellij.kubernetes.model.context.ActiveContext
 import com.redhat.devtools.intellij.kubernetes.model.resource.IResourceOperator
+import com.redhat.devtools.intellij.kubernetes.model.resource.OperatorFactory
 import com.redhat.devtools.intellij.kubernetes.model.resource.ResourceKind
+import com.redhat.devtools.intellij.kubernetes.model.util.Clients
+import com.redhat.devtools.intellij.kubernetes.model.util.createClients
 import com.redhat.devtools.intellij.kubernetes.model.util.sameRevision
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.client.KubernetesClient
 
-class ClusterResource(resource: HasMetadata, context: ActiveContext<out HasMetadata, out KubernetesClient>) {
+class ClusterResource(resource: HasMetadata, val contextName: String) {
 
-    val contextName: String = context.context.name
+    private val clients: Clients<out KubernetesClient> = ::createClients.invoke(contextName)
     private var resource: HasMetadata = resource
-    private val operators = context.getAllResourceOperators(IResourceOperator::class.java)
-    private val client = context.clients.get()
+    private val operators: Map<ResourceKind<out HasMetadata>, IResourceOperator<*>> =
+        OperatorFactory.createAll(clients).associateBy { operator -> operator.kind }
     private val watch = ResourceWatch<HasMetadata>()
     private val modelChange = ModelChangeObservable()
 
@@ -34,7 +36,7 @@ class ClusterResource(resource: HasMetadata, context: ActiveContext<out HasMetad
     }
 
     fun getLatest(): HasMetadata? {
-        return client.resource(get()).fromServer().get()
+        return clients.get().resource(get()).fromServer().get()
     }
 
     fun replace(resource: HasMetadata): HasMetadata? {
@@ -65,12 +67,12 @@ class ClusterResource(resource: HasMetadata, context: ActiveContext<out HasMetad
             { watcher -> operator.watch(get(), watcher) },
             ResourceWatch.WatchListeners(
                 {},
-                {
-                    modelChange.fireRemoved(it)
+                { resource ->
+                    modelChange.fireRemoved(resource)
                 },
-                {
-                    set(it)
-                    modelChange.fireModified(it)
+                { resource ->
+                    set(resource)
+                    modelChange.fireModified(resource)
                 })
         )
     }
@@ -90,7 +92,6 @@ class ClusterResource(resource: HasMetadata, context: ActiveContext<out HasMetad
 
     private fun getOperator(resource: HasMetadata): IResourceOperator<*>? {
         val kind = ResourceKind.create(resource)
-        @Suppress("UNCHECKED_CAST")
         return operators[kind]
     }
 }

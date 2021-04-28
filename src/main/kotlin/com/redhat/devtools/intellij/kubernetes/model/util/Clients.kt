@@ -15,11 +15,21 @@ import io.fabric8.kubernetes.client.BatchAPIGroupClient
 import io.fabric8.kubernetes.client.Client
 import io.fabric8.kubernetes.client.ExtensionsAPIGroupClient
 import io.fabric8.kubernetes.client.StorageAPIGroupClient
+import io.fabric8.openshift.client.OpenShiftClient
 import java.util.concurrent.ConcurrentHashMap
 
 class Clients<C: Client>(private val client: C) {
 
     private val clients = ConcurrentHashMap<Class<out Client>, Client>()
+
+    fun isOpenShift(): Boolean {
+        return try {
+            get(OpenShiftClient::class.java)
+            true
+        } catch(e: RuntimeException) {
+            false
+        }
+    }
 
     fun get(): C {
         return client
