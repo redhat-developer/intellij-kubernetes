@@ -8,7 +8,7 @@
  * Contributors:
  * Red Hat, Inc. - initial API and implementation
  ******************************************************************************/
-package com.redhat.devtools.intellij.kubernetes.ui.editor
+package com.redhat.devtools.intellij.kubernetes.editor
 
 import com.intellij.openapi.application.WriteAction
 import com.intellij.openapi.components.ServiceManager
@@ -23,12 +23,13 @@ import com.intellij.openapi.vfs.VfsUtilCore
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.ui.EditorNotificationPanel
 import com.redhat.devtools.intellij.common.editor.AllowNonProjectEditing
+import com.redhat.devtools.intellij.kubernetes.model.ClusterResource
 import com.redhat.devtools.intellij.kubernetes.model.IResourceModel
 import com.redhat.devtools.intellij.kubernetes.model.ModelChangeObservable
 import com.redhat.devtools.intellij.kubernetes.model.context.ActiveContext
 import com.redhat.devtools.intellij.kubernetes.model.util.toResource
-import com.redhat.devtools.intellij.kubernetes.ui.editor.notification.DeletedNotification
-import com.redhat.devtools.intellij.kubernetes.ui.editor.notification.ReloadNotification
+import com.redhat.devtools.intellij.kubernetes.editor.notification.DeletedNotification
+import com.redhat.devtools.intellij.kubernetes.editor.notification.ReloadNotification
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.Namespace
 import io.fabric8.kubernetes.client.utils.Serialization
@@ -227,7 +228,7 @@ object ResourceEditor {
                     }
                 }
             }
-            return "$name.${EXTENSION}"
+            return "$name.$EXTENSION"
         }
     }
 }

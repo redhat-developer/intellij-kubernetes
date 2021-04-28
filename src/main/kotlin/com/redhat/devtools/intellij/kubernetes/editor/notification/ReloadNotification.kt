@@ -8,7 +8,7 @@
  * Contributors:
  * Red Hat, Inc. - initial API and implementation
  ******************************************************************************/
-package com.redhat.devtools.intellij.kubernetes.ui.editor.notification
+package com.redhat.devtools.intellij.kubernetes.editor.notification
 
 import com.intellij.openapi.editor.colors.EditorColors
 import com.intellij.openapi.fileEditor.FileEditor
@@ -16,9 +16,9 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Key
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.ui.EditorNotificationPanel
-import com.redhat.devtools.intellij.kubernetes.ui.editor.ResourceEditor
-import com.redhat.devtools.intellij.kubernetes.ui.editor.hideNotification
-import com.redhat.devtools.intellij.kubernetes.ui.editor.showNotification
+import com.redhat.devtools.intellij.kubernetes.editor.ResourceEditor
+import com.redhat.devtools.intellij.kubernetes.editor.hideNotification
+import com.redhat.devtools.intellij.kubernetes.editor.showNotification
 import io.fabric8.kubernetes.api.model.HasMetadata
 import javax.swing.JComponent
 
