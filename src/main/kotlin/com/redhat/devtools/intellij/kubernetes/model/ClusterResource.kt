@@ -20,8 +20,8 @@ import io.fabric8.kubernetes.client.KubernetesClient
 
 class ClusterResource(resource: HasMetadata, context: ActiveContext<out HasMetadata, out KubernetesClient>) {
 
-    private var resource: HasMetadata = resource
     val contextName: String = context.context.name
+    private var resource: HasMetadata = resource
     private val operators = context.getAllResourceOperators(IResourceOperator::class.java)
     private val client = context.clients.get()
     private val watch = ResourceWatch<HasMetadata>()
@@ -31,6 +31,15 @@ class ClusterResource(resource: HasMetadata, context: ActiveContext<out HasMetad
         synchronized(this) {
             return resource
         }
+    }
+
+    fun getLatest(): HasMetadata? {
+        return client.resource(get()).fromServer().get()
+    }
+
+    fun replace(resource: HasMetadata): HasMetadata? {
+        val operator = getOperator(resource) ?: return null
+        return operator.replace(resource)
     }
 
     fun set(resource: HasMetadata) {
@@ -46,15 +55,6 @@ class ClusterResource(resource: HasMetadata, context: ActiveContext<out HasMetad
 
     fun isDeleted(): Boolean {
         return getLatest() == null
-    }
-
-    fun getLatest(): HasMetadata? {
-        return client.resource(get()).fromServer().get()
-    }
-
-    fun replace(resource: HasMetadata): HasMetadata? {
-        val operator = getOperator(resource) ?: return null
-        return operator.replace(resource)
     }
 
     fun watch() {
@@ -83,7 +83,6 @@ class ClusterResource(resource: HasMetadata, context: ActiveContext<out HasMetad
     fun close() {
         watch.close()
     }
-
 
     fun addListener(listener: ModelChangeObservable.IResourceChangeListener) {
         modelChange.addListener(listener)
