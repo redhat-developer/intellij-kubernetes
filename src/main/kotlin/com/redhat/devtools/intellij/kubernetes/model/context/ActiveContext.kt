@@ -46,12 +46,11 @@ import java.net.URL
 
 abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
         private val modelChange: IModelChangeObservable,
-        client: C,
+        private val clients: Clients<C>,
         context: NamedContext
 ) : Context(context), IActiveContext<N, C> {
 
     override val active: Boolean = true
-    val clients = Clients(client)
     override val masterUrl: URL
         get() {
             return clients.get().masterUrl

@@ -17,6 +17,7 @@ import io.fabric8.openshift.client.NamespacedOpenShiftClient
 import io.fabric8.openshift.client.OpenShiftClient
 import com.redhat.devtools.intellij.kubernetes.model.IModelChangeObservable
 import com.redhat.devtools.intellij.kubernetes.model.resource.IResourceOperator
+import com.redhat.devtools.intellij.kubernetes.model.resource.OperatorFactory
 import com.redhat.devtools.intellij.kubernetes.model.resource.ResourceKind
 import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.AllPodsOperator
 import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.ConfigMapsOperator
@@ -46,39 +47,13 @@ import com.redhat.devtools.intellij.kubernetes.model.util.Clients
 
 open class OpenShiftContext(
     modelChange: IModelChangeObservable,
-    client: NamespacedOpenShiftClient,
+    clients: Clients<OpenShiftClient>,
 	context: NamedContext
-) : ActiveContext<Project, OpenShiftClient>(modelChange, client, context) {
+) : ActiveContext<Project, OpenShiftClient>(modelChange, clients, context) {
 
-	override fun getInternalResourceOperators(supplier: Clients<OpenShiftClient>)
+	override fun getInternalResourceOperators(clients: Clients<OpenShiftClient>)
 			: List<IResourceOperator<out HasMetadata>> {
-		val client = supplier.get(OpenShiftClient::class.java)
-		return listOf(
-				NamespacesOperator(client),
-				NodesOperator(client),
-				AllPodsOperator(client),
-				DeploymentsOperator(supplier.getApps()),
-				StatefulSetsOperator(supplier.getApps()),
-				DaemonSetsOperator(supplier.getApps()),
-				JobsOperator(supplier.getBatch()),
-				CronJobsOperator(supplier.getBatch()),
-				NamespacedPodsOperator(client),
-				ProjectsOperator(client),
-				ImageStreamsOperator(client),
-				DeploymentConfigsOperator(client),
-				BuildsOperator(client),
-				BuildConfigsOperator(client),
-				ReplicationControllersOperator(client),
-				ServicesOperator(client),
-				EndpointsOperator(client),
-				PersistentVolumesOperator(client),
-				PersistentVolumeClaimsOperator(client),
-				StorageClassesOperator(supplier.getStorage()),
-				ConfigMapsOperator(client),
-				SecretsOperator(client),
-				IngressOperator(supplier.getExtensions()),
-				CustomResourceDefinitionsOperator(client)
-		)
+		return OperatorFactory.createOpenShift(clients)
 	}
 
 	override fun getNamespacesKind(): ResourceKind<Project> {
