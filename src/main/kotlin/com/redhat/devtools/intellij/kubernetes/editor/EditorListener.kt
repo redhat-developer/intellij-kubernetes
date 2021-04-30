@@ -16,6 +16,7 @@ import com.intellij.openapi.fileEditor.FileEditorManagerEvent
 import com.intellij.openapi.fileEditor.FileEditorManagerListener
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.VirtualFile
+import com.redhat.devtools.intellij.kubernetes.editor.notification.ErrorNotification
 
 class EditorListener(private val project: Project) : FileEditorManagerListener {
 
@@ -31,21 +32,37 @@ class EditorListener(private val project: Project) : FileEditorManagerListener {
 
     private fun handleSelectionLost(editor: FileEditor?, file: VirtualFile?, project: Project) {
         if (editor == null
-            || !ResourceEditor.isResourceFile(file)
-        ) {
+            || !ResourceEditor.isResourceFile(file)) {
             return
         }
-        ResourceEditor.stopWatch(editor, project)
+        try {
+            ResourceEditor.stopWatch(editor, project)
+        } catch (e: RuntimeException) {
+            ErrorNotification.show(
+                editor,
+                project,
+                "Error contacting cluster. Make sure it's reachable, api version supported, etc.",
+                e.cause ?: e
+            )
+        }
     }
 
     private fun handleSelectionGained(editor: FileEditor?, file: VirtualFile?, project: Project) {
         if (editor == null
-            || !ResourceEditor.isResourceFile(file)
-        ) {
+            || !ResourceEditor.isResourceFile(file)) {
             return
         }
-        ResourceEditor.startWatch(editor, project)
-        ResourceEditor.showNotifications(editor, project)
+        try {
+            ResourceEditor.startWatch(editor, project)
+            ResourceEditor.showNotifications(editor, project)
+        } catch (e: RuntimeException) {
+            ErrorNotification.show(
+                editor,
+                project,
+                "Error contacting cluster. Make sure it's reachable, api version supported, etc.",
+                e.cause ?: e
+            )
+        }
     }
 
 }

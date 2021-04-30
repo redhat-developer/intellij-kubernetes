@@ -10,7 +10,6 @@
  ******************************************************************************/
 package com.redhat.devtools.intellij.kubernetes.editor.notification
 
-import com.intellij.openapi.editor.colors.EditorColors
 import com.intellij.openapi.fileEditor.FileEditor
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Key
@@ -34,7 +33,7 @@ object DeletedNotification {
     }
 
     private fun createPanel(editor: FileEditor, resource: HasMetadata, project: Project): EditorNotificationPanel {
-        val panel = EditorNotificationPanel(EditorColors.NOTIFICATION_BACKGROUND)
+        val panel = EditorNotificationPanel()
         panel.setText("${resource.metadata.name} was deleted on server. Keep content?")
         panel.createActionLabel("Close Editor") {
             val file = editor.file
