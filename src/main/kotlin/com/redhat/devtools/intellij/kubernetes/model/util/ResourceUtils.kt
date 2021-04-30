@@ -175,7 +175,13 @@ fun trimWithEllipsis(value: String, length: Int): String {
 	}
 }
 
-inline fun <reified T> toResource(json: String): T? {
-	return Serialization.unmarshal(json, T::class.java)
+/**
+ * Returns an instance of the given type for the given json or yaml string.
+ *
+ * @param jsonYaml the string that should be unmarshalled
+ * @return the instance of the given type
+ */
+inline fun <reified T> toResource(jsonYaml: String): T {
+	return Serialization.unmarshal(jsonYaml, T::class.java)
 }
 

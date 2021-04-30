@@ -57,7 +57,7 @@ abstract class NamespacedResourceOperator<R : HasMetadata, C: Client>(
 
     protected open fun loadAllResources(namespace: String): List<R> {
         logger<NamespacedResourceOperator<*, *>>().debug("Loading $kind resources in namespace $namespace.")
-        return getOperation()?.inNamespace(namespace!!)?.list()?.items ?: emptyList()
+        return getOperation()?.inNamespace(namespace)?.list()?.items ?: emptyList()
     }
 
     override fun watchAll(watcher: Watcher<out HasMetadata>): Watch? {
@@ -73,6 +73,7 @@ abstract class NamespacedResourceOperator<R : HasMetadata, C: Client>(
     }
 
     override fun watch(resource: HasMetadata, watcher: Watcher<out HasMetadata>): Watch? {
+        @Suppress("UNCHECKED_CAST")
         val typedWatcher = watcher as? Watcher<R> ?: return null
         return getOperation()
             ?.inNamespace(resource.metadata.namespace)
