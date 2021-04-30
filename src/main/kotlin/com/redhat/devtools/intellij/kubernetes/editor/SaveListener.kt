@@ -33,61 +33,68 @@ class SaveListener : FileDocumentSynchronizationVetoer() {
         if (!isSaveExplicit) {
             return true
         }
+        return saveToCluster(document)
+    }
+
+    private fun saveToCluster(document: Document): Boolean {
         val file = ResourceEditor.getResourceFile(document) ?: return true
         try {
-            val resource: HasMetadata? = toResource(document.text)
-            if (resource == null) {
-                Notification().error(
-                    "Invalid content",
-                    "Could not parse ${file.presentableUrl}. Only valid Json or Yaml supported."
-                )
-                return true
-            }
+            val resource: HasMetadata = toResource(document.text)
             val projectEditor = getEditor(file) ?: return true
             val contextName = ResourceEditor.getContextName(projectEditor.second, projectEditor.first) ?: return true
-            if (confirmSave(resource, contextName)) {
-                save(resource, contextName, projectEditor.second, projectEditor.first)
+            if (confirmSaveToCluster(resource, contextName)) {
+                saveToCluster(resource, contextName, projectEditor.second, projectEditor.first)
             }
             return true
         } catch (e: KubernetesClientException) {
+            val errorMessage = "Could not save ${file.presentableUrl}: ${e.cause?.message}"
+            Notification().error("Save to Cluster Failed", errorMessage)
             logger<SaveListener>().debug(
-                "Could not parse ${file.presentableUrl}. Only valid Json or Yaml supported.",
+                errorMessage,
                 e.cause
             )
             return true
         }
     }
 
-    private fun confirmSave(resource: HasMetadata, contextName: String?): Boolean {
+    private fun confirmSaveToCluster(resource: HasMetadata, contextName: String?): Boolean {
         val answer = Messages.showYesNoDialog(
             "Save ${toMessage(resource, 30)} " +
                     "in namespace ${resource.metadata.name} " +
                     "${if (contextName != null) "to $contextName" else ""}?",
-            "Save resource?",
+            "Save Resource?",
             Messages.getQuestionIcon()
         )
         return answer == Messages.OK
     }
 
-    private fun save(resource: HasMetadata, contextName: String?, editor: FileEditor?, project: Project) {
+    private fun saveToCluster(resource: HasMetadata, contextName: String?, editor: FileEditor?, project: Project) {
         com.redhat.devtools.intellij.kubernetes.actions.run("Saving to cluster...", true,
             Progressive {
                 try {
-                    val updatedResource = ResourceEditor.replaceResource(resource, editor, project)
-                    if (updatedResource != null) {
-                        val file = editor?.file
-                        if (file != null) {
-                            ApplicationManager.getApplication().invokeAndWait {
-                                ResourceEditor.replaceFile(updatedResource, file, project)
-                            }
-                        }
+                    if (editor != null) {
+                        ResourceEditor.replaceOnCluster(resource, editor, project)
+                        val updatedResource = ResourceEditor.getLatestResource(editor, project)
+                        replaceFile(updatedResource, editor, project)
                     }
                 } catch (e: KubernetesClientException) {
-                    val message = "Could not save ${resource.metadata.name} to cluster at $contextName"
+                    val message = """${resource.metadata.name}
+                            ${ if (resource.metadata.namespace != null) {"in namespace ${resource.metadata.namespace} "} else {""}} 
+                            could not be saved to cluster at $contextName"""
                     logger<SaveListener>().warn(message, e)
-                    Notification().error("Could not Save", message)
+                    Notification().error("Save to cluster failed", message)
                 }
             })
+    }
+
+    private fun replaceFile(updatedResource: HasMetadata?, editor: FileEditor?, project: Project) {
+        if (updatedResource == null) {
+            return
+        }
+        val file = editor?.file ?: return
+        ApplicationManager.getApplication().invokeAndWait {
+            ResourceEditor.replaceFile(updatedResource, file, project)
+        }
     }
 
 
@@ -96,7 +103,7 @@ class SaveListener : FileDocumentSynchronizationVetoer() {
             .filter { project -> project.isInitialized && !project.isDisposed }
             .flatMap { project ->
                 FileEditorManager.getInstance(project).getEditors(file).toList()
-                    .mapNotNull { Pair<Project, FileEditor>(project, it) }
+                    .mapNotNull { editor -> Pair<Project, FileEditor>(project, editor) }
             }
             .firstOrNull()
     }

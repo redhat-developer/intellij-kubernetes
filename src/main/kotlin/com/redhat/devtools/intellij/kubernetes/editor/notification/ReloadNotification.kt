@@ -10,7 +10,6 @@
  ******************************************************************************/
 package com.redhat.devtools.intellij.kubernetes.editor.notification
 
-import com.intellij.openapi.editor.colors.EditorColors
 import com.intellij.openapi.fileEditor.FileEditor
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Key
@@ -25,27 +24,17 @@ import javax.swing.JComponent
 object ReloadNotification {
 
     private val KEY_PANEL = Key<JComponent>(ReloadNotification::javaClass.name)
-    private val panel: EditorNotificationPanel? = null
-
 
     fun show(editor: FileEditor, resource: HasMetadata, project: Project) {
-        editor.showNotification(KEY_PANEL, { getOrCreatePanel(editor, resource, project) }, project)
+        editor.showNotification(KEY_PANEL, { createPanel(editor, resource, project) }, project)
     }
 
     fun hide(editor: FileEditor, project: Project) {
         editor.hideNotification(KEY_PANEL, project)
     }
 
-    private fun getOrCreatePanel(
-        editor: FileEditor,
-        resource: HasMetadata,
-        project: Project
-    ): EditorNotificationPanel {
-        return panel ?: createPanel(editor, resource, project)
-    }
-
     private fun createPanel(editor: FileEditor, resource: HasMetadata, project: Project): EditorNotificationPanel {
-        val panel = EditorNotificationPanel(EditorColors.NOTIFICATION_BACKGROUND)
+        val panel = EditorNotificationPanel()
         panel.setText("${resource.metadata.name} changed on server. Reload?")
         panel.createActionLabel("Reload now") {
             val file = editor.file

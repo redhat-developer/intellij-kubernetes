@@ -23,19 +23,18 @@ import com.intellij.openapi.vfs.VfsUtilCore
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.ui.EditorNotificationPanel
 import com.redhat.devtools.intellij.common.editor.AllowNonProjectEditing
+import com.redhat.devtools.intellij.kubernetes.editor.notification.DeletedNotification
+import com.redhat.devtools.intellij.kubernetes.editor.notification.ErrorNotification
+import com.redhat.devtools.intellij.kubernetes.editor.notification.ReloadNotification
 import com.redhat.devtools.intellij.kubernetes.model.ClusterResource
 import com.redhat.devtools.intellij.kubernetes.model.IResourceModel
 import com.redhat.devtools.intellij.kubernetes.model.ModelChangeObservable
-import com.redhat.devtools.intellij.kubernetes.model.context.ActiveContext
 import com.redhat.devtools.intellij.kubernetes.model.util.toResource
-import com.redhat.devtools.intellij.kubernetes.editor.notification.DeletedNotification
-import com.redhat.devtools.intellij.kubernetes.editor.notification.ReloadNotification
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.Namespace
 import io.fabric8.kubernetes.client.utils.Serialization
 import org.apache.commons.io.FileUtils
 import org.jetbrains.yaml.YAMLFileType
-import org.slf4j.LoggerFactory
 import java.io.File
 import java.io.IOException
 import java.nio.charset.StandardCharsets
@@ -44,8 +43,6 @@ import javax.swing.JComponent
 object ResourceEditor {
 
     private val KEY_CLUSTER_RESOURCE = Key<ClusterResource>(ClusterResource::class.java.name)
-
-    private val LOGGER = LoggerFactory.getLogger(ResourceEditor::class.java)
     private val resourceModel = ServiceManager.getService(IResourceModel::class.java)
 
     @Throws(IOException::class)
@@ -73,6 +70,12 @@ object ResourceEditor {
         return ResourceFile.matches(file)
     }
 
+    fun replaceFile(resource: HasMetadata, editor: FileEditor, project: Project) {
+        getClusterResource(editor, project)?.set(resource)
+        val  file = getResourceFile(editor) ?: return
+        replaceFile(resource, file, project)
+    }
+
     fun replaceFile(resource: HasMetadata, file: VirtualFile, project: Project) {
         ResourceFile.replace(resource, file)
         FileDocumentManager.getInstance().reloadFiles(file)
@@ -87,18 +90,38 @@ object ResourceEditor {
         return FileEditorManager.getInstance(project).getEditors(file).firstOrNull()
     }
 
+    fun getResourceFile(editor: FileEditor): VirtualFile? {
+        val document = getDocument(editor) ?: return null
+        return getResourceFile(document)
+    }
+
     fun getResourceFile(document: Document): VirtualFile? {
         return FileDocumentManager.getInstance().getFile(document)
     }
 
+    fun getResourceFromFile(editor: FileEditor): HasMetadata? {
+        val document = getDocument(editor)
+        return if (document?.text == null) {
+            null
+        } else {
+            toResource(document.text)
+        }
+    }
+
+    private fun getDocument(editor: FileEditor): Document? {
+        val file = editor.file ?: return null
+        return FileDocumentManager.getInstance().getDocument(file)
+    }
+
     fun showNotifications(editor: FileEditor, project: Project) {
+        ErrorNotification.hide(editor, project)
+        ReloadNotification.hide(editor, project)
+        DeletedNotification.hide(editor, project)
         val clusterResource = getClusterResource(editor, project) ?: return
         if (clusterResource.isDeleted()) {
             DeletedNotification.show(editor, clusterResource.get(), project)
-            ReloadNotification.hide(editor, project)
         } else if (clusterResource.isUpdated()) {
             ReloadNotification.show(editor, clusterResource.get(), project)
-            DeletedNotification.hide(editor, project)
         }
     }
 
@@ -107,7 +130,7 @@ object ResourceEditor {
         return clusterResource.getLatest()
     }
 
-    fun replaceResource(resource: HasMetadata, editor: FileEditor?, project: Project): HasMetadata? {
+    fun replaceOnCluster(resource: HasMetadata, editor: FileEditor?, project: Project): HasMetadata? {
         return getClusterResource(editor, project)?.replace(resource)
     }
 
@@ -122,18 +145,18 @@ object ResourceEditor {
     }
 
     fun getContextName(editor: FileEditor?, project: Project): String? {
-        val clusterResource = getClusterResource(editor, project)
-        return clusterResource?.contextName
+        val clusterResource = getClusterResource(editor, project) ?: return null
+        return clusterResource.contextName
     }
 
     private fun getClusterResource(editor: FileEditor?, project: Project): ClusterResource? {
         if (editor == null) {
             return null
         }
-        var clusterResource: ClusterResource? = editor?.getUserData(KEY_CLUSTER_RESOURCE)
+        var clusterResource: ClusterResource? = editor.getUserData(KEY_CLUSTER_RESOURCE)
         if (clusterResource == null) {
             clusterResource = createClusterResource(editor) ?: return null
-            editor?.putUserData(KEY_CLUSTER_RESOURCE, clusterResource)
+            editor.putUserData(KEY_CLUSTER_RESOURCE, clusterResource)
             clusterResource.addListener(onResourceChanged(editor, project))
             clusterResource.watch()
         }
@@ -145,10 +168,11 @@ object ResourceEditor {
         var clusterResource: ClusterResource? = null
         val document = FileDocumentManager.getInstance().getDocument(file)
         if (document?.text != null) {
-            val resource = toResource<HasMetadata>(document.text)
-            // context may be wrong for editors that are restored after restart
+            val resource: HasMetadata? = toResource(document.text)
+            // we're using the current context (and the namespace in the resource).
+            // This may be wrong for editors that are restored after restart
             // we would have to store the context in order for those to be restored correctly
-            val context = resourceModel.getCurrentContext() as? ActiveContext
+            val context = resourceModel.getCurrentContext()
             if (context != null
                 && resource != null) {
                 clusterResource = ClusterResource(resource, context.context.name)
@@ -200,7 +224,7 @@ object ResourceEditor {
                 val content = Serialization.asYaml(resource)
                 FileUtils.write(file, content, StandardCharsets.UTF_8, false)
                 val virtualFile = VfsUtil.findFileByIoFile(file, true)
-                virtualFile?.putUserData(AllowNonProjectEditing.ALLOW_NON_PROJECT_EDITING, true)
+                enableNonProjectFileEditing(virtualFile)
                 virtualFile
             }
         }
@@ -225,12 +249,16 @@ object ResourceEditor {
             return "$name.$EXTENSION"
         }
     }
+
+    fun enableNonProjectFileEditing(file: VirtualFile?) {
+        file?.putUserData(AllowNonProjectEditing.ALLOW_NON_PROJECT_EDITING, true)
+    }
 }
 
 fun FileEditor.showNotification(key: Key<JComponent>, panelFactory: () -> EditorNotificationPanel, project: Project) {
-    if (this.getUserData(key) != null) {
+    if (getUserData(key) != null) {
         // already shown
-        return
+        hideNotification(key, project)
     }
     val panel = panelFactory.invoke()
     FileEditorManager.getInstance(project).addTopComponent(this, panel)
