@@ -41,7 +41,7 @@ class NamespacedCustomResourceOperator(
     }
 
 	override fun watch(resource: HasMetadata, watcher: Watcher<out HasMetadata>): Watch? {
-		return watch(namespace, resource.metadata.name, watcher)
+		return watch(resource.metadata.namespace, resource.metadata.name, watcher)
 	}
 
 	private fun watch(namespace: String?, name: String?, watcher: Watcher<out HasMetadata>): Watch? {
@@ -75,29 +75,23 @@ class NamespacedCustomResourceOperator(
 	}
 
 	override fun replace(resource: HasMetadata): HasMetadata? {
-		if (namespace == null) {
-			return null
-		}
 		return try {
-			val updated = operation.get().createOrReplace(namespace, Serialization.asJson(resource))
+			val updated = operation.get().createOrReplace(resource.metadata.namespace, Serialization.asJson(resource))
 			GenericCustomResourceFactory.createResource(updated)
 		} catch(e: KubernetesClientException) {
 			logger<NonNamespacedCustomResourceOperator>()
-				.info("Could not replace $kind custom resource named ${resource.metadata.name} in namespace $namespace.", e)
+				.info("Could not replace $kind custom resource named ${resource.metadata.name} in namespace ${resource.metadata.namespace}.", e)
 			null
 		}
 	}
 
 	override fun get(resource: HasMetadata): HasMetadata? {
-		if (namespace == null) {
-			return null
-		}
 		return try {
-			val updated = operation.get().get(namespace, resource.metadata.name)
+			val updated = operation.get().get(resource.metadata.namespace, resource.metadata.name)
 			GenericCustomResourceFactory.createResource(updated)
 		} catch(e: KubernetesClientException) {
 			logger<NonNamespacedCustomResourceOperator>()
-				.info("Could not get $kind custom resource named ${resource.metadata.name} in namespace $namespace.", e)
+				.info("Could not get $kind custom resource named ${resource.metadata.name} in namespace ${resource.metadata.namespace}.", e)
 			null
 		}
 	}
