@@ -56,6 +56,7 @@ import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.AllPods
 import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.NamespacesOperator
 import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.NodesOperator
 import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.ServicesOperator
+import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.custom.CustomResourceScope
 import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.custom.GenericCustomResource
 import com.redhat.devtools.intellij.kubernetes.model.util.Clients
 import com.redhat.devtools.intellij.kubernetes.model.util.MultiResourceException
@@ -107,9 +108,9 @@ class KubernetesContextTest {
 		currentNamespace)
 
 	private val namespacedDefinition = customResourceDefinition(
-		"namespaced crd","version1", "group1", "namespaced-crd", "Namespaced")
+		"namespaced crd","version1", "group1", "namespaced-crd", CustomResourceScope.NAMESPACED)
 	private val clusterwideDefinition = customResourceDefinition(
-		"cluster crd", "version2", "group2", "cluster-crd", "Cluster")
+		"cluster crd", "version2", "group2", "cluster-crd", CustomResourceScope.CLUSTER)
 	private val customResourceDefinitionsOperator: INonNamespacedResourceOperator<CustomResourceDefinition, NamespacedKubernetesClient> =
 		nonNamespacedResourceOperator(
 			ResourceKind.create(CustomResourceDefinition::class.java),
