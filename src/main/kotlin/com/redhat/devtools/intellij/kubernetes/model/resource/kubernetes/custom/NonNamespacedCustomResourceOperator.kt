@@ -19,6 +19,7 @@ import io.fabric8.kubernetes.client.KubernetesClient
 import io.fabric8.kubernetes.client.KubernetesClientException
 import io.fabric8.kubernetes.client.Watch
 import io.fabric8.kubernetes.client.Watcher
+import io.fabric8.kubernetes.client.utils.Serialization
 
 class NonNamespacedCustomResourceOperator(
     definition: CustomResourceDefinition,
@@ -33,10 +34,19 @@ class NonNamespacedCustomResourceOperator(
         return GenericCustomResourceFactory.createResources(resourcesList)
     }
 
+    override fun watch(resource: HasMetadata, watcher: Watcher<out HasMetadata>): Watch? {
+        return watch(resource.metadata.namespace, resource.metadata.name, watcher)
+    }
+
     override fun watchAll(watcher: Watcher<out HasMetadata>): Watch? {
+        return watch(null, null, watcher)
+    }
+
+    private fun watch(namespace: String?, name: String?, watcher: Watcher<out HasMetadata>): Watch? {
+        @Suppress("UNCHECKED_CAST")
         val typedWatcher = watcher as? Watcher<GenericCustomResource> ?: return null
         val watchableWrapper = GenericCustomResourceWatchable { options, customResourceWatcher ->
-                operation.get().watch(null, null, null, options, customResourceWatcher)
+            operation.get().watch(namespace, name, null, options, customResourceWatcher)
         }
         return watchableWrapper.watch(typedWatcher)
     }
@@ -56,6 +66,17 @@ class NonNamespacedCustomResourceOperator(
         } catch(e: KubernetesClientException) {
             logger<NonNamespacedCustomResourceOperator>().warn("Could not delete $kind custom resource named $name in cluster scope.", e)
             false
+        }
+    }
+
+    override fun replace(resource: HasMetadata): HasMetadata? {
+        return try {
+            val updated = operation.get().createOrReplace(resource.metadata.name, Serialization.asJson(resource))
+            GenericCustomResourceFactory.createResource(updated)
+        } catch(e: KubernetesClientException) {
+            logger<NonNamespacedCustomResourceOperator>()
+                .info("Could not replace $kind custom resource named ${resource.metadata.name} in cluster scope.", e)
+            null
         }
     }
 }

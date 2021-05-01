@@ -53,7 +53,7 @@ object ErrorNotification {
         panel.createActionLabel("Details") {
             val balloonBuilder = JBPopupFactory.getInstance()
                 .createHtmlTextBalloonBuilder(
-                    trimWithEllipsis(e.message!!.replace("\n", ""), 100),
+                    trimWithEllipsis(e.message!!.replace("\n", ""), 170),
                     MessageType.ERROR,
                     null)
             val balloon = balloonBuilder

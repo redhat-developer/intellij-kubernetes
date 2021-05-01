@@ -10,6 +10,8 @@
  ******************************************************************************/
 package com.redhat.devtools.intellij.kubernetes.editor
 
+import com.fasterxml.jackson.core.JsonProcessingException
+import com.fasterxml.jackson.databind.exc.MismatchedInputException
 import com.intellij.openapi.application.WriteAction
 import com.intellij.openapi.components.ServiceManager
 import com.intellij.openapi.editor.Document
@@ -29,9 +31,12 @@ import com.redhat.devtools.intellij.kubernetes.editor.notification.ReloadNotific
 import com.redhat.devtools.intellij.kubernetes.model.ClusterResource
 import com.redhat.devtools.intellij.kubernetes.model.IResourceModel
 import com.redhat.devtools.intellij.kubernetes.model.ModelChangeObservable
+import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.GenericResource
+import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.custom.GenericCustomResource
 import com.redhat.devtools.intellij.kubernetes.model.util.toResource
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.Namespace
+import io.fabric8.kubernetes.client.KubernetesClientException
 import io.fabric8.kubernetes.client.utils.Serialization
 import org.apache.commons.io.FileUtils
 import org.jetbrains.yaml.YAMLFileType
@@ -131,7 +136,7 @@ object ResourceEditor {
     }
 
     fun replaceOnCluster(resource: HasMetadata, editor: FileEditor?, project: Project): HasMetadata? {
-        return getClusterResource(editor, project)?.replace(resource)
+        return getClusterResource(editor, project)?.setToCluster(resource)
     }
 
     fun startWatch(editor: FileEditor?, project: Project) {
@@ -145,8 +150,7 @@ object ResourceEditor {
     }
 
     fun getContextName(editor: FileEditor?, project: Project): String? {
-        val clusterResource = getClusterResource(editor, project) ?: return null
-        return clusterResource.contextName
+        return getClusterResource(editor, project)?.contextName
     }
 
     private fun getClusterResource(editor: FileEditor?, project: Project): ClusterResource? {
@@ -168,7 +172,7 @@ object ResourceEditor {
         var clusterResource: ClusterResource? = null
         val document = FileDocumentManager.getInstance().getDocument(file)
         if (document?.text != null) {
-            val resource: HasMetadata? = toResource(document.text)
+            val resource: HasMetadata? = createResource(document.text)
             // we're using the current context (and the namespace in the resource).
             // This may be wrong for editors that are restored after restart
             // we would have to store the context in order for those to be restored correctly
@@ -179,6 +183,24 @@ object ResourceEditor {
             }
         }
         return clusterResource
+    }
+
+    private fun createResource(jsonYaml: String): HasMetadata? {
+        return try {
+            toResource<HasMetadata>(jsonYaml)
+        } catch (e: KubernetesClientException) {
+            if (e.cause is MismatchedInputException) {
+                // invalid json
+                null
+            } else {
+                // unknown type
+                return try {
+                    toResource<GenericCustomResource>(jsonYaml)
+                } catch (e: java.lang.RuntimeException) {
+                    null
+                }
+            }
+        }
     }
 
     private fun onResourceChanged(editor: FileEditor, project: Project): ModelChangeObservable.IResourceChangeListener {

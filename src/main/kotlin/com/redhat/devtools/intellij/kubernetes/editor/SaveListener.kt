@@ -47,9 +47,9 @@ class SaveListener : FileDocumentSynchronizationVetoer() {
             }
             return true
         } catch (e: KubernetesClientException) {
-            val errorMessage = "Could not save ${file.presentableUrl}: ${e.cause?.message}"
+            val errorMessage = "Could not save ${file.name}: ${e.cause?.message}"
             Notification().error("Save to Cluster Failed", errorMessage)
-            logger<SaveListener>().debug(
+            logger<SaveListener>().warn(
                 errorMessage,
                 e.cause
             )
