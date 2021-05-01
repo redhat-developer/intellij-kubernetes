@@ -8,7 +8,7 @@
  * Contributors:
  * Red Hat, Inc. - initial API and implementation
  ******************************************************************************/
-package com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes
+package com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.custom
 
 import com.redhat.devtools.intellij.kubernetes.model.resource.NonNamespacedOperation
 import com.redhat.devtools.intellij.kubernetes.model.resource.NonNamespacedResourceOperator
@@ -27,6 +27,6 @@ class CustomResourceDefinitionsOperator(clients: Clients<out KubernetesClient>)
     override val kind = KIND
 
     override fun getOperation(): NonNamespacedOperation<CustomResourceDefinition>? {
-        return client.customResourceDefinitions()
+        return client.apiextensions().v1beta1().customResourceDefinitions()
     }
 }

@@ -32,6 +32,7 @@ import com.redhat.devtools.intellij.kubernetes.model.resource.INonNamespacedReso
 import com.redhat.devtools.intellij.kubernetes.model.resource.IResourceOperator
 import com.redhat.devtools.intellij.kubernetes.model.resource.IResourceOperatorFactory
 import com.redhat.devtools.intellij.kubernetes.model.resource.ResourceKind
+import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.custom.CustomResourceScope
 import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.custom.GenericCustomResource
 import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.custom.NamespacedCustomResourceOperator
 import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.custom.NonNamespacedCustomResourceOperator
@@ -236,8 +237,8 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
 
     private fun toResourcesIn(spec: CustomResourceDefinitionSpec): ResourcesIn {
         return when (spec.scope) {
-            "Cluster" -> NO_NAMESPACE
-            "Namespaced" -> CURRENT_NAMESPACE
+            CustomResourceScope.CLUSTER -> NO_NAMESPACE
+            CustomResourceScope.NAMESPACED -> CURRENT_NAMESPACE
             else -> throw IllegalArgumentException(
                     "Could not determine scope in spec for custom resource definition ${spec.names.kind}")
         }

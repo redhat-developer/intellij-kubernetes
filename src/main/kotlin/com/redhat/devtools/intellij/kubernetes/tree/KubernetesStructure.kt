@@ -34,7 +34,7 @@ import com.redhat.devtools.intellij.kubernetes.model.resource.PodForStatefulSet
 import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.AllPodsOperator
 import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.ConfigMapsOperator
 import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.CronJobsOperator
-import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.CustomResourceDefinitionsOperator
+import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.custom.CustomResourceDefinitionsOperator
 import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.DaemonSetsOperator
 import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.DeploymentsOperator
 import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.EndpointsOperator

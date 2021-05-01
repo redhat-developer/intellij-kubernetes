@@ -16,8 +16,8 @@ object CustomResourceOperatorFactory {
     fun create(resource: HasMetadata, definitions: Collection<CustomResourceDefinition>, client: KubernetesClient): IResourceOperator<GenericCustomResource>? {
         val definition = getCustomResourceDefinition(resource.kind, definitions) ?: return null
         return when (definition.spec.scope) {
-            "Cluster" -> NonNamespacedCustomResourceOperator(definition, client)
-            "Namespaced" -> NamespacedCustomResourceOperator(definition, resource.metadata.namespace, client)
+            CustomResourceScope.CLUSTER -> NonNamespacedCustomResourceOperator(definition, client)
+            CustomResourceScope.NAMESPACED -> NamespacedCustomResourceOperator(definition, resource.metadata.namespace, client)
             else -> throw IllegalArgumentException(
                 "Could not determine scope in spec for custom resource definition ${definition.spec.names.kind}")
         }
