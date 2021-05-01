@@ -59,9 +59,9 @@ class SaveListener : FileDocumentSynchronizationVetoer() {
 
     private fun confirmSaveToCluster(resource: HasMetadata, contextName: String?): Boolean {
         val answer = Messages.showYesNoDialog(
-            "Save ${toMessage(resource, 30)} " +
-                    "in namespace ${resource.metadata.name} " +
-                    "${if (contextName != null) "to $contextName" else ""}?",
+            """Save ${toMessage(resource, 30)}
+                    "in namespace ${resource.metadata.namespace}
+                    "${if (contextName != null) "to $contextName" else ""}?""",
             "Save Resource?",
             Messages.getQuestionIcon()
         )
