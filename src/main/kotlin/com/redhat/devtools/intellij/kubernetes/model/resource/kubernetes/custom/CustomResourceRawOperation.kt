@@ -18,7 +18,7 @@ import com.redhat.devtools.intellij.kubernetes.model.util.createContext
 
 class CustomResourceRawOperation(
 	private val client: KubernetesClient,
-	val definition: CustomResourceDefinition,
+	definition: CustomResourceDefinition,
 	private val context: CustomResourceDefinitionContext = createContext(definition)
 ) {
 

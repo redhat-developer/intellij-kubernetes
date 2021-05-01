@@ -44,10 +44,10 @@ class ClusterResource(private var resource: HasMetadata, val contextName: String
     }
 
     fun getLatest(): HasMetadata? {
-        return clients.get().resource(get()).fromServer().get()
+        return operator?.get(get())
     }
 
-    fun setToCluster(resource: HasMetadata): HasMetadata? {
+    fun saveToCluster(resource: HasMetadata): HasMetadata? {
         return operator?.replace(resource)
     }
 

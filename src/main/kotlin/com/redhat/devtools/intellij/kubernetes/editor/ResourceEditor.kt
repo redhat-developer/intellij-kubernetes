@@ -10,7 +10,6 @@
  ******************************************************************************/
 package com.redhat.devtools.intellij.kubernetes.editor
 
-import com.fasterxml.jackson.core.JsonProcessingException
 import com.fasterxml.jackson.databind.exc.MismatchedInputException
 import com.intellij.openapi.application.WriteAction
 import com.intellij.openapi.components.ServiceManager
@@ -31,7 +30,6 @@ import com.redhat.devtools.intellij.kubernetes.editor.notification.ReloadNotific
 import com.redhat.devtools.intellij.kubernetes.model.ClusterResource
 import com.redhat.devtools.intellij.kubernetes.model.IResourceModel
 import com.redhat.devtools.intellij.kubernetes.model.ModelChangeObservable
-import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.GenericResource
 import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.custom.GenericCustomResource
 import com.redhat.devtools.intellij.kubernetes.model.util.toResource
 import io.fabric8.kubernetes.api.model.HasMetadata
@@ -136,7 +134,7 @@ object ResourceEditor {
     }
 
     fun replaceOnCluster(resource: HasMetadata, editor: FileEditor?, project: Project): HasMetadata? {
-        return getClusterResource(editor, project)?.setToCluster(resource)
+        return getClusterResource(editor, project)?.saveToCluster(resource)
     }
 
     fun startWatch(editor: FileEditor?, project: Project) {

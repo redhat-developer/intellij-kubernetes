@@ -93,7 +93,19 @@ abstract class NamespacedResourceOperator<R : HasMetadata, C: Client>(
     override fun replace(resource: HasMetadata): HasMetadata? {
         @Suppress("UNCHECKED_CAST")
         val toReplace = resource as? R ?: return null
-        return getOperation()?.inNamespace(namespace)?.withName(toReplace.metadata.name)?.replace(toReplace)
+        return getOperation()
+            ?.inNamespace(namespace)
+            ?.withName(toReplace.metadata.name)
+            ?.replace(toReplace)
+    }
+
+    override fun get(resource: HasMetadata): HasMetadata? {
+        @Suppress("UNCHECKED_CAST")
+        val toGet = resource as? R ?: return null
+        return getOperation()
+            ?.inNamespace(toGet.metadata.namespace)
+            ?.withName(toGet.metadata.name)
+            ?.get()
     }
 
     protected open fun getOperation(): NamespacedOperation<R>? {

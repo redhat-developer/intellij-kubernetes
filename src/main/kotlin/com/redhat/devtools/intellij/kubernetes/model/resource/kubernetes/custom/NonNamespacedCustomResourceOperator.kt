@@ -79,4 +79,16 @@ class NonNamespacedCustomResourceOperator(
             null
         }
     }
+
+    override fun get(resource: HasMetadata): HasMetadata? {
+        return try {
+            val updated = operation.get().get(null, resource.metadata.name)
+            GenericCustomResourceFactory.createResource(updated)
+        } catch(e: KubernetesClientException) {
+            logger<NonNamespacedCustomResourceOperator>()
+                .info("Could not get $kind custom resource named ${resource.metadata.name}", e)
+            null
+        }
+    }
+
 }

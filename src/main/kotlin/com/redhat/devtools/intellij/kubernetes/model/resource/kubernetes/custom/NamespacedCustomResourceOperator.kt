@@ -87,4 +87,19 @@ class NamespacedCustomResourceOperator(
 			null
 		}
 	}
+
+	override fun get(resource: HasMetadata): HasMetadata? {
+		if (namespace == null) {
+			return null
+		}
+		return try {
+			val updated = operation.get().get(namespace, resource.metadata.name)
+			GenericCustomResourceFactory.createResource(updated)
+		} catch(e: KubernetesClientException) {
+			logger<NonNamespacedCustomResourceOperator>()
+				.info("Could not get $kind custom resource named ${resource.metadata.name} in namespace $namespace.", e)
+			null
+		}
+	}
+
 }
