@@ -11,21 +11,29 @@
 package com.redhat.devtools.intellij.kubernetes.model
 
 import com.intellij.openapi.diagnostic.logger
-import com.redhat.devtools.intellij.kubernetes.model.resource.IResourceOperator
 import com.redhat.devtools.intellij.kubernetes.model.resource.OperatorFactory
 import com.redhat.devtools.intellij.kubernetes.model.resource.ResourceKind
+import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.custom.CustomResourceOperatorFactory
+import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.custom.GenericCustomResource
 import com.redhat.devtools.intellij.kubernetes.model.util.Clients
 import com.redhat.devtools.intellij.kubernetes.model.util.createClients
 import com.redhat.devtools.intellij.kubernetes.model.util.sameRevision
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.client.KubernetesClient
 
-class ClusterResource(resource: HasMetadata, val contextName: String) {
+class ClusterResource(private var resource: HasMetadata, val contextName: String) {
 
     private val clients: Clients<out KubernetesClient> = ::createClients.invoke(contextName)
-    private var resource: HasMetadata = resource
-    private val operators: Map<ResourceKind<out HasMetadata>, IResourceOperator<*>> =
-        OperatorFactory.createAll(clients).associateBy { operator -> operator.kind }
+    private val operator by lazy {
+        if (resource is GenericCustomResource) {
+            val definitions = clients.get().apiextensions().v1beta1().customResourceDefinitions().list().items
+            CustomResourceOperatorFactory.create(resource, definitions, clients.get())
+        } else {
+            val kind = ResourceKind.create(resource)
+            OperatorFactory.createAll(clients)
+                .firstOrNull { operator -> operator.kind == kind }
+        }
+    }
     private val watch = ResourceWatch<HasMetadata>()
     private val modelChange = ModelChangeObservable()
 
@@ -39,9 +47,8 @@ class ClusterResource(resource: HasMetadata, val contextName: String) {
         return clients.get().resource(get()).fromServer().get()
     }
 
-    fun replace(resource: HasMetadata): HasMetadata? {
-        val operator = getOperator(resource) ?: return null
-        return operator.replace(resource)
+    fun setToCluster(resource: HasMetadata): HasMetadata? {
+        return operator?.replace(resource)
     }
 
     fun set(resource: HasMetadata) {
@@ -60,11 +67,13 @@ class ClusterResource(resource: HasMetadata, val contextName: String) {
     }
 
     fun watch() {
-        logger<ClusterResource>().debug("Watching ${get().kind} ${ get().metadata.name }.")
-        val operator = getOperator(get()) ?: return
+        logger<ClusterResource>().debug("Watching ${get().kind} ${get().metadata.name}.")
+        if (operator == null) {
+            return
+        }
         watch.watch(
             get(),
-            { watcher -> operator.watch(get(), watcher) },
+            { watcher -> operator?.watch(get(), watcher) },
             ResourceWatch.WatchListeners(
                 {},
                 { resource ->
@@ -78,7 +87,7 @@ class ClusterResource(resource: HasMetadata, val contextName: String) {
     }
 
     fun stopWatch() {
-        logger<ClusterResource>().debug("Stopping watch for ${resource.kind} ${ resource.metadata.name }.")
+        logger<ClusterResource>().debug("Stopping watch for ${resource.kind} ${resource.metadata.name}.")
         watch.stopWatch(get())
     }
 
@@ -88,10 +97,5 @@ class ClusterResource(resource: HasMetadata, val contextName: String) {
 
     fun addListener(listener: ModelChangeObservable.IResourceChangeListener) {
         modelChange.addListener(listener)
-    }
-
-    private fun getOperator(resource: HasMetadata): IResourceOperator<*>? {
-        val kind = ResourceKind.create(resource)
-        return operators[kind]
     }
 }

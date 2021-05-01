@@ -13,6 +13,7 @@ package com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.custom
 import com.fasterxml.jackson.core.JsonParser
 import com.fasterxml.jackson.core.JsonProcessingException
 import com.fasterxml.jackson.databind.DeserializationContext
+import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer
 import java.io.IOException
 
@@ -21,6 +22,6 @@ class GenericCustomResourceDeserializer @JvmOverloads constructor(clazz: Class<*
 
 	@Throws(IOException::class, JsonProcessingException::class)
 	override fun deserialize(parser: JsonParser, ctx: DeserializationContext?): GenericCustomResource {
-		return GenericCustomResourceFactory.createResource(parser.codec.readTree(parser))
+		return GenericCustomResourceFactory.createResource(parser.codec.readTree<JsonNode>(parser))
 	}
 }

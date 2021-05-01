@@ -44,7 +44,7 @@ class KubernetesPluginInitializer : StartupActivity {
                 ErrorNotification.show(
                     selected,
                     project,
-                    "Error contacting cluster. Make sure it's reachable, api version supported, etc.",
+                    "Error contacting cluster. Make sure it's reachable, document valid, api version supported etc.",
                     e.cause ?: e)
             }
         }
