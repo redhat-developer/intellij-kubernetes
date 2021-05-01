@@ -13,11 +13,12 @@ package com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes
 import com.redhat.devtools.intellij.kubernetes.model.resource.NonNamespacedOperation
 import com.redhat.devtools.intellij.kubernetes.model.resource.NonNamespacedResourceOperator
 import com.redhat.devtools.intellij.kubernetes.model.resource.ResourceKind
+import com.redhat.devtools.intellij.kubernetes.model.util.Clients
 import io.fabric8.kubernetes.api.model.Namespace
 import io.fabric8.kubernetes.client.KubernetesClient
 
-class NamespacesOperator(client: KubernetesClient)
-    : NonNamespacedResourceOperator<Namespace, KubernetesClient>(client) {
+class NamespacesOperator(clients: Clients<out KubernetesClient>)
+    : NonNamespacedResourceOperator<Namespace, KubernetesClient>(clients.get()) {
 
     companion object {
         val KIND = ResourceKind.create(Namespace::class.java)

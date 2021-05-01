@@ -13,11 +13,13 @@ package com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes
 import com.redhat.devtools.intellij.kubernetes.model.resource.NamespacedOperation
 import com.redhat.devtools.intellij.kubernetes.model.resource.NamespacedResourceOperator
 import com.redhat.devtools.intellij.kubernetes.model.resource.ResourceKind
+import com.redhat.devtools.intellij.kubernetes.model.util.Clients
 import io.fabric8.kubernetes.api.model.apps.StatefulSet
 import io.fabric8.kubernetes.client.AppsAPIGroupClient
+import io.fabric8.kubernetes.client.KubernetesClient
 
-class StatefulSetsOperator(client: AppsAPIGroupClient)
-    : NamespacedResourceOperator<StatefulSet, AppsAPIGroupClient>(client) {
+class StatefulSetsOperator(clients: Clients<out KubernetesClient>)
+    : NamespacedResourceOperator<StatefulSet, AppsAPIGroupClient>(clients.getApps()) {
 
     companion object {
         val KIND = ResourceKind.create(StatefulSet::class.java)

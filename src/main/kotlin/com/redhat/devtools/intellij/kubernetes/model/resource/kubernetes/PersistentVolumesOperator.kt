@@ -13,11 +13,12 @@ package com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes
 import com.redhat.devtools.intellij.kubernetes.model.resource.NonNamespacedOperation
 import com.redhat.devtools.intellij.kubernetes.model.resource.NonNamespacedResourceOperator
 import com.redhat.devtools.intellij.kubernetes.model.resource.ResourceKind
+import com.redhat.devtools.intellij.kubernetes.model.util.Clients
 import io.fabric8.kubernetes.api.model.PersistentVolume
 import io.fabric8.kubernetes.client.KubernetesClient
 
-class PersistentVolumesOperator(client: KubernetesClient)
-    : NonNamespacedResourceOperator<PersistentVolume, KubernetesClient>(client) {
+class PersistentVolumesOperator(clients: Clients<out KubernetesClient>)
+    : NonNamespacedResourceOperator<PersistentVolume, KubernetesClient>(clients.get()) {
 
     companion object {
         val KIND = ResourceKind.create(PersistentVolume::class.java)

@@ -23,12 +23,7 @@ class Clients<C: Client>(private val client: C) {
     private val clients = ConcurrentHashMap<Class<out Client>, Client>()
 
     fun isOpenShift(): Boolean {
-        return try {
-            get(OpenShiftClient::class.java)
-            true
-        } catch(e: RuntimeException) {
-            false
-        }
+        return get().javaClass.isAssignableFrom(OpenShiftClient::class.java)
     }
 
     fun get(): C {
