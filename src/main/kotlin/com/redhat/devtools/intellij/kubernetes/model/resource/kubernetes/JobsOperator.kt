@@ -13,11 +13,13 @@ package com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes
 import com.redhat.devtools.intellij.kubernetes.model.resource.NamespacedOperation
 import com.redhat.devtools.intellij.kubernetes.model.resource.NamespacedResourceOperator
 import com.redhat.devtools.intellij.kubernetes.model.resource.ResourceKind
+import com.redhat.devtools.intellij.kubernetes.model.util.Clients
 import io.fabric8.kubernetes.api.model.batch.Job
 import io.fabric8.kubernetes.client.BatchAPIGroupClient
+import io.fabric8.kubernetes.client.KubernetesClient
 
-class JobsOperator(client: BatchAPIGroupClient)
-    : NamespacedResourceOperator<Job, BatchAPIGroupClient>(client) {
+class JobsOperator(clients: Clients<out KubernetesClient>)
+    : NamespacedResourceOperator<Job, BatchAPIGroupClient>(clients.getBatch()) {
 
     companion object {
         val KIND = ResourceKind.create(Job::class.java)

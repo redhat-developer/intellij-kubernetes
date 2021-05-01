@@ -13,11 +13,12 @@ package com.redhat.devtools.intellij.kubernetes.model.resource.openshift
 import com.redhat.devtools.intellij.kubernetes.model.resource.NamespacedOperation
 import com.redhat.devtools.intellij.kubernetes.model.resource.NamespacedResourceOperator
 import com.redhat.devtools.intellij.kubernetes.model.resource.ResourceKind
+import com.redhat.devtools.intellij.kubernetes.model.util.Clients
 import io.fabric8.openshift.api.model.Build
 import io.fabric8.openshift.client.OpenShiftClient
 
-class BuildsOperator(client: OpenShiftClient)
-    : NamespacedResourceOperator<Build, OpenShiftClient>(client) {
+class BuildsOperator(clients: Clients<out OpenShiftClient>)
+    : NamespacedResourceOperator<Build, OpenShiftClient>(clients.get()) {
 
     companion object {
         val KIND = ResourceKind.create(Build::class.java)

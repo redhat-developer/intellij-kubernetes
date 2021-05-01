@@ -21,6 +21,10 @@ import com.redhat.devtools.intellij.kubernetes.model.util.sameRevision
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.client.KubernetesClient
 
+/**
+ * A resource that exists on the cluster. May be [get], [set] etc.
+ * Notifies listeners of addition, removal and modification if [watch]
+ */
 class ClusterResource(private var resource: HasMetadata, val contextName: String) {
 
     private val clients: Clients<out KubernetesClient> = ::createClients.invoke(contextName)
@@ -30,8 +34,7 @@ class ClusterResource(private var resource: HasMetadata, val contextName: String
             CustomResourceOperatorFactory.create(resource, definitions, clients.get())
         } else {
             val kind = ResourceKind.create(resource)
-            OperatorFactory.createAll(clients)
-                .firstOrNull { operator -> operator.kind == kind }
+            OperatorFactory.create(kind, clients)
         }
     }
     private val watch = ResourceWatch<HasMetadata>()

@@ -13,11 +13,13 @@ package com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes
 import com.redhat.devtools.intellij.kubernetes.model.resource.NamespacedOperation
 import com.redhat.devtools.intellij.kubernetes.model.resource.NamespacedResourceOperator
 import com.redhat.devtools.intellij.kubernetes.model.resource.ResourceKind
+import com.redhat.devtools.intellij.kubernetes.model.util.Clients
 import io.fabric8.kubernetes.api.model.apps.Deployment
 import io.fabric8.kubernetes.client.AppsAPIGroupClient
+import io.fabric8.kubernetes.client.KubernetesClient
 
-class DeploymentsOperator(client: AppsAPIGroupClient)
-    : NamespacedResourceOperator<Deployment, AppsAPIGroupClient>(client) {
+class DeploymentsOperator(clients: Clients<out KubernetesClient>)
+    : NamespacedResourceOperator<Deployment, AppsAPIGroupClient>(clients.getApps()) {
 
     companion object {
         val KIND = ResourceKind.create(Deployment::class.java)

@@ -36,70 +36,98 @@ import com.redhat.devtools.intellij.kubernetes.model.resource.openshift.Projects
 import com.redhat.devtools.intellij.kubernetes.model.resource.openshift.ReplicationControllersOperator
 import com.redhat.devtools.intellij.kubernetes.model.util.Clients
 import io.fabric8.kubernetes.api.model.HasMetadata
+import io.fabric8.kubernetes.client.BaseClient
 import io.fabric8.kubernetes.client.KubernetesClient
 import io.fabric8.openshift.client.OpenShiftClient
 
 object OperatorFactory {
 
-    fun createKubernetes(clients: Clients<out KubernetesClient>): List<IResourceOperator<out HasMetadata>> {
-        return listOf(
-            NamespacesOperator(clients.get()),
-            NodesOperator(clients.get()),
-            AllPodsOperator(clients.get()),
-            DeploymentsOperator(clients.getApps()),
-            StatefulSetsOperator(clients.getApps()),
-            DaemonSetsOperator(clients.getApps()),
-            JobsOperator(clients.getBatch()),
-            CronJobsOperator(clients.getBatch()),
-            NamespacedPodsOperator(clients.get()),
-            ServicesOperator(clients.get()),
-            EndpointsOperator(clients.get()),
-            PersistentVolumesOperator(clients.get()),
-            PersistentVolumeClaimsOperator(clients.get()),
-            StorageClassesOperator(clients.getStorage()),
-            ConfigMapsOperator(clients.get()),
-            SecretsOperator(clients.get()),
-            IngressOperator(clients.getExtensions()),
-            CustomResourceDefinitionsOperator(clients.get())
+    private val openshift =
+        listOf<Pair<ResourceKind<out HasMetadata>, (Clients<out OpenShiftClient>) -> IResourceOperator<out HasMetadata>>>(
+            NamespacesOperator.KIND to ::NamespacesOperator,
+            NodesOperator.KIND to ::NodesOperator,
+            AllPodsOperator.KIND to ::AllPodsOperator,
+            DeploymentsOperator.KIND to ::DeploymentsOperator,
+            StatefulSetsOperator.KIND to ::StatefulSetsOperator,
+            DaemonSetsOperator.KIND to ::DaemonSetsOperator,
+            JobsOperator.KIND to ::JobsOperator,
+            CronJobsOperator.KIND to ::CronJobsOperator,
+            NamespacedPodsOperator.KIND to ::NamespacedPodsOperator,
+            ProjectsOperator.KIND to ::ProjectsOperator,
+            ImageStreamsOperator.KIND to ::ImageStreamsOperator,
+            DeploymentConfigsOperator.KIND to ::DeploymentConfigsOperator,
+            BuildsOperator.KIND to ::BuildsOperator,
+            BuildConfigsOperator.KIND to ::BuildConfigsOperator,
+            ReplicationControllersOperator.KIND to ::ReplicationControllersOperator,
+            ServicesOperator.KIND to ::ServicesOperator,
+            EndpointsOperator.KIND to ::EndpointsOperator,
+            PersistentVolumesOperator.KIND to ::PersistentVolumesOperator,
+            PersistentVolumeClaimsOperator.KIND to ::PersistentVolumeClaimsOperator,
+            StorageClassesOperator.KIND to ::StorageClassesOperator,
+            ConfigMapsOperator.KIND to ::ConfigMapsOperator,
+            SecretsOperator.KIND to ::SecretsOperator,
+            IngressOperator.KIND to ::IngressOperator,
+            CustomResourceDefinitionsOperator.KIND to ::CustomResourceDefinitionsOperator
         )
+
+    private val kubernetes =
+        listOf<Pair<ResourceKind<out HasMetadata>, (Clients<out KubernetesClient>) -> IResourceOperator<out HasMetadata>>>(
+            NamespacesOperator.KIND to ::NamespacesOperator,
+            NodesOperator.KIND to ::NodesOperator,
+            AllPodsOperator.KIND to ::AllPodsOperator,
+            DeploymentsOperator.KIND to ::DeploymentsOperator,
+            StatefulSetsOperator.KIND to ::StatefulSetsOperator,
+            DaemonSetsOperator.KIND to ::DaemonSetsOperator,
+            JobsOperator.KIND to ::JobsOperator,
+            CronJobsOperator.KIND to ::CronJobsOperator,
+            NamespacedPodsOperator.KIND to ::NamespacedPodsOperator,
+            ServicesOperator.KIND to ::ServicesOperator,
+            EndpointsOperator.KIND to ::EndpointsOperator,
+            PersistentVolumesOperator.KIND to ::PersistentVolumesOperator,
+            PersistentVolumeClaimsOperator.KIND to ::PersistentVolumeClaimsOperator,
+            StorageClassesOperator.KIND to ::StorageClassesOperator,
+            ConfigMapsOperator.KIND to ::ConfigMapsOperator,
+            SecretsOperator.KIND to ::SecretsOperator,
+            IngressOperator.KIND to ::IngressOperator,
+            CustomResourceDefinitionsOperator.KIND to ::CustomResourceDefinitionsOperator
+        )
+
+    fun createKubernetes(clients: Clients<out KubernetesClient>): List<IResourceOperator<out HasMetadata>> {
+        return kubernetes.map { it.second.invoke(clients) }
     }
 
     fun createOpenShift(clients: Clients<out OpenShiftClient>): List<IResourceOperator<out HasMetadata>> {
-        return listOf(
-            NamespacesOperator(clients.get()),
-            NodesOperator(clients.get()),
-            AllPodsOperator(clients.get()),
-            DeploymentsOperator(clients.getApps()),
-            StatefulSetsOperator(clients.getApps()),
-            DaemonSetsOperator(clients.getApps()),
-            JobsOperator(clients.getBatch()),
-            CronJobsOperator(clients.getBatch()),
-            NamespacedPodsOperator(clients.get()),
-            ProjectsOperator(clients.get()),
-            ImageStreamsOperator(clients.get()),
-            DeploymentConfigsOperator(clients.get()),
-            BuildsOperator(clients.get()),
-            BuildConfigsOperator(clients.get()),
-            ReplicationControllersOperator(clients.get()),
-            ServicesOperator(clients.get()),
-            EndpointsOperator(clients.get()),
-            PersistentVolumesOperator(clients.get()),
-            PersistentVolumeClaimsOperator(clients.get()),
-            StorageClassesOperator(clients.getStorage()),
-            ConfigMapsOperator(clients.get()),
-            SecretsOperator(clients.get()),
-            IngressOperator(clients.getExtensions()),
-            CustomResourceDefinitionsOperator(clients.get())
-        )
+        return openshift.map { it.second.invoke(clients) }
     }
 
     fun createAll(clients: Clients<out KubernetesClient>): List<IResourceOperator<out HasMetadata>>{
-        val operators = mutableListOf<IResourceOperator<out HasMetadata>>()
-        operators.addAll(createKubernetes(clients))
-        if (clients.isOpenShift()) {
-            @Suppress("UNCHECKED_CAST")
-            operators.addAll(createOpenShift(clients as Clients<OpenShiftClient>))
+        return if (clients.isOpenShift()) {
+            createOpenShift(clients as Clients<OpenShiftClient>)
+        } else {
+            createKubernetes(clients)
         }
+    }
+
+    inline fun <reified T : IResourceOperator<out HasMetadata>> create(
+        kind: ResourceKind<out HasMetadata>,
+        clients: Clients<out KubernetesClient>
+    ): T? {
+        val operators = getOperatorsByKind(clients)
         return operators
+            .filter { operatorByKind -> kind == operatorByKind.first }
+            .map { operatorByKind -> operatorByKind.second.invoke(clients) }
+            .filterIsInstance<T>()
+            .firstOrNull()
+    }
+
+    fun getOperatorsByKind(
+        clients: Clients<out KubernetesClient>
+    ): List<Pair<ResourceKind<out HasMetadata>, (Clients<out KubernetesClient>) -> IResourceOperator<out HasMetadata>>> {
+        return if (clients.isOpenShift()) {
+            @Suppress("UNCHECKED_CAST")
+            openshift as List<Pair<ResourceKind<out HasMetadata>, (Clients<out KubernetesClient>) -> IResourceOperator<out HasMetadata>>>
+        } else {
+            kubernetes
+        }
     }
 }
