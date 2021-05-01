@@ -25,4 +25,5 @@ interface IResourceOperator<R: HasMetadata> {
     fun removed(resource: HasMetadata): Boolean
     fun delete(resources: List<HasMetadata>): Boolean
     fun replace(resource: HasMetadata): HasMetadata?
+    fun get(resource: HasMetadata): HasMetadata?
 }
