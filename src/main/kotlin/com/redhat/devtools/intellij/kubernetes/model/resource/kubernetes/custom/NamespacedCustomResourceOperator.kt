@@ -50,7 +50,7 @@ class NamespacedCustomResourceOperator(
 		}
 		val typedWatcher = watcher as? Watcher<GenericCustomResource> ?: return null
 		val watchableWrapper = GenericCustomResourceWatchable { options, customResourceWatcher ->
-			operation.get().watch(namespace, null, null, options, customResourceWatcher)
+			operation.get().watch(namespace, name, null, options, customResourceWatcher)
 		}
 		return watchableWrapper.watch(typedWatcher)
 	}
