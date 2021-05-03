@@ -27,6 +27,10 @@ import com.redhat.devtools.intellij.kubernetes.model.util.toMessage
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.client.KubernetesClientException
 
+/**
+ * Listener that gets called when an editor is saved.
+ * It saves the resource in the editor to the (kubeconfig-) context the editor is bound to.
+ */
 class SaveListener : FileDocumentSynchronizationVetoer() {
 
     override fun maySaveDocument(document: Document, isSaveExplicit: Boolean): Boolean {
@@ -75,7 +79,7 @@ class SaveListener : FileDocumentSynchronizationVetoer() {
             Progressive {
                 try {
                     if (editor != null) {
-                        val updatedResource = ResourceEditor.replaceInCluster(resource, editor, project)
+                        val updatedResource = ResourceEditor.setResourceInCluster(resource, editor, project)
                         replaceFile(updatedResource, editor, project)
                     }
                 } catch (e: KubernetesClientException) {

@@ -131,7 +131,7 @@ object ResourceEditor {
         return clusterResource.get(forceLatest)
     }
 
-    fun replaceInCluster(resource: HasMetadata, editor: FileEditor?, project: Project): HasMetadata? {
+    fun setResourceInCluster(resource: HasMetadata, editor: FileEditor?, project: Project): HasMetadata? {
         return getClusterResource(editor, project)?.saveToCluster(resource)
     }
 
@@ -168,8 +168,8 @@ object ResourceEditor {
         val resource = getResourceInFile(editor)
         if (resource != null) {
             // we're using the current context (and the namespace in the resource).
-            // This may be wrong for editors that are restored after restart
-            // we would have to store the context in order for those to be restored correctly
+            // This may be wrong for editors that are restored after IDE restart
+            // TODO: save context as [FileAttribute] for the file so that it can be restored
             val context = resourceModel.getCurrentContext()
             if (context != null) {
                 clusterResource = ClusterResource(resource, context.context.name)
