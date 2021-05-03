@@ -475,10 +475,10 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
         return operators
     }
 
-    protected abstract fun getInternalResourceOperators(supplier: Clients<C>): List<IResourceOperator<out HasMetadata>>
+    protected abstract fun getInternalResourceOperators(clients: Clients<C>): List<IResourceOperator<out HasMetadata>>
 
-    protected open fun getExtensionResourceOperators(supplier: Clients<C>): List<IResourceOperator<out HasMetadata>> {
+    protected open fun getExtensionResourceOperators(clients: Clients<C>): List<IResourceOperator<out HasMetadata>> {
         return extensionName.extensionList
-                .map { it.create(supplier) }
+                .map { it.create(clients) }
     }
 }

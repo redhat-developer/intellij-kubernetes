@@ -25,8 +25,9 @@ import io.fabric8.kubernetes.client.KubernetesClient
  * A resource that exists on the cluster. May be [get], [set] etc.
  * Notifies listeners of addition, removal and modification if [watch]
  */
-class ClusterResource(private var resource: HasMetadata, val contextName: String) {
+class ClusterResource(resource: HasMetadata, val contextName: String) {
 
+    private var resource: HasMetadata? = resource
     private val clients: Clients<out KubernetesClient> = ::createClients.invoke(contextName)
     private val operator by lazy {
         if (resource is GenericCustomResource) {
@@ -40,58 +41,74 @@ class ClusterResource(private var resource: HasMetadata, val contextName: String
     private val watch = ResourceWatch<HasMetadata>()
     private val modelChange = ModelChangeObservable()
 
-    fun get(): HasMetadata {
+    fun get(forceLatest: Boolean = false): HasMetadata? {
         synchronized(this) {
+            if (forceLatest) {
+                val updated = getLatest()
+                if (updated != null) {
+                    this.resource = updated
+                }
+            }
             return resource
         }
     }
 
-    fun getLatest(): HasMetadata? {
-        return operator?.get(get())
+    private fun getLatest(): HasMetadata? {
+        val resource = get() ?: return null
+        return operator?.get(resource)
     }
 
     fun saveToCluster(resource: HasMetadata): HasMetadata? {
         return operator?.replace(resource)
     }
 
-    fun set(resource: HasMetadata) {
+    fun set(resource: HasMetadata?) {
         synchronized(this) {
             this.resource = resource
         }
     }
 
-    fun isUpdated(): Boolean {
-        val latestRevision = getLatest() ?: return false
-        return !get().sameRevision(latestRevision)
+    fun isOutdated(compared: HasMetadata?): Boolean {
+        val resource = get()
+        if (compared == null
+            || resource == null) {
+            return false
+        }
+        return !resource.sameRevision(compared)
     }
 
     fun isDeleted(): Boolean {
-        return getLatest() == null
+        return get() == null
     }
 
     fun watch() {
-        logger<ClusterResource>().debug("Watching ${get().kind} ${get().metadata.name}.")
-        if (operator == null) {
-            return
+        val resource = get()
+        if (operator != null
+            && resource != null) {
+            logger<ClusterResource>().debug("Watching ${resource.kind} ${resource.metadata.name}.")
+            watch.watch(
+                resource,
+                { watcher -> operator?.watch(resource, watcher) },
+                ResourceWatch.WatchListeners(
+                    {},
+                    { resource ->
+                        set(null)
+                        modelChange.fireRemoved(resource)
+                    },
+                    { resource ->
+                        set(resource)
+                        modelChange.fireModified(resource)
+                    })
+            )
         }
-        watch.watch(
-            get(),
-            { watcher -> operator?.watch(get(), watcher) },
-            ResourceWatch.WatchListeners(
-                {},
-                { resource ->
-                    modelChange.fireRemoved(resource)
-                },
-                { resource ->
-                    set(resource)
-                    modelChange.fireModified(resource)
-                })
-        )
     }
 
     fun stopWatch() {
-        logger<ClusterResource>().debug("Stopping watch for ${resource.kind} ${resource.metadata.name}.")
-        watch.stopWatch(get())
+        val resource = get()
+        if (resource != null) {
+            logger<ClusterResource>().debug("Stopping watch for ${resource.kind} ${resource.metadata.name}.")
+            watch.stopWatch(resource)
+        }
     }
 
     fun close() {

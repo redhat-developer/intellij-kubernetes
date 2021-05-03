@@ -11,6 +11,7 @@
 package com.redhat.devtools.intellij.kubernetes.editor
 
 import com.fasterxml.jackson.databind.exc.MismatchedInputException
+import com.intellij.openapi.application.ReadAction
 import com.intellij.openapi.application.WriteAction
 import com.intellij.openapi.components.ServiceManager
 import com.intellij.openapi.editor.Document
@@ -73,12 +74,6 @@ object ResourceEditor {
         return ResourceFile.matches(file)
     }
 
-    fun replaceFile(resource: HasMetadata, editor: FileEditor, project: Project) {
-        getClusterResource(editor, project)?.set(resource)
-        val  file = getResourceFile(editor) ?: return
-        replaceFile(resource, file, project)
-    }
-
     fun replaceFile(resource: HasMetadata, file: VirtualFile, project: Project) {
         ResourceFile.replace(resource, file)
         FileDocumentManager.getInstance().reloadFiles(file)
@@ -102,7 +97,7 @@ object ResourceEditor {
         return FileDocumentManager.getInstance().getFile(document)
     }
 
-    fun getResourceFromFile(editor: FileEditor): HasMetadata? {
+    private fun getResourceInFile(editor: FileEditor): HasMetadata? {
         val document = getDocument(editor)
         return if (document?.text == null) {
             null
@@ -113,7 +108,9 @@ object ResourceEditor {
 
     private fun getDocument(editor: FileEditor): Document? {
         val file = editor.file ?: return null
-        return FileDocumentManager.getInstance().getDocument(file)
+        return ReadAction.compute<Document, Exception> {
+            FileDocumentManager.getInstance().getDocument(file)
+        }
     }
 
     fun showNotifications(editor: FileEditor, project: Project) {
@@ -121,19 +118,20 @@ object ResourceEditor {
         ReloadNotification.hide(editor, project)
         DeletedNotification.hide(editor, project)
         val clusterResource = getClusterResource(editor, project) ?: return
+        val resource = getResourceInCluster(true, editor, project) ?: return
         if (clusterResource.isDeleted()) {
-            DeletedNotification.show(editor, clusterResource.get(), project)
-        } else if (clusterResource.isUpdated()) {
-            ReloadNotification.show(editor, clusterResource.get(), project)
+            DeletedNotification.show(editor, resource, project)
+        } else if (clusterResource.isOutdated(getResourceInFile(editor))) {
+            ReloadNotification.show(editor, resource, project)
         }
     }
 
-    fun getLatestResource(editor: FileEditor, project: Project): HasMetadata? {
+    fun getResourceInCluster(forceLatest: Boolean = false, editor: FileEditor, project: Project): HasMetadata? {
         val clusterResource = getClusterResource(editor, project) ?: return null
-        return clusterResource.getLatest()
+        return clusterResource.get(forceLatest)
     }
 
-    fun replaceOnCluster(resource: HasMetadata, editor: FileEditor?, project: Project): HasMetadata? {
+    fun replaceInCluster(resource: HasMetadata, editor: FileEditor?, project: Project): HasMetadata? {
         return getClusterResource(editor, project)?.saveToCluster(resource)
     }
 
@@ -166,24 +164,21 @@ object ResourceEditor {
     }
 
     private fun createClusterResource(editor: FileEditor): ClusterResource? {
-        val file = editor.file ?: return null
         var clusterResource: ClusterResource? = null
-        val document = FileDocumentManager.getInstance().getDocument(file)
-        if (document?.text != null) {
-            val resource: HasMetadata? = createResource(document.text)
+        val resource = getResourceInFile(editor)
+        if (resource != null) {
             // we're using the current context (and the namespace in the resource).
             // This may be wrong for editors that are restored after restart
             // we would have to store the context in order for those to be restored correctly
             val context = resourceModel.getCurrentContext()
-            if (context != null
-                && resource != null) {
+            if (context != null) {
                 clusterResource = ClusterResource(resource, context.context.name)
             }
         }
         return clusterResource
     }
 
-    private fun createResource(jsonYaml: String): HasMetadata? {
+    fun toResource(jsonYaml: String): HasMetadata? {
         return try {
             toResource<HasMetadata>(jsonYaml)
         } catch (e: KubernetesClientException) {
@@ -244,6 +239,7 @@ object ResourceEditor {
                 val content = Serialization.asYaml(resource)
                 FileUtils.write(file, content, StandardCharsets.UTF_8, false)
                 val virtualFile = VfsUtil.findFileByIoFile(file, true)
+                virtualFile?.refresh(true, false)
                 enableNonProjectFileEditing(virtualFile)
                 virtualFile
             }
