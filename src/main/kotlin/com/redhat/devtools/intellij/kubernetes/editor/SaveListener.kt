@@ -21,9 +21,9 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.project.ProjectManager
 import com.intellij.openapi.ui.Messages
 import com.intellij.openapi.vfs.VirtualFile
+import com.redhat.devtools.intellij.kubernetes.editor.notification.ErrorNotification
 import com.redhat.devtools.intellij.kubernetes.model.Notification
 import com.redhat.devtools.intellij.kubernetes.model.util.toMessage
-import com.redhat.devtools.intellij.kubernetes.model.util.toResource
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.client.KubernetesClientException
 
@@ -38,21 +38,23 @@ class SaveListener : FileDocumentSynchronizationVetoer() {
 
     private fun saveToCluster(document: Document): Boolean {
         val file = ResourceEditor.getResourceFile(document) ?: return true
+        val projectEditor = getEditor(file) ?: return true
         try {
-            val resource: HasMetadata = toResource(document.text)
-            val projectEditor = getEditor(file) ?: return true
-            val contextName = ResourceEditor.getContextName(projectEditor.second, projectEditor.first) ?: return true
+            val resource: HasMetadata? = ResourceEditor.toResource(document.text)
+            if (resource == null) {
+                ErrorNotification.show(projectEditor.editor, projectEditor.project,
+                    "Could not save", "Editor content is not valid or an unknown resource type")
+                return true
+            }
+            val contextName = ResourceEditor.getContextName(projectEditor.editor, projectEditor.project) ?: return true
             if (confirmSaveToCluster(resource, contextName)) {
-                saveToCluster(resource, contextName, projectEditor.second, projectEditor.first)
+                saveToCluster(resource, contextName, projectEditor.editor, projectEditor.project)
             }
             return true
         } catch (e: KubernetesClientException) {
             val errorMessage = "Could not save ${file.name}: ${e.cause?.message}"
             Notification().error("Save to Cluster Failed", errorMessage)
-            logger<SaveListener>().warn(
-                errorMessage,
-                e.cause
-            )
+            logger<SaveListener>().warn(errorMessage, e.cause)
             return true
         }
     }
@@ -73,8 +75,7 @@ class SaveListener : FileDocumentSynchronizationVetoer() {
             Progressive {
                 try {
                     if (editor != null) {
-                        ResourceEditor.replaceOnCluster(resource, editor, project)
-                        val updatedResource = ResourceEditor.getLatestResource(editor, project)
+                        val updatedResource = ResourceEditor.replaceInCluster(resource, editor, project)
                         replaceFile(updatedResource, editor, project)
                     }
                 } catch (e: KubernetesClientException) {
@@ -98,14 +99,16 @@ class SaveListener : FileDocumentSynchronizationVetoer() {
     }
 
 
-    private fun getEditor(file: VirtualFile): Pair<Project, FileEditor>? {
+    private fun getEditor(file: VirtualFile): ProjectAndEditor? {
         return ProjectManager.getInstance().openProjects
             .filter { project -> project.isInitialized && !project.isDisposed }
             .flatMap { project ->
                 FileEditorManager.getInstance(project).getEditors(file).toList()
-                    .mapNotNull { editor -> Pair<Project, FileEditor>(project, editor) }
+                    .mapNotNull { editor -> ProjectAndEditor(project, editor) }
             }
             .firstOrNull()
     }
+
+    private class ProjectAndEditor(val project: Project, val editor: FileEditor)
 
 }

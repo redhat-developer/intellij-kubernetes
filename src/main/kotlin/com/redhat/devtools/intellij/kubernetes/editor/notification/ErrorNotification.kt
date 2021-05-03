@@ -30,30 +30,34 @@ object ErrorNotification {
 
     private val KEY_PANEL = Key<JComponent>(ErrorNotification::javaClass.name)
 
+    fun show(editor: FileEditor, project: Project, title: String, message: String) {
+        editor.showNotification(KEY_PANEL, { createPanel(editor, title, message) }, project)
+    }
+
     fun show(editor: FileEditor, project: Project, title: String, e: Throwable) {
-        editor.showNotification(KEY_PANEL, { createPanel(editor, title, e) }, project)
+        editor.showNotification(KEY_PANEL, { createPanel(editor, title, e.message) }, project)
     }
 
     fun hide(editor: FileEditor, project: Project) {
         editor.hideNotification(KEY_PANEL, project)
     }
 
-    private fun createPanel(editor: FileEditor, title: String, e: Throwable): EditorNotificationPanel {
+    private fun createPanel(editor: FileEditor, title: String, message: String?): EditorNotificationPanel {
         val panel = EditorNotificationPanel()
         panel.icon(AllIcons.Ide.FatalError)
         panel.setText(title)
-        addDetailsAction(e, panel, editor)
+        addDetailsAction(message, panel, editor)
         return panel
     }
 
-    private fun addDetailsAction(e: Throwable, panel: EditorNotificationPanel, editor: FileEditor) {
-        if (e.message == null) {
+    private fun addDetailsAction(message: String?, panel: EditorNotificationPanel, editor: FileEditor) {
+        if (message == null) {
             return
         }
         panel.createActionLabel("Details") {
             val balloonBuilder = JBPopupFactory.getInstance()
                 .createHtmlTextBalloonBuilder(
-                    trimWithEllipsis(e.message!!.replace("\n", ""), 170),
+                    trimWithEllipsis(message!!.replace("\n", ""), 170),
                     MessageType.ERROR,
                     null)
             val balloon = balloonBuilder

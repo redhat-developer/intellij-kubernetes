@@ -51,9 +51,7 @@ object ReloadNotification {
     }
 
     private fun reloadEditor(editor: FileEditor, project: Project, file: VirtualFile) {
-        val latestRevision = ResourceEditor.getLatestResource(editor, project)
-        if (latestRevision != null) {
-            ResourceEditor.replaceFile(latestRevision, file, project)
-        }
+        val latestRevision = ResourceEditor.getResourceInCluster(false, editor, project) ?: return
+        ResourceEditor.replaceFile(latestRevision, file, project)
     }
 }
