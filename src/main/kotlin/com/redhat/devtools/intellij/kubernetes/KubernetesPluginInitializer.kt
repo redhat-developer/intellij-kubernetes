@@ -39,7 +39,7 @@ class KubernetesPluginInitializer : StartupActivity {
         val selected = FileEditorManager.getInstance(project).selectedEditor ?: return
         if (ResourceEditor.isResourceEditor(selected)) {
             try {
-                ResourceEditor.showNotifications(selected, project)
+                ResourceEditor.updateEditor(selected, project)
             } catch (e: RuntimeException) {
                 ErrorNotification.show(
                     selected,

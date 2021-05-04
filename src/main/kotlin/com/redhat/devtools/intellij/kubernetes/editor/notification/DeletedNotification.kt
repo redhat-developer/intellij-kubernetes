@@ -11,6 +11,7 @@
 package com.redhat.devtools.intellij.kubernetes.editor.notification
 
 import com.intellij.openapi.fileEditor.FileEditor
+import com.intellij.openapi.fileEditor.FileEditorState
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Key
 import com.intellij.ui.EditorNotificationPanel
@@ -44,6 +45,7 @@ object DeletedNotification {
         }
 
         panel.createActionLabel("Keep current") {
+            editor.isModified
             editor.hideNotification(KEY_PANEL, project)
         }
         return panel
