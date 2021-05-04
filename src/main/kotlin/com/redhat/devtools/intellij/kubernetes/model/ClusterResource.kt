@@ -27,7 +27,7 @@ import io.fabric8.kubernetes.client.KubernetesClient
  */
 class ClusterResource(resource: HasMetadata, val contextName: String) {
 
-    private val originaryResource: HasMetadata? = resource
+    private val initialResource: HasMetadata? = resource
     private var updatedResource: HasMetadata? = resource
     private val clients: Clients<out KubernetesClient> = ::createClients.invoke(contextName)
     private val operator by lazy {
@@ -45,8 +45,8 @@ class ClusterResource(resource: HasMetadata, val contextName: String) {
     fun get(forceLatest: Boolean = false): HasMetadata? {
         synchronized(this) {
             if (forceLatest) {
-                if (originaryResource != null) {
-                    this.updatedResource = operator?.get(this.originaryResource)
+                if (initialResource != null) {
+                    this.updatedResource = operator?.get(this.initialResource)
                 }
             }
             return updatedResource
@@ -83,11 +83,11 @@ class ClusterResource(resource: HasMetadata, val contextName: String) {
     fun watch() {
         if (operator != null
             // use the resource passed in initially, updated resource can have become null (deleted)
-            && originaryResource != null) {
-            logger<ClusterResource>().debug("Watching ${originaryResource.kind} ${originaryResource.metadata.name}.")
+            && initialResource != null) {
+            logger<ClusterResource>().debug("Watching ${initialResource.kind} ${initialResource.metadata.name}.")
             watch.watch(
-                originaryResource,
-                { watcher -> operator?.watch(originaryResource, watcher) },
+                initialResource,
+                { watcher -> operator?.watch(initialResource, watcher) },
                 ResourceWatch.WatchListeners(
                     {},
                     { removed ->
@@ -104,7 +104,7 @@ class ClusterResource(resource: HasMetadata, val contextName: String) {
 
     fun stopWatch() {
         // use the resource passed in initially, updated resource can have become null (deleted)
-        val resource = originaryResource ?: return
+        val resource = initialResource ?: return
         logger<ClusterResource>().debug("Stopping watch for ${resource.kind} ${resource.metadata.name}.")
         watch.stopWatch(resource)
     }

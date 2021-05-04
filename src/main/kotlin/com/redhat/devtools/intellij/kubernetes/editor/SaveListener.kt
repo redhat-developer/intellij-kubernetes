@@ -83,9 +83,6 @@ class SaveListener : FileDocumentSynchronizationVetoer() {
                         val updatedResource = ResourceEditor.setResourceInCluster(resource, editor, project)
                         if (updatedResource != null) {
                             reloadEditor(updatedResource, editor, project)
-                        } else {
-                            // could not be saved, resource was deleted in cluster
-                            DeletedNotification.show(editor, resource, project)
                         }
                     }
                 } catch (e: KubernetesClientException) {

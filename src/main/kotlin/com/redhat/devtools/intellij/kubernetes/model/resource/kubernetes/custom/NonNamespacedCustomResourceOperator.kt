@@ -60,24 +60,13 @@ class NonNamespacedCustomResourceOperator(
     }
 
     private fun delete(name: String): Boolean {
-        return try {
-            operation.get().delete(name)
-            true
-        } catch(e: KubernetesClientException) {
-            logger<NonNamespacedCustomResourceOperator>().warn("Could not delete $kind custom resource named $name in cluster scope.", e)
-            false
-        }
+        operation.get().delete(name)
+        return true
     }
 
     override fun replace(resource: HasMetadata): HasMetadata? {
-        return try {
-            val updated = operation.get().createOrReplace(resource.metadata.name, Serialization.asJson(resource))
-            GenericCustomResourceFactory.createResource(updated)
-        } catch(e: KubernetesClientException) {
-            logger<NonNamespacedCustomResourceOperator>()
-                .info("Could not replace $kind custom resource named ${resource.metadata.name} in cluster scope.", e)
-            null
-        }
+        val updated = operation.get().createOrReplace(resource.metadata.name, Serialization.asJson(resource))
+        return GenericCustomResourceFactory.createResource(updated)
     }
 
     override fun create(resource: HasMetadata): HasMetadata? {
@@ -85,14 +74,8 @@ class NonNamespacedCustomResourceOperator(
     }
 
     override fun get(resource: HasMetadata): HasMetadata? {
-        return try {
-            val updated = operation.get().get(null, resource.metadata.name)
-            GenericCustomResourceFactory.createResource(updated)
-        } catch(e: KubernetesClientException) {
-            logger<NonNamespacedCustomResourceOperator>()
-                .info("Could not get $kind custom resource named ${resource.metadata.name}", e)
-            null
-        }
+        val updated = operation.get().get(null, resource.metadata.name)
+        return GenericCustomResourceFactory.createResource(updated)
     }
 
 }

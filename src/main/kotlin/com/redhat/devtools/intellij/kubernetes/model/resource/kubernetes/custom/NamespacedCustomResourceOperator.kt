@@ -64,25 +64,13 @@ class NamespacedCustomResourceOperator(
 	}
 
 	private fun delete(namespace: String, name: String): Boolean {
-		return try {
-			operation.get().delete(namespace, name)
-			true
-		} catch(e: KubernetesClientException) {
-			logger<NonNamespacedCustomResourceOperator>()
-				.info("Could not delete $kind custom resource named $name in namespace $namespace.", e)
-			false
-		}
+		operation.get().delete(namespace, name)
+		return true
 	}
 
 	override fun replace(resource: HasMetadata): HasMetadata? {
-		return try {
-			val updated = operation.get().createOrReplace(resource.metadata.namespace, Serialization.asJson(resource))
-			GenericCustomResourceFactory.createResource(updated)
-		} catch(e: KubernetesClientException) {
-			logger<NonNamespacedCustomResourceOperator>()
-				.info("Could not replace $kind custom resource named ${resource.metadata.name} in namespace ${resource.metadata.namespace}.", e)
-			null
-		}
+		val updated = operation.get().createOrReplace(resource.metadata.namespace, Serialization.asJson(resource))
+		return GenericCustomResourceFactory.createResource(updated)
 	}
 
 	override fun create(resource: HasMetadata): HasMetadata? {
@@ -90,14 +78,8 @@ class NamespacedCustomResourceOperator(
 	}
 
 	override fun get(resource: HasMetadata): HasMetadata? {
-		return try {
-			val updated = operation.get().get(resource.metadata.namespace, resource.metadata.name)
-			GenericCustomResourceFactory.createResource(updated)
-		} catch(e: KubernetesClientException) {
-			logger<NonNamespacedCustomResourceOperator>()
-				.info("Could not get $kind custom resource named ${resource.metadata.name} in namespace ${resource.metadata.namespace}.", e)
-			null
-		}
+		val updated = operation.get().get(resource.metadata.namespace, resource.metadata.name)
+		return GenericCustomResourceFactory.createResource(updated)
 	}
 
 }
