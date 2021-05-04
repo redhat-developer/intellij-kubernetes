@@ -54,7 +54,11 @@ class ClusterResource(resource: HasMetadata, val contextName: String) {
     }
 
     fun saveToCluster(resource: HasMetadata): HasMetadata? {
-        return operator?.replace(resource)
+        return if (updatedResource != null) {
+            operator?.replace(resource)
+        } else {
+            operator?.create(resource)
+        }
     }
 
     fun set(resource: HasMetadata?) {
