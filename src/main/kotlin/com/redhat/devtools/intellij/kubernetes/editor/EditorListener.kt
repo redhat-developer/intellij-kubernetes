@@ -26,11 +26,6 @@ class EditorListener(private val project: Project) : FileEditorManagerListener {
         handleSelectionGained(event.newEditor, event.newFile, project)
     }
 
-    override fun fileClosed(source: FileEditorManager, file: VirtualFile) {
-        val editor = source.getEditors(file).firstOrNull() ?: return
-        ResourceEditor.dispose(editor, file, project)
-    }
-
     private fun handleSelectionLost(editor: FileEditor?, file: VirtualFile?, project: Project) {
         if (editor == null
             || !ResourceEditor.isResourceFile(file)) {
@@ -55,7 +50,7 @@ class EditorListener(private val project: Project) : FileEditorManagerListener {
         }
         try {
             ResourceEditor.startWatch(editor, project)
-            ResourceEditor.showNotifications(editor, project)
+            ResourceEditor.updateEditor(editor, project)
         } catch (e: KubernetesClientException) {
             ErrorNotification.show(
                 editor,

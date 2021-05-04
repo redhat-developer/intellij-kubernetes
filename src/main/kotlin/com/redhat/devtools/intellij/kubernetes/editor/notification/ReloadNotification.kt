@@ -37,21 +37,17 @@ object ReloadNotification {
         val panel = EditorNotificationPanel()
         panel.setText("${resource.metadata.name} changed on server. Reload?")
         panel.createActionLabel("Reload now") {
-            val file = editor.file
-            if (file != null
-                && !project.isDisposed) {
-                reloadEditor(editor, project, file)
+            val latestRevision = ResourceEditor.getResourceInCluster(false, editor, project)
+            if (latestRevision != null) {
+                ResourceEditor.reloadEditor(latestRevision, editor, project)
             }
         }
 
         panel.createActionLabel("Keep current") {
+            ResourceEditor.setModified(editor, project)
             editor.hideNotification(KEY_PANEL, project)
         }
         return panel
     }
 
-    private fun reloadEditor(editor: FileEditor, project: Project, file: VirtualFile) {
-        val latestRevision = ResourceEditor.getResourceInCluster(false, editor, project) ?: return
-        ResourceEditor.replaceFile(latestRevision, file, project)
-    }
 }

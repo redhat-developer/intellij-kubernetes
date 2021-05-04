@@ -1,7 +1,7 @@
 package com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.custom
 
 import com.redhat.devtools.intellij.kubernetes.model.resource.IResourceOperator
-import com.redhat.devtools.intellij.kubernetes.model.util.toResource
+import com.redhat.devtools.intellij.kubernetes.model.util.createResource
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.apiextensions.v1beta1.CustomResourceDefinition
 import io.fabric8.kubernetes.client.KubernetesClient
@@ -25,7 +25,7 @@ object CustomResourceOperatorFactory {
 
     private fun createResource(jsonYaml: String): HasMetadata? {
         return try {
-            toResource<GenericCustomResource>(jsonYaml)
+            createResource<GenericCustomResource>(jsonYaml)
         } catch(e: RuntimeException) {
             null
         }

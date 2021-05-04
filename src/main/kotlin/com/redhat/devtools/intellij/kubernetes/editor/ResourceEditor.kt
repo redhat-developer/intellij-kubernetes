@@ -15,6 +15,7 @@ import com.intellij.openapi.application.ReadAction
 import com.intellij.openapi.application.WriteAction
 import com.intellij.openapi.components.ServiceManager
 import com.intellij.openapi.editor.Document
+import com.intellij.openapi.editor.ex.DocumentEx
 import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.fileEditor.FileEditor
 import com.intellij.openapi.fileEditor.FileEditorManager
@@ -32,7 +33,7 @@ import com.redhat.devtools.intellij.kubernetes.model.ClusterResource
 import com.redhat.devtools.intellij.kubernetes.model.IResourceModel
 import com.redhat.devtools.intellij.kubernetes.model.ModelChangeObservable
 import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.custom.GenericCustomResource
-import com.redhat.devtools.intellij.kubernetes.model.util.toResource
+import com.redhat.devtools.intellij.kubernetes.model.util.createResource
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.Namespace
 import io.fabric8.kubernetes.client.KubernetesClientException
@@ -58,6 +59,8 @@ object ResourceEditor {
 
     fun close(file: VirtualFile, project: Project) {
         FileEditorManager.getInstance(project).closeFile(file)
+        val editor = getEditor(file, project) ?: return
+        dispose(editor, file, project)
     }
 
     fun dispose(editor: FileEditor, file: VirtualFile, project: Project) {
@@ -74,11 +77,19 @@ object ResourceEditor {
         return ResourceFile.matches(file)
     }
 
-    fun replaceFile(resource: HasMetadata, file: VirtualFile, project: Project) {
+    fun reloadEditor(resource: HasMetadata, editor: FileEditor, project: Project) {
+        val file = editor.file ?: return
+        reloadEditor(resource, file)
+        val editor = getEditor(file, project) ?: return
+        updateEditor(editor, project)
+    }
+
+    private fun reloadEditor(resource: HasMetadata, file: VirtualFile?) {
+        if (file == null) {
+            return
+        }
         ResourceFile.replace(resource, file)
         FileDocumentManager.getInstance().reloadFiles(file)
-        val editor = getEditor(file, project) ?: return
-        showNotifications(editor, project)
     }
 
     private fun getEditor(file: VirtualFile?, project: Project): FileEditor? {
@@ -102,7 +113,7 @@ object ResourceEditor {
         return if (document?.text == null) {
             null
         } else {
-            toResource(document.text)
+            createResource(document.text)
         }
     }
 
@@ -113,16 +124,21 @@ object ResourceEditor {
         }
     }
 
-    fun showNotifications(editor: FileEditor, project: Project) {
+    fun updateEditor(editor: FileEditor, project: Project) {
         ErrorNotification.hide(editor, project)
         ReloadNotification.hide(editor, project)
         DeletedNotification.hide(editor, project)
         val clusterResource = getClusterResource(editor, project) ?: return
-        val resource = getResourceInCluster(true, editor, project) ?: return
+        val resourceInFile = getResourceInFile(editor) ?: return
         if (clusterResource.isDeleted()) {
-            DeletedNotification.show(editor, resource, project)
-        } else if (clusterResource.isOutdated(getResourceInFile(editor))) {
-            ReloadNotification.show(editor, resource, project)
+            DeletedNotification.show(editor, resourceInFile, project)
+        } else if (clusterResource.isOutdated(resourceInFile)) {
+            val resourceInCluster = getResourceInCluster(true, editor, project) ?: return
+            if (!editor.isModified) {
+                reloadEditor(resourceInCluster, editor.file)
+            } else {
+                ReloadNotification.show(editor, resourceInCluster, project)
+            }
         }
     }
 
@@ -147,6 +163,13 @@ object ResourceEditor {
 
     fun getContextName(editor: FileEditor?, project: Project): String? {
         return getClusterResource(editor, project)?.contextName
+    }
+
+    fun setModified(editor: FileEditor, project: Project) {
+        val document = getDocument(editor) ?: return
+        if (document is DocumentEx) {
+            document.modificationStamp = System.currentTimeMillis()
+        }
     }
 
     private fun getClusterResource(editor: FileEditor?, project: Project): ClusterResource? {
@@ -178,9 +201,9 @@ object ResourceEditor {
         return clusterResource
     }
 
-    fun toResource(jsonYaml: String): HasMetadata? {
+    fun createResource(jsonYaml: String): HasMetadata? {
         return try {
-            toResource<HasMetadata>(jsonYaml)
+            createResource<HasMetadata>(jsonYaml)
         } catch (e: KubernetesClientException) {
             if (e.cause is MismatchedInputException) {
                 // invalid json
@@ -188,7 +211,7 @@ object ResourceEditor {
             } else {
                 // unknown type
                 return try {
-                    toResource<GenericCustomResource>(jsonYaml)
+                    createResource<GenericCustomResource>(jsonYaml)
                 } catch (e: java.lang.RuntimeException) {
                     null
                 }
@@ -202,11 +225,11 @@ object ResourceEditor {
             }
 
             override fun removed(removed: Any) {
-                showNotifications(editor, project)
+                updateEditor(editor, project)
             }
 
             override fun modified(modified: Any) {
-                showNotifications(editor, project)
+                updateEditor(editor, project)
             }
         }
     }

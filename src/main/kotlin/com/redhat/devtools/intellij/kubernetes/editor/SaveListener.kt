@@ -21,6 +21,7 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.project.ProjectManager
 import com.intellij.openapi.ui.Messages
 import com.intellij.openapi.vfs.VirtualFile
+import com.redhat.devtools.intellij.kubernetes.editor.notification.DeletedNotification
 import com.redhat.devtools.intellij.kubernetes.editor.notification.ErrorNotification
 import com.redhat.devtools.intellij.kubernetes.model.Notification
 import com.redhat.devtools.intellij.kubernetes.model.util.toMessage
@@ -44,7 +45,7 @@ class SaveListener : FileDocumentSynchronizationVetoer() {
         val file = ResourceEditor.getResourceFile(document) ?: return true
         val projectEditor = getEditor(file) ?: return true
         try {
-            val resource: HasMetadata? = ResourceEditor.toResource(document.text)
+            val resource: HasMetadata? = ResourceEditor.createResource(document.text)
             if (resource == null) {
                 ErrorNotification.show(projectEditor.editor, projectEditor.project,
                     "Could not save", "Editor content is not valid or an unknown resource type")
@@ -80,7 +81,12 @@ class SaveListener : FileDocumentSynchronizationVetoer() {
                 try {
                     if (editor != null) {
                         val updatedResource = ResourceEditor.setResourceInCluster(resource, editor, project)
-                        replaceFile(updatedResource, editor, project)
+                        if (updatedResource != null) {
+                            reloadEditor(updatedResource, editor, project)
+                        } else {
+                            // could not be saved, resource was deleted in cluster
+                            DeletedNotification.show(editor, resource, project)
+                        }
                     }
                 } catch (e: KubernetesClientException) {
                     val message = """${resource.metadata.name}
@@ -92,13 +98,13 @@ class SaveListener : FileDocumentSynchronizationVetoer() {
             })
     }
 
-    private fun replaceFile(updatedResource: HasMetadata?, editor: FileEditor?, project: Project) {
-        if (updatedResource == null) {
+    private fun reloadEditor(updatedResource: HasMetadata?, editor: FileEditor?, project: Project) {
+        if (updatedResource == null
+            || editor == null) {
             return
         }
-        val file = editor?.file ?: return
         ApplicationManager.getApplication().invokeAndWait {
-            ResourceEditor.replaceFile(updatedResource, file, project)
+            ResourceEditor.reloadEditor(updatedResource, editor, project)
         }
     }
 
