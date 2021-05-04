@@ -75,6 +75,10 @@ abstract class AbstractResourceOperator<R : HasMetadata> : IResourceOperator<R> 
         return true
     }
 
+    protected fun removeResourceVersion(toCreate: R) {
+        toCreate.metadata.resourceVersion = null
+    }
+
     private fun isCorrectKind(resource: HasMetadata): Boolean {
         return kind.clazz.isAssignableFrom(resource::class.java)
     }

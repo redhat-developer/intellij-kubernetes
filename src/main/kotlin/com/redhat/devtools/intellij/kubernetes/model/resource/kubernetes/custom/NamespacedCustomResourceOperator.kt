@@ -85,6 +85,10 @@ class NamespacedCustomResourceOperator(
 		}
 	}
 
+	override fun create(resource: HasMetadata): HasMetadata? {
+		return replace(resource)
+	}
+
 	override fun get(resource: HasMetadata): HasMetadata? {
 		return try {
 			val updated = operation.get().get(resource.metadata.namespace, resource.metadata.name)

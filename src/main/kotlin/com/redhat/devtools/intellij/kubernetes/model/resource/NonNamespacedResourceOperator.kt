@@ -67,6 +67,15 @@ abstract class NonNamespacedResourceOperator<R : HasMetadata, C : Client>(
         return getOperation()?.withName(toReplace.metadata.name)?.replace(toReplace)
     }
 
+    override fun create(resource: HasMetadata): HasMetadata? {
+        @Suppress("UNCHECKED_CAST")
+        val toCreate = resource as? R ?: return null
+        removeResourceVersion(toCreate)
+        return getOperation()
+            ?.withName(toCreate.metadata.name)
+            ?.create(toCreate)
+    }
+
     override fun get(resource: HasMetadata): HasMetadata? {
         @Suppress("UNCHECKED_CAST")
         val toGet = resource as? R ?: return null
