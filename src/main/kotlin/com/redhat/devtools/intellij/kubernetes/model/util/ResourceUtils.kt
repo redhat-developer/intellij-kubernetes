@@ -70,13 +70,28 @@ fun HasMetadata.sameRevision(resource: HasMetadata): Boolean {
 	return this.metadata?.resourceVersion == resource.metadata?.resourceVersion
 }
 
+fun HasMetadata.olderRevision(resource: HasMetadata): Boolean {
+	if (!this.sameResource(resource)) {
+		return false
+	}
+	val thisVersion = this.metadata?.resourceVersion?.toIntOrNull()
+	val thatVersion = resource.metadata?.resourceVersion?.toIntOrNull()
+	if (thisVersion == null) {
+		return thatVersion != null
+	}
+	if (thatVersion == null) {
+		return false
+	}
+	return thisVersion < thatVersion
+}
+
 /**
  * Returns the version for a given subclass of HasMetadata.
  * The version is built of the apiGroup and apiVersion that are annotated in the HasMetadata subclasses.
  *
  * @see HasMetadata.getApiVersion
- * @see io.fabric8.kubernetes.model.annotation.ApiVersion (annotation)
- * @see io.fabric8.kubernetes.model.annotation.ApiGroup (annotation)
+ * @see io.fabric8.kubernetes.model.annotation.Version (annotation)
+ * @see io.fabric8.kubernetes.model.annotation.Group (annotation)
  */
 fun getApiVersion(clazz: Class<out HasMetadata>): String {
 	val apiVersion = Helper.getAnnotationValue(clazz, Version::class.java)
