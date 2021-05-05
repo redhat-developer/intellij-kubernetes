@@ -88,7 +88,8 @@ class SaveListener : FileDocumentSynchronizationVetoer() {
                 } catch (e: KubernetesClientException) {
                     val message = """${resource.metadata.name}
                             ${ if (resource.metadata.namespace != null) {"in namespace ${resource.metadata.namespace} "} else {""}} 
-                            could not be saved to cluster $contextName"""
+                            could not be saved to cluster $contextName:
+                            ${e.message}"""
                     logger<SaveListener>().warn(message, e)
                     Notification().error("Save to cluster failed", message)
                 }

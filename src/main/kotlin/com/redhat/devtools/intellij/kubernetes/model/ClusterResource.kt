@@ -17,9 +17,11 @@ import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.custom.
 import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.custom.GenericCustomResource
 import com.redhat.devtools.intellij.kubernetes.model.util.Clients
 import com.redhat.devtools.intellij.kubernetes.model.util.createClients
+import com.redhat.devtools.intellij.kubernetes.model.util.isNotFound
 import com.redhat.devtools.intellij.kubernetes.model.util.sameRevision
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.client.KubernetesClient
+import io.fabric8.kubernetes.client.KubernetesClientException
 
 /**
  * A resource that exists on the cluster. May be [get], [set] etc.
@@ -44,9 +46,16 @@ class ClusterResource(resource: HasMetadata, val contextName: String) {
 
     fun get(forceLatest: Boolean = false): HasMetadata? {
         synchronized(this) {
-            if (forceLatest) {
-                if (initialResource != null) {
+            if (forceLatest
+                    && initialResource != null) {
+                try {
                     this.updatedResource = operator?.get(this.initialResource)
+                } catch (e: KubernetesClientException) {
+                    if (e.isNotFound()) {
+                        this.updatedResource = null
+                    } else {
+                        throw e
+                    }
                 }
             }
             return updatedResource
