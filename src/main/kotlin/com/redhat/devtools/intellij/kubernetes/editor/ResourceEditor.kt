@@ -11,6 +11,7 @@
 package com.redhat.devtools.intellij.kubernetes.editor
 
 import com.fasterxml.jackson.databind.exc.MismatchedInputException
+import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.ReadAction
 import com.intellij.openapi.application.WriteAction
 import com.intellij.openapi.components.ServiceManager
@@ -78,10 +79,13 @@ object ResourceEditor {
     }
 
     fun reloadEditor(resource: HasMetadata, editor: FileEditor, project: Project) {
-        val file = editor.file ?: return
-        reloadEditor(resource, file)
-        val editor = getEditor(file, project) ?: return
-        updateEditor(editor, project)
+        ApplicationManager.getApplication().invokeAndWait {
+            val file = editor.file
+            if (file != null) {
+                reloadEditor(resource, file)
+                updateEditor(editor, project)
+            }
+        }
     }
 
     private fun reloadEditor(resource: HasMetadata, file: VirtualFile?) {
@@ -134,11 +138,7 @@ object ResourceEditor {
             DeletedNotification.show(editor, resourceInFile, project)
         } else if (clusterResource.isOutdated(resourceInFile)) {
             val resourceInCluster = getResourceInCluster(true, editor, project) ?: return
-            if (!isModified(editor)) {
-                reloadEditor(resourceInCluster, editor.file)
-            } else {
-                ReloadNotification.show(editor, resourceInCluster, project)
-            }
+            ReloadNotification.show(editor, resourceInCluster, project)
         }
     }
 
@@ -169,13 +169,6 @@ object ResourceEditor {
 
     fun getContextName(editor: FileEditor?, project: Project): String? {
         return getClusterResource(editor, project)?.contextName
-    }
-
-    fun setModified(editor: FileEditor, project: Project) {
-        val document = getDocument(editor) ?: return
-        if (document is DocumentEx) {
-            document.modificationStamp = System.currentTimeMillis()
-        }
     }
 
     private fun getClusterResource(editor: FileEditor?, project: Project): ClusterResource? {
