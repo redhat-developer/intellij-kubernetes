@@ -21,6 +21,7 @@ import com.redhat.devtools.intellij.kubernetes.model.context.IActiveContext.Reso
 import com.redhat.devtools.intellij.kubernetes.model.context.IContext
 import com.redhat.devtools.intellij.kubernetes.model.context.create
 import com.redhat.devtools.intellij.kubernetes.model.resource.ResourceKind
+import com.redhat.devtools.intellij.kubernetes.model.util.isNotFound
 import java.util.function.Predicate
 
 interface IResourceModel {
@@ -119,7 +120,7 @@ open class ResourceModel : IResourceModel {
                 resources.filter { filter.test(it) }
             }
         } catch (e: KubernetesClientException) {
-            if (isNotFound(e)) {
+            if (e.isNotFound()) {
                 return emptyList()
             }
             throw ResourceException("Could not get ${kind.kind}s for server ${contexts.current?.masterUrl}", e)
@@ -180,9 +181,5 @@ open class ResourceModel : IResourceModel {
 
     override fun delete(resources: List<HasMetadata>) {
         contexts.current?.delete(resources)
-    }
-
-    private fun isNotFound(e: KubernetesClientException): Boolean {
-        return e.code == 404
     }
 }
