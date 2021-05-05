@@ -134,11 +134,17 @@ object ResourceEditor {
             DeletedNotification.show(editor, resourceInFile, project)
         } else if (clusterResource.isOutdated(resourceInFile)) {
             val resourceInCluster = getResourceInCluster(true, editor, project) ?: return
-            if (!editor.isModified) {
+            if (!isModified(editor)) {
                 reloadEditor(resourceInCluster, editor.file)
             } else {
                 ReloadNotification.show(editor, resourceInCluster, project)
             }
+        }
+    }
+
+    private fun isModified(editor: FileEditor): Boolean {
+        return ReadAction.compute<Boolean, Exception> {
+            editor.isModified
         }
     }
 
