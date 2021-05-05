@@ -48,7 +48,7 @@ class SaveListener : FileDocumentSynchronizationVetoer() {
             val resource: HasMetadata? = ResourceEditor.createResource(document.text)
             if (resource == null) {
                 ErrorNotification.show(projectEditor.editor, projectEditor.project,
-                    "Could not save", "Editor content is not valid or an unknown resource type")
+                    "Could not save", "Editor content is not valid or of an unknown resource type")
                 return true
             }
             val contextName = ResourceEditor.getContextName(projectEditor.editor, projectEditor.project) ?: return true
@@ -88,7 +88,7 @@ class SaveListener : FileDocumentSynchronizationVetoer() {
                 } catch (e: KubernetesClientException) {
                     val message = """${resource.metadata.name}
                             ${ if (resource.metadata.namespace != null) {"in namespace ${resource.metadata.namespace} "} else {""}} 
-                            could not be saved to cluster at $contextName"""
+                            could not be saved to cluster $contextName"""
                     logger<SaveListener>().warn(message, e)
                     Notification().error("Save to cluster failed", message)
                 }

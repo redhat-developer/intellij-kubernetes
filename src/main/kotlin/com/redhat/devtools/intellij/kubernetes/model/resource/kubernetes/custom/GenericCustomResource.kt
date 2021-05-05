@@ -10,10 +10,8 @@
  ******************************************************************************/
 package com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.custom
 
-import com.fasterxml.jackson.databind.JsonDeserializer
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize
 import io.fabric8.kubernetes.api.model.HasMetadata
-import io.fabric8.kubernetes.api.model.KubernetesResource
 import io.fabric8.kubernetes.api.model.ObjectMeta
 
 @JsonDeserialize(using = GenericCustomResourceDeserializer::class)
@@ -21,7 +19,7 @@ class GenericCustomResource(
 	private val kind: String?,
 	private var apiVersion: String?,
 	private var metadata: ObjectMeta,
-	val spec: GenericCustomResourceSpec?
+	val spec: Map<String, Any?>?
 ) : HasMetadata {
 
 	override fun setMetadata(metadata: ObjectMeta) {
@@ -37,7 +35,7 @@ class GenericCustomResource(
 	}
 
 	override fun setApiVersion(version: String?) {
-		this.apiVersion = apiVersion
+		this.apiVersion = version
 	}
 
 	override fun getApiVersion(): String? {
@@ -45,6 +43,3 @@ class GenericCustomResource(
 	}
 
 }
-
-@JsonDeserialize(using = JsonDeserializer.None::class)
-class GenericCustomResourceSpec(val values: Map<String, Any?>?) : KubernetesResource
