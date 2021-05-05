@@ -16,7 +16,6 @@ import com.intellij.openapi.application.ReadAction
 import com.intellij.openapi.application.WriteAction
 import com.intellij.openapi.components.ServiceManager
 import com.intellij.openapi.editor.Document
-import com.intellij.openapi.editor.ex.DocumentEx
 import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.fileEditor.FileEditor
 import com.intellij.openapi.fileEditor.FileEditorManager
@@ -261,7 +260,7 @@ object ResourceEditor {
                 val content = Serialization.asYaml(resource)
                 FileUtils.write(file, content, StandardCharsets.UTF_8, false)
                 val virtualFile = VfsUtil.findFileByIoFile(file, true)
-                virtualFile?.refresh(true, false)
+                virtualFile?.refresh(false, false)
                 enableNonProjectFileEditing(virtualFile)
                 virtualFile
             }
