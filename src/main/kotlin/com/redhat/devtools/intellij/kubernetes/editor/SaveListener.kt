@@ -101,9 +101,7 @@ class SaveListener : FileDocumentSynchronizationVetoer() {
             || editor == null) {
             return
         }
-        ApplicationManager.getApplication().invokeAndWait {
-            ResourceEditor.reloadEditor(updatedResource, editor, project)
-        }
+        ResourceEditor.reloadEditor(updatedResource, editor, project)
     }
 
 

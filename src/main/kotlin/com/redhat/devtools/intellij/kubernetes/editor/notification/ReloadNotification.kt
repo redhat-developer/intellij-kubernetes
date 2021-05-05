@@ -44,7 +44,6 @@ object ReloadNotification {
         }
 
         panel.createActionLabel("Keep current") {
-            ResourceEditor.setModified(editor, project)
             editor.hideNotification(KEY_PANEL, project)
         }
         return panel
