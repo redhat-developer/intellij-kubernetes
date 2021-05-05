@@ -26,7 +26,7 @@ object GenericCustomResourceFactory: AbstractResourceFactory<GenericCustomResour
 			@Suppress("UNCHECKED_CAST")
 			createObjectMetadata(item[METADATA] as? Map<String, Any?>),
 			@Suppress("UNCHECKED_CAST")
-			GenericCustomResourceSpec(item[SPEC] as? Map<String, Any?>)
+			item[SPEC] as? Map<String, Any?>?
 		)
 	}
 
@@ -39,8 +39,8 @@ object GenericCustomResourceFactory: AbstractResourceFactory<GenericCustomResour
 		)
 	}
 
-	private fun createSpec(node: JsonNode?): GenericCustomResourceSpec {
-		val specs: Map<String, Any> = ObjectMapper().convertValue(node, object : TypeReference<Map<String, Any>>() {})
-		return GenericCustomResourceSpec(specs)
+	private fun createSpec(node: JsonNode?): Map<String, Any?> {
+		return ObjectMapper().convertValue(node, object : TypeReference<Map<String, Any>>() {})
 	}
+
 }
