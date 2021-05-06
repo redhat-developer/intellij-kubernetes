@@ -56,7 +56,7 @@ class SaveListener : FileDocumentSynchronizationVetoer() {
             return true
         } catch (e: KubernetesClientException) {
             val errorMessage = "Could not save ${file.name}: ${e.cause?.message}"
-            Notification().error("Save to Cluster Failed", errorMessage)
+            Notification().error("Save to Cluster failed", errorMessage)
             logger<SaveListener>().warn(errorMessage, e.cause)
             return true
         }
@@ -87,7 +87,7 @@ class SaveListener : FileDocumentSynchronizationVetoer() {
                     val message = """${resource.metadata.name}
                             ${ if (resource.metadata.namespace != null) {"in namespace ${resource.metadata.namespace} "} else {""}} 
                             could not be saved to cluster $contextName:
-                            ${e.message}"""
+                            ${extractDetails(e)}"""
                     logger<SaveListener>().warn(message, e)
                     Notification().error("Save to cluster failed", message)
                 }
@@ -111,6 +111,18 @@ class SaveListener : FileDocumentSynchronizationVetoer() {
                     .mapNotNull { editor -> ProjectAndEditor(project, editor) }
             }
             .firstOrNull()
+    }
+
+    private fun extractDetails(e: KubernetesClientException): String? {
+        if (e.message == null) {
+            return null
+        }
+        val detailsIdentifier = "Message: "
+        val detailsStart = e.message!!.indexOf(detailsIdentifier)
+        if (detailsStart < 0) {
+            return e.message
+        }
+        return e.message!!.substring(detailsStart + detailsIdentifier.length)
     }
 
     private class ProjectAndEditor(val project: Project, val editor: FileEditor)
