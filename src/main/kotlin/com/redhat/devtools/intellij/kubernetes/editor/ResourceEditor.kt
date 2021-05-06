@@ -214,6 +214,9 @@ object ResourceEditor {
                     null
                 }
             }
+        } catch (e: RuntimeException) {
+            // invalid json/Yaml
+            null
         }
     }
 
@@ -307,5 +310,3 @@ fun FileEditor.hideNotification(key: Key<JComponent>, project: Project) {
     FileEditorManager.getInstance(project).removeTopComponent(this, panel)
     this.putUserData(key, null)
 }
-
-

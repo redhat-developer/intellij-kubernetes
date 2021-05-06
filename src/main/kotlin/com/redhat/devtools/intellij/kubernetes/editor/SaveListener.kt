@@ -44,13 +44,11 @@ class SaveListener : FileDocumentSynchronizationVetoer() {
     private fun saveToCluster(document: Document): Boolean {
         val file = ResourceEditor.getResourceFile(document) ?: return true
         val projectEditor = getEditor(file) ?: return true
+        if (!projectEditor.editor.isValid) {
+            return false
+        }
         try {
-            val resource: HasMetadata? = ResourceEditor.createResource(document.text)
-            if (resource == null) {
-                ErrorNotification.show(projectEditor.editor, projectEditor.project,
-                    "Could not save", "Editor content is not valid or of an unknown resource type")
-                return true
-            }
+            val resource: HasMetadata = ResourceEditor.createResource(document.text) ?: return false
             val contextName = ResourceEditor.getContextName(projectEditor.editor, projectEditor.project) ?: return true
             if (confirmSaveToCluster(resource, contextName)) {
                 saveToCluster(resource, contextName, projectEditor.editor, projectEditor.project)
