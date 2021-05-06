@@ -15,10 +15,7 @@ import com.redhat.devtools.intellij.kubernetes.model.resource.OperatorFactory
 import com.redhat.devtools.intellij.kubernetes.model.resource.ResourceKind
 import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.custom.CustomResourceOperatorFactory
 import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.custom.GenericCustomResource
-import com.redhat.devtools.intellij.kubernetes.model.util.Clients
-import com.redhat.devtools.intellij.kubernetes.model.util.createClients
-import com.redhat.devtools.intellij.kubernetes.model.util.isNotFound
-import com.redhat.devtools.intellij.kubernetes.model.util.sameRevision
+import com.redhat.devtools.intellij.kubernetes.model.util.*
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.client.KubernetesClient
 import io.fabric8.kubernetes.client.KubernetesClientException
@@ -29,7 +26,7 @@ import io.fabric8.kubernetes.client.KubernetesClientException
  */
 class ClusterResource(resource: HasMetadata, val contextName: String) {
 
-    private val initialResource: HasMetadata? = resource
+    private val initialResource: HasMetadata = resource
     private var updatedResource: HasMetadata? = resource
     private val clients: Clients<out KubernetesClient> = ::createClients.invoke(contextName)
     private val operator by lazy {
@@ -46,8 +43,7 @@ class ClusterResource(resource: HasMetadata, val contextName: String) {
 
     fun get(forceLatest: Boolean = false): HasMetadata? {
         synchronized(this) {
-            if (forceLatest
-                    && initialResource != null) {
+            if (forceLatest) {
                 try {
                     this.updatedResource = operator?.get(this.initialResource)
                 } catch (e: KubernetesClientException) {
@@ -82,7 +78,7 @@ class ClusterResource(resource: HasMetadata, val contextName: String) {
             || resource == null) {
             return false
         }
-        return !resource.sameRevision(compared)
+        return resource.olderRevision(compared)
     }
 
     fun isDeleted(): Boolean {
@@ -90,9 +86,7 @@ class ClusterResource(resource: HasMetadata, val contextName: String) {
     }
 
     fun watch() {
-        if (operator != null
-            // use the resource passed in initially, updated resource can have become null (deleted)
-            && initialResource != null) {
+        if (operator != null) {
             logger<ClusterResource>().debug("Watching ${initialResource.kind} ${initialResource.metadata.name}.")
             watch.watch(
                 initialResource,
