@@ -12,5 +12,4 @@ package com.redhat.devtools.intellij.kubernetes.model.util
 
 import io.fabric8.kubernetes.api.model.HasMetadata
 
-class ResourceException(val resources: List<HasMetadata>, message: String, cause: Throwable): RuntimeException(message, cause) {
-}
+class ResourceException(val resources: List<HasMetadata>, message: String, cause: Throwable): RuntimeException(message, cause)

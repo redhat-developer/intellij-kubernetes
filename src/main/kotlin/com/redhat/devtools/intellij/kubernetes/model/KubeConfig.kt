@@ -31,7 +31,7 @@ class KubeConfig {
 
     fun get(): Config? {
         if (!exists()) {
-            return null;
+            return null
         }
         return KubeConfigUtils.parseConfig(file)
     }

@@ -27,8 +27,8 @@ import java.util.concurrent.LinkedBlockingDeque
  * The model is only visible to this watcher by operations that the former provides (addOperation, removeOperation).
  */
 open class ResourceWatch<T>(
-        protected val watchOperations: BlockingDeque<WatchOperation<*>> = LinkedBlockingDeque(),
-        watchOperationsRunner: Runnable = WatchOperationsRunner(watchOperations)
+    private val watchOperations: BlockingDeque<WatchOperation<*>> = LinkedBlockingDeque(),
+    watchOperationsRunner: Runnable = WatchOperationsRunner(watchOperations)
 ) {
     companion object {
         @JvmField val WATCH_OPERATION_ENQUEUED: Watch = Watch {  }
@@ -52,14 +52,14 @@ open class ResourceWatch<T>(
     ) {
         watches.computeIfAbsent(key) {
             logger<ResourceWatch<*>>().debug("Enqueueing watch for $key resources.")
-            val watchOperation = WatchOperation(
+            val operation = WatchOperation(
                     key,
                     watchOperation,
                     watches,
                     watchListeners.add,
                     watchListeners.remove,
                     watchListeners.replace)
-            watchOperations.add(watchOperation) // enqueue watch operation
+            watchOperations.add(operation) // enqueue watch operation
             WATCH_OPERATION_ENQUEUED // Marker: watch operation submitted
         }
     }
@@ -72,6 +72,9 @@ open class ResourceWatch<T>(
 
     fun stopWatch(key: T) {
         try {
+            if (key == null) {
+                return
+            }
             logger<ResourceWatch<*>>().debug("Closing watch for $key resource(s).")
             val watch = watches[key] ?: return
             watch.close()

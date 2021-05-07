@@ -85,8 +85,8 @@ interface IActiveContext<N: HasMetadata, C: KubernetesClient>: IContext {
      * @param definition the definition that specifies the kind of custom resources
      * @return all resources of the requested kind
      *
-     * @see CustomResourceDefinition
-     * @see CustomResourceDefinitionSpec
+     * @see [io.fabric8.kubernetes.api.model.apiextensions.v1beta1.CustomResourceDefinition]
+     * @see [io.fabric8.kubernetes.api.model.apiextensions.v1beta1.CustomResourceDefinitionSpec]
      */
     fun getAllResources(definition: CustomResourceDefinition): Collection<GenericCustomResource>
 

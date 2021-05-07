@@ -101,6 +101,7 @@ object OperatorFactory {
 
     fun createAll(clients: Clients<out KubernetesClient>): List<IResourceOperator<out HasMetadata>>{
         return if (clients.isOpenShift()) {
+            @Suppress("UNCHECKED_CAST")
             createOpenShift(clients as Clients<OpenShiftClient>)
         } else {
             createKubernetes(clients)

@@ -141,12 +141,6 @@ object ResourceEditor {
         }
     }
 
-    private fun isModified(editor: FileEditor): Boolean {
-        return ReadAction.compute<Boolean, Exception> {
-            editor.isModified
-        }
-    }
-
     fun loadResourceFromCluster(forceLatest: Boolean = false, editor: FileEditor, project: Project): HasMetadata? {
         val clusterResource = getClusterResource(editor, project) ?: return null
         return clusterResource.get(forceLatest)

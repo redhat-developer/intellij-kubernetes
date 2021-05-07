@@ -14,7 +14,6 @@ import com.redhat.devtools.intellij.kubernetes.model.resource.NonNamespacedOpera
 import com.redhat.devtools.intellij.kubernetes.model.resource.NonNamespacedResourceOperator
 import com.redhat.devtools.intellij.kubernetes.model.resource.ResourceKind
 import com.redhat.devtools.intellij.kubernetes.model.util.Clients
-import io.fabric8.kubernetes.client.KubernetesClient
 import io.fabric8.openshift.api.model.Project
 import io.fabric8.openshift.client.OpenShiftClient
 

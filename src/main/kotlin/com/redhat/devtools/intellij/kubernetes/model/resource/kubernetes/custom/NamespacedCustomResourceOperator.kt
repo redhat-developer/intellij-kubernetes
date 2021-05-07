@@ -10,17 +10,14 @@
  ******************************************************************************/
 package com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.custom
 
-import com.intellij.openapi.diagnostic.logger
 import com.redhat.devtools.intellij.kubernetes.model.resource.NamespacedResourceOperator
 import com.redhat.devtools.intellij.kubernetes.model.resource.ResourceKind
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.apiextensions.v1beta1.CustomResourceDefinition
 import io.fabric8.kubernetes.client.KubernetesClient
-import io.fabric8.kubernetes.client.KubernetesClientException
 import io.fabric8.kubernetes.client.Watch
 import io.fabric8.kubernetes.client.Watcher
 import io.fabric8.kubernetes.client.utils.Serialization
-import io.fabric8.kubernetes.internal.KubernetesDeserializer
 
 class NamespacedCustomResourceOperator(
 	definition: CustomResourceDefinition,
@@ -48,6 +45,7 @@ class NamespacedCustomResourceOperator(
 		if (namespace == null) {
 			return null
 		}
+		@Suppress("UNCHECKED_CAST")
 		val typedWatcher = watcher as? Watcher<GenericCustomResource> ?: return null
 		val watchableWrapper = GenericCustomResourceWatchable { options, customResourceWatcher ->
 			operation.get().watch(namespace, name, null, options, customResourceWatcher)
@@ -60,7 +58,7 @@ class NamespacedCustomResourceOperator(
 		val toDelete = resources as? List<GenericCustomResource> ?: return false
 		return toDelete.stream()
 			.map { delete(it.metadata.namespace, it.metadata.name) }
-			.reduce(false, { thisDelete, thatDelete -> thisDelete || thatDelete })
+			.reduce(false) { thisDelete, thatDelete -> thisDelete || thatDelete }
 	}
 
 	private fun delete(namespace: String, name: String): Boolean {
@@ -68,16 +66,16 @@ class NamespacedCustomResourceOperator(
 		return true
 	}
 
-	override fun replace(resource: HasMetadata): HasMetadata? {
+	override fun replace(resource: HasMetadata): HasMetadata {
 		val updated = operation.get().createOrReplace(resource.metadata.namespace, Serialization.asJson(resource))
 		return GenericCustomResourceFactory.createResource(updated)
 	}
 
-	override fun create(resource: HasMetadata): HasMetadata? {
+	override fun create(resource: HasMetadata): HasMetadata {
 		return replace(resource)
 	}
 
-	override fun get(resource: HasMetadata): HasMetadata? {
+	override fun get(resource: HasMetadata): HasMetadata {
 		val updated = operation.get().get(resource.metadata.namespace, resource.metadata.name)
 		return GenericCustomResourceFactory.createResource(updated)
 	}
