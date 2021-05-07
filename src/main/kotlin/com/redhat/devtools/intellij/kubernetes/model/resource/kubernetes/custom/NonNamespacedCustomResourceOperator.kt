@@ -32,15 +32,15 @@ class NonNamespacedCustomResourceOperator(
         return GenericCustomResourceFactory.createResources(resourcesList)
     }
 
-    override fun watch(resource: HasMetadata, watcher: Watcher<out HasMetadata>): Watch? {
+    override fun watch(resource: HasMetadata, watcher: Watcher<in GenericCustomResource>): Watch? {
         return watch(resource.metadata.namespace, resource.metadata.name, watcher)
     }
 
-    override fun watchAll(watcher: Watcher<out HasMetadata>): Watch? {
+    override fun watchAll(watcher: Watcher<in GenericCustomResource>): Watch? {
         return watch(null, null, watcher)
     }
 
-    private fun watch(namespace: String?, name: String?, watcher: Watcher<out HasMetadata>): Watch? {
+    private fun watch(namespace: String?, name: String?, watcher: Watcher<in GenericCustomResource>): Watch? {
         @Suppress("UNCHECKED_CAST")
         val typedWatcher = watcher as? Watcher<GenericCustomResource> ?: return null
         val watchableWrapper = GenericCustomResourceWatchable { options, customResourceWatcher ->

@@ -27,7 +27,7 @@ import java.util.concurrent.LinkedBlockingDeque
  * The model is only visible to this watcher by operations that the former provides (addOperation, removeOperation).
  */
 open class ResourceWatch<T>(
-    private val watchOperations: BlockingDeque<WatchOperation<*>> = LinkedBlockingDeque(),
+    protected val watchOperations: BlockingDeque<WatchOperation<*>> = LinkedBlockingDeque(),
     watchOperationsRunner: Runnable = WatchOperationsRunner(watchOperations)
 ) {
     companion object {
@@ -39,7 +39,7 @@ open class ResourceWatch<T>(
     private val thread = executor.submit(watchOperationsRunner)
 
     open fun watchAll(
-        toWatch: Collection<Pair<T, (watcher: Watcher<out HasMetadata>) -> Watch?>>,
+        toWatch: Collection<Pair<T, (watcher: Watcher<in HasMetadata>) -> Watch?>>,
         watchListeners: WatchListeners
     ) {
         toWatch.forEach { watch(it.first, it.second, watchListeners) }
@@ -47,7 +47,7 @@ open class ResourceWatch<T>(
 
     open fun watch(
         key: T,
-        watchOperation: (watcher: Watcher<out HasMetadata>) -> Watch?,
+        watchOperation: (watcher: Watcher<in HasMetadata>) -> Watch?,
         watchListeners: WatchListeners
     ) {
         watches.computeIfAbsent(key) {
@@ -70,17 +70,18 @@ open class ResourceWatch<T>(
         return existing.map { it.key }
     }
 
-    fun stopWatch(key: T) {
+    fun stopWatch(key: T): Watch? {
         try {
             if (key == null) {
-                return
+                return null
             }
             logger<ResourceWatch<*>>().debug("Closing watch for $key resource(s).")
-            val watch = watches[key] ?: return
+            val watch = watches[key] ?: return null
             watch.close()
-            watches.remove(key)
+            return watches.remove(key)
         } catch (e: Exception) {
             logger<ResourceWatch<*>>().warn("Could not close watch for $key resources", e)
+            return null
         }
     }
 
@@ -121,9 +122,9 @@ open class ResourceWatch<T>(
         }
     }
 
-    class WatchOperation<T>(
+    class WatchOperation<out T>(
             val key: T,
-            private val watchOperation: (watcher: Watcher<out HasMetadata>) -> Watch?,
+            private val watchOperation: (watcher: Watcher<in HasMetadata>) -> Watch?,
             private val watches: MutableMap<T, Watch?>,
             private val addOperation: (HasMetadata) -> Unit,
             private val removeOperation: (HasMetadata) -> Unit,

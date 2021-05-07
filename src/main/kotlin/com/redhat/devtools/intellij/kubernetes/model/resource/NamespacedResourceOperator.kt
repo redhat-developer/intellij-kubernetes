@@ -60,7 +60,7 @@ abstract class NamespacedResourceOperator<R : HasMetadata, C: Client>(
         return getOperation()?.inNamespace(namespace)?.list()?.items ?: emptyList()
     }
 
-    override fun watchAll(watcher: Watcher<out HasMetadata>): Watch? {
+    override fun watchAll(watcher: Watcher<in R>): Watch? {
         if (namespace == null) {
             logger<NamespacedResourceOperator<*, *>>().debug("Returned empty watch for $kind: no namespace set.")
             return null
@@ -72,7 +72,7 @@ abstract class NamespacedResourceOperator<R : HasMetadata, C: Client>(
             ?.watch(typedWatcher)
     }
 
-    override fun watch(resource: HasMetadata, watcher: Watcher<out HasMetadata>): Watch? {
+    override fun watch(resource: HasMetadata, watcher: Watcher<in R>): Watch? {
         @Suppress("UNCHECKED_CAST")
         val typedWatcher = watcher as? Watcher<R> ?: return null
         return getOperation()
