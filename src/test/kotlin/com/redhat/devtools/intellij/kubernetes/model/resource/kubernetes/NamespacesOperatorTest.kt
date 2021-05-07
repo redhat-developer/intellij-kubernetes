@@ -15,13 +15,14 @@ import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.NAMESPACE
 import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.NAMESPACE2
 import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.NAMESPACE3
 import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.client
+import com.redhat.devtools.intellij.kubernetes.model.util.Clients
 import org.junit.Test
 
 class NamespacesOperatorTest {
 
     private val currentNamespace = NAMESPACE2.metadata.name
-    private val client = client(currentNamespace, arrayOf(NAMESPACE1, NAMESPACE2, NAMESPACE3))
-    private val provider = NamespacesOperator(client)
+    private val clients = Clients(client(currentNamespace, arrayOf(NAMESPACE1, NAMESPACE2, NAMESPACE3)))
+    private val provider = NamespacesOperator(clients)
 
     @Test
     fun `#getAllResources should retrieve all namespaces`() {
@@ -29,6 +30,6 @@ class NamespacesOperatorTest {
         // when
         provider.allResources
         // then
-        verify(client.namespaces().list()).items
+        verify(clients.get().namespaces().list()).items
     }
 }

@@ -40,6 +40,7 @@ data class ResourceKind<R : HasMetadata> private constructor(
 					resource.kind)
 		}
 
+		@JvmStatic
 		fun create(definition: CustomResourceDefinition): ResourceKind<out HasMetadata> {
 			return create(definition.spec)
 		}
