@@ -11,6 +11,7 @@
 package com.redhat.devtools.intellij.kubernetes.model
 
 import com.intellij.openapi.diagnostic.logger
+import com.redhat.devtools.intellij.kubernetes.model.resource.IResourceOperator
 import com.redhat.devtools.intellij.kubernetes.model.resource.OperatorFactory
 import com.redhat.devtools.intellij.kubernetes.model.resource.ResourceKind
 import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.custom.CustomResourceOperatorFactory
@@ -29,15 +30,10 @@ class ClusterResource(resource: HasMetadata, val contextName: String) {
     private val initialResource: HasMetadata = resource
     private var updatedResource: HasMetadata? = resource
     private val clients: Clients<out KubernetesClient> = ::createClients.invoke(contextName)
-    private val operator by lazy {
-        if (resource is GenericCustomResource) {
-            val definitions = clients.get().apiextensions().v1beta1().customResourceDefinitions().list().items
-            CustomResourceOperatorFactory.create(resource, definitions, clients.get())
-        } else {
-            val kind = ResourceKind.create(resource)
-            OperatorFactory.create(kind, clients)
-        }
+    private val operator: IResourceOperator<out HasMetadata>? by lazy {
+        createOperator(resource)
     }
+
     private val watch = ResourceWatch<HasMetadata>()
     private val modelChange = ModelChangeObservable()
 
@@ -59,7 +55,8 @@ class ClusterResource(resource: HasMetadata, val contextName: String) {
     }
 
     fun saveToCluster(resource: HasMetadata): HasMetadata? {
-        return if (updatedResource != null) {
+        return if (updatedResource != null
+            && updatedResource!!.sameResource(resource)) {
             operator?.replace(resource)
         } else {
             operator?.create(resource)
@@ -78,7 +75,23 @@ class ClusterResource(resource: HasMetadata, val contextName: String) {
             || resource == null) {
             return false
         }
-        return resource.olderRevision(compared)
+        return resource.sameResource(compared)
+                && resource.newerRevision(compared)
+    }
+
+    fun isSameResource(compared: HasMetadata?): Boolean {
+        if (compared == null
+            || initialResource == null) {
+            return false
+        }
+        return initialResource.sameResource(compared)
+    }
+
+    fun isUpdate(compared: HasMetadata?): Boolean {
+        if (compared == null) {
+            return false
+        }
+        return initialResource.newerRevision(compared)
     }
 
     fun isDeleted(): Boolean {
@@ -107,9 +120,8 @@ class ClusterResource(resource: HasMetadata, val contextName: String) {
 
     fun stopWatch() {
         // use the resource passed in initially, updated resource can have become null (deleted)
-        val resource = initialResource ?: return
-        logger<ClusterResource>().debug("Stopping watch for ${resource.kind} ${resource.metadata.name}.")
-        watch.stopWatch(resource)
+        logger<ClusterResource>().debug("Stopping watch for ${initialResource.kind} ${initialResource.metadata.name}.")
+        watch.stopWatch(initialResource)
     }
 
     fun close() {
@@ -119,4 +131,15 @@ class ClusterResource(resource: HasMetadata, val contextName: String) {
     fun addListener(listener: ModelChangeObservable.IResourceChangeListener) {
         modelChange.addListener(listener)
     }
+
+    private fun createOperator(resource: HasMetadata): IResourceOperator<out HasMetadata>? {
+        return if (resource is GenericCustomResource) {
+            val definitions = clients.get().apiextensions().v1beta1().customResourceDefinitions().list().items
+            CustomResourceOperatorFactory.create(resource, definitions, clients.get())
+        } else {
+            val kind = ResourceKind.create(resource)
+            OperatorFactory.create(kind, clients)
+        }
+    }
+
 }

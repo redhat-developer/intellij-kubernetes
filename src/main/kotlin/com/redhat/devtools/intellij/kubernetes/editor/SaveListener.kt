@@ -10,7 +10,6 @@
  ******************************************************************************/
 package com.redhat.devtools.intellij.kubernetes.editor
 
-import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.editor.Document
 import com.intellij.openapi.fileEditor.FileDocumentSynchronizationVetoer
@@ -21,8 +20,6 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.project.ProjectManager
 import com.intellij.openapi.ui.Messages
 import com.intellij.openapi.vfs.VirtualFile
-import com.redhat.devtools.intellij.kubernetes.editor.notification.DeletedNotification
-import com.redhat.devtools.intellij.kubernetes.editor.notification.ErrorNotification
 import com.redhat.devtools.intellij.kubernetes.model.Notification
 import com.redhat.devtools.intellij.kubernetes.model.util.toMessage
 import io.fabric8.kubernetes.api.model.HasMetadata
@@ -78,7 +75,7 @@ class SaveListener : FileDocumentSynchronizationVetoer() {
             Progressive {
                 try {
                     if (editor != null) {
-                        val updatedResource = ResourceEditor.setResourceInCluster(resource, editor, project)
+                        val updatedResource = ResourceEditor.saveToCluster(resource, editor, project)
                         if (updatedResource != null) {
                             reloadEditor(updatedResource, editor, project)
                         }

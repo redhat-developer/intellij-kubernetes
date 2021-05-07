@@ -111,7 +111,7 @@ object ResourceEditor {
         return FileDocumentManager.getInstance().getFile(document)
     }
 
-    private fun getResourceInFile(editor: FileEditor): HasMetadata? {
+    private fun getResourceFromFile(editor: FileEditor): HasMetadata? {
         val document = getDocument(editor)
         return if (document?.text == null) {
             null
@@ -132,11 +132,11 @@ object ResourceEditor {
         ReloadNotification.hide(editor, project)
         DeletedNotification.hide(editor, project)
         val clusterResource = getClusterResource(editor, project) ?: return
-        val resourceInFile = getResourceInFile(editor) ?: return
+        val resourceInFile = getResourceFromFile(editor) ?: return
         if (clusterResource.isDeleted()) {
             DeletedNotification.show(editor, resourceInFile, project)
         } else if (clusterResource.isOutdated(resourceInFile)) {
-            val resourceInCluster = getResourceInCluster(true, editor, project) ?: return
+            val resourceInCluster = loadResourceFromCluster(true, editor, project) ?: return
             ReloadNotification.show(editor, resourceInCluster, project)
         }
     }
@@ -147,13 +147,22 @@ object ResourceEditor {
         }
     }
 
-    fun getResourceInCluster(forceLatest: Boolean = false, editor: FileEditor, project: Project): HasMetadata? {
+    fun loadResourceFromCluster(forceLatest: Boolean = false, editor: FileEditor, project: Project): HasMetadata? {
         val clusterResource = getClusterResource(editor, project) ?: return null
         return clusterResource.get(forceLatest)
     }
 
-    fun setResourceInCluster(resource: HasMetadata, editor: FileEditor?, project: Project): HasMetadata? {
-        return getClusterResource(editor, project)?.saveToCluster(resource)
+    fun saveToCluster(resource: HasMetadata, editor: FileEditor?, project: Project): HasMetadata? {
+        val cluster = getClusterResource(editor, project)
+        val saved = cluster?.saveToCluster(resource)
+        if (cluster != null
+            && !cluster.isSameResource(saved)) {
+            // new resource created - different kind, namespace, name
+            // drop existing cluster resource, create new one
+            cluster.close()
+            createClusterResource(saved, editor, project)
+        }
+        return saved
     }
 
     fun startWatch(editor: FileEditor?, project: Project) {
@@ -174,19 +183,28 @@ object ResourceEditor {
         if (editor == null) {
             return null
         }
-        var clusterResource: ClusterResource? = editor.getUserData(KEY_CLUSTER_RESOURCE)
-        if (clusterResource == null) {
-            clusterResource = createClusterResource(editor) ?: return null
-            editor.putUserData(KEY_CLUSTER_RESOURCE, clusterResource)
-            clusterResource.addListener(onResourceChanged(editor, project))
-            clusterResource.watch()
+        var cluster: ClusterResource? = editor.getUserData(KEY_CLUSTER_RESOURCE)
+        if (cluster == null) {
+            val resource = getResourceFromFile(editor)
+            cluster = createClusterResource(resource, editor, project)
         }
-        return clusterResource
+        return cluster
     }
 
-    private fun createClusterResource(editor: FileEditor): ClusterResource? {
+    private fun createClusterResource(resource: HasMetadata?, editor: FileEditor?, project: Project): ClusterResource? {
+        if (resource == null
+            || editor == null) {
+            return null
+        }
+        val cluster = createClusterResource(resource) ?: return null
+        editor.putUserData(KEY_CLUSTER_RESOURCE, cluster)
+        cluster.addListener(onResourceChanged(editor, project))
+        cluster.watch()
+        return cluster
+    }
+
+    private fun createClusterResource(resource: HasMetadata?): ClusterResource? {
         var clusterResource: ClusterResource? = null
-        val resource = getResourceInFile(editor)
         if (resource != null) {
             // we're using the current context (and the namespace in the resource).
             // This may be wrong for editors that are restored after IDE restart
