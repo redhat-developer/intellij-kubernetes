@@ -20,7 +20,6 @@ import io.fabric8.kubernetes.api.model.Namespace
 import io.fabric8.kubernetes.client.Client
 import io.fabric8.kubernetes.client.KubernetesClient
 import io.fabric8.kubernetes.client.Watcher
-import io.fabric8.kubernetes.client.dsl.Watchable
 import com.redhat.devtools.intellij.kubernetes.model.IModelChangeObservable
 import com.redhat.devtools.intellij.kubernetes.model.IResourceModel
 import com.redhat.devtools.intellij.kubernetes.model.context.IActiveContext
@@ -28,8 +27,8 @@ import com.redhat.devtools.intellij.kubernetes.model.context.IContext
 import com.redhat.devtools.intellij.kubernetes.model.resource.INamespacedResourceOperator
 import com.redhat.devtools.intellij.kubernetes.model.resource.INonNamespacedResourceOperator
 import com.redhat.devtools.intellij.kubernetes.model.resource.ResourceKind
+import io.fabric8.kubernetes.client.Watch
 import org.mockito.Mockito
-import java.util.function.Supplier
 
 object Mocks {
 
@@ -67,12 +66,12 @@ object Mocks {
         }
     }
 
-    fun <T : HasMetadata, C: Client> namespacedResourceOperator(
+    inline fun <reified T : HasMetadata, C : Client> namespacedResourceOperator(
         kind: ResourceKind<T>,
         resources: Collection<T>,
         namespace: Namespace,
-        watchableSupplier: Supplier<Watchable<Watcher<T>>?> = Supplier { null })
-            : INamespacedResourceOperator<T, C> {
+        watchOperation: (watcher: Watcher<in T>) -> Watch? = { watcher -> null }
+    ): INamespacedResourceOperator<T, C> {
         return mock {
             Mockito.doReturn(namespace.metadata.name)
                 .`when`(mock).namespace
@@ -80,21 +79,21 @@ object Mocks {
                 .`when`(mock).kind
             Mockito.doReturn(resources)
                 .`when`(mock).allResources
-            Mockito.doReturn(watchableSupplier)
-                .`when`(mock).getKindWatchable()
+            Mockito.doReturn(watchOperation.invoke(any()))
+                .`when`(mock).watch(any(), any())
         }
     }
 
-    fun <T : HasMetadata, C: Client> nonNamespacedResourceOperator(
+    inline fun <reified T : HasMetadata, C : Client> nonNamespacedResourceOperator(
         kind: ResourceKind<T>,
         resources: Collection<T>,
-        watchableSupplier: Supplier<Watchable<Watcher<T>>?> = Supplier { null },
-        deleteSuccess: Boolean = true)
-            : INonNamespacedResourceOperator<T, C> {
+        watchOperation: (watcher: Watcher<in T>) -> Watch? = { watcher -> null },
+        deleteSuccess: Boolean = true
+    ) : INonNamespacedResourceOperator<T, C> {
         return mock {
             on { this.kind } doReturn kind
             on { allResources } doReturn resources
-            on { getKindWatchable() } doReturn watchableSupplier
+            on { watchAll(any()) } doReturn watchOperation.invoke(any())
             on { delete(any()) } doReturn deleteSuccess
         }
     }

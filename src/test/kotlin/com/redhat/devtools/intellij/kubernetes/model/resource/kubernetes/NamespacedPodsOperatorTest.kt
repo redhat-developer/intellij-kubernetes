@@ -33,20 +33,19 @@ import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.items
 import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.list
 import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.pods
 import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.resource
-import com.redhat.devtools.intellij.kubernetes.model.resource.ResourceOperation
+import com.redhat.devtools.intellij.kubernetes.model.util.Clients
 import org.junit.Before
 import org.junit.Test
-import java.util.function.Supplier
 
 class NamespacedPodsOperatorTest {
 
     private val currentNamespace = NAMESPACE2.metadata.name
-    private val client = client(currentNamespace, arrayOf(NAMESPACE1, NAMESPACE2, NAMESPACE3))
-    private val operator = spy(TestablePodsOperator(client))
+    private val clients = Clients(client(currentNamespace, arrayOf(NAMESPACE1, NAMESPACE2, NAMESPACE3)))
+    private val operator = spy(TestablePodsOperator(clients))
 
     @Before
     fun before() {
-        items(list(inNamespace(pods(client))), POD1, POD2, POD3)
+        items(list(inNamespace(pods(clients.get()))), POD1, POD2, POD3)
         operator.namespace = currentNamespace
     }
 
@@ -88,17 +87,6 @@ class NamespacedPodsOperatorTest {
     }
 
     @Test
-    fun `#getOperation() won't return operations if namespace is null`() {
-        // given
-        operator.namespace =  null
-        clearInvocations(operator)
-        // when
-        operator.getKindWatchable()
-        // then
-        verify(operator, never()).getNamespacedOperation(any())
-    }
-
-    @Test
     fun `#delete() deletes given pods in client`() {
         // given
         clearInvocations(operator)
@@ -106,7 +94,7 @@ class NamespacedPodsOperatorTest {
         val toDelete = listOf(POD2)
         operator.delete(toDelete)
         // then
-        verify(client.pods().inNamespace(currentNamespace)).delete(toDelete)
+        verify(clients.get().pods().inNamespace(currentNamespace)).delete(toDelete)
     }
 
     @Test
@@ -117,14 +105,14 @@ class NamespacedPodsOperatorTest {
         // when
         operator.delete(listOf(POD2))
         // then
-        verify(client.pods().inNamespace(currentNamespace), never()).delete(any<List<Pod>>())
+        verify(clients.get().pods().inNamespace(currentNamespace), never()).delete(any<List<Pod>>())
     }
 
     @Test
     fun `#delete() returns true if client could delete`() {
         // given
         clearInvocations(operator)
-        whenever(client.pods().inNamespace(currentNamespace).delete(any<List<Pod>>()))
+        whenever(clients.get().pods().inNamespace(currentNamespace).delete(any<List<Pod>>()))
             .thenReturn(true)
         // when
         val success = operator.delete(listOf(POD2))
@@ -136,7 +124,7 @@ class NamespacedPodsOperatorTest {
     fun `#delete() returns false if client could NOT delete`() {
         // given
         clearInvocations(operator)
-        whenever(client.pods().inNamespace(currentNamespace).delete(any<List<Pod>>()))
+        whenever(clients.get().pods().inNamespace(currentNamespace).delete(any<List<Pod>>()))
             .thenReturn(false)
         // when
         val success = operator.delete(listOf(POD2))
@@ -155,20 +143,6 @@ class NamespacedPodsOperatorTest {
         operator.allResources
         // then
         verify(operator).loadAllResources(namespaceCaptor.capture())
-        assertThat(namespaceCaptor.firstValue).isEqualTo(namespace)
-    }
-
-    @Test
-    fun `#setNamespace(namespace) sets namespace that's used in #getOperation(namespace)`() {
-        // given
-        val namespace = "darth vader"
-        operator.namespace =  namespace
-        val namespaceCaptor = argumentCaptor<String>()
-        clearInvocations(operator)
-        // when
-        operator.getKindWatchable()
-        // then
-        verify(operator).getNamespacedOperation(namespaceCaptor.capture())
         assertThat(namespaceCaptor.firstValue).isEqualTo(namespace)
     }
 
@@ -333,14 +307,10 @@ class NamespacedPodsOperatorTest {
         assertThat(removed).isFalse()
     }
 
-    class TestablePodsOperator(client: KubernetesClient): NamespacedPodsOperator(client) {
+    class TestablePodsOperator(clients: Clients<KubernetesClient>): NamespacedPodsOperator(clients) {
 
         public override fun loadAllResources(namespace: String): List<Pod> {
             return super.loadAllResources(namespace)
-        }
-
-        public override fun getNamespacedOperation(namespace: String): Supplier<ResourceOperation<Pod>?> {
-            return super.getNamespacedOperation(namespace)
         }
     }
 }

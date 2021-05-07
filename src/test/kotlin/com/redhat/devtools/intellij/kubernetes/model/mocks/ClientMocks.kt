@@ -33,6 +33,7 @@ import io.fabric8.kubernetes.client.dsl.PodResource
 import io.fabric8.kubernetes.client.dsl.Resource
 import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.custom.GenericCustomResource
 import com.redhat.devtools.intellij.kubernetes.model.util.getApiVersion
+import io.fabric8.kubernetes.client.KubernetesClient
 import org.mockito.ArgumentMatchers
 import java.net.URL
 
@@ -50,7 +51,7 @@ object ClientMocks {
     val POD3 = resource<Pod>("pod3")
 
     fun client(currentNamespace: String?, namespaces: Array<Namespace>, masterUrl: URL = URL("http://localhost"))
-            : NamespacedKubernetesClient {
+            : KubernetesClient {
         val namespacesMock = namespaceListOperation(namespaces)
         val config = mock<Config> {
             on { namespace } doReturn currentNamespace
@@ -89,7 +90,7 @@ object ClientMocks {
         return nonNamespaceOperation
     }
 
-    fun pods(client: NamespacedKubernetesClient)
+    fun pods(client: KubernetesClient)
             : MixedOperation<Pod, PodList, PodResource<Pod>> {
         val podsOp = mock<MixedOperation<Pod, PodList, PodResource<Pod>>>()
         whenever(client.pods())
