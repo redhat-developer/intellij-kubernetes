@@ -13,7 +13,6 @@ package com.redhat.devtools.intellij.kubernetes.editor.notification
 import com.intellij.openapi.fileEditor.FileEditor
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Key
-import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.ui.EditorNotificationPanel
 import com.redhat.devtools.intellij.kubernetes.editor.ResourceEditor
 import com.redhat.devtools.intellij.kubernetes.editor.hideNotification
@@ -37,7 +36,7 @@ object ReloadNotification {
         val panel = EditorNotificationPanel()
         panel.setText("${resource.metadata.name} changed on server. Reload?")
         panel.createActionLabel("Reload now") {
-            val latestRevision = ResourceEditor.getResourceInCluster(false, editor, project)
+            val latestRevision = ResourceEditor.loadResourceFromCluster(false, editor, project)
             if (latestRevision != null) {
                 ResourceEditor.reloadEditor(latestRevision, editor, project)
             }

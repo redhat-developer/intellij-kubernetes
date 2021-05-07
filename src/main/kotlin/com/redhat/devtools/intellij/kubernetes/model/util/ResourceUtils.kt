@@ -70,7 +70,7 @@ fun HasMetadata.sameRevision(resource: HasMetadata): Boolean {
 	return this.metadata?.resourceVersion == resource.metadata?.resourceVersion
 }
 
-fun HasMetadata.olderRevision(resource: HasMetadata): Boolean {
+fun HasMetadata.newerRevision(resource: HasMetadata): Boolean {
 	if (!this.sameResource(resource)) {
 		return false
 	}
@@ -82,7 +82,7 @@ fun HasMetadata.olderRevision(resource: HasMetadata): Boolean {
 	if (thatVersion == null) {
 		return false
 	}
-	return thisVersion < thatVersion
+	return thatVersion > thisVersion
 }
 
 /**
