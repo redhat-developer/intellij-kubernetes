@@ -27,7 +27,6 @@ import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.custom.
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test
 
-
 private const val SCOPE = "scope"
 
 class GenericCustomResourceFactoryTest {
@@ -115,7 +114,7 @@ class GenericCustomResourceFactoryTest {
 		assertThat(metadata.uid).isEqualTo(uid)
 
 		val spec = resource.spec
-		assertThat(spec?.values?.get(SCOPE)).isEqualTo(scope)
+		assertThat(spec?.get(SCOPE)).isEqualTo(scope)
 	}
 
 	@Test
@@ -155,8 +154,8 @@ class GenericCustomResourceFactoryTest {
 		assertThat(metadata.uid).isEqualTo("1229d4a6-b8aa-43a0-a5dc-b5ce6c59bf2e")
 
 		val spec = resource.spec
-		assertThat(spec?.values?.get("date_of_manufacturing")).isEqualTo("2016-07-01T00:00:00Z")
-		assertThat(spec?.values?.get("engine")).isEqualTo("CQ123456")
+		assertThat(spec?.get("date_of_manufacturing")).isEqualTo("2016-07-01T00:00:00Z")
+		assertThat(spec?.get("engine")).isEqualTo("CQ123456")
 	}
 
 	private fun createSpecMap(scope: String): Map<String, Any> {
