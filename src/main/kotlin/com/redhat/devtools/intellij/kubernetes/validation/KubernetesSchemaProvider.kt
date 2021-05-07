@@ -47,7 +47,7 @@ class KubernetesSchemaProvider(
 		return info.toString()
 	}
 
-	override fun getSchemaFile(): VirtualFile? {
+	override fun getSchemaFile(): VirtualFile {
 		return schemaFile
 	}
 

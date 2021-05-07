@@ -16,7 +16,6 @@ import io.fabric8.kubernetes.api.model.KubernetesResourceList
 import io.fabric8.kubernetes.client.Client
 import io.fabric8.kubernetes.client.Watch
 import io.fabric8.kubernetes.client.Watcher
-import io.fabric8.kubernetes.client.dsl.MixedOperation
 import io.fabric8.kubernetes.client.dsl.NonNamespaceOperation
 import io.fabric8.kubernetes.client.dsl.Resource
 

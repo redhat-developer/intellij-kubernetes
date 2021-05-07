@@ -50,7 +50,7 @@ inline fun <reified T> Any.getElement(): T? {
 }
 
 fun run(title: String, canBeCancelled: Boolean, runnable: Progressive) {
-    run(title, null, canBeCancelled, runnable);
+    run(title, null, canBeCancelled, runnable)
 }
 
 fun run(title: String, project: Project?, canBeCancelled: Boolean, runnable: Progressive) {
@@ -61,8 +61,4 @@ fun run(title: String, project: Project?, canBeCancelled: Boolean, runnable: Pro
             runnable.run(progress)
         }
     })
-}
-
-fun Any.invokeLater(runnable: Runnable) {
-    ApplicationManager.getApplication().invokeLater(runnable)
 }

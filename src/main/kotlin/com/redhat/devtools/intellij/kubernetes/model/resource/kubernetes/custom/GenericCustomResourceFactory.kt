@@ -20,12 +20,11 @@ object GenericCustomResourceFactory: AbstractResourceFactory<GenericCustomResour
 	const val SPEC = "spec"
 
 	override fun createResource(item: Map<String, Any?>): GenericCustomResource {
+		@Suppress("UNCHECKED_CAST")
 		return GenericCustomResource(
 			item[KIND] as? String,
 			item[API_VERSION] as? String,
-			@Suppress("UNCHECKED_CAST")
 			createObjectMetadata(item[METADATA] as? Map<String, Any?>),
-			@Suppress("UNCHECKED_CAST")
 			item[SPEC] as? Map<String, Any?>?
 		)
 	}

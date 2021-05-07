@@ -242,7 +242,7 @@ object KubernetesDescriptors {
 		: DescriptorFactory<R>(resource) {
 
 
-		override fun create(parent: NodeDescriptor<*>?, model: IResourceModel, project: Project): NodeDescriptor<R>? {
+		override fun create(parent: NodeDescriptor<*>?, model: IResourceModel, project: Project): NodeDescriptor<R> {
 			return ConfigMapDataDescriptor(key, resource, parent, model, project)
 		}
 

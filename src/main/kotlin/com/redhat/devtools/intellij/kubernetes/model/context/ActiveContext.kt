@@ -122,7 +122,7 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
     }
 
     private fun getCurrentNamespace(namespaces: Collection<N>): N? {
-        var name: String? = clients.get().configuration.namespace
+        val name: String? = clients.get().configuration.namespace
         return find(name, namespaces)
     }
 
@@ -285,7 +285,7 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
         // and therefore to repopulate the cache immediately.
         // Any resource operation that eventually happens while the watch is not active would cause the cache
         // to become out-of-sync and it would therefore return invalid resources when asked to do so
-        invalidateOperators(kind);
+        invalidateOperators(kind)
     }
 
     override fun stopWatch(definition: CustomResourceDefinition) {
@@ -435,8 +435,8 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
                 }
             }
         if (exceptions.isNotEmpty()) {
-            val resources = exceptions.flatMap { it.resources }
-            throw MultiResourceException("Could not delete resource(s) ${toMessage(resources, -1)}", exceptions)
+            val failedDelete = exceptions.flatMap { it.resources }
+            throw MultiResourceException("Could not delete resource(s) ${toMessage(failedDelete, -1)}", exceptions)
         }
     }
 
@@ -461,7 +461,7 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
         clients.close()
     }
 
-    fun <P: IResourceOperator<out HasMetadata>> getAllResourceOperators(type: Class<P>)
+    private fun <P: IResourceOperator<out HasMetadata>> getAllResourceOperators(type: Class<P>)
             : MutableMap<ResourceKind<out HasMetadata>, P> {
         val operators = mutableMapOf<ResourceKind<out HasMetadata>, P>()
         operators.putAll(

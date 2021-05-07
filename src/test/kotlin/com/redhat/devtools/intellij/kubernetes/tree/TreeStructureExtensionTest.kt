@@ -12,25 +12,17 @@ package com.redhat.devtools.intellij.kubernetes.tree
 
 import com.intellij.openapi.extensions.ExtensionPointName
 import com.intellij.openapi.project.Project
-import com.nhaarman.mockitokotlin2.any
-import com.nhaarman.mockitokotlin2.doAnswer
-import com.nhaarman.mockitokotlin2.doReturn
-import com.nhaarman.mockitokotlin2.mock
-import com.nhaarman.mockitokotlin2.never
-import com.nhaarman.mockitokotlin2.times
-import com.nhaarman.mockitokotlin2.verify
-import com.nhaarman.mockitokotlin2.whenever
-import io.fabric8.kubernetes.client.KubernetesClient
-import org.assertj.core.api.Assertions.assertThat
+import com.nhaarman.mockitokotlin2.*
 import com.redhat.devtools.intellij.kubernetes.model.IResourceModel
 import com.redhat.devtools.intellij.kubernetes.model.mocks.Mocks.resourceModel
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test
 
 class TreeStructureExtensionTest {
 
 	private val model: IResourceModel = resourceModel()
 	private val extensionPoint: ExtensionPointName<ITreeStructureContributionFactory> = mock()
-	private val project: Project = mock();
+	private val project: Project = mock()
 	private val structure: TreeStructure = TestableTreeStructure(project, model, extensionPoint)
 
 	@Test

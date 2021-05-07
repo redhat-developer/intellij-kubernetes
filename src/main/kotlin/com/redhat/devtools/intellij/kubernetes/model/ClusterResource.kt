@@ -80,18 +80,10 @@ class ClusterResource(resource: HasMetadata, val contextName: String) {
     }
 
     fun isSameResource(compared: HasMetadata?): Boolean {
-        if (compared == null
-            || initialResource == null) {
-            return false
-        }
-        return initialResource.sameResource(compared)
-    }
-
-    fun isUpdate(compared: HasMetadata?): Boolean {
         if (compared == null) {
             return false
         }
-        return initialResource.newerRevision(compared)
+        return initialResource.sameResource(compared)
     }
 
     fun isDeleted(): Boolean {

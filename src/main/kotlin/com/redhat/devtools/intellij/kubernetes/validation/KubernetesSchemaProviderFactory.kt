@@ -28,8 +28,6 @@ import java.util.stream.Collectors
 class KubernetesSchemasProviderFactory : JsonSchemaProviderFactory {
 
     companion object {
-        private val LOGGER = LoggerFactory.getLogger(KubernetesSchemasProviderFactory::class.java)
-
         private const val BASE_DIR = "/schemas/k8s.io"
         private const val INDEX_FILE = "index.txt"
     }
@@ -50,6 +48,7 @@ class KubernetesSchemasProviderFactory : JsonSchemaProviderFactory {
     private fun load(): List<KubernetesSchemaProvider> {
         return javaClass.getResourceAsStream(Paths.get(BASE_DIR, INDEX_FILE).toString()).bufferedReader()
             .use { reader ->
+                @Suppress("UNCHECKED_CAST")
                 reader.lines()
                     .filter { !it.contains(INDEX_FILE) }
                     .map { createProvider(Paths.get(BASE_DIR, it)) }
@@ -98,7 +97,7 @@ class KubernetesSchemasProviderFactory : JsonSchemaProviderFactory {
             || kind == null) {
             return null
         }
-        return Pair(apiGroup, kind);
+        return Pair(apiGroup, kind)
     }
 
     private fun getApiGroup(group: String?, version: String?): String? {

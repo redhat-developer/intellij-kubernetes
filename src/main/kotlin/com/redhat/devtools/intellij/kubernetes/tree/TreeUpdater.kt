@@ -89,7 +89,7 @@ class TreeUpdater<Structure: AbstractTreeStructure>(
         return structure.getParentElement(element)
     }
 
-    private fun getTreePath(element: Any?): TreePath? {
+    private fun getTreePath(element: Any?): TreePath {
         val path =
             if (isRootNode(element)) {
                 TreePath(treeModel.root)
