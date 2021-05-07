@@ -33,15 +33,15 @@ class NamespacedCustomResourceOperator(
         return GenericCustomResourceFactory.createResources(resourcesList)
     }
 
-    override fun watchAll(watcher: Watcher<out HasMetadata>): Watch? {
+    override fun watchAll(watcher: Watcher<in GenericCustomResource>): Watch? {
 		return watch(namespace, null, watcher)
     }
 
-	override fun watch(resource: HasMetadata, watcher: Watcher<out HasMetadata>): Watch? {
+	override fun watch(resource: HasMetadata, watcher: Watcher<in GenericCustomResource>): Watch? {
 		return watch(resource.metadata.namespace, resource.metadata.name, watcher)
 	}
 
-	private fun watch(namespace: String?, name: String?, watcher: Watcher<out HasMetadata>): Watch? {
+	private fun watch(namespace: String?, name: String?, watcher: Watcher<in GenericCustomResource>): Watch? {
 		if (namespace == null) {
 			return null
 		}

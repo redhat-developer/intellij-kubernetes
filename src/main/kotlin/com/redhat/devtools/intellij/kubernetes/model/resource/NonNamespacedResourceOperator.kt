@@ -42,13 +42,13 @@ abstract class NonNamespacedResourceOperator<R : HasMetadata, C : Client>(
         return getOperation()?.list()?.items ?: emptyList()
     }
 
-    override fun watchAll(watcher: Watcher<out HasMetadata>): Watch? {
+    override fun watchAll(watcher: Watcher<in R>): Watch? {
         @Suppress("UNCHECKED_CAST")
         val typedWatcher = watcher as? Watcher<R> ?: return null
         return getOperation()?.watch(typedWatcher)
     }
 
-    override fun watch(resource: HasMetadata, watcher: Watcher<out HasMetadata>): Watch? {
+    override fun watch(resource: HasMetadata, watcher: Watcher<in R>): Watch? {
         @Suppress("UNCHECKED_CAST")
         val typedWatcher = watcher as? Watcher<R> ?: return null
         return getOperation()?.withName(resource.metadata.name)?.watch(typedWatcher)

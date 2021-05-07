@@ -17,8 +17,8 @@ import io.fabric8.kubernetes.client.Watcher
 interface IResourceOperator<R: HasMetadata> {
     val kind: ResourceKind<R>
     val allResources: Collection<R>
-    fun watchAll(watcher: Watcher<out HasMetadata>): Watch?
-    fun watch(resource: HasMetadata, watcher: Watcher<out HasMetadata>): Watch?
+    fun watchAll(watcher: Watcher<in R>): Watch?
+    fun watch(resource: HasMetadata, watcher: Watcher<in R>): Watch?
     fun invalidate()
     fun replaced(resource: HasMetadata): Boolean
     fun added(resource: HasMetadata): Boolean
