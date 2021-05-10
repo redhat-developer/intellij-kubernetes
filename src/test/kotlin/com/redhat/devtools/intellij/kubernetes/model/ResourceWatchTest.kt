@@ -59,7 +59,7 @@ class ResourceWatchTest {
     }
 
     @Test
-    fun `#watch() should call watchable#watch() on supplied watchable`() {
+    fun `#watch() should call operation#watch`() {
         // given
         // when watch supplier is added - in @Before
         // then
@@ -70,7 +70,6 @@ class ResourceWatchTest {
     fun `#watch() should add watch`() {
         // given
         val kind: ResourceKind<Pod> = mock()
-        val watchable = WatchOperationProvider<Pod>()
         assertThat(resourceWatch.watches.keys).doesNotContain(kind)
         // when
         resourceWatch.watch(kind, podWatchOpProvider::watch, watchListener)
@@ -136,8 +135,8 @@ class ResourceWatchTest {
     }
 
     @Test
-    fun `#ignoreAll() should continue ignoring if previous watchable throws`() {
-        // given watchable1 throws
+    fun `#stopWatchAll() should continue stopping if previous close throws`() {
+        // given watch throws
         val watch1 = spy(WatchFake())
         whenever(watch1.close()).thenThrow(KubernetesClientException::class.java)
         val watchOpProvider1 = WatchOperationProvider<HasMetadata>(watch1)
@@ -147,7 +146,7 @@ class ResourceWatchTest {
         resourceWatch.watch(hasMetaKind2, watchOpProvider2::watch, watchListener)
         // when
         resourceWatch.stopWatchAll(listOf(hasMetaKind1, hasMetaKind2))
-        // then watchable2 was closed
+        // then watch was closed
         verify(watch1).close()
         verify(watch2).close()
     }
@@ -220,9 +219,9 @@ class ResourceWatchTest {
             watchListeners: WatchListeners
         ) {
             super.watch(key, watchOperation, watchListeners)
-            val watchOperation = watchOperations.pollFirst(10, TimeUnit.SECONDS)
+            val queuedOperation = watchOperations.pollFirst(10, TimeUnit.SECONDS)
             // run in sequence, not in separate thread
-            watchOperation?.run()
+            queuedOperation?.run()
         }
     }
 
