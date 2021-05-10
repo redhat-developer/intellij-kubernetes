@@ -257,12 +257,9 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
     private fun watchAll(kinds: Collection<Any>) {
         val watchOperations = namespacedOperators.entries.toList()
             .filter { kinds.contains(it.key) }
-            .map { Pair(it.value.kind, { watcher: Watcher<in HasMetadata> -> it.value.watchAll(watcher) }) }
+            .map { Pair(it.value.kind, it.value::watchAll) }
 
-        @Suppress("UNCHECKED_CAST")
-        watch.watchAll(
-            watchOperations,
-            WatchListeners({ added(it) }, { removed(it) }, { replaced(it) }))
+        watch.watchAll(watchOperations, watchListener)
     }
 
     private fun watch(operator: IResourceOperator<*>?) {
@@ -270,12 +267,7 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
             return
         }
 
-        @Suppress("UNCHECKED_CAST")
-        watch.watch(
-            operator.kind,
-            { watcher: Watcher<in HasMetadata> -> operator.watchAll(watcher) },
-            watchListener
-        )
+        watch.watch(operator.kind, operator::watchAll, watchListener)
     }
 
     override fun stopWatch(kind: ResourceKind<out HasMetadata>) {

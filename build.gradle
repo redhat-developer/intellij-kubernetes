@@ -43,8 +43,8 @@ dependencies {
             "org.apache.commons:commons-lang3:3.10"
     )
     testImplementation(
-            "org.assertj:assertj-core:3.17.1",
-            "org.mockito:mockito-inline:3.5.13",
+            "org.assertj:assertj-core:3.19.0",
+            "org.mockito:mockito-inline:3.9.0",
             "com.nhaarman.mockitokotlin2:mockito-kotlin:2.2.0",
             "org.jetbrains.kotlin:kotlin-test-junit"
     )
