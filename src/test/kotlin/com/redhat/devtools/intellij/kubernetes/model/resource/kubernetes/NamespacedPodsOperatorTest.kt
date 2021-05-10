@@ -10,14 +10,7 @@
  ******************************************************************************/
 package com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes
 
-import com.nhaarman.mockitokotlin2.any
-import com.nhaarman.mockitokotlin2.argumentCaptor
-import com.nhaarman.mockitokotlin2.clearInvocations
-import com.nhaarman.mockitokotlin2.never
-import com.nhaarman.mockitokotlin2.spy
-import com.nhaarman.mockitokotlin2.times
-import com.nhaarman.mockitokotlin2.verify
-import com.nhaarman.mockitokotlin2.whenever
+import com.nhaarman.mockitokotlin2.*
 import io.fabric8.kubernetes.api.model.Pod
 import io.fabric8.kubernetes.client.KubernetesClient
 import org.assertj.core.api.Assertions.assertThat
@@ -89,12 +82,11 @@ class NamespacedPodsOperatorTest {
     @Test
     fun `#delete() deletes given pods in client`() {
         // given
-        clearInvocations(operator)
         // when
         val toDelete = listOf(POD2)
         operator.delete(toDelete)
         // then
-        verify(clients.get().pods().inNamespace(currentNamespace)).delete(toDelete)
+        verify(clients.get().pods()).delete(toDelete)
     }
 
     @Test
@@ -105,14 +97,14 @@ class NamespacedPodsOperatorTest {
         // when
         operator.delete(listOf(POD2))
         // then
-        verify(clients.get().pods().inNamespace(currentNamespace), never()).delete(any<List<Pod>>())
+        verify(clients.get().pods(), never()).delete(any<List<Pod>>())
     }
 
     @Test
     fun `#delete() returns true if client could delete`() {
         // given
         clearInvocations(operator)
-        whenever(clients.get().pods().inNamespace(currentNamespace).delete(any<List<Pod>>()))
+        whenever(clients.get().pods().delete(any<List<Pod>>()))
             .thenReturn(true)
         // when
         val success = operator.delete(listOf(POD2))
@@ -124,7 +116,7 @@ class NamespacedPodsOperatorTest {
     fun `#delete() returns false if client could NOT delete`() {
         // given
         clearInvocations(operator)
-        whenever(clients.get().pods().inNamespace(currentNamespace).delete(any<List<Pod>>()))
+        whenever(clients.get().pods().delete(any<List<Pod>>()))
             .thenReturn(false)
         // when
         val success = operator.delete(listOf(POD2))
