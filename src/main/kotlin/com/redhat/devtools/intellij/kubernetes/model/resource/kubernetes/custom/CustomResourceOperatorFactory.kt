@@ -1,6 +1,7 @@
 package com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.custom
 
 import com.redhat.devtools.intellij.kubernetes.model.resource.IResourceOperator
+import com.redhat.devtools.intellij.kubernetes.model.util.Clients
 import com.redhat.devtools.intellij.kubernetes.model.util.createResource
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.apiextensions.v1beta1.CustomResourceDefinition
@@ -21,6 +22,10 @@ object CustomResourceOperatorFactory {
             else -> throw IllegalArgumentException(
                 "Could not determine scope in spec for custom resource definition ${definition.spec.names.kind}")
         }
+    }
+
+    fun getDefinitions(client: KubernetesClient): Collection<CustomResourceDefinition> {
+        return client.apiextensions().v1beta1().customResourceDefinitions().list().items ?: emptyList()
     }
 
     private fun createResource(jsonYaml: String): HasMetadata? {

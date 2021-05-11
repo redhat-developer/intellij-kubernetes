@@ -56,9 +56,9 @@ open class ResourceWatch<T>(
                     key,
                     watchOperation,
                     watches,
-                    watchListeners.add,
-                    watchListeners.remove,
-                    watchListeners.replace)
+                    watchListeners.added,
+                    watchListeners.removed,
+                    watchListeners.replaced)
             watchOperations.add(operation) // enqueue watch operation
             WATCH_OPERATION_ENQUEUED // Marker: watch operation submitted
         }
@@ -177,9 +177,9 @@ open class ResourceWatch<T>(
     }
 
     class WatchListeners(
-        val add: (HasMetadata) -> Unit,
-        val remove: (HasMetadata) -> Unit,
-        val replace: (HasMetadata) -> Unit
+        val added: (HasMetadata) -> Unit,
+        val removed: (HasMetadata) -> Unit,
+        val replaced: (HasMetadata) -> Unit
     )
 
 }
