@@ -46,9 +46,9 @@ object ClientMocks {
     val NAMESPACE2 = resource<Namespace>("namespace2")
     val NAMESPACE3 = resource<Namespace>("namespace3")
 
-    val POD1 = resource<Pod>("pod1")
-    val POD2 = resource<Pod>("pod2")
-    val POD3 = resource<Pod>("pod3")
+    val POD1 = resource<Pod>("pod1", "namespace1")
+    val POD2 = resource<Pod>("pod2", "namespace2")
+    val POD3 = resource<Pod>("pod3", "namespace3")
 
     fun client(currentNamespace: String?, namespaces: Array<Namespace>, masterUrl: URL = URL("http://localhost"))
             : KubernetesClient {
@@ -72,13 +72,6 @@ object ClientMocks {
         return mock {
             on { list() } doReturn namespaceList
         }
-    }
-
-    fun inNamespace(client: NamespacedKubernetesClient): NamespacedKubernetesClient {
-        val namespaceClient = mock<NamespacedKubernetesClient>()
-        whenever(client.inNamespace(ArgumentMatchers.anyString()))
-            .doReturn(namespaceClient)
-        return namespaceClient
     }
 
     fun inNamespace(mixedOp: MixedOperation<Pod, PodList, PodResource<Pod>>)
@@ -120,11 +113,11 @@ object ClientMocks {
             .doReturn(returnedPods)
     }
 
-    fun withName(mixedOp: MixedOperation<Pod, PodList, PodResource<Pod>>, pod: Pod) {
+    fun withName(op: NonNamespaceOperation<Pod, PodList, PodResource<Pod>>, pod: Pod) {
         val podResource = mock<PodResource<Pod>>()
         whenever(podResource.get())
             .doReturn(pod)
-        whenever(mixedOp.withName(pod.metadata.name))
+        whenever(op.withName(pod.metadata.name))
             .doReturn(podResource)
     }
 
