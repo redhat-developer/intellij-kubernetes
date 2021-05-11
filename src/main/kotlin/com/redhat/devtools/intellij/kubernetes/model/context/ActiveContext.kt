@@ -433,7 +433,12 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
     }
 
     private fun delete(kind: ResourceKind<out HasMetadata>, scope: ResourcesIn, resources: List<HasMetadata>) {
-        val operator = getOperator(kind, scope) ?: return
+        val operator = getOperator(kind, scope)
+        if (operator == null) {
+            logger<ActiveContext<*,*>>().warn("""Could not delete $kind resources: ${toMessage(resources, -1)}.
+                |No operator found for in scope $scope.""".trimMargin())
+            return
+        }
         try {
             val deleted = operator.delete(resources)
             if (deleted) {
