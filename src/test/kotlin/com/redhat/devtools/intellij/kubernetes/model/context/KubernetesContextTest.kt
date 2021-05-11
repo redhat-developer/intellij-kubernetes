@@ -52,10 +52,7 @@ import com.redhat.devtools.intellij.kubernetes.model.resource.INamespacedResourc
 import com.redhat.devtools.intellij.kubernetes.model.resource.INonNamespacedResourceOperator
 import com.redhat.devtools.intellij.kubernetes.model.resource.IResourceOperator
 import com.redhat.devtools.intellij.kubernetes.model.resource.ResourceKind
-import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.AllPodsOperator
-import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.NamespacesOperator
-import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.NodesOperator
-import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.ServicesOperator
+import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.*
 import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.custom.CustomResourceScope
 import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.custom.GenericCustomResource
 import com.redhat.devtools.intellij.kubernetes.model.util.Clients
@@ -92,7 +89,7 @@ class KubernetesContextTest {
 			allPods.toList())
 
 	private val namespacedPodsOperator = namespacedResourceOperator<Pod, KubernetesClient>(
-			AllPodsOperator.KIND,
+			NamespacedPodsOperator.KIND,
 			allPods.toList(),
 			currentNamespace)
 
@@ -386,23 +383,23 @@ class KubernetesContextTest {
 	}
 
 	@Test
-	fun `#delete should ask operator to delete`() {
+	fun `#delete should call operator#delete`() {
 		// given
 		val toDelete = listOf(POD2)
 		// when
 		context.delete(toDelete)
 		// then
-		verify(allPodsOperator).delete(toDelete)
+		verify(namespacedPodsOperator).delete(toDelete)
 	}
 
 	@Test
-	fun `#delete should not ask any operator to delete if there is no operator for it`() {
+	fun `#delete should not call operator#delete if there is no operator for it`() {
 		// given
 		val toDelete = listOf(resource<HasMetadata>("lord sith"))
 		// when
 		context.delete(toDelete)
 		// then
-		verify(allPodsOperator, never()).delete(toDelete)
+		verify(namespacedPodsOperator, never()).delete(toDelete)
 	}
 
 	@Test
@@ -412,7 +409,7 @@ class KubernetesContextTest {
 		// when
 		context.delete(toDelete)
 		// then
-		verify(allPodsOperator, times(1)).delete(eq(listOf(POD2)))
+		verify(namespacedPodsOperator, times(1)).delete(eq(listOf(POD2)))
 	}
 
 	@Test
@@ -422,7 +419,7 @@ class KubernetesContextTest {
 		// when
 		context.delete(toDelete)
 		// then
-		verify(allPodsOperator, times(1)).delete(eq(listOf(POD2)))
+		verify(namespacedPodsOperator, times(1)).delete(eq(listOf(POD2)))
 		verify(namespacesOperator, times(1)).delete(eq(listOf(NAMESPACE2)))
 	}
 
@@ -453,7 +450,7 @@ class KubernetesContextTest {
 	fun `#delete should throw if resource was NOT deleted`() {
 		// given
 		val toDelete = listOf(POD2)
-		whenever(allPodsOperator.delete(any()))
+		whenever(namespacedPodsOperator.delete(any()))
 			.thenReturn(false)
 		// when
 		context.delete(toDelete)
@@ -465,7 +462,7 @@ class KubernetesContextTest {
 	fun `#delete should throw for operator that failed, not successful ones`() {
 		// given
 		val toDelete = listOf(POD2, NAMESPACE2)
-		whenever(allPodsOperator.delete(any()))
+		whenever(namespacedPodsOperator.delete(any()))
 			.thenReturn(false)
 		// when
 		val ex = try {
@@ -484,7 +481,7 @@ class KubernetesContextTest {
 	fun `#delete should NOT fire if resource was NOT deleted`() {
 		// given
 		val toDelete = listOf(POD2)
-		whenever(allPodsOperator.delete(any()))
+		whenever(namespacedPodsOperator.delete(any()))
 			.thenReturn(false)
 		// when
 		try {
