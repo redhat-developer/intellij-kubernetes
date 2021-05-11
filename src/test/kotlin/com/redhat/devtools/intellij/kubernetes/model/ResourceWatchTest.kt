@@ -103,7 +103,7 @@ class ResourceWatchTest {
     }
 
     @Test
-    fun `#ignore() should close removed watch`() {
+    fun `#stopWatch() should close removed watch`() {
         // given
         // when starting 2nd time
         resourceWatch.stopWatch(podKind)
@@ -112,7 +112,7 @@ class ResourceWatchTest {
     }
 
     @Test
-    fun `#ignore() should not close remaining watches`() {
+    fun `#stopWatch() should not close remaining watches`() {
         // given
         val notRemoved = WatchOperationProvider<HasMetadata>()
         resourceWatch.watch(hasMetaKind1, notRemoved::watch, watchListener)
@@ -123,7 +123,7 @@ class ResourceWatchTest {
     }
 
     @Test
-    fun `#ignore() should remove watch`() {
+    fun `#stopWatch() should remove watch`() {
         // given
         val toRemove = WatchFake()
         resourceWatch.watch(hasMetaKind1, WatchOperationProvider<HasMetadata>(toRemove)::watch, watchListener)
