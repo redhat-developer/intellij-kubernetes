@@ -68,7 +68,8 @@ object Mocks {
         kind: ResourceKind<T>,
         resources: Collection<T>,
         namespace: Namespace,
-        crossinline watchOperation: (watcher: Watcher<in T>) -> Watch? = { null }
+        crossinline watchOperation: (watcher: Watcher<in T>) -> Watch? = { null },
+        deleteSuccess: Boolean = true
     ): INamespacedResourceOperator<T, C> {
         return mock {
             Mockito.doReturn(namespace.metadata.name)
@@ -81,6 +82,7 @@ object Mocks {
             on { watchAll(any()) } doAnswer { invocation ->
                 watchOperation.invoke(invocation.getArgument(0))
             }
+            on { delete(any()) } doReturn deleteSuccess
         }
     }
 
