@@ -25,7 +25,6 @@ import com.redhat.devtools.intellij.kubernetes.model.resource.INamespacedResourc
 import com.redhat.devtools.intellij.kubernetes.model.resource.INonNamespacedResourceOperator
 import com.redhat.devtools.intellij.kubernetes.model.resource.ResourceKind
 import io.fabric8.kubernetes.client.Watch
-import org.mockito.ArgumentCaptor
 import org.mockito.Mockito
 
 object Mocks {
@@ -69,7 +68,8 @@ object Mocks {
         resources: Collection<T>,
         namespace: Namespace,
         crossinline watchOperation: (watcher: Watcher<in T>) -> Watch? = { null },
-        deleteSuccess: Boolean = true
+        deleteSuccess: Boolean = true,
+        getReturnValue: T? = null
     ): INamespacedResourceOperator<T, C> {
         return mock {
             Mockito.doReturn(namespace.metadata.name)
@@ -83,6 +83,7 @@ object Mocks {
                 watchOperation.invoke(invocation.getArgument(0))
             }
             on { delete(any()) } doReturn deleteSuccess
+            on { get(any()) } doReturn getReturnValue
         }
     }
 
