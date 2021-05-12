@@ -12,7 +12,7 @@ package com.redhat.devtools.intellij.kubernetes.model.resource
 
 import com.intellij.openapi.diagnostic.logger
 import io.fabric8.kubernetes.api.model.HasMetadata
-import com.redhat.devtools.intellij.kubernetes.model.util.sameResource
+import com.redhat.devtools.intellij.kubernetes.model.util.isSameResource
 
 abstract class AbstractResourceOperator<R : HasMetadata> : IResourceOperator<R> {
 
@@ -33,7 +33,7 @@ abstract class AbstractResourceOperator<R : HasMetadata> : IResourceOperator<R> 
         // don't add resource if different instance of same resource is already contained
         synchronized(_allResources) {
             @Suppress("UNCHECKED_CAST")
-            return when (val existing = _allResources.find { resource.sameResource(it) }) {
+            return when (val existing = _allResources.find { resource.isSameResource(it) }) {
                 null -> _allResources.add(resource as R)
                 resource -> false
                 else -> replace(existing, resource)
@@ -50,7 +50,7 @@ abstract class AbstractResourceOperator<R : HasMetadata> : IResourceOperator<R> 
             // do not remove by instance equality (ex. when removal is triggered by resource watch)
             // or equals bcs instance to be removed can be different and not equals either
             // (#equals would not match bcs properties - ex. phase - changed)
-            return _allResources.removeIf { resource.sameResource(it) }
+            return _allResources.removeIf { resource.isSameResource(it) }
         }
     }
 
@@ -60,7 +60,7 @@ abstract class AbstractResourceOperator<R : HasMetadata> : IResourceOperator<R> 
         }
         logger<AbstractResourceOperator<*>>().debug("Replacing resource ${resource.metadata.name}.")
         synchronized(_allResources) {
-            val toReplace = _allResources.find { resource.sameResource(it) } ?: return false
+            val toReplace = _allResources.find { resource.isSameResource(it) } ?: return false
             return replace(toReplace, resource)
         }
     }

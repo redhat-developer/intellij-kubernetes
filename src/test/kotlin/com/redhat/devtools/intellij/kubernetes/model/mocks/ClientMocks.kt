@@ -26,7 +26,6 @@ import io.fabric8.kubernetes.api.model.apiextensions.v1beta1.CustomResourceDefin
 import io.fabric8.kubernetes.api.model.apiextensions.v1beta1.CustomResourceDefinitionSpec
 import io.fabric8.kubernetes.api.model.apiextensions.v1beta1.CustomResourceDefinitionVersion
 import io.fabric8.kubernetes.client.Config
-import io.fabric8.kubernetes.client.NamespacedKubernetesClient
 import io.fabric8.kubernetes.client.dsl.MixedOperation
 import io.fabric8.kubernetes.client.dsl.NonNamespaceOperation
 import io.fabric8.kubernetes.client.dsl.PodResource
@@ -210,8 +209,9 @@ object ClientMocks {
         name: String,
         namespace: String? = null,
         uid: String? = System.currentTimeMillis().toString(),
-        selfLink: String? = "/apis/${namespace}/$name"): T {
-        val metadata = objectMeta(name, namespace, uid, selfLink)
+        selfLink: String? = "/apis/${namespace}/$name",
+        resourceVersion: String? = System.currentTimeMillis().toString()): T {
+        val metadata = objectMeta(name, namespace, uid, selfLink, resourceVersion)
         return mock {
             on { getMetadata() } doReturn metadata
             on { getApiVersion() } doReturn getApiVersion(T::class.java)
@@ -224,9 +224,10 @@ object ClientMocks {
         namespace: String,
         definition: CustomResourceDefinition,
         uid: String? = System.currentTimeMillis().toString(),
-        selfLink: String? = "/apis/$namespace/customresources/$name"
+        selfLink: String? = "/apis/$namespace/customresources/$name",
+        resourceVersion: String = System.currentTimeMillis().toString()
     ): GenericCustomResource {
-        val metadata = objectMeta(name, namespace, uid, selfLink)
+        val metadata = objectMeta(name, namespace, uid, selfLink, resourceVersion)
         val apiVersion = getApiVersion(
             definition.spec.group,
             definition.spec.version) // TODO: deal with multiple versions
@@ -238,12 +239,19 @@ object ClientMocks {
         }
     }
 
-    fun objectMeta(name: String, namespace: String?, uid: String?, selfLink: String?): ObjectMeta {
+    fun objectMeta(
+        name: String,
+        namespace: String?,
+        uid: String?,
+        selfLink: String?,
+        resourceVersion: String?
+    ): ObjectMeta {
         return mock {
             on { getName() } doReturn name
             on { getNamespace() } doReturn namespace
             on { getUid() } doReturn uid
             on { getSelfLink() } doReturn selfLink
+            on { getResourceVersion() } doReturn resourceVersion
         }
     }
 
