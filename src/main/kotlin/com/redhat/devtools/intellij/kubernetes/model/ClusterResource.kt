@@ -67,6 +67,14 @@ open class ClusterResource(
         }
     }
 
+    /**
+     * Saves the given resource the cluster. The currently existing resource on the cluster is replaced
+     * if it is the same resource in an older version. A new resource is created if the given resource
+     * is not the same as the resource that was given when creating this instance.
+     * The cached resource is only updated via the event sent by the cluster to the [watchListeners].
+     *
+     * @param resource the resource that shall be save to the cluster
+     */
     fun saveToCluster(resource: HasMetadata): HasMetadata? {
         return if (isSameResource(resource)) {
             operator?.replace(resource)
@@ -75,33 +83,78 @@ open class ClusterResource(
         }
     }
 
+    /**
+     * Sets the given resource as the current value in this instance.
+     * Nothing is done if the given resource is not the same resource (differs in name, namespace, kind).
+     *
+     * @param resource the resource that's the current resource value in this instance
+     *
+     * @see [get]
+     * @see [HasMetadata.isSameResource]
+     */
     fun set(resource: HasMetadata?) {
         synchronized(this) {
+            if (resource != null
+                && !initialResource.isSameResource(resource)) {
+                return
+            }
             this.updatedResource = resource
         }
     }
 
-    fun isOutdated(compared: HasMetadata?): Boolean {
+    /**
+     * Returns `true` if the given resource is outdated compared to the latest resource on the cluster.
+     * A resource is considered outdated if it is the same resource and is an older version of the latest resource in the cluster.
+     * The latest resource form cluster is retrieved to make sure the most accurate response is given.
+     * Returns `false` if the given resource is `null`.
+     *
+     * @param toCompare the resource to compare to the latest cluster resource
+     * @return true if the given resource is outdated compared to the latest cluster resource
+     *
+     * @see HasMetadata.isSameResource
+     */
+    fun isOutdated(toCompare: HasMetadata?): Boolean {
         val resource = get(true)
-        if (compared == null
+        if (toCompare == null
             || resource == null) {
             return false
         }
-        return resource.sameResource(compared)
-                && resource.newerRevision(compared)
+        return isSameResource(toCompare)
+                && resource.isNewerVersionThan(toCompare)
     }
 
-    fun isSameResource(compared: HasMetadata?): Boolean {
-        if (compared == null) {
+    /**
+     * Returns `true` if the given resource is the same as the resource that was given when creating this cluster resource instance.
+     * A resource is considered the same if it is equal in [io.fabric8.kubernetes.api.model.ObjectMeta.getUid] and [[io.fabric8.kubernetes.api.model.ObjectMeta.getSelfLink]
+     * Returns `false` otherwise
+     *
+     * @param toCompare the resource to compare to the initial cluster resource
+     * @return true if the given resource is the same as the initial resource in this cluster resource
+     */
+    fun isSameResource(toCompare: HasMetadata?): Boolean {
+        if (toCompare == null) {
             return false
         }
-        return initialResource.sameResource(compared)
+        return initialResource.isSameResource(toCompare)
     }
 
+    /**
+     * Returns `true` if the resource given to this instance was deleted on the cluster,
+     * A request to the cluster for the resource is executed to find out.
+     *
+     * @return true if the resource of this instance was deleted
+     */
     fun isDeleted(): Boolean {
         return get(true) == null
     }
 
+    /**
+     * Starts watching the resource given to this instance. Modification & deletions to the resource are tracked
+     * and notified to listeners of this instance. Watching may be stopped by calling [stopWatch]
+     *
+     * @see [addListener]
+     * @see [stopWatch]
+     */
     fun watch() {
         if (operator == null) {
             logger<ClusterResource>().debug(
@@ -116,16 +169,28 @@ open class ClusterResource(
         )
     }
 
+    /**
+     * Stops watching the resource given to this instance.
+     */
     fun stopWatch() {
         // use the resource passed in initially, updated resource can have become null (deleted)
         logger<ClusterResource>().debug("Stopping watch for ${initialResource.kind} ${initialResource.metadata.name}.")
         watch.stopWatch(initialResource)
     }
 
+    /**
+     * Closes this instance and stops the watches.
+     */
     fun close() {
         watch.close()
     }
 
+    /**
+     * Adds the given listener to the list of listeners that should be informed of changes to the resource given
+     * to this instance.
+     *
+     * @param listener that should get called if a change (modification, deletion) was detected
+     */
     fun addListener(listener: ModelChangeObservable.IResourceChangeListener) {
         modelChange.addListener(listener)
     }

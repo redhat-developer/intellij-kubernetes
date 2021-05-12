@@ -68,79 +68,156 @@ class ResourceUtilsTest {
 	}
 
 	@Test
-	fun `#sameResource should return false if both resources have null uid and different selfLink`() {
+	fun `#isSameResource should return false if both resources have null uid and different selfLink`() {
 		// given
 		val red = resource<Pod>("agent smith", uid = null, selfLink = "red pill")
 		val blue = resource<Pod>("agent smith", uid = null, selfLink = "blue pill")
 		// when
-		val same = red.sameResource(blue)
+		val same = red.isSameResource(blue)
 		// then
 		assertThat(same).isFalse()
 	}
 
 	@Test
-	fun `#sameResource should return true if both resources have null uid and same selfLink`() {
+	fun `#isSameResource should return true if both resources have null uid and same selfLink`() {
 		// given
 		val trinity = resource<Pod>("trinity", uid = null, selfLink = "red pill")
 		val merovingian = resource<Pod>("merovingian", uid = null, selfLink = "red pill")
 		// when
-		val same = trinity.sameResource(merovingian)
+		val same = trinity.isSameResource(merovingian)
 		// then
 		assertThat(same).isTrue()
 	}
 
 	@Test
-	fun `#sameResource should return true if both resources have same uid and null selfLink`() {
+	fun `#isSameResource should return true if both resources have same uid and null selfLink`() {
 		// given
 		val nemo = resource<Pod>("nemo", uid = "red pill", selfLink = null)
 		val morpheus = resource<Pod>("morpheus", uid = "red pill", selfLink = null)
 		// when
-		val same = nemo.sameResource(morpheus)
+		val same = nemo.isSameResource(morpheus)
 		// then
 		assertThat(same).isTrue()
 	}
 
 	@Test
-	fun `#sameResource should return false if both resources have different uid`() {
+	fun `#isSameResource should return false if both resources have different uid`() {
 		// given
 		val nemo = resource<Pod>("nemo", uid = "red pill", selfLink = null)
 		val morpheus = resource<Pod>("morpheus", uid = "blue pill", selfLink = null)
 		// when
-		val same = nemo.sameResource(morpheus)
+		val same = nemo.isSameResource(morpheus)
 		// then
 		assertThat(same).isFalse()
 	}
 
 	@Test
-	fun `#sameResource should return true if both resources have same uid but different selfLink`() {
+	fun `#isSameResource should return true if both resources have same uid but different selfLink`() {
 		// given
 		val nemo = resource<Pod>("nemo", uid = "red pill", selfLink = "Nebuchadnezzar")
 		val morpheus = resource<Pod>("morpheus", uid = "red pill", selfLink = "Zion")
 		// when
-		val same = nemo.sameResource(morpheus)
+		val same = nemo.isSameResource(morpheus)
 		// then
 		assertThat(same).isTrue()
 	}
 
 	@Test
-	fun `#sameResource should return true if both resources have different uid but same selfLink`() {
+	fun `#isSameResource should return true if both resources have different uid but same selfLink`() {
 		// given
 		val nemo = resource<Pod>("nemo", uid = "red pill", selfLink = "Nebuchadnezzar")
 		val morpheus = resource<Pod>("morpheus", uid = "blue pill", selfLink = "Nebuchadnezzar")
 		// when
-		val same = nemo.sameResource(morpheus)
+		val same = nemo.isSameResource(morpheus)
 		// then
 		assertThat(same).isTrue()
 	}
 
 	@Test
-	fun `#sameResource should return false if both resources have different uid and selfLink`() {
+	fun `#isSameResource should return false if both resources have different uid and selfLink`() {
 		// given
 		val nemo = resource<Pod>("nemo", uid = "red pill", selfLink = "Nebuchadnezzar")
 		val morpheus = resource<Pod>("morpheus", uid = "blue pill", selfLink = "Zion")
 		// when
-		val same = nemo.sameResource(morpheus)
+		val same = nemo.isSameResource(morpheus)
 		// then
 		assertThat(same).isFalse()
+	}
+
+	@Test
+	fun `#isNewerVersionThan should return false if both resources have same version`() {
+		// given
+		val neo1 = resource<Pod>("neo", resourceVersion = "1")
+		val neo2 = resource<Pod>("neo", resourceVersion = "1")
+		// when
+		val newer = neo1.isNewerVersionThan(neo2)
+		// then
+		assertThat(newer).isFalse()
+	}
+
+	@Test
+	fun `#isNewerVersionThan should return false if resource has older version`() {
+		// given
+		val older = resource<Pod>("neo", resourceVersion = "1")
+		val newer = resource<Pod>("neo", resourceVersion = "2")
+		// when
+		val isNewer = newer.isNewerVersionThan(older)
+		// then
+		assertThat(isNewer).isTrue()
+	}
+
+	@Test
+	fun `#isNewerVersionThan should return true if resources has newer version`() {
+		// given
+		val older = resource<Pod>("neo", resourceVersion = "1")
+		val newer = resource<Pod>("neo", resourceVersion = "2")
+		// when
+		val isNewer = older.isNewerVersionThan(newer)
+		// then
+		assertThat(isNewer).isFalse()
+	}
+
+	@Test
+	fun `#isNewerVersionThan should return true if this resource has no version`() {
+		// given
+		val noVersion = resource<Pod>("neo", resourceVersion = null)
+		val hasVersion = resource<Pod>("neo", resourceVersion = "1")
+		// when
+		val newer = noVersion.isNewerVersionThan(hasVersion)
+		// then
+		assertThat(newer).isTrue()
+	}
+
+	@Test
+	fun `#isNewerVersionThan should return false if given resource has no version`() {
+		// given
+		val noVersion = resource<Pod>("neo", resourceVersion = null)
+		val hasVersion = resource<Pod>("neo", resourceVersion = "1")
+		// when
+		val newer = hasVersion.isNewerVersionThan(noVersion)
+		// then
+		assertThat(newer).isFalse()
+	}
+
+	@Test
+	fun `#isNewerVersionThan should return false if given resource has same version`() {
+		// given
+		val sameVersion1 = resource<Pod>("neo", resourceVersion = "1")
+		val sameVersion2 = resource<Pod>("neo", resourceVersion = "1")
+		// when
+		val newer = sameVersion1.isNewerVersionThan(sameVersion2)
+		// then
+		assertThat(newer).isFalse()
+	}
+
+	@Test
+	fun `#isNewerVersionThan should return true if resource do NOT have same name`() {
+		// given
+		val neo = resource<Pod>("neo", resourceVersion = "2")
+		val morpheus = resource<Pod>("morpheus", resourceVersion = "1")
+		// when
+		val newer = morpheus.isNewerVersionThan(neo)
+		// then
+		assertThat(newer).isFalse()
 	}
 }
