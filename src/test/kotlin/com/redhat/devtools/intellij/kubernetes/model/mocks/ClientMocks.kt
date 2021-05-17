@@ -41,13 +41,13 @@ typealias NamespaceListOperation =
 
 object ClientMocks {
 
-    val NAMESPACE1 = resource<Namespace>("namespace1")
-    val NAMESPACE2 = resource<Namespace>("namespace2")
-    val NAMESPACE3 = resource<Namespace>("namespace3")
+    val NAMESPACE1 = resource<Namespace>("namespace1", null, "nsUid1")
+    val NAMESPACE2 = resource<Namespace>("namespace2", null, "nsUid2")
+    val NAMESPACE3 = resource<Namespace>("namespace3", null, "nsUid3")
 
-    val POD1 = resource<Pod>("pod1", "namespace1")
-    val POD2 = resource<Pod>("pod2", "namespace2")
-    val POD3 = resource<Pod>("pod3", "namespace3")
+    val POD1 = resource<Pod>("pod1", "namespace1", "podUid1")
+    val POD2 = resource<Pod>("pod2", "namespace2", "podUid2")
+    val POD3 = resource<Pod>("pod3", "namespace3", "podUid3")
 
     fun client(currentNamespace: String?, namespaces: Array<Namespace>, masterUrl: URL = URL("http://localhost"))
             : KubernetesClient {
@@ -209,9 +209,8 @@ object ClientMocks {
         name: String,
         namespace: String? = null,
         uid: String? = System.currentTimeMillis().toString(),
-        selfLink: String? = "/apis/${namespace}/$name",
         resourceVersion: String? = System.currentTimeMillis().toString()): T {
-        val metadata = objectMeta(name, namespace, uid, selfLink, resourceVersion)
+        val metadata = objectMeta(name, namespace, uid, resourceVersion)
         return mock {
             on { getMetadata() } doReturn metadata
             on { getApiVersion() } doReturn getApiVersion(T::class.java)
@@ -224,10 +223,9 @@ object ClientMocks {
         namespace: String,
         definition: CustomResourceDefinition,
         uid: String? = System.currentTimeMillis().toString(),
-        selfLink: String? = "/apis/$namespace/customresources/$name",
         resourceVersion: String = System.currentTimeMillis().toString()
     ): GenericCustomResource {
-        val metadata = objectMeta(name, namespace, uid, selfLink, resourceVersion)
+        val metadata = objectMeta(name, namespace, uid, resourceVersion)
         val apiVersion = getApiVersion(
             definition.spec.group,
             definition.spec.version) // TODO: deal with multiple versions
@@ -243,14 +241,12 @@ object ClientMocks {
         name: String,
         namespace: String?,
         uid: String?,
-        selfLink: String?,
         resourceVersion: String?
     ): ObjectMeta {
         return mock {
             on { getName() } doReturn name
             on { getNamespace() } doReturn namespace
             on { getUid() } doReturn uid
-            on { getSelfLink() } doReturn selfLink
             on { getResourceVersion() } doReturn resourceVersion
         }
     }

@@ -93,8 +93,8 @@ class KubernetesContextTest {
 			allPods.toList(),
 			currentNamespace)
 
-	private val hasMetadata1 = resource<HasMetadata>("hasMetadata1")
-	private val hasMetadata2 = resource<HasMetadata>("hasMetadata2")
+	private val hasMetadata1 = resource<HasMetadata>("hasMetadata1", "ns", "uid1")
+	private val hasMetadata2 = resource<HasMetadata>("hasMetadata2", "ns", "uid2")
 	private val hasMetadataOperator: INamespacedResourceOperator<HasMetadata, NamespacedKubernetesClient> = namespacedResourceOperator(
 			ResourceKind.create(HasMetadata::class.java),
 			setOf(hasMetadata1, hasMetadata2),

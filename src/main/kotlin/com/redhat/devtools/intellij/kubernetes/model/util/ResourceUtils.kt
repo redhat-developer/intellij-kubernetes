@@ -30,8 +30,10 @@ const val MARKER_WILL_BE_DELETED = "willBeDeleted"
  * @see io.fabric8.kubernetes.api.model.ObjectMeta.getUid()
  */
 fun HasMetadata.isSameResource(resource: HasMetadata): Boolean {
-	return isSameUid(resource)
-			|| isSameSelfLink(resource)
+	return this.isSameUid(resource)
+			&& this.isSameName(resource)
+			&& this.isSameNamespace(resource)
+			&& this.isSameKind(resource)
 }
 
 /**
@@ -47,20 +49,28 @@ fun HasMetadata.isSameUid(resource: HasMetadata): Boolean {
 	return resource.metadata?.uid == this.metadata?.uid
 }
 
-/**
- * returns {@code true} if the given resource has the same selfLink as this resource. Returns {@code false} otherwise.
- * SelfLink will be deprecated in kubernetes 1.19 and removed in 1.21.
- * See <a href="https://github.com/kubernetes/enhancements/tree/master/keps/sig-api-machinery/1164-remove-selflink#risks-and-mitigations">KEP-1164: Deprecate and Remove SelfLink</a>
- * and <a href="https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.19/">Kubernetes API Overview, ObjectMeta v1 meta</a>
- *
- * @see io.fabric8.kubernetes.api.model.ObjectMeta.getSelfLink
- */
-fun HasMetadata.isSameSelfLink(resource: HasMetadata): Boolean {
-	if (this.metadata?.selfLink == null
-		&& resource.metadata?.selfLink == null) {
-		return false
+fun HasMetadata.isSameName(resource: HasMetadata): Boolean {
+	if (this.metadata?.name == null
+		&& resource.metadata?.name == null) {
+		return true
 	}
-	return this.metadata?.selfLink == resource.metadata?.selfLink
+	return this.metadata?.name == resource.metadata?.name
+}
+
+fun HasMetadata.isSameNamespace(resource: HasMetadata): Boolean {
+	if (this.metadata?.namespace == null
+		&& resource.metadata?.namespace == null) {
+		return true
+	}
+	return this.metadata?.namespace == resource.metadata?.namespace
+}
+
+fun HasMetadata.isSameKind(resource: HasMetadata): Boolean {
+	if (this.kind == null
+		&& resource.kind == null) {
+		return true
+	}
+	return this.kind == resource.kind
 }
 
 fun HasMetadata.isSameRevision(resource: HasMetadata): Boolean {
@@ -78,10 +88,10 @@ fun HasMetadata.isNewerVersionThan(resource: HasMetadata): Boolean {
 	val thisVersion = this.metadata?.resourceVersion?.toIntOrNull()
 	val thatVersion = resource.metadata?.resourceVersion?.toIntOrNull()
 	if (thisVersion == null) {
-		return thatVersion != null
+		return thatVersion == null
 	}
 	if (thatVersion == null) {
-		return false
+		return true
 	}
 	return  thisVersion > thatVersion
 }
