@@ -49,7 +49,7 @@ class EditorListener(private val project: Project) : FileEditorManagerListener {
         }
         try {
             ResourceEditor.startWatch(editor, project)
-            ResourceEditor.updateEditor(editor, project)
+            ResourceEditor.showNotifications(editor, project)
         } catch (e: KubernetesClientException) {
             ErrorNotification.show(
                 editor,
