@@ -54,12 +54,17 @@ open class ClusterResource(
         synchronized(this) {
             if (forceLatest) {
                 try {
-                    this.updatedResource = operator?.get(this.initialResource)
+                    if (operator == null) {
+                        throw ResourceException(
+                            "Could not retrieve ${initialResource.kind} ${initialResource.metadata.name}. Unsupported resource kind.")
+                    }
+                    this.updatedResource = operator!!.get(this.initialResource)
                 } catch (e: KubernetesClientException) {
                     if (e.isNotFound()) {
                         this.updatedResource = null
                     } else {
-                        throw e
+                        throw ResourceException(
+                            "Could not retrieve ${initialResource.kind} ${initialResource.metadata.name} ${if (e.cause == null) { "" } else { ": ${e.cause?.message}"} }", e)
                     }
                 }
             }

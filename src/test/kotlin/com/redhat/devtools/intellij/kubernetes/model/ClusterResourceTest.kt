@@ -98,11 +98,20 @@ class ClusterResourceTest {
         assertThat(retrieved).isNull()
     }
 
-    @Test(expected = KubernetesClientException::class)
+    @Test(expected = ResourceException::class)
     fun `#get(true) should throw if cluster throws exception that is not 404`() {
         // given
         whenever(operator.get(any()))
             .doThrow(KubernetesClientException("internal error", 500, null))
+        // when
+        cluster.get(true)
+        // then should have thrown
+    }
+
+    @Test(expected = ResourceException::class)
+    fun `#get(true) should throw if there is no operator`() {
+        // given
+        val cluster = TestableClusterResource(endorResource, null, clients, resourceWatch, observable)
         // when
         cluster.get(true)
         // then should have thrown

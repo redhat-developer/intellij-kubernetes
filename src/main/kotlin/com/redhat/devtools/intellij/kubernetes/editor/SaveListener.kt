@@ -44,19 +44,12 @@ class SaveListener : FileDocumentSynchronizationVetoer() {
         if (!projectEditor.editor.isValid) {
             return false
         }
-        try {
-            val resource: HasMetadata = ResourceEditor.createResource(document.text) ?: return false
-            val contextName = ResourceEditor.getContextName(projectEditor.editor, projectEditor.project) ?: return true
-            if (confirmSaveToCluster(resource, contextName)) {
-                saveToCluster(resource, contextName, projectEditor.editor, projectEditor.project)
-            }
-            return true
-        } catch (e: KubernetesClientException) {
-            val errorMessage = "Could not save ${file.name}: ${e.cause?.message}"
-            Notification().error("Save to Cluster failed", errorMessage)
-            logger<SaveListener>().warn(errorMessage, e.cause)
-            return true
+        val resource: HasMetadata = ResourceEditor.createResource(document.text) ?: return false
+        val contextName = ResourceEditor.getContextName(projectEditor.editor, projectEditor.project) ?: return true
+        if (confirmSaveToCluster(resource, contextName)) {
+            saveToCluster(resource, contextName, projectEditor.editor, projectEditor.project)
         }
+        return true
     }
 
     private fun confirmSaveToCluster(resource: HasMetadata, contextName: String?): Boolean {
