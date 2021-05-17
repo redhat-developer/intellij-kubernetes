@@ -82,7 +82,7 @@ object ResourceEditor {
             val file = editor.file
             if (file != null) {
                 reloadEditor(resource, file)
-                updateEditor(editor, project)
+                showNotifications(editor, project)
             }
         }
     }
@@ -127,7 +127,7 @@ object ResourceEditor {
         }
     }
 
-    fun updateEditor(editor: FileEditor, project: Project) {
+    fun showNotifications(editor: FileEditor, project: Project) {
         ErrorNotification.hide(editor, project)
         ReloadNotification.hide(editor, project)
         DeletedNotification.hide(editor, project)
@@ -238,11 +238,11 @@ object ResourceEditor {
             }
 
             override fun removed(removed: Any) {
-                updateEditor(editor, project)
+                showNotifications(editor, project)
             }
 
             override fun modified(modified: Any) {
-                updateEditor(editor, project)
+                showNotifications(editor, project)
             }
         }
     }
