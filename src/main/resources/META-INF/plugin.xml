@@ -69,18 +69,18 @@
                     id="com.redhat.devtools.intellij.kubernetes.actions.UseProjectAction"
                     text="Use Project"
                     icon="AllIcons.Nodes.EmptyNode"/>
-            <action class="com.redhat.devtools.intellij.kubernetes.actions.RefreshAction"
-                    id="com.redhat.devtools.intellij.kubernetes.actions.RefreshAction"
-                    text="Refresh"
-                    icon="AllIcons.Actions.Refresh"/>
-            <action class="com.redhat.devtools.intellij.kubernetes.actions.DeleteResourceAction"
-                    id="com.redhat.devtools.intellij.kubernetes.actions.DeleteResourceAction"
-                    text="Delete"
-                    icon="AllIcons.Actions.Close"/>
             <action class="com.redhat.devtools.intellij.kubernetes.actions.EditResourceAction"
                     id="com.redhat.devtools.intellij.kubernetes.actions.EditResourceAction"
                     text="Edit..."
                     icon="AllIcons.Actions.Edit"/>
+            <action class="com.redhat.devtools.intellij.kubernetes.actions.DeleteResourceAction"
+                    id="com.redhat.devtools.intellij.kubernetes.actions.DeleteResourceAction"
+                    text="Delete"
+                    icon="AllIcons.Actions.Close"/>
+            <action class="com.redhat.devtools.intellij.kubernetes.actions.RefreshAction"
+                    id="com.redhat.devtools.intellij.kubernetes.actions.RefreshAction"
+                    text="Refresh"
+                    icon="AllIcons.Actions.Refresh"/>
         </group>
     </actions>
 
