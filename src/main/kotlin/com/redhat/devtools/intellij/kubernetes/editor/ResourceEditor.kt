@@ -141,6 +141,11 @@ object ResourceEditor {
         }
     }
 
+    fun isNewResource(resource: HasMetadata, editor: FileEditor, project: Project): Boolean {
+        val cluster = getClusterResource(editor, project) ?: return true
+        return !cluster.isSameResource(resource)
+    }
+
     fun loadResourceFromCluster(forceLatest: Boolean = false, editor: FileEditor, project: Project): HasMetadata? {
         val clusterResource = getClusterResource(editor, project) ?: return null
         return clusterResource.get(forceLatest)
