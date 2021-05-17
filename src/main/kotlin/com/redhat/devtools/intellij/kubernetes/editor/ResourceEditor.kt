@@ -205,7 +205,7 @@ object ResourceEditor {
             // TODO: save context as [FileAttribute] for the file so that it can be restored
             val context = resourceModel.getCurrentContext()
             if (context != null) {
-                clusterResource = ClusterResource(resource, context.context.name)
+                clusterResource = ClusterResource(resource, context.context.context.cluster)
             }
         }
         return clusterResource
