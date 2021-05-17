@@ -41,8 +41,8 @@ class EditResourceAction: StructureTreeAction() {
     }
 
     override fun isVisible(selected: Array<out Any>?): Boolean {
-        return selected?.any { isVisible(it) }
-            ?: false
+        return selected?.size == 1
+                && isVisible(selected.firstOrNull())
     }
 
     override fun isVisible(selected: Any?): Boolean {
