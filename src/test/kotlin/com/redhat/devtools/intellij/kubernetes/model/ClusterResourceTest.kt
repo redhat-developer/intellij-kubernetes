@@ -43,9 +43,9 @@ class ClusterResourceTest {
         arrayOf(rebelsNamespace)
     )
     private val clients: Clients<KubernetesClient> = Clients(client)
-    private val endorResource: Pod = resource("Endor", rebelsNamespace.metadata.name, resourceVersion = "1")
-    private val updatedEndorResource: Pod = resource("Endor", rebelsNamespace.metadata.name, resourceVersion = "2")
-    private val nabooResource: Pod = resource("Naboo", rebelsNamespace.metadata.name, resourceVersion = "1")
+    private val endorResource: Pod = resource("Endor", rebelsNamespace.metadata.name, "endorUid", "1")
+    private val updatedEndorResource: Pod = resource("Endor", rebelsNamespace.metadata.name, "endorUid", "2")
+    private val nabooResource: Pod = resource("Naboo", rebelsNamespace.metadata.name, "nabooUid", "1")
     private val watch: Watch = mock()
     private val watchOp: (watcher: Watcher<in Pod>) -> Watch? = { watch }
     private val operator = namespacedResourceOperator<Pod, KubernetesClient>(

@@ -116,10 +116,9 @@ class NamespacedPodsOperatorTest {
     }
 
     @Test
-    fun `#replaced(pod) replaces pod if pod with same uid already exist`() {
+    fun `#replaced(pod) replaces pod if pod which is same resource already exist`() {
         // given
-        val uid = POD2.metadata.uid
-        val pod = resource<Pod>("lord vader", "sith", uid)
+        val pod = resource<Pod>(POD2.metadata.name, POD2.metadata.namespace, POD2.metadata.uid)
         assertThat(operator.allResources).doesNotContain(pod)
         // when
         val replaced = operator.replaced(pod)
@@ -131,8 +130,7 @@ class NamespacedPodsOperatorTest {
     @Test
     fun `#replaced(pod) does NOT replace pod if pod has different name`() {
         // given
-        val namespace = POD2.metadata.namespace
-        val pod = resource<Pod>("darth vader", namespace)
+        val pod = resource<Pod>("darth vader", POD2.metadata.namespace, POD2.metadata.uid)
         assertThat(operator.allResources).doesNotContain(pod)
         // when
         val replaced = operator.replaced(pod)
@@ -144,8 +142,7 @@ class NamespacedPodsOperatorTest {
     @Test
     fun `#replaced(pod) does NOT replace pod if pod has different namespace`() {
         // given
-        val name = POD2.metadata.name
-        val pod = resource<Pod>(name, "sith")
+        val pod = resource<Pod>(POD2.metadata.name, "sith", POD2.metadata.uid)
         assertThat(operator.allResources).doesNotContain(pod)
         // when
         val replaced = operator.replaced(pod)
@@ -157,7 +154,7 @@ class NamespacedPodsOperatorTest {
     @Test
     fun `#added(pod) adds pod if not contained yet`() {
         // given
-        val pod = resource<Pod>("papa-smurf")
+        val pod = resource<Pod>("papa-smurf", "smurf forest", "smurfUid")
         assertThat(operator.allResources).doesNotContain(pod)
         // when
         operator.added(pod)
@@ -223,10 +220,10 @@ class NamespacedPodsOperatorTest {
     }
 
     @Test
-    fun `#removed(pod) removes the given pod if it isn't the same instance but matches in uid`() {
+    fun `#removed(pod) removes the given pod if it isn't the same instance but is same pod`() {
         // given
         val pod1 = operator.allResources.elementAt(0)
-        val pod2 = resource<Pod>("skywalker", "jedi", pod1.metadata.uid)
+        val pod2 = resource<Pod>(pod1.metadata.name, pod1.metadata.namespace, pod1.metadata.uid)
         // when
         operator.removed(pod2)
         // then
