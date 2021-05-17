@@ -46,21 +46,31 @@ class SaveListener : FileDocumentSynchronizationVetoer() {
         }
         val resource: HasMetadata = ResourceEditor.createResource(document.text) ?: return false
         val contextName = ResourceEditor.getContextName(projectEditor.editor, projectEditor.project) ?: return true
-        if (confirmSaveToCluster(resource, contextName)) {
+        val action = getAction(resource, projectEditor.editor, projectEditor.project)
+        if (confirmSaveToCluster(action, resource, contextName)) {
             saveToCluster(resource, contextName, projectEditor.editor, projectEditor.project)
         }
         return true
     }
 
-    private fun confirmSaveToCluster(resource: HasMetadata, contextName: String?): Boolean {
+    private fun confirmSaveToCluster(action: String, resource: HasMetadata, contextName: String?): Boolean {
         val answer = Messages.showYesNoDialog(
-            "Save ${toMessage(resource, 30)}"
-                    + " ${if (resource.metadata.namespace != null) "to namespace ${resource.metadata.namespace}" else "" } "
+            action
+                    + "${toMessage(resource, 30)}"
+                    + " ${if (resource.metadata.namespace != null) "in namespace ${resource.metadata.namespace}" else "" } "
                     + " ${if (contextName != null) "on cluster $contextName" else ""}?",
-            "Save Resource?",
+            "$action Resource?",
             Messages.getQuestionIcon()
         )
         return answer == Messages.OK
+    }
+
+    private fun getAction(resource: HasMetadata, editor: FileEditor, project: Project): String {
+        return if (ResourceEditor.isNewResource(resource, editor, project)) {
+            "Create "
+        } else {
+            "Save "
+        }
     }
 
     private fun saveToCluster(resource: HasMetadata, contextName: String?, editor: FileEditor?, project: Project) {
