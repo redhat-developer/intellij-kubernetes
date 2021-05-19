@@ -57,6 +57,7 @@ import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.custom.
 import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.custom.GenericCustomResource
 import com.redhat.devtools.intellij.kubernetes.model.util.Clients
 import com.redhat.devtools.intellij.kubernetes.model.util.MultiResourceException
+import com.redhat.devtools.intellij.kubernetes.model.util.getApiVersion
 import io.fabric8.kubernetes.client.KubernetesClient
 import io.fabric8.kubernetes.client.Watch
 import org.junit.Before
@@ -79,9 +80,9 @@ class KubernetesContextTest {
 
 	private val nodesOperator = nonNamespacedResourceOperator<Node, KubernetesClient>(
 			NodesOperator.KIND,
-			listOf(resource("node1"),
-					resource("node2"),
-					resource("node3")))
+			listOf(resource("node1", "ns1", "uid1", "v1"),
+					resource("node2", "ns1", "uid2", "v1"),
+					resource("node3", "ns1", "uid3", "v1")))
 
 	private val allPods = arrayOf(POD1, POD2, POD3)
 	private val allPodsOperator = nonNamespacedResourceOperator<Pod, KubernetesClient>(
@@ -93,8 +94,8 @@ class KubernetesContextTest {
 			allPods.toList(),
 			currentNamespace)
 
-	private val hasMetadata1 = resource<HasMetadata>("hasMetadata1", "ns", "uid1")
-	private val hasMetadata2 = resource<HasMetadata>("hasMetadata2", "ns", "uid2")
+	private val hasMetadata1 = resource<HasMetadata>("hasMetadata1", "ns", "uid1", "v1")
+	private val hasMetadata2 = resource<HasMetadata>("hasMetadata2", "ns", "uid2", "v1")
 	private val hasMetadataOperator: INamespacedResourceOperator<HasMetadata, NamespacedKubernetesClient> = namespacedResourceOperator(
 			ResourceKind.create(HasMetadata::class.java),
 			setOf(hasMetadata1, hasMetadata2),
@@ -103,20 +104,41 @@ class KubernetesContextTest {
 	// operator that is not contained in list of operators known to the context
 	private val danglingSecretsOperator: INamespacedResourceOperator<Secret, NamespacedKubernetesClient> = namespacedResourceOperator(
 		ResourceKind.create(Secret::class.java),
-		setOf(resource("secret1")),
+		setOf(resource("secret1", "ns4", "uid1", "v1")),
 		currentNamespace)
 
+	private val crdKind = ResourceKind.create(CustomResourceDefinition::class.java)
 	private val namespacedDefinition = customResourceDefinition(
-		"namespaced crd","version1", "group1", "namespaced-crd", CustomResourceScope.NAMESPACED)
+		"namespaced crd",
+		"ns1",
+		"uid1",
+		crdKind.version,
+		"version1",
+		"group1",
+		"namespaced-crd",
+		CustomResourceScope.NAMESPACED)
 	private val clusterwideDefinition = customResourceDefinition(
-		"cluster crd", "version2", "group2", "cluster-crd", CustomResourceScope.CLUSTER)
+		"cluster crd",
+		"ns2",
+		"uid2",
+		crdKind.version,
+		"version2",
+		"group2",
+		"cluster-crd",
+		CustomResourceScope.CLUSTER)
 	private val customResourceDefinitionsOperator: INonNamespacedResourceOperator<CustomResourceDefinition, NamespacedKubernetesClient> =
 		nonNamespacedResourceOperator(
-			ResourceKind.create(CustomResourceDefinition::class.java),
+			crdKind,
 			listOf(namespacedDefinition, clusterwideDefinition))
 
-	private val namespacedCustomResource1 = customResource("genericCustomResource1", "namespace1", namespacedDefinition)
-	private val namespacedCustomResource2 = customResource("genericCustomResource2", "namespace1", namespacedDefinition)
+	private val namespacedCustomResource1 = customResource(
+		"genericCustomResource1",
+		"namespace1",
+		namespacedDefinition)
+	private val namespacedCustomResource2 = customResource(
+		"genericCustomResource2",
+		"namespace1",
+		namespacedDefinition)
 
 	private val namespacedCustomResourceWatch = mock<Watch>()
 	private val namespacedCustomResourceWatchOp: (watcher: Watcher<in GenericCustomResource>) -> Watch? = { namespacedCustomResourceWatch }
@@ -126,7 +148,11 @@ class KubernetesContextTest {
 					listOf(namespacedCustomResource1, namespacedCustomResource2),
 					currentNamespace,
 					namespacedCustomResourceWatchOp)
-	private val nonNamespacedCustomResource = resource<GenericCustomResource>("genericCustomResource1", "smurfington")
+	private val nonNamespacedCustomResource = resource<GenericCustomResource>(
+		"genericCustomResource1",
+		"smurfington",
+		"uid",
+		"v1")
 	private val nonNamespacedCustomResourceWatchOp: (watcher: Watcher<in GenericCustomResource>) -> Watch? = { null }
 	private val nonNamespacedCustomResourcesOperator: INonNamespacedResourceOperator<GenericCustomResource, KubernetesClient> =
 			nonNamespacedResourceOperator(
@@ -376,7 +402,14 @@ class KubernetesContextTest {
 	fun `#getCustomResources should throw if scope is unknown`() {
 		// given
 		val bogusScope = customResourceDefinition(
-				"bogus scope","version1", "group1", "bogus-scope-crd", "Bogus")
+				"bogus scope",
+			"ns1",
+			"uid",
+			"v1",
+			"version1",
+			"group1",
+			"bogus-scope-crd",
+			"Bogus")
 		// when
 		context.getAllResources(bogusScope)
 		// then
@@ -395,7 +428,7 @@ class KubernetesContextTest {
 	@Test
 	fun `#delete should not call operator#delete if there is no operator for it`() {
 		// given
-		val toDelete = listOf(resource<HasMetadata>("lord sith"))
+		val toDelete = listOf(resource<HasMetadata>("lord sith", "ns1", "uid", "v1"))
 		// when
 		context.delete(toDelete)
 		// then
@@ -617,9 +650,9 @@ class KubernetesContextTest {
 	}
 
 	@Test
-	fun `#add(namespace) should add to namespaces operator but not to pods operator`() {
+	fun `#added(namespace) should add to namespaces operator but not to pods operator`() {
 		// given
-		val namespace = resource<Namespace>("papa smurf namespace")
+		val namespace = resource<Namespace>("papa smurf namespace", "ns1", "someNamespaceUid", "v1")
 		// when
 		context.added(namespace)
 		// then
@@ -628,9 +661,9 @@ class KubernetesContextTest {
 	}
 
 	@Test
-	fun `#add(pod) should add pod in current namespace to pods operator`() {
+	fun `#added(pod) should add pod in current namespace to pods operator`() {
 		// given
-		val pod = resource<Pod>("pod", currentNamespace.metadata.name)
+		val pod = resource<Pod>("pod", currentNamespace.metadata.name, "somePodUid", "v1")
 		// when
 		context.added(pod)
 		// then
@@ -638,9 +671,9 @@ class KubernetesContextTest {
 	}
 
 	@Test
-	fun `#add(pod) should add pod to allPods operator`() {
+	fun `#added(pod) should add pod to allPods operator`() {
 		// given
-		val pod = resource<Pod>("pod", "gargamel namespace")
+		val pod = resource<Pod>("pod", "gargamel namespace", "gargamelUid", "v1")
 		// when
 		context.added(pod)
 		// then
@@ -648,9 +681,9 @@ class KubernetesContextTest {
 	}
 
 	@Test
-	fun `#add(pod) should not add pod of non-current namespace to namespacedPods operator`() {
+	fun `#added(pod) should not add pod of non-current namespace to namespacedPods operator`() {
 		// given
-		val pod = resource<Pod>("pod", "gargamel namespace")
+		val pod = resource<Pod>("pod", "gargamel namespace", "gargamelUid", "v1")
 		// when
 		context.added(pod)
 		// then
@@ -658,9 +691,9 @@ class KubernetesContextTest {
 	}
 
 	@Test
-	fun `#add(pod) should return true if pod was added to pods operator`() {
+	fun `#added(pod) should return true if pod was added to pods operator`() {
 		// given
-		val pod = resource<Pod>("pod", currentNamespace.metadata.name)
+		val pod = resource<Pod>("pod", currentNamespace.metadata.name, "somePodUid", "v1")
 		whenever(namespacedPodsOperator.added(pod))
 			.thenReturn(true)
 
@@ -671,9 +704,9 @@ class KubernetesContextTest {
 	}
 
 	@Test
-	fun `#add(namespace) should return true if namespace was added to namespace operator`() {
+	fun `#added(namespace) should return true if namespace was added to namespace operator`() {
 		// given
-		val namespace = resource<Namespace>("pod")
+		val namespace = resource<Namespace>("pod", null, "someNamespaceUid", "v1")
 		whenever(namespacesOperator.added(namespace))
 			.thenReturn(true)
 		// when
@@ -683,9 +716,9 @@ class KubernetesContextTest {
 	}
 
 	@Test
-	fun `#add(pod) should return false if pod was not added to pods operator`() {
+	fun `#added(pod) should return false if pod was not added to pods operator`() {
 		// given
-		val pod = resource<Pod>("pod")
+		val pod = resource<Pod>("pod", "ns1", "somePodUid", "v1")
 		whenever(namespacedPodsOperator.added(pod))
 			.thenReturn(false)
 		// when
@@ -695,9 +728,9 @@ class KubernetesContextTest {
 	}
 
 	@Test
-	fun `#add(pod) should fire if operator added pod`() {
+	fun `#added(pod) should fire if operator added pod`() {
 		// given
-		val pod = resource<Pod>("gargamel", currentNamespace.metadata.name)
+		val pod = resource<Pod>("gargamel", currentNamespace.metadata.name, "gargamelUid", "v1")
 		whenever(namespacedPodsOperator.added(pod))
 			.thenReturn(true)
 		// when
@@ -707,9 +740,9 @@ class KubernetesContextTest {
 	}
 
 	@Test
-	fun `#add(pod) should not fire if operator did not add pod`() {
+	fun `#added(pod) should not fire if operator did not add pod`() {
 		// given
-		val pod = resource<Pod>("gargamel")
+		val pod = resource<Pod>("gargamel", "ns1", "gargamelUid", "v1")
 		whenever(namespacedPodsOperator.added(pod))
 			.thenReturn(false)
 		// when
@@ -719,7 +752,7 @@ class KubernetesContextTest {
 	}
 
 	@Test
-	fun `#add(CustomResourceDefinition) should create namespaced custom resources operator if definition was added`() {
+	fun `#added(CustomResourceDefinition) should create namespaced custom resources operator if definition was added`() {
 		// given
 		val currentNamespace = currentNamespace.metadata.name
 		setNamespaceForResource(currentNamespace, namespacedDefinition)
@@ -736,7 +769,7 @@ class KubernetesContextTest {
 	}
 
 	@Test
-	fun `#add(CustomResourceDefinition) should create clusterwide custom resources operator if definition was added`() {
+	fun `#added(CustomResourceDefinition) should create clusterwide custom resources operator if definition was added`() {
 		// given
 		whenever(customResourceDefinitionsOperator.added(clusterwideDefinition))
 				.doReturn(true)
@@ -750,7 +783,7 @@ class KubernetesContextTest {
 	}
 
 	@Test
-	fun `#add(CustomResourceDefinition) should NOT create custom resources operator if definition was NOT added`() {
+	fun `#added(CustomResourceDefinition) should NOT create custom resources operator if definition was NOT added`() {
 		// given
 		whenever(namespacedCustomResourceOperator.added(clusterwideDefinition))
 				.doReturn(false)
@@ -761,9 +794,9 @@ class KubernetesContextTest {
 	}
 
 	@Test
-	fun `#remove(pod) should remove pod from pods operator but not from namespace operator`() {
+	fun `#removed(pod) should remove pod from pods operator but not from namespace operator`() {
 		// given
-		val pod = resource<Pod>("pod", currentNamespace.metadata.name)
+		val pod = resource<Pod>("pod", currentNamespace.metadata.name, "somePodUid", "v1")
 		// when
 		context.removed(pod)
 		// then
@@ -772,9 +805,9 @@ class KubernetesContextTest {
 	}
 
 	@Test
-	fun `#remove(pod) should remove pod in current namespace from allPods && namespacedPods operator`() {
+	fun `#removed(pod) should remove pod in current namespace from allPods && namespacedPods operator`() {
 		// given
-		val pod = resource<Pod>("pod", currentNamespace.metadata.name)
+		val pod = resource<Pod>("pod", currentNamespace.metadata.name, "somePodUid", "v1")
 		// when
 		context.removed(pod)
 		// then
@@ -783,9 +816,9 @@ class KubernetesContextTest {
 	}
 
 	@Test
-	fun `#remove(pod) should remove pod in non-current namespace from allPods operator but not from namespacedPods operator`() {
+	fun `#removed(pod) should remove pod in non-current namespace from allPods operator but not from namespacedPods operator`() {
 		// given
-		val pod = resource<Pod>("pod", "42")
+		val pod = resource<Pod>("pod", "42", "somePodUid", "v1")
 		// when
 		context.removed(pod)
 		// then
@@ -794,7 +827,7 @@ class KubernetesContextTest {
 	}
 
 	@Test
-	fun `#remove(namespace) should remove from namespaces operator but not from pods operator`() {
+	fun `#removed(namespace) should remove from namespaces operator but not from pods operator`() {
 		// given
 		val namespace = NAMESPACE1
 		// when
@@ -805,9 +838,9 @@ class KubernetesContextTest {
 	}
 
 	@Test
-	fun `#remove(pod) should fire if operator removed pod`() {
+	fun `#removed(pod) should fire if operator removed pod`() {
 		// given
-		val pod = resource<Pod>("gargamel", currentNamespace.metadata.name)
+		val pod = resource<Pod>("gargamel", currentNamespace.metadata.name, "gargamelUid", "v1")
 		whenever(namespacedPodsOperator.removed(pod))
 			.thenReturn(true)
 		// when
@@ -817,9 +850,9 @@ class KubernetesContextTest {
 	}
 
 	@Test
-	fun `#remove(pod) should not fire if operator did not remove pod`() {
+	fun `#removed(pod) should not fire if operator did not remove pod`() {
 		// given
-		val pod = resource<Pod>("gargamel")
+		val pod = resource<Pod>("gargamel", "ns1", "gargamelUid", "v1")
 		whenever(namespacedPodsOperator.removed(pod))
 			.thenReturn(false)
 		// when
@@ -829,7 +862,7 @@ class KubernetesContextTest {
 	}
 
 	@Test
-	fun `#remove(CustomResourceDefinition) should remove clusterwide custom resource operator when definition is removed`() {
+	fun `#removed(CustomResourceDefinition) should remove clusterwide custom resource operator when definition is removed`() {
 		// given
 		givenCustomResourceOperatorInContext(clusterwideDefinition,
 				customResourceDefinitionsOperator,
@@ -842,7 +875,7 @@ class KubernetesContextTest {
 	}
 
 	@Test
-	fun `#remove(CustomResourceDefinition) should stop watch when definition is removed `() {
+	fun `#removed(CustomResourceDefinition) should stop watch when definition is removed `() {
 		// given
 		givenCustomResourceOperatorInContext(clusterwideDefinition,
 				customResourceDefinitionsOperator,
@@ -855,7 +888,7 @@ class KubernetesContextTest {
 	}
 
 	@Test
-	fun `#remove(CustomResourceDefinition) should remove namespaced custom resource operator when definition is removed`() {
+	fun `#removed(CustomResourceDefinition) should remove namespaced custom resource operator when definition is removed`() {
 		// given
 		givenCustomResourceOperatorInContext(namespacedDefinition,
 				customResourceDefinitionsOperator,
@@ -868,7 +901,7 @@ class KubernetesContextTest {
 	}
 
 	@Test
-	fun `#remove(CustomResourceDefinition) should NOT remove namespaced custom resource operator when definition is NOT removed`() {
+	fun `#removed(CustomResourceDefinition) should NOT remove namespaced custom resource operator when definition is NOT removed`() {
 		// given
 		givenCustomResourceOperatorInContext(clusterwideDefinition,
 				customResourceDefinitionsOperator,
@@ -925,7 +958,7 @@ class KubernetesContextTest {
 	}
 
 	@Test
-	fun `#replace(customResource) should replace in custom resource operator`() {
+	fun `#replaced(customResource) should replace in custom resource operator`() {
 		// given
 		givenCustomResourceOperatorInContext(namespacedDefinition,
 				customResourceDefinitionsOperator,
@@ -937,9 +970,9 @@ class KubernetesContextTest {
 	}
 
 	@Test
-	fun `#replace(pod) should fire if operator replaced pod`() {
+	fun `#replaced(pod) should fire if operator replaced pod`() {
 		// given
-		val pod = resource<Pod>("gargamel")
+		val pod = resource<Pod>("gargamel", "ns1", "gargamelUid", "v1")
 		whenever(namespacedPodsOperator.replaced(pod))
 			.thenReturn(true)
 		// when
@@ -949,9 +982,9 @@ class KubernetesContextTest {
 	}
 
 	@Test
-	fun `#replace(pod) should not fire if operator did NOT replace pod`() {
+	fun `#replaced(pod) should not fire if operator did NOT replace pod`() {
 		// given
-		val pod = resource<Pod>("gargamel")
+		val pod = resource<Pod>("gargamel", "ns1", "gargamelUid", "v1")
 		whenever(namespacedPodsOperator.replaced(pod))
 			.thenReturn(false)
 		// when

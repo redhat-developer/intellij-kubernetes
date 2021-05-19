@@ -17,6 +17,7 @@ import com.intellij.openapi.startup.StartupActivity
 import com.redhat.devtools.intellij.kubernetes.editor.EditorListener
 import com.redhat.devtools.intellij.kubernetes.editor.ResourceEditor
 import com.redhat.devtools.intellij.kubernetes.editor.notification.ErrorNotification
+import groovy.util.ResourceException
 
 class KubernetesPluginInitializer : StartupActivity {
 
@@ -40,7 +41,7 @@ class KubernetesPluginInitializer : StartupActivity {
         if (ResourceEditor.isResourceEditor(selected)) {
             try {
                 ResourceEditor.showNotifications(selected, project)
-            } catch (e: RuntimeException) {
+            } catch (e: Exception) {
                 ErrorNotification.show(
                     selected,
                     project,

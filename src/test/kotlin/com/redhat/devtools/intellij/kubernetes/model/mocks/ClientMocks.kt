@@ -41,13 +41,13 @@ typealias NamespaceListOperation =
 
 object ClientMocks {
 
-    val NAMESPACE1 = resource<Namespace>("namespace1", null, "nsUid1")
-    val NAMESPACE2 = resource<Namespace>("namespace2", null, "nsUid2")
-    val NAMESPACE3 = resource<Namespace>("namespace3", null, "nsUid3")
+    val NAMESPACE1 = resource<Namespace>("namespace1", null, "nsUid1", "v1", "1")
+    val NAMESPACE2 = resource<Namespace>("namespace2", null, "nsUid2","v1", "1")
+    val NAMESPACE3 = resource<Namespace>("namespace3", null, "nsUid3", "v1", "1")
 
-    val POD1 = resource<Pod>("pod1", "namespace1", "podUid1")
-    val POD2 = resource<Pod>("pod2", "namespace2", "podUid2")
-    val POD3 = resource<Pod>("pod3", "namespace3", "podUid3")
+    val POD1 = resource<Pod>("pod1", "namespace1", "podUid1", "v1", "1")
+    val POD2 = resource<Pod>("pod2", "namespace2", "podUid2", "v1", "1")
+    val POD3 = resource<Pod>("pod3", "namespace3", "podUid3", "v1", "1")
 
     fun client(currentNamespace: String?, namespaces: Array<Namespace>, masterUrl: URL = URL("http://localhost"))
             : KubernetesClient {
@@ -163,12 +163,18 @@ object ClientMocks {
 
     fun customResourceDefinition(
             name: String,
+            namespace: String,
+            uid: String,
+            apiVersion: String,
             version: String,
             group: String,
             kind: String,
             scope: String): CustomResourceDefinition {
         return customResourceDefinition(
             name,
+            namespace,
+            uid,
+            apiVersion,
             version,
             listOf(version(version)),
             group,
@@ -178,6 +184,9 @@ object ClientMocks {
 
     fun customResourceDefinition(
         name: String,
+        namespace: String,
+        uid: String,
+        apiVersion: String,
         version: String,
         versions: List<CustomResourceDefinitionVersion>,
         group: String,
@@ -193,7 +202,7 @@ object ClientMocks {
             on { mock.names } doReturn names
             on { mock.scope } doReturn scope
         }
-        val definition = resource<CustomResourceDefinition>(name)
+        val definition = resource<CustomResourceDefinition>(name, namespace, uid, apiVersion)
         whenever(definition.spec)
             .doReturn(spec)
         return definition
@@ -209,11 +218,12 @@ object ClientMocks {
         name: String,
         namespace: String? = null,
         uid: String? = System.currentTimeMillis().toString(),
+        apiVersion: String,
         resourceVersion: String? = System.currentTimeMillis().toString()): T {
         val metadata = objectMeta(name, namespace, uid, resourceVersion)
         return mock {
             on { getMetadata() } doReturn metadata
-            on { getApiVersion() } doReturn getApiVersion(T::class.java)
+            on { getApiVersion() } doReturn apiVersion
             on { getKind() } doReturn T::class.java.simpleName
         }
     }
