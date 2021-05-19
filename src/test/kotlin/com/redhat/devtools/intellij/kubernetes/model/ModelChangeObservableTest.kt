@@ -20,7 +20,7 @@ import org.junit.Test
 class ModelChangeObservableTest {
 
     private val observable = TestableModelChangeObservable()
-    private val resource = resource<Namespace>("smurfette namespace")
+    private val resource = resource<Namespace>("smurfette namespace", null, "smurfetteUid", "v1")
     private val listener = object: IResourceChangeListener {
 
         var currentNamespace: String? = null

@@ -154,7 +154,7 @@ class ResourceWatchTest {
     @Test
     fun `#addOperation should get called if watch notifies ADDED`() {
         // given
-        val resource: Pod = resource("some HasMetadata")
+        val resource: Pod = resource("some HasMetadata", "ns1", "somePodUid", "v1")
         // when
         podWatchOpProvider.watcher?.eventReceived(Watcher.Action.ADDED, resource)
         // then
@@ -165,7 +165,7 @@ class ResourceWatchTest {
     @Test
     fun `#removeOperation should get invoked if watch notifies REMOVED`() {
         // given
-        val resource: Pod = resource("some HasMetadata")
+        val resource: Pod = resource("some HasMetadata", "ns1", "somePodUid", "v1")
         // when
         podWatchOpProvider.watcher?.eventReceived(Watcher.Action.DELETED, resource)
         // then
@@ -176,7 +176,7 @@ class ResourceWatchTest {
     @Test
     fun `should not invoke any operation if watch notifies action that is not ADD, REMOVE or MODIFIED`() {
         // given
-        val resource: Pod = resource("some HasMetadata")
+        val resource: Pod = resource("some HasMetadata", "ns1", "somePodUid", "v1")
         // when
         podWatchOpProvider.watcher?.eventReceived(Watcher.Action.ERROR, resource)
         // then
@@ -188,7 +188,7 @@ class ResourceWatchTest {
     @Test
     fun `#replaceOperation should get invoked if watch notifies MODIFIED`() {
         // given
-        val resource: Pod = resource("some HasMetadata")
+        val resource: Pod = resource("some HasMetadata", "ns1", "somePodUid", "v1")
         // when
         podWatchOpProvider.watcher?.eventReceived(Watcher.Action.MODIFIED, resource)
         // then

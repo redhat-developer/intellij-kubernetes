@@ -37,15 +37,15 @@ import org.assertj.core.api.Assertions.assertThat
 
 class ClusterResourceTest {
 
-    private val rebelsNamespace: Namespace = resource("rebels")
+    private val rebelsNamespace: Namespace = resource("rebels", null, "rebelsUid", "v1")
     private val client = ClientMocks.client(
         rebelsNamespace.metadata.name,
         arrayOf(rebelsNamespace)
     )
     private val clients: Clients<KubernetesClient> = Clients(client)
-    private val endorResource: Pod = resource("Endor", rebelsNamespace.metadata.name, "endorUid", "1")
-    private val updatedEndorResource: Pod = resource("Endor", rebelsNamespace.metadata.name, "endorUid", "2")
-    private val nabooResource: Pod = resource("Naboo", rebelsNamespace.metadata.name, "nabooUid", "1")
+    private val endorResource: Pod = resource("Endor", rebelsNamespace.metadata.name, "endorUid", "v1", "1")
+    private val updatedEndorResource: Pod = resource("Endor", rebelsNamespace.metadata.name, "endorUid", "v1", "2")
+    private val nabooResource: Pod = resource("Naboo", rebelsNamespace.metadata.name, "nabooUid", "v1", "1")
     private val watch: Watch = mock()
     private val watchOp: (watcher: Watcher<in Pod>) -> Watch? = { watch }
     private val operator = namespacedResourceOperator<Pod, KubernetesClient>(
@@ -118,21 +118,35 @@ class ClusterResourceTest {
     }
 
     @Test
-    fun `#saveToCluster should replace if same resource`() {
+    fun `#save should replace if exists on cluster`() {
         // given
+        whenever(operator.get(any()))
+            .doReturn(updatedEndorResource)
         // when
-        cluster.saveToCluster(updatedEndorResource)
+        cluster.save(updatedEndorResource)
         // then
         verify(operator).replace(updatedEndorResource)
     }
 
     @Test
-    fun `#saveToCluster should create if different resource`() {
+    fun `#save should create if does NOT exist on cluster`() {
         // given
+        whenever(operator.get(any()))
+            .doReturn(null)
         // when
-        cluster.saveToCluster(nabooResource)
+        cluster.save(updatedEndorResource)
         // then
-        verify(operator).create(nabooResource)
+        verify(operator).create(updatedEndorResource)
+    }
+
+    @Test(expected=ResourceException::class)
+    fun `#save should throw if given resource is NOT the same`() {
+        // given
+        whenever(operator.get(any()))
+            .doReturn(null)
+        // when
+        cluster.save(nabooResource)
+        // then
     }
 
     @Test
@@ -240,14 +254,14 @@ class ClusterResourceTest {
     }
 
     @Test
-    fun `#isDeleted should return true if resource retrieval has 404`() {
+    fun `#exists should return false if resource retrieval has 404`() {
         // given
         whenever(operator.get(any()))
             .doThrow(KubernetesClientException("not found", 404, null))
         // when
-        val deleted = cluster.isDeleted()
+        val exists = cluster.exists()
         // then
-        assertThat(deleted).isTrue()
+        assertThat(exists).isFalse()
     }
 
     @Test

@@ -10,6 +10,7 @@
  ******************************************************************************/
 package com.redhat.devtools.intellij.kubernetes.model.util
 
+import com.redhat.devtools.intellij.kubernetes.model.resource.ResourceKind
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.apiextensions.v1beta1.CustomResourceDefinition
 import io.fabric8.kubernetes.api.model.apiextensions.v1beta1.CustomResourceDefinitionSpec
@@ -24,16 +25,33 @@ import java.util.stream.Collectors
 const val MARKER_WILL_BE_DELETED = "willBeDeleted"
 
 /**
- * returns {@code true} if the given resource have the same uid or same selfLink.
- * This should match the cases where the resource is equal in name, namespace and kind.
+ * returns {@code true} if the given resource has the same
+ * <ul>
+ *     <li>kind</li>
+ *     <li>apiVersion</li>
+ *     <li>name</li>
+ *     <li>namespace</li>
+ * </ul>
+ * This allows to identify resource equality in different instances and when enriched by the server
  *
- * @see io.fabric8.kubernetes.api.model.ObjectMeta.getUid()
+ * @see io.fabric8.kubernetes.api.model.HasMetadata.getKind
+ * @see io.fabric8.kubernetes.api.model.HasMetadata.getApiVersion
+ * @see io.fabric8.kubernetes.api.model.ObjectMeta.name
+ * @see io.fabric8.kubernetes.api.model.ObjectMeta.name
  */
 fun HasMetadata.isSameResource(resource: HasMetadata): Boolean {
-	return this.isSameUid(resource)
-			&& this.isSameName(resource)
-			&& this.isSameNamespace(resource)
-			&& this.isSameKind(resource)
+	return isSameKind(resource)
+			&& isSameApiVersion(resource)
+			&& isSameName(resource)
+			&& isSameNamespace(resource)
+}
+
+fun HasMetadata.isSameApiVersion(resource: HasMetadata): Boolean {
+	if (this.apiVersion == null
+		&& resource.apiVersion == null) {
+		return false
+	}
+	return apiVersion == resource.apiVersion
 }
 
 /**
@@ -188,7 +206,10 @@ fun toMessage(resource: HasMetadata, maxLength: Int): String {
  *		the last 3 characters are appended</li>
  * </ul>
  */
-fun trimWithEllipsis(value: String, length: Int): String {
+fun trimWithEllipsis(value: String?, length: Int): String? {
+	if (value == null) {
+		return null
+	}
 	return when {
 		length < 0
 				|| length >= value.length

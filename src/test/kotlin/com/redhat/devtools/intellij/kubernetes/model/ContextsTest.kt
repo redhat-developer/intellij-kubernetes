@@ -28,7 +28,7 @@ import org.mockito.Mockito
 class ContextsTest {
 
 	private val modelChange: IModelChangeObservable = mock()
-	private val namespace: Namespace = ClientMocks.resource("papa smurf")
+	private val namespace: Namespace = ClientMocks.resource("papa smurf", null, "someNamespaceUid", "v1")
 	private val namedContext1 =
 			ClientMocks.namedContext("ctx1", "namespace1", "cluster1", "user1")
 	private val namedContext2 =

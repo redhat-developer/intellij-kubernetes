@@ -20,13 +20,14 @@ import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.fileEditor.FileEditor
 import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.ui.Messages
 import com.intellij.openapi.util.Key
 import com.intellij.openapi.vfs.VfsUtil
 import com.intellij.openapi.vfs.VfsUtilCore
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.ui.EditorNotificationPanel
 import com.redhat.devtools.intellij.common.editor.AllowNonProjectEditing
-import com.redhat.devtools.intellij.kubernetes.editor.notification.DeletedNotification
+import com.redhat.devtools.intellij.kubernetes.editor.notification.InexistantNotification
 import com.redhat.devtools.intellij.kubernetes.editor.notification.ErrorNotification
 import com.redhat.devtools.intellij.kubernetes.editor.notification.ReloadNotification
 import com.redhat.devtools.intellij.kubernetes.model.ClusterResource
@@ -34,6 +35,7 @@ import com.redhat.devtools.intellij.kubernetes.model.IResourceModel
 import com.redhat.devtools.intellij.kubernetes.model.ModelChangeObservable
 import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.custom.GenericCustomResource
 import com.redhat.devtools.intellij.kubernetes.model.util.createResource
+import com.redhat.devtools.intellij.kubernetes.model.util.toMessage
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.Namespace
 import io.fabric8.kubernetes.client.KubernetesClientException
@@ -43,6 +45,7 @@ import org.jetbrains.yaml.YAMLFileType
 import java.io.File
 import java.io.IOException
 import java.nio.charset.StandardCharsets
+import java.util.concurrent.atomic.AtomicBoolean
 import javax.swing.JComponent
 
 object ResourceEditor {
@@ -54,18 +57,19 @@ object ResourceEditor {
     fun open(resource: HasMetadata, project: Project): FileEditor? {
         val file = ResourceFile.replace(resource) ?: return null
         val editors = FileEditorManager.getInstance(project).openFile(file, true, true)
-        return editors.getOrNull(0)
+        val editor = editors.getOrNull(0)
+        createClusterResource(resource, editor, project)
+        return editor
     }
 
     fun close(file: VirtualFile, project: Project) {
         FileEditorManager.getInstance(project).closeFile(file)
-        val editor = getEditor(file, project) ?: return
-        dispose(editor, file, project)
+        val editor = getEditor(file, project)
+        dispose(editor, file)
     }
 
-    fun dispose(editor: FileEditor, file: VirtualFile, project: Project) {
-        val clusterResource = getClusterResource(editor, project) ?: return
-        clusterResource.close()
+    fun dispose(editor: FileEditor?, file: VirtualFile) {
+        getClusterResource(editor)?.close()
         ResourceFile.delete(file)
     }
 
@@ -130,69 +134,101 @@ object ResourceEditor {
     fun showNotifications(editor: FileEditor, project: Project) {
         ErrorNotification.hide(editor, project)
         ReloadNotification.hide(editor, project)
-        DeletedNotification.hide(editor, project)
-        val clusterResource = getClusterResource(editor, project) ?: return
+        InexistantNotification.hide(editor, project)
+        val clusterResource = getOrCreateClusterResource(editor, project) ?: return
         val resourceInFile = getResourceFromFile(editor) ?: return
-        if (clusterResource.isDeleted()) {
-            DeletedNotification.show(editor, resourceInFile, project)
+        if (!clusterResource.exists()) {
+            InexistantNotification.show(editor, resourceInFile, project)
         } else if (clusterResource.isOutdated(resourceInFile)) {
-            val resourceInCluster = loadResourceFromCluster(true, editor, project) ?: return
+            val resourceInCluster = loadResourceFromCluster(true, editor) ?: return
             ReloadNotification.show(editor, resourceInCluster, project)
         }
     }
 
-    fun isNewResource(resource: HasMetadata, editor: FileEditor, project: Project): Boolean {
-        val cluster = getClusterResource(editor, project) ?: return true
-        return !cluster.isSameResource(resource)
-    }
-
-    fun loadResourceFromCluster(forceLatest: Boolean = false, editor: FileEditor, project: Project): HasMetadata? {
-        val clusterResource = getClusterResource(editor, project) ?: return null
+    fun loadResourceFromCluster(forceLatest: Boolean = false, editor: FileEditor): HasMetadata? {
+        val clusterResource = getClusterResource(editor) ?: return null
         return clusterResource.get(forceLatest)
     }
 
-    fun saveToCluster(resource: HasMetadata, editor: FileEditor?, project: Project): HasMetadata? {
-        val cluster = getClusterResource(editor, project)
-        val saved = cluster?.saveToCluster(resource)
-        if (cluster != null
-            && !cluster.isSameResource(saved)) {
-            // new resource created - different kind, namespace, name
-            // drop existing cluster resource, create new one
-            cluster.close()
-            createClusterResource(saved, editor, project)
+    fun saveToCluster(resource: HasMetadata, editor: FileEditor, project: Project) {
+        val cluster = createClusterResource(resource, editor, project)
+        if (confirmSaveToCluster(resource, cluster)) {
+            saveToCluster(resource, cluster, editor, project)
         }
-        return saved
+    }
+
+    private fun confirmSaveToCluster(resource: HasMetadata, cluster: ClusterResource?): Boolean {
+        if (cluster == null) {
+            return false
+        }
+        val confirmation = AtomicBoolean(false)
+        val action = if (!cluster.exists()) {
+            "Create "
+        } else {
+            "Save "
+        }
+        ApplicationManager.getApplication().invokeAndWait {
+            val answer = Messages.showYesNoDialog(
+                action
+                        + toMessage(resource, 30)
+                        + " ${if (resource.metadata.namespace != null) "in namespace ${resource.metadata.namespace}" else ""}"
+                        + "on cluster ${cluster.contextName}?",
+                "$action Resource?",
+                Messages.getQuestionIcon()
+            )
+            confirmation.set(answer == Messages.OK)
+        }
+        return confirmation.get()
+    }
+
+    private fun saveToCluster(resource: HasMetadata, cluster: ClusterResource?, editor: FileEditor?, project: Project) {
+        if (editor == null
+            || cluster == null) {
+            return
+        }
+        val updatedResource = cluster.save(resource)
+        if (updatedResource != null) {
+            reloadEditor(updatedResource, editor, project)
+        } else {
+            showNotifications(editor, project)
+        }
     }
 
     fun startWatch(editor: FileEditor?, project: Project) {
-        val clusterResource = getClusterResource(editor, project) ?: return
+        val clusterResource = getOrCreateClusterResource(editor, project) ?: return
         clusterResource.watch()
     }
 
-    fun stopWatch(editor: FileEditor?, project: Project) {
-        val clusterResource = getClusterResource(editor, project) ?: return
+    fun stopWatch(editor: FileEditor?) {
+        val clusterResource = getClusterResource(editor) ?: return
         clusterResource.stopWatch()
     }
 
-    fun getContextName(editor: FileEditor?, project: Project): String? {
-        return getClusterResource(editor, project)?.contextName
+    private fun getOrCreateClusterResource(editor: FileEditor?, project: Project): ClusterResource? {
+        return getClusterResource(editor) ?: createClusterResource(editor, project)
     }
 
-    private fun getClusterResource(editor: FileEditor?, project: Project): ClusterResource? {
+    private fun getClusterResource(editor: FileEditor?): ClusterResource? {
         if (editor == null) {
             return null
         }
-        var cluster: ClusterResource? = editor.getUserData(KEY_CLUSTER_RESOURCE)
-        if (cluster == null) {
-            val resource = getResourceFromFile(editor)
-            cluster = createClusterResource(resource, editor, project)
+        return editor.getUserData(KEY_CLUSTER_RESOURCE)
+    }
+
+    private fun createClusterResource(editor: FileEditor?, project: Project): ClusterResource? {
+        if (editor == null) {
+            return null
         }
-        return cluster
+        val resource = getResourceFromFile(editor)
+        return createClusterResource(resource, editor, project)
     }
 
     private fun createClusterResource(resource: HasMetadata?, editor: FileEditor?, project: Project): ClusterResource? {
-        if (resource == null
-            || editor == null) {
+        if (editor == null) {
+            return null
+        }
+        getClusterResource(editor)?.close()
+        if (resource == null) {
             return null
         }
         val cluster = createClusterResource(resource) ?: return null

@@ -118,7 +118,7 @@ class NamespacedPodsOperatorTest {
     @Test
     fun `#replaced(pod) replaces pod if pod which is same resource already exist`() {
         // given
-        val pod = resource<Pod>(POD2.metadata.name, POD2.metadata.namespace, POD2.metadata.uid)
+        val pod = resource<Pod>(POD2.metadata.name, POD2.metadata.namespace, POD2.metadata.uid, POD2.apiVersion)
         assertThat(operator.allResources).doesNotContain(pod)
         // when
         val replaced = operator.replaced(pod)
@@ -130,7 +130,7 @@ class NamespacedPodsOperatorTest {
     @Test
     fun `#replaced(pod) does NOT replace pod if pod has different name`() {
         // given
-        val pod = resource<Pod>("darth vader", POD2.metadata.namespace, POD2.metadata.uid)
+        val pod = resource<Pod>("darth vader", POD2.metadata.namespace, POD2.metadata.uid, POD2.apiVersion)
         assertThat(operator.allResources).doesNotContain(pod)
         // when
         val replaced = operator.replaced(pod)
@@ -142,7 +142,7 @@ class NamespacedPodsOperatorTest {
     @Test
     fun `#replaced(pod) does NOT replace pod if pod has different namespace`() {
         // given
-        val pod = resource<Pod>(POD2.metadata.name, "sith", POD2.metadata.uid)
+        val pod = resource<Pod>(POD2.metadata.name, "sith", POD2.metadata.uid, POD2.apiVersion)
         assertThat(operator.allResources).doesNotContain(pod)
         // when
         val replaced = operator.replaced(pod)
@@ -154,7 +154,7 @@ class NamespacedPodsOperatorTest {
     @Test
     fun `#added(pod) adds pod if not contained yet`() {
         // given
-        val pod = resource<Pod>("papa-smurf", "smurf forest", "smurfUid")
+        val pod = resource<Pod>("papa-smurf", "smurf forest", "smurfUid", "v1")
         assertThat(operator.allResources).doesNotContain(pod)
         // when
         operator.added(pod)
@@ -177,8 +177,8 @@ class NamespacedPodsOperatorTest {
     @Test
     fun `#added(pod) is replacing if different instance of same pod is already contained`() {
         // given
-        val instance1 = resource<Pod>("gargamel", "smurfington", "uid-1-2-3")
-        val instance2 = resource<Pod>("gargamel", "smurfington", "uid-1-2-3")
+        val instance1 = resource<Pod>("gargamel", "smurfington", "uid-1-2-3", "v1")
+        val instance2 = resource<Pod>("gargamel", "smurfington", "uid-1-2-3", "v1")
         operator.added(instance1)
         assertThat(operator.allResources).contains(instance1)
         // when
@@ -191,7 +191,7 @@ class NamespacedPodsOperatorTest {
     @Test
     fun `#added(pod) returns true if pod was added`() {
         // given
-        val pod = resource<Pod>("papa-smurf")
+        val pod = resource<Pod>("papa-smurf", "ns1", "papaUid", "v1")
         assertThat(operator.allResources).doesNotContain(pod)
         // when
         val added = operator.added(pod)
@@ -223,7 +223,7 @@ class NamespacedPodsOperatorTest {
     fun `#removed(pod) removes the given pod if it isn't the same instance but is same pod`() {
         // given
         val pod1 = operator.allResources.elementAt(0)
-        val pod2 = resource<Pod>(pod1.metadata.name, pod1.metadata.namespace, pod1.metadata.uid)
+        val pod2 = resource<Pod>(pod1.metadata.name, pod1.metadata.namespace, pod1.metadata.uid, pod1.apiVersion)
         // when
         operator.removed(pod2)
         // then
@@ -243,7 +243,7 @@ class NamespacedPodsOperatorTest {
     @Test
     fun `#removed(pod) does not remove if pod is not contained`() {
         // given
-        val pod = resource<Pod>("papa-smurf")
+        val pod = resource<Pod>("papa-smurf", "ns1", "papaUid", "v1")
         assertThat(operator.allResources).doesNotContain(pod)
         // when
         val size = operator.allResources.size
@@ -256,7 +256,7 @@ class NamespacedPodsOperatorTest {
     @Test
     fun `#removed(pod) returns false if pod was not removed`() {
         // given
-        val pod = resource<Pod>("papa-smurf")
+        val pod = resource<Pod>("papa-smurf", "ns1", "papaUid", "v1")
         // when
         val removed = operator.removed(pod)
         // then

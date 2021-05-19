@@ -56,15 +56,14 @@ open class ClusterResource(
                 try {
                     if (operator == null) {
                         throw ResourceException(
-                            "Could not retrieve ${initialResource.kind} ${initialResource.metadata.name}. Unsupported resource kind.")
+                            "Unsupported resource kind ${initialResource.kind} in version ${initialResource.apiVersion}.")
                     }
                     this.updatedResource = operator!!.get(this.initialResource)
                 } catch (e: KubernetesClientException) {
                     if (e.isNotFound()) {
                         this.updatedResource = null
                     } else {
-                        throw ResourceException(
-                            "Could not retrieve ${initialResource.kind} ${initialResource.metadata.name} ${if (e.cause == null) { "" } else { ": ${e.cause?.message}"} }", e)
+                        throw ResourceException(e.cause?.message, e)
                     }
                 }
             }
@@ -75,19 +74,43 @@ open class ClusterResource(
     /**
      * Saves the given resource the cluster. The currently existing resource on the cluster is replaced
      * if it is the same resource in an older version. A new resource is created if the given resource
-     * is not the same as the resource that was given when creating this instance.
-     * The cached resource is only updated via the event sent by the cluster to the [watchListeners].
+     * doesn't exist on the cluster, it is replaced if it exists already.
+     * Throws a [ResourceException] if the given resource is not the same as the resource initially given to this instance.
      *
      * @param resource the resource that shall be save to the cluster
      */
-    fun saveToCluster(resource: HasMetadata): HasMetadata? {
-        return if (isSameResource(resource)) {
-            operator?.replace(resource)
-        } else {
-            operator?.create(resource)
+    fun save(resource: HasMetadata): HasMetadata? {
+        if (operator == null
+            || !initialResource.isSameResource(resource)) {
+            throw ResourceException(
+                "unsupported resource kind ${resource.kind} in version ${resource.apiVersion}.")
+        }
+        try {
+            this.updatedResource =
+                if (exists()) {
+                    operator?.replace(resource)
+                } else {
+                    operator?.create(resource)
+                }
+            return updatedResource
+        } catch (e: KubernetesClientException) {
+            val details = getDetails(e)
+            throw ResourceException(details, e)
         }
     }
 
+    private fun getDetails(e: KubernetesClientException): String? {
+        if (e.message == null) {
+            return null
+        }
+
+        val detailsIdentifier = "Message: "
+        val detailsStart = e.message!!.indexOf(detailsIdentifier)
+        if (detailsStart < 0) {
+            return e.message
+        }
+        return e.message!!.substring(detailsStart + detailsIdentifier.length)
+    }
     /**
      * Sets the given resource as the current value in this instance.
      * Nothing is done if the given resource is not the same resource (differs in name, namespace, kind).
@@ -144,18 +167,19 @@ open class ClusterResource(
     }
 
     /**
-     * Returns `true` if the resource given to this instance was deleted on the cluster,
+     * Returns `true` if the resource given to this instance exists on the cluster,
      * A request to the cluster for the resource is executed to find out.
      *
-     * @return true if the resource of this instance was deleted
+     * @return true if the resource of this instance exists on the cluster
      */
-    fun isDeleted(): Boolean {
-        return get(true) == null
+    fun exists(): Boolean {
+        return get(true) != null
     }
 
     /**
      * Starts watching the resource given to this instance. Modification & deletions to the resource are tracked
-     * and notified to listeners of this instance. Watching may be stopped by calling [stopWatch]
+     * and notified to listeners of this instance. Calling [watch] several times won't watch multiple times.
+     * Watching may be stopped by calling [stopWatch]
      *
      * @see [addListener]
      * @see [stopWatch]

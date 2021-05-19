@@ -45,7 +45,7 @@ import java.util.function.Predicate
 class ResourceModelTest {
 
     private val observable: IModelChangeObservable = mock()
-    private val namespace: Namespace = resource("papa smurf")
+    private val namespace: Namespace = resource("papa smurf", null, "papaUid", "v1")
     private val activeContext: IActiveContext<HasMetadata, KubernetesClient> = activeContext(namespace, mock())
     private val contextFactory: (IModelChangeObservable, NamedContext?) -> IActiveContext<HasMetadata, KubernetesClient> =
             contextFactory(activeContext)

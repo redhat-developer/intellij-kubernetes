@@ -10,6 +10,7 @@
  ******************************************************************************/
 package com.redhat.devtools.intellij.kubernetes.editor
 
+import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.editor.Document
 import com.intellij.openapi.fileEditor.FileDocumentSynchronizationVetoer
@@ -20,10 +21,13 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.project.ProjectManager
 import com.intellij.openapi.ui.Messages
 import com.intellij.openapi.vfs.VirtualFile
+import com.redhat.devtools.intellij.kubernetes.model.ClusterResource
 import com.redhat.devtools.intellij.kubernetes.model.Notification
+import com.redhat.devtools.intellij.kubernetes.model.ResourceException
 import com.redhat.devtools.intellij.kubernetes.model.util.toMessage
+import com.redhat.devtools.intellij.kubernetes.model.util.trimWithEllipsis
 import io.fabric8.kubernetes.api.model.HasMetadata
-import io.fabric8.kubernetes.client.KubernetesClientException
+import java.util.concurrent.atomic.AtomicBoolean
 
 /**
  * Listener that gets called when an editor is saved.
@@ -40,70 +44,30 @@ class SaveListener : FileDocumentSynchronizationVetoer() {
 
     private fun saveToCluster(document: Document): Boolean {
         val file = ResourceEditor.getResourceFile(document) ?: return true
-        val projectEditor = getEditor(file) ?: return true
-        if (!projectEditor.editor.isValid) {
+        val projectAndEditor = getProjectAndEditor(file) ?: return true
+        if (!projectAndEditor.editor.isValid) {
             return false
         }
         val resource: HasMetadata = ResourceEditor.createResource(document.text) ?: return false
-        val contextName = ResourceEditor.getContextName(projectEditor.editor, projectEditor.project) ?: return true
-        val action = getAction(resource, projectEditor.editor, projectEditor.project)
-        if (confirmSaveToCluster(action, resource, contextName)) {
-            saveToCluster(resource, contextName, projectEditor.editor, projectEditor.project)
-        }
+        saveToCluster(resource, projectAndEditor.editor, projectAndEditor.project)
         return true
     }
 
-    private fun confirmSaveToCluster(action: String, resource: HasMetadata, contextName: String?): Boolean {
-        val answer = Messages.showYesNoDialog(
-            action
-                    + "${toMessage(resource, 30)}"
-                    + " ${if (resource.metadata.namespace != null) "in namespace ${resource.metadata.namespace}" else "" } "
-                    + " ${if (contextName != null) "on cluster $contextName" else ""}?",
-            "$action Resource?",
-            Messages.getQuestionIcon()
-        )
-        return answer == Messages.OK
-    }
-
-    private fun getAction(resource: HasMetadata, editor: FileEditor, project: Project): String {
-        return if (ResourceEditor.isNewResource(resource, editor, project)) {
-            "Create "
-        } else {
-            "Save "
-        }
-    }
-
-    private fun saveToCluster(resource: HasMetadata, contextName: String?, editor: FileEditor?, project: Project) {
+    private fun saveToCluster(resource: HasMetadata, editor: FileEditor, project: Project) {
         com.redhat.devtools.intellij.kubernetes.actions.run("Saving to cluster...", true,
             Progressive {
                 try {
-                    if (editor != null) {
-                        val updatedResource = ResourceEditor.saveToCluster(resource, editor, project)
-                        if (updatedResource != null) {
-                            reloadEditor(updatedResource, editor, project)
-                        }
-                    }
-                } catch (e: KubernetesClientException) {
-                    val message = """${resource.metadata.name}
-                            ${ if (resource.metadata.namespace != null) {"in namespace ${resource.metadata.namespace} "} else {""}} 
-                            could not be saved to cluster $contextName:
-                            ${extractDetails(e)}"""
-                    logger<SaveListener>().warn(message, e)
-                    Notification().error("Save to cluster failed", message)
+                    ResourceEditor.saveToCluster(resource, editor, project)
+                } catch (e: ResourceException) {
+                    logger<SaveListener>().warn(e)
+                    Notification().error(
+                        "Could not save ${resource.kind} ${resource.metadata.name} to cluster",
+                    trimWithEllipsis(e.message, 300) ?: "")
                 }
             })
     }
 
-    private fun reloadEditor(updatedResource: HasMetadata?, editor: FileEditor?, project: Project) {
-        if (updatedResource == null
-            || editor == null) {
-            return
-        }
-        ResourceEditor.reloadEditor(updatedResource, editor, project)
-    }
-
-
-    private fun getEditor(file: VirtualFile): ProjectAndEditor? {
+    private fun getProjectAndEditor(file: VirtualFile): ProjectAndEditor? {
         return ProjectManager.getInstance().openProjects
             .filter { project -> project.isInitialized && !project.isDisposed }
             .flatMap { project ->
@@ -111,18 +75,6 @@ class SaveListener : FileDocumentSynchronizationVetoer() {
                     .mapNotNull { editor -> ProjectAndEditor(project, editor) }
             }
             .firstOrNull()
-    }
-
-    private fun extractDetails(e: KubernetesClientException): String? {
-        if (e.message == null) {
-            return null
-        }
-        val detailsIdentifier = "Message: "
-        val detailsStart = e.message!!.indexOf(detailsIdentifier)
-        if (detailsStart < 0) {
-            return e.message
-        }
-        return e.message!!.substring(detailsStart + detailsIdentifier.length)
     }
 
     private class ProjectAndEditor(val project: Project, val editor: FileEditor)

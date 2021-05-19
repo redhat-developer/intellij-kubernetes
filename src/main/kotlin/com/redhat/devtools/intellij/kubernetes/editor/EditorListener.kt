@@ -32,7 +32,7 @@ class EditorListener(private val project: Project) : FileEditorManagerListener {
             return
         }
         try {
-            ResourceEditor.stopWatch(editor, project)
+            ResourceEditor.stopWatch(editor)
         } catch (e: RuntimeException) {
             ErrorNotification.show(
                 editor,
