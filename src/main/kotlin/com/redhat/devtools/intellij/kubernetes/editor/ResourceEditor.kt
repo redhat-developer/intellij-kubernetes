@@ -22,11 +22,13 @@ import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.Messages
 import com.intellij.openapi.util.Key
+import com.intellij.openapi.util.io.FileUtilRt
 import com.intellij.openapi.vfs.VfsUtil
 import com.intellij.openapi.vfs.VfsUtilCore
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.ui.EditorNotificationPanel
 import com.redhat.devtools.intellij.common.editor.AllowNonProjectEditing
+import com.redhat.devtools.intellij.common.utils.UIHelper
 import com.redhat.devtools.intellij.kubernetes.editor.notification.InexistantNotification
 import com.redhat.devtools.intellij.kubernetes.editor.notification.ErrorNotification
 import com.redhat.devtools.intellij.kubernetes.editor.notification.ReloadNotification
@@ -46,6 +48,7 @@ import java.io.File
 import java.io.IOException
 import java.nio.charset.StandardCharsets
 import java.util.concurrent.atomic.AtomicBoolean
+import java.util.function.Supplier
 import javax.swing.JComponent
 
 object ResourceEditor {
@@ -161,24 +164,20 @@ object ResourceEditor {
         if (cluster == null) {
             return false
         }
-        val confirmation = AtomicBoolean(false)
         val action = if (!cluster.exists()) {
             "Create "
         } else {
             "Save "
         }
-        ApplicationManager.getApplication().invokeAndWait {
-            val answer = Messages.showYesNoDialog(
-                action
-                        + toMessage(resource, 30)
-                        + " ${if (resource.metadata.namespace != null) "in namespace ${resource.metadata.namespace}" else ""}"
-                        + "on cluster ${cluster.contextName}?",
-                "$action Resource?",
-                Messages.getQuestionIcon()
-            )
-            confirmation.set(answer == Messages.OK)
-        }
-        return confirmation.get()
+        val answer = Messages.showYesNoDialog(
+            action
+                    + toMessage(resource, 30)
+                    + " ${if (resource.metadata.namespace != null) "in namespace ${resource.metadata.namespace}" else ""}"
+                    + " on cluster ${cluster.contextName}?",
+            "$action Resource?",
+            Messages.getQuestionIcon()
+        )
+        return answer == Messages.OK
     }
 
     private fun saveToCluster(resource: HasMetadata, cluster: ClusterResource?, editor: FileEditor?, project: Project) {
@@ -192,6 +191,7 @@ object ResourceEditor {
         } else {
             showNotifications(editor, project)
         }
+        ResourceFile.rename(resource, getResourceFile(editor))
     }
 
     fun startWatch(editor: FileEditor?, project: Project) {
@@ -306,20 +306,37 @@ object ResourceEditor {
         }
 
         fun delete(file: VirtualFile) {
-            WriteAction.compute<Unit, Exception> {
-                file.delete(this)
+            UIHelper.executeInUI {
+                WriteAction.compute<Unit, Exception> {
+                    file.delete(this)
+                }
+            }
+        }
+
+        fun rename(resource: HasMetadata, file: VirtualFile?) {
+            if (file == null) {
+                return
+            }
+            UIHelper.executeInUI {
+                WriteAction.compute<Unit, Exception> {
+                    val newFile = getUnusedFilename(getFile(resource))
+                    file.rename(this, newFile.name)
+                    file.refresh(true, true)
+                }
             }
         }
 
         private fun replace(resource: HasMetadata, file: File): VirtualFile? {
-            return WriteAction.compute<VirtualFile?, Exception> {
-                val content = Serialization.asYaml(resource)
-                FileUtils.write(file, content, StandardCharsets.UTF_8, false)
-                val virtualFile = VfsUtil.findFileByIoFile(file, true)
-                virtualFile?.refresh(false, false)
-                enableNonProjectFileEditing(virtualFile)
-                virtualFile
-            }
+            return UIHelper.executeInUI(Supplier {
+                WriteAction.compute<VirtualFile?, Exception> {
+                    val content = Serialization.asYaml(resource)
+                    FileUtils.write(file, content, StandardCharsets.UTF_8, false)
+                    val virtualFile = VfsUtil.findFileByIoFile(file, true)
+                    virtualFile?.refresh(false, false)
+                    enableNonProjectFileEditing(virtualFile)
+                    virtualFile
+                }
+            })
         }
 
         private fun getFile(resource: HasMetadata): File {
@@ -340,6 +357,20 @@ object ResourceEditor {
                 }
             }
             return "$name.$EXTENSION"
+        }
+
+        private fun getUnusedFilename(file: File): File {
+            if (!file.exists()) {
+                return file
+            }
+            val name = FileUtilRt.getNameWithoutExtension(file.absolutePath)
+            val suffix = FileUtilRt.getExtension(file.absolutePath)
+            var i = 1
+            var file: File?
+            do {
+                file = File("$name(${i++}).$suffix")
+            } while (file!!.exists())
+            return file
         }
     }
 
