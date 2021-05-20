@@ -36,6 +36,7 @@ import com.redhat.devtools.intellij.kubernetes.model.IResourceModel
 import com.redhat.devtools.intellij.kubernetes.model.ModelChangeObservable
 import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.custom.GenericCustomResource
 import com.redhat.devtools.intellij.kubernetes.model.util.createResource
+import com.redhat.devtools.intellij.kubernetes.model.util.isSameResource
 import com.redhat.devtools.intellij.kubernetes.model.util.toMessage
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.Namespace
@@ -46,7 +47,6 @@ import org.jetbrains.yaml.YAMLFileType
 import java.io.File
 import java.io.IOException
 import java.nio.charset.StandardCharsets
-import java.util.concurrent.atomic.AtomicBoolean
 import java.util.function.Supplier
 import javax.swing.JComponent
 
@@ -88,7 +88,6 @@ object ResourceEditor {
             val file = editor.file
             if (file != null) {
                 reloadEditor(resource, file)
-                showNotifications(editor, project)
             }
         }
     }
@@ -134,17 +133,20 @@ object ResourceEditor {
     }
 
     fun showNotifications(editor: FileEditor, project: Project) {
+        hideNotifications(editor, project)
+        val clusterResource = getOrCreateClusterResource(editor, project) ?: return
+        val resource = getResourceFromFile(editor) ?: return
+        if (!clusterResource.exists()) {
+            InexistantNotification.show(editor, resource, project)
+        } else if (clusterResource.isOutdated(resource)) {
+            ReloadNotification.show(editor, resource, project)
+        }
+    }
+
+    private fun hideNotifications(editor: FileEditor, project: Project) {
         ErrorNotification.hide(editor, project)
         ReloadNotification.hide(editor, project)
         InexistantNotification.hide(editor, project)
-        val clusterResource = getOrCreateClusterResource(editor, project) ?: return
-        val resourceInFile = getResourceFromFile(editor) ?: return
-        if (!clusterResource.exists()) {
-            InexistantNotification.show(editor, resourceInFile, project)
-        } else if (clusterResource.isOutdated(resourceInFile)) {
-            val resourceInCluster = loadResourceFromCluster(true, editor) ?: return
-            ReloadNotification.show(editor, resourceInCluster, project)
-        }
     }
 
     fun loadResourceFromCluster(forceLatest: Boolean = false, editor: FileEditor): HasMetadata? {
@@ -152,10 +154,11 @@ object ResourceEditor {
         return clusterResource.get(forceLatest)
     }
 
-    fun saveToCluster(resource: HasMetadata, editor: FileEditor, project: Project) {
-        val cluster = createClusterResource(resource, editor, project)
-        if (confirmSaveToCluster(resource, cluster)) {
-            saveToCluster(resource, cluster, editor, project)
+    fun saveToCluster(newResource: HasMetadata, editor: FileEditor, project: Project) {
+        val oldResource = getClusterResource(editor)?.get(false)
+        val cluster = createClusterResource(newResource, editor, project)
+        if (confirmSaveToCluster(newResource, cluster)) {
+            saveToCluster(newResource, oldResource, cluster, editor, project)
         }
     }
 
@@ -179,18 +182,23 @@ object ResourceEditor {
         return answer == Messages.OK
     }
 
-    private fun saveToCluster(resource: HasMetadata, cluster: ClusterResource?, editor: FileEditor?, project: Project) {
+    private fun saveToCluster(newResource: HasMetadata, oldResource: HasMetadata?, cluster: ClusterResource?, editor: FileEditor?, project: Project) {
         if (editor == null
             || cluster == null) {
             return
         }
-        val updatedResource = cluster.save(resource)
-        if (updatedResource != null) {
-            reloadEditor(updatedResource, editor, project)
-        } else {
-            showNotifications(editor, project)
+        val updatedResource = cluster.save(newResource) ?: return
+        reloadEditor(updatedResource, editor, project)
+        if (oldResource != null
+            && !oldResource.isSameResource(updatedResource)) {
+            renameEditor(editor, newResource)
         }
-        ResourceFile.rename(resource, getResourceFile(editor))
+        hideNotifications(editor, project)
+    }
+
+    private fun renameEditor(editor: FileEditor, newResource: HasMetadata) {
+        val file = getResourceFile(editor)
+        ResourceFile.rename(newResource, file)
     }
 
     fun startWatch(editor: FileEditor?, project: Project) {

@@ -39,6 +39,7 @@ object ReloadNotification {
             val latestRevision = ResourceEditor.loadResourceFromCluster(false, editor)
             if (latestRevision != null) {
                 ResourceEditor.reloadEditor(latestRevision, editor, project)
+                editor.hideNotification(KEY_PANEL, project)
             }
         }
 
