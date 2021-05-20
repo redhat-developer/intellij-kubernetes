@@ -11,7 +11,6 @@
 package com.redhat.devtools.intellij.kubernetes.editor
 
 import com.fasterxml.jackson.databind.exc.MismatchedInputException
-import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.ReadAction
 import com.intellij.openapi.application.WriteAction
 import com.intellij.openapi.components.ServiceManager
@@ -85,7 +84,7 @@ object ResourceEditor {
     }
 
     fun reloadEditor(resource: HasMetadata, editor: FileEditor, project: Project) {
-        ApplicationManager.getApplication().invokeAndWait {
+        UIHelper.executeInUI {
             val file = editor.file
             if (file != null) {
                 reloadEditor(resource, file)
@@ -283,7 +282,15 @@ object ResourceEditor {
             }
 
             override fun modified(modified: Any) {
-                showNotifications(editor, project)
+                val resource = modified as? HasMetadata
+                UIHelper.executeInUI {
+                    if (resource != null
+                        && !editor.isModified) {
+                        reloadEditor(resource, editor, project)
+                    } else {
+                        showNotifications(editor, project)
+                    }
+                }
             }
         }
     }
