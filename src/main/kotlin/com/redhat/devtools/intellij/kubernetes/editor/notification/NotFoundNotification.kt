@@ -20,9 +20,9 @@ import com.redhat.devtools.intellij.kubernetes.editor.showNotification
 import io.fabric8.kubernetes.api.model.HasMetadata
 import javax.swing.JComponent
 
-object ReloadNotification {
+object NotFoundNotification {
 
-    private val KEY_PANEL = Key<JComponent>(ReloadNotification::javaClass.name)
+    private val KEY_PANEL = Key<JComponent>(NotFoundNotification::javaClass.name)
 
     fun show(editor: FileEditor, resource: HasMetadata, project: Project) {
         editor.showNotification(KEY_PANEL, { createPanel(editor, resource, project) }, project)
@@ -34,19 +34,24 @@ object ReloadNotification {
 
     private fun createPanel(editor: FileEditor, resource: HasMetadata, project: Project): EditorNotificationPanel {
         val panel = EditorNotificationPanel()
-        panel.setText("${resource.metadata.name} changed on server. Reload?")
-        panel.createActionLabel("Reload now") {
-            val latestRevision = ResourceEditor.loadResourceFromCluster(false, editor)
-            if (latestRevision != null) {
-                ResourceEditor.reloadEditor(latestRevision, editor)
-                editor.hideNotification(KEY_PANEL, project)
+        panel.setText("${resource.kind} ${resource.metadata.name} does not exist/was deleted on cluster. Keep content?")
+        panel.createActionLabel("Push to cluster") {
+            ResourceEditor.push(editor, project)
+        }
+        panel.createActionLabel("Keep current") {
+            editor.isModified
+            editor.hideNotification(KEY_PANEL, project)
+        }
+        panel.createActionLabel("Close Editor") {
+            val file = editor.file
+            if (file != null
+                && !project.isDisposed) {
+                ResourceEditor.close(file, project)
             }
         }
 
-        panel.createActionLabel("Keep current") {
-            editor.hideNotification(KEY_PANEL, project)
-        }
         return panel
     }
+
 
 }

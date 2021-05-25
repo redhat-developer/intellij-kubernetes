@@ -41,7 +41,6 @@
         <applicationService serviceInterface="com.redhat.devtools.intellij.kubernetes.model.IResourceModel"
                             serviceImplementation="com.redhat.devtools.intellij.kubernetes.model.ResourceModel"/>
         <nonProjectFileWritingAccessExtension implementation="com.redhat.devtools.intellij.common.editor.AllowNonProjectEditing" />
-        <fileDocumentSynchronizationVetoer implementation="com.redhat.devtools.intellij.kubernetes.editor.SaveListener" order="first" />
         <postStartupActivity implementation="com.redhat.devtools.intellij.kubernetes.KubernetesPluginInitializer" />
     </extensions>
 

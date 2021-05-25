@@ -14,19 +14,24 @@ import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.fileEditor.FileEditorManagerListener
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.startup.StartupActivity
-import com.redhat.devtools.intellij.kubernetes.editor.EditorListener
+import com.intellij.psi.impl.PsiDocumentTransactionListener
+import com.redhat.devtools.intellij.kubernetes.editor.EditorFocusListener
+import com.redhat.devtools.intellij.kubernetes.editor.EditorTransactionListener
 import com.redhat.devtools.intellij.kubernetes.editor.ResourceEditor
 import com.redhat.devtools.intellij.kubernetes.editor.notification.ErrorNotification
-import groovy.util.ResourceException
 
 class KubernetesPluginInitializer : StartupActivity {
 
     override fun runActivity(project: Project) {
         project.messageBus.connect().subscribe(FileEditorManagerListener.FILE_EDITOR_MANAGER,
-            EditorListener(project)
+            EditorFocusListener(project)
         )
         enableNonProjectEditing(project)
         showResourceEditorNotifications(project)
+
+        project.messageBus.connect().subscribe(PsiDocumentTransactionListener.TOPIC,
+            EditorTransactionListener()
+        )
     }
 
     private fun enableNonProjectEditing(project: Project) {
