@@ -36,11 +36,11 @@ object PushNotification {
         val panel = EditorNotificationPanel()
         panel.setText(
             "Push local changes and ${ if (!ResourceEditor.existsOnCluster(editor)) { "create new" } else { "update existing" }} resource on server?")
-        panel.createActionLabel("Push now") {
+        panel.createActionLabel("Push to Cluster") {
             ResourceEditor.push(editor, project)
         }
         if (ResourceEditor.isOutdated(editor)) {
-            panel.createActionLabel("Reload") {
+            panel.createActionLabel("Reload from Cluster") {
                 val latestRevision = ResourceEditor.loadResourceFromCluster(false, editor)
                 if (latestRevision != null) {
                     ResourceEditor.reloadEditor(latestRevision, editor)

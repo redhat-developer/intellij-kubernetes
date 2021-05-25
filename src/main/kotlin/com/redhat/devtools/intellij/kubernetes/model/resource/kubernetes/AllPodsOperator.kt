@@ -14,6 +14,8 @@ import com.redhat.devtools.intellij.kubernetes.model.resource.NonNamespacedOpera
 import com.redhat.devtools.intellij.kubernetes.model.resource.NonNamespacedResourceOperator
 import com.redhat.devtools.intellij.kubernetes.model.resource.ResourceKind
 import com.redhat.devtools.intellij.kubernetes.model.util.Clients
+import com.redhat.devtools.intellij.kubernetes.model.util.isSameNamespace
+import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.Pod
 import io.fabric8.kubernetes.client.KubernetesClient
 
@@ -28,5 +30,9 @@ class AllPodsOperator(clients: Clients<out KubernetesClient>)
 
     override fun getOperation(): NonNamespacedOperation<Pod>? {
         return client.pods()
+    }
+
+    override fun get(resource: HasMetadata): HasMetadata? {
+        return ensureSameNamespace(resource, super.get(resource))
     }
 }
