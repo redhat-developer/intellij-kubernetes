@@ -17,9 +17,8 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.VirtualFile
 import com.redhat.devtools.intellij.kubernetes.editor.notification.ErrorNotification
 import com.redhat.devtools.intellij.kubernetes.model.ResourceException
-import io.fabric8.kubernetes.client.KubernetesClientException
 
-class EditorListener(private val project: Project) : FileEditorManagerListener {
+class EditorFocusListener(private val project: Project) : FileEditorManagerListener {
 
     override fun selectionChanged(event: FileEditorManagerEvent) {
         handleSelectionLost(event.oldEditor, event.oldFile, project)

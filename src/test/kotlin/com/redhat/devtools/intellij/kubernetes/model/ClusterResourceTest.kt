@@ -123,7 +123,7 @@ class ClusterResourceTest {
         whenever(operator.get(any()))
             .doReturn(updatedEndorResource)
         // when
-        cluster.save(updatedEndorResource)
+        cluster.push(updatedEndorResource)
         // then
         verify(operator).replace(updatedEndorResource)
     }
@@ -134,7 +134,7 @@ class ClusterResourceTest {
         whenever(operator.get(any()))
             .doReturn(null)
         // when
-        cluster.save(updatedEndorResource)
+        cluster.push(updatedEndorResource)
         // then
         verify(operator).create(updatedEndorResource)
     }
@@ -145,7 +145,7 @@ class ClusterResourceTest {
         whenever(operator.get(any()))
             .doReturn(null)
         // when
-        cluster.save(nabooResource)
+        cluster.push(nabooResource)
         // then
     }
 

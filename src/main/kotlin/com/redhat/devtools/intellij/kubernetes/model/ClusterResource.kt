@@ -72,14 +72,14 @@ open class ClusterResource(
     }
 
     /**
-     * Saves the given resource the cluster. The currently existing resource on the cluster is replaced
+     * Pushes the given resource the cluster. The currently existing resource on the cluster is replaced
      * if it is the same resource in an older version. A new resource is created if the given resource
      * doesn't exist on the cluster, it is replaced if it exists already.
      * Throws a [ResourceException] if the given resource is not the same as the resource initially given to this instance.
      *
      * @param resource the resource that shall be save to the cluster
      */
-    fun save(resource: HasMetadata): HasMetadata? {
+    fun push(resource: HasMetadata): HasMetadata? {
         if (operator == null
             || !initialResource.isSameResource(resource)) {
             throw ResourceException(
@@ -164,6 +164,18 @@ open class ClusterResource(
             return false
         }
         return initialResource.isSameResource(toCompare)
+    }
+
+    fun canPush(toCompare: HasMetadata?): Boolean {
+        val resource = get(false)
+        if (toCompare == null) {
+            return false
+        }
+        return when {
+            resource == null -> true
+            toCompare.isSameResource(resource) -> resource != toCompare
+            else -> true
+        }
     }
 
     /**

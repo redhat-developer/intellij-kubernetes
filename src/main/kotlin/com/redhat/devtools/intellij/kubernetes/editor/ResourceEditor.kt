@@ -14,12 +14,12 @@ import com.fasterxml.jackson.databind.exc.MismatchedInputException
 import com.intellij.openapi.application.ReadAction
 import com.intellij.openapi.application.WriteAction
 import com.intellij.openapi.components.ServiceManager
+import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.editor.Document
 import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.fileEditor.FileEditor
 import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.project.Project
-import com.intellij.openapi.ui.Messages
 import com.intellij.openapi.util.Key
 import com.intellij.openapi.util.io.FileUtilRt
 import com.intellij.openapi.vfs.VfsUtil
@@ -28,16 +28,19 @@ import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.ui.EditorNotificationPanel
 import com.redhat.devtools.intellij.common.editor.AllowNonProjectEditing
 import com.redhat.devtools.intellij.common.utils.UIHelper
-import com.redhat.devtools.intellij.kubernetes.editor.notification.InexistantNotification
+import com.redhat.devtools.intellij.kubernetes.editor.notification.NotFoundNotification
 import com.redhat.devtools.intellij.kubernetes.editor.notification.ErrorNotification
+import com.redhat.devtools.intellij.kubernetes.editor.notification.PushNotification
 import com.redhat.devtools.intellij.kubernetes.editor.notification.ReloadNotification
 import com.redhat.devtools.intellij.kubernetes.model.ClusterResource
 import com.redhat.devtools.intellij.kubernetes.model.IResourceModel
 import com.redhat.devtools.intellij.kubernetes.model.ModelChangeObservable
+import com.redhat.devtools.intellij.kubernetes.model.Notification
+import com.redhat.devtools.intellij.kubernetes.model.ResourceException
 import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.custom.GenericCustomResource
 import com.redhat.devtools.intellij.kubernetes.model.util.createResource
 import com.redhat.devtools.intellij.kubernetes.model.util.isSameResource
-import com.redhat.devtools.intellij.kubernetes.model.util.toMessage
+import com.redhat.devtools.intellij.kubernetes.model.util.trimWithEllipsis
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.Namespace
 import io.fabric8.kubernetes.client.KubernetesClientException
@@ -83,7 +86,7 @@ object ResourceEditor {
         return ResourceFile.matches(file)
     }
 
-    fun reloadEditor(resource: HasMetadata, editor: FileEditor, project: Project) {
+    fun reloadEditor(resource: HasMetadata, editor: FileEditor) {
         UIHelper.executeInUI {
             val file = editor.file
             if (file != null) {
@@ -116,7 +119,7 @@ object ResourceEditor {
         return FileDocumentManager.getInstance().getFile(document)
     }
 
-    private fun getResourceFromFile(editor: FileEditor): HasMetadata? {
+    private fun getResource(editor: FileEditor): HasMetadata? {
         val document = getDocument(editor)
         return if (document?.text == null) {
             null
@@ -135,18 +138,31 @@ object ResourceEditor {
     fun showNotifications(editor: FileEditor, project: Project) {
         hideNotifications(editor, project)
         val clusterResource = getOrCreateClusterResource(editor, project) ?: return
-        val resource = getResourceFromFile(editor) ?: return
-        if (!clusterResource.exists()) {
-            InexistantNotification.show(editor, resource, project)
-        } else if (clusterResource.isOutdated(resource)) {
-            ReloadNotification.show(editor, resource, project)
+        try {
+            val resource = getResource(editor) ?: return
+            if (!clusterResource.exists()) {
+                NotFoundNotification.show(editor, resource, project)
+            } else if (clusterResource.canPush(resource)) {
+                PushNotification.show(editor, resource, project)
+            } else if (clusterResource.isOutdated(resource)) {
+                ReloadNotification.show(editor, resource, project)
+            }
+        } catch (e: ResourceException) {
+            showErrorNotification(editor, project, e)
         }
     }
 
-    private fun hideNotifications(editor: FileEditor, project: Project) {
+    fun showErrorNotification(editor: FileEditor, project: Project, e: Throwable) {
+        hideNotifications(editor, project)
+        ErrorNotification.show(editor, project,
+            e.message ?: "", trimWithEllipsis(e.cause?.message, 300) ?: "")
+    }
+
+        private fun hideNotifications(editor: FileEditor, project: Project) {
         ErrorNotification.hide(editor, project)
         ReloadNotification.hide(editor, project)
-        InexistantNotification.hide(editor, project)
+        NotFoundNotification.hide(editor, project)
+        PushNotification.hide(editor, project)
     }
 
     fun loadResourceFromCluster(forceLatest: Boolean = false, editor: FileEditor): HasMetadata? {
@@ -154,46 +170,55 @@ object ResourceEditor {
         return clusterResource.get(forceLatest)
     }
 
-    fun saveToCluster(newResource: HasMetadata, editor: FileEditor, project: Project) {
-        val oldResource = getClusterResource(editor)?.get(false)
-        val cluster = createClusterResource(newResource, editor, project)
-        if (confirmSaveToCluster(newResource, cluster)) {
-            saveToCluster(newResource, oldResource, cluster, editor, project)
+    fun existsOnCluster(editor: FileEditor): Boolean {
+        return getClusterResource(editor)?.exists() ?: return false
+    }
+
+    fun isOutdated(editor: FileEditor): Boolean {
+        val resource = getResource(editor)
+        return getClusterResource(editor)?.isOutdated(resource) ?: return false
+    }
+
+    fun push(editor: FileEditor, project: Project) {
+        try {
+            val newResource = getResource(editor) ?: return
+            try {
+                val oldClusterResource = getClusterResource(editor)
+                val oldResource = oldClusterResource?.get(false)
+                if (oldResource != null
+                    && oldResource.isSameResource(newResource)
+                ) {
+                    pushSameResource(newResource, editor, project)
+                } else {
+                    pushNewResource(newResource, editor, project)
+                }
+            } catch (e: ResourceException) {
+                logger<ResourceEditor>().warn(e)
+                Notification().error(
+                    "Could not save ${newResource.kind} ${newResource.metadata.name} to cluster",
+                    trimWithEllipsis(e.message, 300) ?: ""
+                )
+            }
+        } catch (e: ResourceException) {
+            showErrorNotification(editor, project, e)
         }
     }
 
-    private fun confirmSaveToCluster(resource: HasMetadata, cluster: ClusterResource?): Boolean {
-        if (cluster == null) {
-            return false
-        }
-        val action = if (!cluster.exists()) {
-            "Create "
-        } else {
-            "Save "
-        }
-        val answer = Messages.showYesNoDialog(
-            action
-                    + toMessage(resource, 30)
-                    + " ${if (resource.metadata.namespace != null) "in namespace ${resource.metadata.namespace}" else ""}"
-                    + " on cluster ${cluster.contextName}?",
-            "$action Resource?",
-            Messages.getQuestionIcon()
-        )
-        return answer == Messages.OK
-    }
-
-    private fun saveToCluster(newResource: HasMetadata, oldResource: HasMetadata?, cluster: ClusterResource?, editor: FileEditor?, project: Project) {
-        if (editor == null
-            || cluster == null) {
-            return
-        }
-        val updatedResource = cluster.save(newResource) ?: return
-        reloadEditor(updatedResource, editor, project)
-        if (oldResource != null
-            && !oldResource.isSameResource(updatedResource)) {
-            renameEditor(editor, newResource)
-        }
+    private fun pushSameResource(newResource: HasMetadata, editor: FileEditor, project: Project): HasMetadata? {
+        val cluster = createClusterResource(newResource, editor, project) ?: return null
         hideNotifications(editor, project)
+        val updatedResource = cluster.push(newResource) ?: return null
+        reloadEditor(updatedResource, editor)
+        return updatedResource
+    }
+
+    private fun pushNewResource(newResource: HasMetadata, editor: FileEditor, project: Project): HasMetadata? {
+        val cluster = createClusterResource(newResource, editor, project) ?: return null
+        hideNotifications(editor, project)
+        val updatedResource = cluster.push(newResource) ?: return null
+        reloadEditor(updatedResource, editor)
+        renameEditor(editor, newResource)
+        return updatedResource
     }
 
     private fun renameEditor(editor: FileEditor, newResource: HasMetadata) {
@@ -226,7 +251,7 @@ object ResourceEditor {
         if (editor == null) {
             return null
         }
-        val resource = getResourceFromFile(editor)
+        val resource = getResource(editor)
         return createClusterResource(resource, editor, project)
     }
 
@@ -259,24 +284,24 @@ object ResourceEditor {
         return clusterResource
     }
 
-    fun createResource(jsonYaml: String): HasMetadata? {
-        return try {
-            createResource<HasMetadata>(jsonYaml)
+    fun createResource(jsonYaml: String): HasMetadata {
+        try {
+            return createResource<HasMetadata>(jsonYaml)
         } catch (e: KubernetesClientException) {
             if (e.cause is MismatchedInputException) {
                 // invalid json
-                null
+                throw ResourceException("Invalid yaml/json", e)
             } else {
                 // unknown type
-                return try {
-                    createResource<GenericCustomResource>(jsonYaml)
+                try {
+                    return createResource<GenericCustomResource>(jsonYaml)
                 } catch (e: java.lang.RuntimeException) {
-                    null
+                    throw ResourceException("Unknown resource type", e)
                 }
             }
         } catch (e: RuntimeException) {
             // invalid json/Yaml
-            null
+            throw ResourceException("Invalid yaml/json", e)
         }
     }
 
@@ -294,7 +319,7 @@ object ResourceEditor {
                 UIHelper.executeInUI {
                     if (resource != null
                         && !editor.isModified) {
-                        reloadEditor(resource, editor, project)
+                        reloadEditor(resource, editor)
                     } else {
                         showNotifications(editor, project)
                     }
@@ -381,11 +406,11 @@ object ResourceEditor {
             val name = FileUtilRt.getNameWithoutExtension(file.absolutePath)
             val suffix = FileUtilRt.getExtension(file.absolutePath)
             var i = 1
-            var file: File?
+            var unused: File?
             do {
-                file = File("$name(${i++}).$suffix")
-            } while (file!!.exists())
-            return file
+                unused = File("$name(${i++}).$suffix")
+            } while (unused!!.exists())
+            return unused
         }
     }
 

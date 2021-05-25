@@ -20,9 +20,9 @@ import com.redhat.devtools.intellij.kubernetes.editor.showNotification
 import io.fabric8.kubernetes.api.model.HasMetadata
 import javax.swing.JComponent
 
-object InexistantNotification {
+object PushNotification {
 
-    private val KEY_PANEL = Key<JComponent>(InexistantNotification::javaClass.name)
+    private val KEY_PANEL = Key<JComponent>(PushNotification::javaClass.name)
 
     fun show(editor: FileEditor, resource: HasMetadata, project: Project) {
         editor.showNotification(KEY_PANEL, { createPanel(editor, resource, project) }, project)
@@ -34,21 +34,24 @@ object InexistantNotification {
 
     private fun createPanel(editor: FileEditor, resource: HasMetadata, project: Project): EditorNotificationPanel {
         val panel = EditorNotificationPanel()
-        panel.setText("${resource.metadata.name} does not exist/was deleted on server. Keep content?")
-        panel.createActionLabel("Close Editor") {
-            val file = editor.file
-            if (file != null
-                && !project.isDisposed) {
-                ResourceEditor.close(file, project)
+        panel.setText(
+            "Push local changes and ${ if (!ResourceEditor.existsOnCluster(editor)) { "create new" } else { "update existing" }} resource on server?")
+        panel.createActionLabel("Push now") {
+            ResourceEditor.push(editor, project)
+        }
+        if (ResourceEditor.isOutdated(editor)) {
+            panel.createActionLabel("Reload") {
+                val latestRevision = ResourceEditor.loadResourceFromCluster(false, editor)
+                if (latestRevision != null) {
+                    ResourceEditor.reloadEditor(latestRevision, editor)
+                }
+                editor.hideNotification(KEY_PANEL, project)
             }
         }
-
-        panel.createActionLabel("Keep current") {
-            editor.isModified
+        panel.createActionLabel("Ignore") {
             editor.hideNotification(KEY_PANEL, project)
         }
+
         return panel
     }
-
-
 }
