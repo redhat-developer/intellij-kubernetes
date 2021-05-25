@@ -11,6 +11,7 @@
 package com.redhat.devtools.intellij.kubernetes.model.resource
 
 import com.intellij.openapi.diagnostic.logger
+import com.redhat.devtools.intellij.kubernetes.model.util.isSameNamespace
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.KubernetesResourceList
 import io.fabric8.kubernetes.client.Client
@@ -86,4 +87,17 @@ abstract class NonNamespacedResourceOperator<R : HasMetadata, C : Client>(
         return null
     }
 
+    /**
+     * Returns the given resource only if it has the same namespace as the given spec. Returns null otherwise.
+     * This may be required for non namespaced operators which handle namespaced resources in all namespaces (ex [AllPodsOperator])
+     */
+    protected fun ensureSameNamespace(spec: HasMetadata?, resource: HasMetadata?): HasMetadata? {
+        return when {
+            spec == null -> resource // no spec
+            resource == null -> resource // null resource
+            spec.metadata.namespace == null -> resource // namespace not specified
+            spec.isSameNamespace(resource) -> resource // same namespace
+            else -> null
+        }
+    }
 }

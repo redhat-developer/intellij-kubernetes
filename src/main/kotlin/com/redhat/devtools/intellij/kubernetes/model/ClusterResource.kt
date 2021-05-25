@@ -35,7 +35,7 @@ open class ClusterResource(
 ) {
 
     private val initialResource: HasMetadata = resource
-    private var updatedResource: HasMetadata? = resource
+    private var updatedResource: HasMetadata? = null
     private val operator: IResourceOperator<out HasMetadata>? by lazy {
         createOperator(resource)
     }
@@ -50,26 +50,36 @@ open class ClusterResource(
             modelChange.fireModified(changed)
         })
 
-    fun get(forceLatest: Boolean = false): HasMetadata? {
+    fun get(forceRequest: Boolean = false): HasMetadata? {
         synchronized(this) {
-            if (forceLatest) {
-                try {
-                    if (operator == null) {
-                        throw ResourceException(
-                            "Unsupported resource kind ${initialResource.kind} in version ${initialResource.apiVersion}.")
-                    }
-                    this.updatedResource = operator!!.get(this.initialResource)
-                } catch (e: KubernetesClientException) {
-                    if (e.isNotFound()) {
-                        this.updatedResource = null
-                    } else {
-                        throw ResourceException(e.cause?.message, e)
-                    }
-                }
+            if (forceRequest
+                || updatedResource == null) {
+                this.updatedResource = request()
             }
             return updatedResource
         }
     }
+
+    private fun request(): HasMetadata? {
+        return try {
+            if (operator == null) {
+                throw ResourceException(
+                    "Unsupported resource kind ${initialResource.kind} in version ${initialResource.apiVersion}."
+                )
+            }
+            operator!!.get(this.initialResource)
+        } catch (e: KubernetesClientException) {
+            if (e.isNotFound()) {
+                null
+            } else {
+                throw ResourceException(e.cause?.message, e)
+            }
+        }
+    }
+
+    private fun isSameNamespace(resource: HasMetadata?) = (resource != null
+            // ex. AllPodsResourceOperator requesting pod with given name returns pod in different namespace
+            && resource.isSameNamespace(initialResource))
 
     /**
      * Pushes the given resource the cluster. The currently existing resource on the cluster is replaced
@@ -132,23 +142,44 @@ open class ClusterResource(
 
     /**
      * Returns `true` if the given resource is outdated compared to the latest resource on the cluster.
-     * A resource is considered outdated if it is the same resource and is an older version of the latest resource in the cluster.
+     * A resource is considered outdated if it is the same resource and is an older version of the (latest) resource in the cluster.
      * The latest resource form cluster is retrieved to make sure the most accurate response is given.
-     * Returns `false` if the given resource is `null`.
+     * Returns `true` if the given resource is `null` and the resource on the cluster isn't.
+     * Returns `false` if the given resource is not `null` but the resource on the cluster is `null`.
      *
      * @param toCompare the resource to compare to the latest cluster resource
      * @return true if the given resource is outdated compared to the latest cluster resource
      *
      * @see HasMetadata.isSameResource
+     * @see HasMetadata.isNewerVersionThan
      */
     fun isOutdated(toCompare: HasMetadata?): Boolean {
         val resource = get(true)
-        if (toCompare == null
-            || resource == null) {
-            return false
+        return if (toCompare == null) {
+            resource != null
+        } else {
+            if (resource == null) {
+                return false
+            }
+            isSameResource(toCompare)
+                    && resource.isNewerVersionThan(toCompare)
         }
+    }
+
+    /**
+     * Returns `true` if the given resource is of the same kind and
+     * modified when compared to the same resource on the cluster.
+     *
+     * @param toCompare resource to compare to the resource on the cluster
+     */
+    fun isModified(toCompare: HasMetadata?): Boolean {
         return isSameResource(toCompare)
-                && resource.isNewerVersionThan(toCompare)
+                && !areEqual(updatedResource, toCompare)
+    }
+
+    private fun areEqual(thisResource: HasMetadata?, thatResource: HasMetadata?): Boolean {
+        return (thisResource == null && updatedResource == null)
+                || thisResource == thatResource
     }
 
     /**
@@ -160,10 +191,11 @@ open class ClusterResource(
      * @return true if the given resource is the same as the initial resource in this cluster resource
      */
     fun isSameResource(toCompare: HasMetadata?): Boolean {
+        val resource = get(false)
         if (toCompare == null) {
-            return false
+            return resource != null
         }
-        return initialResource.isSameResource(toCompare)
+        return toCompare.isSameResource(resource!!)
     }
 
     fun canPush(toCompare: HasMetadata?): Boolean {
@@ -171,10 +203,10 @@ open class ClusterResource(
         if (toCompare == null) {
             return false
         }
-        return when {
-            resource == null -> true
-            toCompare.isSameResource(resource) -> resource != toCompare
-            else -> true
+        return if (resource == null) {
+            true
+        } else {
+            isModified(toCompare)
         }
     }
 

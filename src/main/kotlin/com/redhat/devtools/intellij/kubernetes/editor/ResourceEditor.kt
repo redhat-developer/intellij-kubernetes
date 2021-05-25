@@ -137,15 +137,15 @@ object ResourceEditor {
 
     fun showNotifications(editor: FileEditor, project: Project) {
         hideNotifications(editor, project)
-        val clusterResource = getOrCreateClusterResource(editor, project) ?: return
+        val resource = getResource(editor) ?: return
+        val clusterResource = getOrCreateClusterResource(resource, editor, project) ?: return
         try {
-            val resource = getResource(editor) ?: return
-            if (!clusterResource.exists()) {
-                NotFoundNotification.show(editor, resource, project)
-            } else if (clusterResource.canPush(resource)) {
+            if (clusterResource.canPush(resource)) {
                 PushNotification.show(editor, resource, project)
             } else if (clusterResource.isOutdated(resource)) {
                 ReloadNotification.show(editor, resource, project)
+            } else if (!clusterResource.exists()) {
+                NotFoundNotification.show(editor, resource, project)
             }
         } catch (e: ResourceException) {
             showErrorNotification(editor, project, e)
@@ -158,7 +158,7 @@ object ResourceEditor {
             e.message ?: "", trimWithEllipsis(e.cause?.message, 300) ?: "")
     }
 
-        private fun hideNotifications(editor: FileEditor, project: Project) {
+    private fun hideNotifications(editor: FileEditor, project: Project) {
         ErrorNotification.hide(editor, project)
         ReloadNotification.hide(editor, project)
         NotFoundNotification.hide(editor, project)
@@ -179,15 +179,23 @@ object ResourceEditor {
         return getClusterResource(editor)?.isOutdated(resource) ?: return false
     }
 
+    private fun isModified(editor: FileEditor): Boolean {
+        val resource = getResource(editor)
+        return getClusterResource(editor)?.isModified(resource) ?: return false
+    }
+
+    private fun canPush(resource: HasMetadata, editor: FileEditor): Boolean {
+        val cluster = getClusterResource(editor) ?: return false
+        return resource != null
+                && cluster.isSameResource(resource)
+                && cluster.canPush(resource)
+    }
+
     fun push(editor: FileEditor, project: Project) {
         try {
             val newResource = getResource(editor) ?: return
             try {
-                val oldClusterResource = getClusterResource(editor)
-                val oldResource = oldClusterResource?.get(false)
-                if (oldResource != null
-                    && oldResource.isSameResource(newResource)
-                ) {
+                if (isClusterSameResource(newResource, editor)) {
                     pushSameResource(newResource, editor, project)
                 } else {
                     pushNewResource(newResource, editor, project)
@@ -202,6 +210,13 @@ object ResourceEditor {
         } catch (e: ResourceException) {
             showErrorNotification(editor, project, e)
         }
+    }
+
+    private fun isClusterSameResource(resource: HasMetadata, editor: FileEditor): Boolean {
+        val oldClusterResource = getClusterResource(editor)
+        val oldResource = oldClusterResource?.get(false)
+        return oldResource != null
+            && oldResource.isSameResource(resource)
     }
 
     private fun pushSameResource(newResource: HasMetadata, editor: FileEditor, project: Project): HasMetadata? {
@@ -227,7 +242,11 @@ object ResourceEditor {
     }
 
     fun startWatch(editor: FileEditor?, project: Project) {
-        val clusterResource = getOrCreateClusterResource(editor, project) ?: return
+        if (editor == null) {
+            return
+        }
+        val resource = getResource(editor)
+        val clusterResource = getOrCreateClusterResource(resource!!, editor, project) ?: return
         clusterResource.watch()
     }
 
@@ -236,8 +255,13 @@ object ResourceEditor {
         clusterResource.stopWatch()
     }
 
-    private fun getOrCreateClusterResource(editor: FileEditor?, project: Project): ClusterResource? {
-        return getClusterResource(editor) ?: createClusterResource(editor, project)
+    private fun getOrCreateClusterResource(resource: HasMetadata, editor: FileEditor?, project: Project): ClusterResource? {
+        var cluster = getClusterResource(editor)
+        if (cluster == null
+            || !cluster.isSameResource(resource)) {
+           cluster = createClusterResource(resource, editor, project)
+        }
+        return cluster
     }
 
     private fun getClusterResource(editor: FileEditor?): ClusterResource? {
@@ -245,14 +269,6 @@ object ResourceEditor {
             return null
         }
         return editor.getUserData(KEY_CLUSTER_RESOURCE)
-    }
-
-    private fun createClusterResource(editor: FileEditor?, project: Project): ClusterResource? {
-        if (editor == null) {
-            return null
-        }
-        val resource = getResource(editor)
-        return createClusterResource(resource, editor, project)
     }
 
     private fun createClusterResource(resource: HasMetadata?, editor: FileEditor?, project: Project): ClusterResource? {
@@ -316,9 +332,10 @@ object ResourceEditor {
 
             override fun modified(modified: Any) {
                 val resource = modified as? HasMetadata
+                val cluster = getClusterResource(editor)
                 UIHelper.executeInUI {
                     if (resource != null
-                        && !editor.isModified) {
+                        && !isModified(editor)) {
                         reloadEditor(resource, editor)
                     } else {
                         showNotifications(editor, project)
