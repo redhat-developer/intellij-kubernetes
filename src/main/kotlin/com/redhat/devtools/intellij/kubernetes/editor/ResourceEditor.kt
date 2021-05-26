@@ -111,8 +111,7 @@ object ResourceEditor {
     }
 
     fun getResourceFile(editor: FileEditor): VirtualFile? {
-        val document = getDocument(editor) ?: return null
-        return getResourceFile(document)
+        return editor.file
     }
 
     fun getResourceFile(document: Document): VirtualFile? {
@@ -135,23 +134,38 @@ object ResourceEditor {
         }
     }
 
-    fun showNotifications(editor: FileEditor, project: Project) {
-        hideNotifications(editor, project)
+    fun updateEditor(editor: FileEditor, project: Project) {
         val resource = getResource(editor) ?: return
         val oldClusterResource = getClusterResource(editor)
         val clusterResource = getOrCreateClusterResource(resource, editor, project) ?: return
         try {
-            if (oldClusterResource != null
-                && oldClusterResource.isDeleted()
-                && !clusterResource.exists()) {
-                DeletedNotification.show(editor, resource, project)
-            } else if (clusterResource.isOutdated(resource)) {
-                ReloadNotification.show(editor, resource, project)
-            } else if (clusterResource.canPush(resource)) {
-                PushNotification.show(editor, resource, project)
+            if (clusterResource != null
+                && clusterResource != oldClusterResource) {
+                renameEditor(editor, resource)
             }
+            showNotifications(oldClusterResource, clusterResource, editor, resource, project)
         } catch (e: ResourceException) {
             showErrorNotification(editor, project, e)
+        }
+    }
+
+    private fun showNotifications(
+        oldClusterResource: ClusterResource?,
+        clusterResource: ClusterResource,
+        editor: FileEditor,
+        resource: HasMetadata,
+        project: Project
+    ) {
+        hideNotifications(editor, project)
+        if (oldClusterResource != null
+            && oldClusterResource.isDeleted()
+            && !clusterResource.exists()
+        ) {
+            DeletedNotification.show(editor, resource, project)
+        } else if (clusterResource.isOutdated(resource)) {
+            ReloadNotification.show(editor, resource, project)
+        } else if (clusterResource.canPush(resource)) {
+            PushNotification.show(editor, resource, project)
         }
     }
 
@@ -236,6 +250,11 @@ object ResourceEditor {
         reloadEditor(updatedResource, editor)
         renameEditor(editor, newResource)
         return updatedResource
+    }
+
+    private fun renameEditor(editor: FileEditor) {
+        val resource = getResource(editor) ?: return
+        renameEditor(editor, resource)
     }
 
     private fun renameEditor(editor: FileEditor, newResource: HasMetadata) {
@@ -329,7 +348,7 @@ object ResourceEditor {
             }
 
             override fun removed(removed: Any) {
-                showNotifications(editor, project)
+                updateEditor(editor, project)
             }
 
             override fun modified(modified: Any) {
@@ -340,7 +359,7 @@ object ResourceEditor {
                         && !isModified(editor)) {
                         reloadEditor(resource, editor)
                     } else {
-                        showNotifications(editor, project)
+                        updateEditor(editor, project)
                     }
                 }
             }

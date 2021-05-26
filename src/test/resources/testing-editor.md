@@ -1,3 +1,21 @@
+**Editor supports schema**
+1. "Edit..." resource
+
+-> editor has corresponding schema selected (bottom right combo "Schema:")
+
+**Editor title is <resource-name>@<namespace-name>.yml**
+1. "Edit..." resource
+
+-> editor has title matching pattern <resource>@<namespace>.yml
+
+**Editor file will rename file to <resource>@<namespace>(2).yml if name already used**
+1. "Edit..." resource
+1. "Edit..." other resource
+1. editor 1: Ctrl + A, Ctrl + C
+1. editor 2: Ctrl + v
+
+-> editor has title matching pattern <resource-name>@<namespace-name>(2).yml
+
 **Irrelevant change, no notification**
 1. "Edit..." resource
 1. add space after property value

@@ -49,7 +49,7 @@ class EditorFocusListener(private val project: Project) : FileEditorManagerListe
         }
         try {
             ResourceEditor.startWatch(editor, project)
-            ResourceEditor.showNotifications(editor, project)
+            ResourceEditor.updateEditor(editor, project)
         } catch (e: ResourceException) {
             ErrorNotification.show(
                 editor,
