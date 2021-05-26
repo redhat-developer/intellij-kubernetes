@@ -28,7 +28,7 @@ import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.ui.EditorNotificationPanel
 import com.redhat.devtools.intellij.common.editor.AllowNonProjectEditing
 import com.redhat.devtools.intellij.common.utils.UIHelper
-import com.redhat.devtools.intellij.kubernetes.editor.notification.NotFoundNotification
+import com.redhat.devtools.intellij.kubernetes.editor.notification.DeletedNotification
 import com.redhat.devtools.intellij.kubernetes.editor.notification.ErrorNotification
 import com.redhat.devtools.intellij.kubernetes.editor.notification.PushNotification
 import com.redhat.devtools.intellij.kubernetes.editor.notification.ReloadNotification
@@ -138,14 +138,17 @@ object ResourceEditor {
     fun showNotifications(editor: FileEditor, project: Project) {
         hideNotifications(editor, project)
         val resource = getResource(editor) ?: return
+        val oldClusterResource = getClusterResource(editor)
         val clusterResource = getOrCreateClusterResource(resource, editor, project) ?: return
         try {
-            if (clusterResource.canPush(resource)) {
-                PushNotification.show(editor, resource, project)
+            if (oldClusterResource != null
+                && oldClusterResource.isDeleted()
+                && !clusterResource.exists()) {
+                DeletedNotification.show(editor, resource, project)
             } else if (clusterResource.isOutdated(resource)) {
                 ReloadNotification.show(editor, resource, project)
-            } else if (!clusterResource.exists()) {
-                NotFoundNotification.show(editor, resource, project)
+            } else if (clusterResource.canPush(resource)) {
+                PushNotification.show(editor, resource, project)
             }
         } catch (e: ResourceException) {
             showErrorNotification(editor, project, e)
@@ -161,7 +164,7 @@ object ResourceEditor {
     private fun hideNotifications(editor: FileEditor, project: Project) {
         ErrorNotification.hide(editor, project)
         ReloadNotification.hide(editor, project)
-        NotFoundNotification.hide(editor, project)
+        DeletedNotification.hide(editor, project)
         PushNotification.hide(editor, project)
     }
 
@@ -186,8 +189,7 @@ object ResourceEditor {
 
     private fun canPush(resource: HasMetadata, editor: FileEditor): Boolean {
         val cluster = getClusterResource(editor) ?: return false
-        return resource != null
-                && cluster.isSameResource(resource)
+        return cluster.isSameResource(resource)
                 && cluster.canPush(resource)
     }
 
@@ -245,8 +247,8 @@ object ResourceEditor {
         if (editor == null) {
             return
         }
-        val resource = getResource(editor)
-        val clusterResource = getOrCreateClusterResource(resource!!, editor, project) ?: return
+        val resource = getResource(editor) ?: return
+        val clusterResource = getOrCreateClusterResource(resource, editor, project) ?: return
         clusterResource.watch()
     }
 

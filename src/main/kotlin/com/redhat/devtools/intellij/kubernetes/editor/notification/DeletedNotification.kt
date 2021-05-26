@@ -20,9 +20,9 @@ import com.redhat.devtools.intellij.kubernetes.editor.showNotification
 import io.fabric8.kubernetes.api.model.HasMetadata
 import javax.swing.JComponent
 
-object NotFoundNotification {
+object DeletedNotification {
 
-    private val KEY_PANEL = Key<JComponent>(NotFoundNotification::javaClass.name)
+    private val KEY_PANEL = Key<JComponent>(DeletedNotification::javaClass.name)
 
     fun show(editor: FileEditor, resource: HasMetadata, project: Project) {
         editor.showNotification(KEY_PANEL, { createPanel(editor, resource, project) }, project)
@@ -34,20 +34,13 @@ object NotFoundNotification {
 
     private fun createPanel(editor: FileEditor, resource: HasMetadata, project: Project): EditorNotificationPanel {
         val panel = EditorNotificationPanel()
-        panel.setText("${resource.kind} ${resource.metadata.name} does not exist/was deleted on cluster. Keep content?")
-        panel.createActionLabel("Push to cluster") {
+        panel.setText("${resource.kind} ${resource.metadata.name} deleted on cluster. Keep content?")
+        panel.createActionLabel("Push to Cluster") {
             ResourceEditor.push(editor, project)
         }
         panel.createActionLabel("Keep current") {
             editor.isModified
             editor.hideNotification(KEY_PANEL, project)
-        }
-        panel.createActionLabel("Close Editor") {
-            val file = editor.file
-            if (file != null
-                && !project.isDisposed) {
-                ResourceEditor.close(file, project)
-            }
         }
 
         return panel
