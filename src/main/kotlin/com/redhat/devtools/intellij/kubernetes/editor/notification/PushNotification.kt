@@ -35,7 +35,7 @@ object PushNotification {
     private fun createPanel(editor: FileEditor, resource: HasMetadata, project: Project): EditorNotificationPanel {
         val panel = EditorNotificationPanel()
         panel.setText(
-            "Push local changes and ${ if (!ResourceEditor.existsOnCluster(editor)) { "create new" } else { "update existing" }} resource on server?")
+            "Push local changes, ${ if (!ResourceEditor.existsOnCluster(editor)) { "create new" } else { "update existing" }} resource on server?")
         panel.createActionLabel("Push to Cluster") {
             ResourceEditor.push(editor, project)
         }

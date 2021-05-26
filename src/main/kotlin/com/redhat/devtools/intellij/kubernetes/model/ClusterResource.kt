@@ -33,7 +33,6 @@ open class ClusterResource(
     private val watch: ResourceWatch<HasMetadata> = ResourceWatch(),
     private val modelChange: ModelChangeObservable = ModelChangeObservable()
 ) {
-
     private val initialResource: HasMetadata = resource
     private var updatedResource: HasMetadata? = null
     private val operator: IResourceOperator<out HasMetadata>? by lazy {
@@ -43,13 +42,42 @@ open class ClusterResource(
         {},
         { removed ->
             set(null)
+            setDeleted(true)
             modelChange.fireRemoved(removed)
         },
         { changed ->
             set(changed)
             modelChange.fireModified(changed)
         })
+    private var isDeleted: Boolean = false
 
+    /**
+     * Sets the given resource as the current value in this instance.
+     * Nothing is done if the given resource is not the same resource (differs in name, namespace, kind).
+     *
+     * @param resource the resource that's the current resource value in this instance
+     *
+     * @see [get]
+     * @see [HasMetadata.isSameResource]
+     */
+    fun set(resource: HasMetadata?) {
+        synchronized(this) {
+            if (resource != null
+                && !initialResource.isSameResource(resource)) {
+                return
+            }
+            this.updatedResource = resource
+        }
+    }
+
+    /**
+     * Returns the resource in the cluster. Returns the cached value by default,
+     * requests it from cluster if instructed so by the given `forceRequest` parameter.
+     *
+     * @param forceRequest requests from server if set to true, returns the cached value otherwise
+     *
+     * @return the resource in the cluster
+     */
     fun get(forceRequest: Boolean = false): HasMetadata? {
         synchronized(this) {
             if (forceRequest
@@ -77,12 +105,20 @@ open class ClusterResource(
         }
     }
 
-    private fun isSameNamespace(resource: HasMetadata?) = (resource != null
-            // ex. AllPodsResourceOperator requesting pod with given name returns pod in different namespace
-            && resource.isSameNamespace(initialResource))
+    private fun setDeleted(deleted: Boolean) {
+        synchronized(this) {
+            this.isDeleted = deleted
+        }
+    }
+
+    fun isDeleted(): Boolean {
+        synchronized(this) {
+            return isDeleted
+        }
+    }
 
     /**
-     * Pushes the given resource the cluster. The currently existing resource on the cluster is replaced
+     * Pushes the given resource to the cluster. The currently existing resource on the cluster is replaced
      * if it is the same resource in an older version. A new resource is created if the given resource
      * doesn't exist on the cluster, it is replaced if it exists already.
      * Throws a [ResourceException] if the given resource is not the same as the resource initially given to this instance.
@@ -121,24 +157,6 @@ open class ClusterResource(
         }
         return e.message!!.substring(detailsStart + detailsIdentifier.length)
     }
-    /**
-     * Sets the given resource as the current value in this instance.
-     * Nothing is done if the given resource is not the same resource (differs in name, namespace, kind).
-     *
-     * @param resource the resource that's the current resource value in this instance
-     *
-     * @see [get]
-     * @see [HasMetadata.isSameResource]
-     */
-    fun set(resource: HasMetadata?) {
-        synchronized(this) {
-            if (resource != null
-                && !initialResource.isSameResource(resource)) {
-                return
-            }
-            this.updatedResource = resource
-        }
-    }
 
     /**
      * Returns `true` if the given resource is outdated compared to the latest resource on the cluster.
@@ -161,20 +179,8 @@ open class ClusterResource(
             if (resource == null) {
                 return false
             }
-            isSameResource(toCompare)
-                    && resource.isNewerVersionThan(toCompare)
+            return resource.isNewerVersionThan(toCompare)
         }
-    }
-
-    /**
-     * Returns `true` if the given resource is of the same kind and
-     * modified when compared to the same resource on the cluster.
-     *
-     * @param toCompare resource to compare to the resource on the cluster
-     */
-    fun isModified(toCompare: HasMetadata?): Boolean {
-        return isSameResource(toCompare)
-                && !areEqual(updatedResource, toCompare)
     }
 
     private fun areEqual(thisResource: HasMetadata?, thatResource: HasMetadata?): Boolean {
@@ -195,13 +201,14 @@ open class ClusterResource(
         if (toCompare == null) {
             return resource != null
         }
-        return toCompare.isSameResource(resource!!)
+
+        return toCompare.isSameResource(resource)
     }
 
     fun canPush(toCompare: HasMetadata?): Boolean {
         val resource = get(false)
         if (toCompare == null) {
-            return false
+            return true
         }
         return if (resource == null) {
             true
@@ -211,13 +218,23 @@ open class ClusterResource(
     }
 
     /**
+     * Returns `true` if the given resource is of the same kind and
+     * modified compared to the same resource on the cluster.
+     *
+     * @param toCompare resource to compare to the resource on the cluster
+     */
+    fun isModified(toCompare: HasMetadata?): Boolean {
+        return isSameResource(toCompare)
+                && !areEqual(updatedResource, toCompare)
+    }
+
+    /**
      * Returns `true` if the resource given to this instance exists on the cluster,
-     * A request to the cluster for the resource is executed to find out.
      *
      * @return true if the resource of this instance exists on the cluster
      */
     fun exists(): Boolean {
-        return get(true) != null
+        return get(false) != null
     }
 
     /**

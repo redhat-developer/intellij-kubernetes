@@ -39,15 +39,20 @@ const val MARKER_WILL_BE_DELETED = "willBeDeleted"
  * @see io.fabric8.kubernetes.api.model.ObjectMeta.name
  * @see io.fabric8.kubernetes.api.model.ObjectMeta.name
  */
-fun HasMetadata.isSameResource(resource: HasMetadata): Boolean {
+fun HasMetadata.isSameResource(resource: HasMetadata?): Boolean {
+	if (resource == null) {
+		return false
+	}
 	return isSameKind(resource)
 			&& isSameApiVersion(resource)
 			&& isSameName(resource)
 			&& isSameNamespace(resource)
 }
 
-fun HasMetadata.isSameApiVersion(resource: HasMetadata): Boolean {
-	if (this.apiVersion == null
+fun HasMetadata.isSameApiVersion(resource: HasMetadata?): Boolean {
+	if (resource == null) {
+		return false
+	} else if (this.apiVersion == null
 		&& resource.apiVersion == null) {
 		return false
 	}
@@ -59,48 +64,59 @@ fun HasMetadata.isSameApiVersion(resource: HasMetadata): Boolean {
  *
  * @see io.fabric8.kubernetes.api.model.ObjectMeta.getUid()
  */
-fun HasMetadata.isSameUid(resource: HasMetadata): Boolean {
-	if (this.metadata?.uid == null
+fun HasMetadata.isSameUid(resource: HasMetadata?): Boolean {
+	if (resource == null) {
+		return false
+	} else if (this.metadata?.uid == null
 		&& resource.metadata?.uid == null) {
 		return false
 	}
 	return resource.metadata?.uid == this.metadata?.uid
 }
 
-fun HasMetadata.isSameName(resource: HasMetadata): Boolean {
-	if (this.metadata?.name == null
+fun HasMetadata.isSameName(resource: HasMetadata?): Boolean {
+	if (resource == null) {
+		return false
+	} else if (this.metadata?.name == null
 		&& resource.metadata?.name == null) {
 		return true
 	}
 	return this.metadata?.name == resource.metadata?.name
 }
 
-fun HasMetadata.isSameNamespace(resource: HasMetadata): Boolean {
-	if (this.metadata?.namespace == null
+fun HasMetadata.isSameNamespace(resource: HasMetadata?): Boolean {
+	if (resource == null) {
+		return false
+	} else if (this.metadata?.namespace == null
 		&& resource.metadata?.namespace == null) {
 		return true
 	}
 	return this.metadata?.namespace == resource.metadata?.namespace
 }
 
-fun HasMetadata.isSameKind(resource: HasMetadata): Boolean {
-	if (this.kind == null
+fun HasMetadata.isSameKind(resource: HasMetadata?): Boolean {
+	if (resource == null) {
+		return false
+	} else if (this.kind == null
 		&& resource.kind == null) {
 		return true
 	}
 	return this.kind == resource.kind
 }
 
-fun HasMetadata.isSameRevision(resource: HasMetadata): Boolean {
-	if (this.metadata?.resourceVersion == null
-		&& resource.metadata?.resourceVersion == null) {
+fun HasMetadata.isSameRevision(resource: HasMetadata?): Boolean {
+	if (resource == null) {
+		return false
+	} else if (this.metadata?.resourceVersion == null
+			&& resource.metadata?.resourceVersion == null) {
 		return true
 	}
 	return this.metadata?.resourceVersion == resource.metadata?.resourceVersion
 }
 
-fun HasMetadata.isNewerVersionThan(resource: HasMetadata): Boolean {
-	if (!this.isSameResource(resource)) {
+fun HasMetadata.isNewerVersionThan(resource: HasMetadata?): Boolean {
+	if (resource == null
+		|| !isSameResource(resource)) {
 		return false
 	}
 	val thisVersion = this.metadata?.resourceVersion?.toIntOrNull()
