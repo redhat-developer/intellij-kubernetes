@@ -37,7 +37,7 @@ class EditorTransactionListener: PsiDocumentTransactionListener {
             return
         }
         try {
-            ResourceEditor.showNotifications(editor, project)
+            ResourceEditor.updateEditor(editor, project)
         } catch (e: RuntimeException) {
             ResourceEditor.showErrorNotification(editor, project, e)
         }
