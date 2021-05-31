@@ -52,7 +52,7 @@ class GenericCustomResourceFactoryTest {
 	}
 
 	@Test
-	fun `#createResources(map) should return create GenericCustomResource with empty Metadata if metadata is null`() {
+	fun `#createResources(map) should return GenericCustomResource with empty Metadata if metadata is null`() {
 		// given
 		val resourcesList = mapOf(Pair(ITEMS, listOf(createGenericCustomResourceMap())))
 		// when
@@ -63,7 +63,7 @@ class GenericCustomResourceFactoryTest {
 	}
 
 	@Test
-	fun `#createResources(map) should return create GenericCustomResource`() {
+	fun `#createResources(map) should return GenericCustomResource`() {
 		// given
 		// resource
 		val resourceVersion = "version1"
@@ -74,7 +74,8 @@ class GenericCustomResourceFactoryTest {
 
 		// metadata
 		val creationTimestamp = "creation1"
-		val generation: Long = 42
+		// deserizalization creates an Int
+		val generation: Int = 42
 		val name = "name1"
 		val namespace = "namespace1"
 		val metadataResourceVersion = "metadataResourceVersion1"
@@ -106,7 +107,7 @@ class GenericCustomResourceFactoryTest {
 
 		val metadata = resource.metadata
 		assertThat(metadata.creationTimestamp).isEqualTo(creationTimestamp)
-		assertThat(metadata.generation).isEqualTo(generation)
+		assertThat(metadata.generation).isEqualTo(generation.toLong())
 		assertThat(metadata.name).isEqualTo(name)
 		assertThat(metadata.namespace).isEqualTo(namespace)
 		assertThat(metadata.resourceVersion).isEqualTo(metadataResourceVersion)
@@ -164,7 +165,7 @@ class GenericCustomResourceFactoryTest {
 
 	private fun createMetadataMap(
 			creationTimestamp: String? = null,
-			generation: Long? = null,
+			generation: Int? = null,
 			name: String? = null,
 			namespace: String? = null,
 			resourceVersion: String? = null,

@@ -54,7 +54,8 @@ abstract class AbstractResourceFactory<T : HasMetadata> {
         }
         return ObjectMetaBuilder()
             .withCreationTimestamp(metadata[CREATION_TIMESTAMP] as? String?)
-            .withGeneration(metadata[GENERATION] as? Long?)
+            // jackson is deserializing 'generation' to Int
+            .withGeneration((metadata[GENERATION] as? Integer?)?.toLong())
             .withName(metadata[NAME] as? String?)
             .withNamespace(metadata[NAMESPACE] as? String?)
             .withResourceVersion(metadata[RESOURCE_VERSION] as? String?)
