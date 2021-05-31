@@ -41,6 +41,14 @@
 -> new resource appears in tree
 -> editor title changes
 
+**Error notification disappears**
+1. "Edit..." resource
+1. change kind to invalid value
+   -> error notification ("Unsupported resource kind)
+1. change kind to valid value
+
+-> error notification disappears
+
 **Push notification with "update existing" turns "create new"**
 1. "Edit..." resource
 1. add label
