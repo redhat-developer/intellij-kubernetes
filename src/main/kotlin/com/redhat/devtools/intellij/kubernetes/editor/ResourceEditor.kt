@@ -135,12 +135,11 @@ object ResourceEditor {
     }
 
     fun updateEditor(editor: FileEditor, project: Project) {
-        val resource = getResource(editor) ?: return
-        val oldClusterResource = getClusterResource(editor)
-        val clusterResource = getOrCreateClusterResource(resource, editor, project) ?: return
         try {
-            if (clusterResource != null
-                && clusterResource != oldClusterResource) {
+            val resource = getResource(editor) ?: return
+            val oldClusterResource = getClusterResource(editor)
+            val clusterResource = getOrCreateClusterResource(resource, editor, project) ?: return
+            if (clusterResource != oldClusterResource) {
                 renameEditor(editor, resource)
             }
             showNotifications(oldClusterResource, clusterResource, editor, resource, project)
