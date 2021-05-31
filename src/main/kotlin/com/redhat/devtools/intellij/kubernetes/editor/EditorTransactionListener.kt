@@ -25,10 +25,10 @@ class EditorTransactionListener: PsiDocumentTransactionListener {
     }
 
     override fun transactionCompleted(document: Document, file: PsiFile) {
-        showNotifications(document)
+        updateEditor(document)
     }
 
-    private fun showNotifications(document: Document) {
+    private fun updateEditor(document: Document) {
         val file = ResourceEditor.getResourceFile(document) ?: return
         val projectAndEditor = getProjectAndEditor(file) ?: return
         val editor = projectAndEditor.editor
@@ -36,11 +36,7 @@ class EditorTransactionListener: PsiDocumentTransactionListener {
         if (!editor.isValid) {
             return
         }
-        try {
-            ResourceEditor.updateEditor(editor, project)
-        } catch (e: RuntimeException) {
-            ResourceEditor.showErrorNotification(editor, project, e)
-        }
+        ResourceEditor.updateEditor(editor, project)
     }
 
     private fun getProjectAndEditor(file: VirtualFile): ProjectAndEditor? {

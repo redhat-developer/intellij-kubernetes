@@ -232,7 +232,7 @@ object ResourceEditor {
         val oldClusterResource = getClusterResource(editor)
         val oldResource = oldClusterResource?.get(false)
         return oldResource != null
-            && oldResource.isSameResource(resource)
+                && oldResource.isSameResource(resource)
     }
 
     private fun pushSameResource(newResource: HasMetadata, editor: FileEditor, project: Project): HasMetadata? {
@@ -252,14 +252,24 @@ object ResourceEditor {
         return updatedResource
     }
 
-    private fun renameEditor(editor: FileEditor) {
-        val resource = getResource(editor) ?: return
-        renameEditor(editor, resource)
-    }
-
     private fun renameEditor(editor: FileEditor, newResource: HasMetadata) {
         val file = getResourceFile(editor)
-        ResourceFile.rename(newResource, file)
+        if (shouldChangeFilename(newResource, getResourceFile(editor))) {
+            ResourceFile.rename(newResource, file)
+        }
+    }
+
+    private fun shouldChangeFilename(resource: HasMetadata, file: VirtualFile?): Boolean {
+        if (file == null) {
+            return false
+        }
+        val newFile = ResourceFile.getFile(resource)
+        val existingName = ResourceFile.removeUniqueSuffix(file.name)
+        val newName = newFile.name
+        if (existingName == newName) {
+            return false
+        }
+        return true
     }
 
     fun startWatch(editor: FileEditor?, project: Project) {
@@ -280,7 +290,7 @@ object ResourceEditor {
         var cluster = getClusterResource(editor)
         if (cluster == null
             || !cluster.isSameResource(resource)) {
-           cluster = createClusterResource(resource, editor, project)
+            cluster = createClusterResource(resource, editor, project)
         }
         return cluster
     }
@@ -397,7 +407,7 @@ object ResourceEditor {
             }
             UIHelper.executeInUI {
                 WriteAction.compute<Unit, Exception> {
-                    val newFile = getUnusedFilename(getFile(resource))
+                    val newFile = addUniqueSuffix(getFile(resource))
                     file.rename(this, newFile.name)
                     file.refresh(true, true)
                 }
@@ -417,7 +427,7 @@ object ResourceEditor {
             })
         }
 
-        private fun getFile(resource: HasMetadata): File {
+        fun getFile(resource: HasMetadata): File {
             val name = getName(resource)
             return File(FileUtils.getTempDirectory(), name)
         }
@@ -437,7 +447,7 @@ object ResourceEditor {
             return "$name.$EXTENSION"
         }
 
-        private fun getUnusedFilename(file: File): File {
+        private fun addUniqueSuffix(file: File): File {
             if (!file.exists()) {
                 return file
             }
@@ -450,6 +460,19 @@ object ResourceEditor {
             } while (unused!!.exists())
             return unused
         }
+
+        fun removeUniqueSuffix(name: String): String {
+            val suffixStart = name.indexOf('(')
+            if (suffixStart < 0) {
+                return name
+            }
+            val suffixStop = name.indexOf(')')
+            if (suffixStop < 0) {
+                return name
+            }
+            return name.removeRange(suffixStart, suffixStop + 1)
+        }
+
     }
 
     fun enableNonProjectFileEditing(file: VirtualFile?) {
