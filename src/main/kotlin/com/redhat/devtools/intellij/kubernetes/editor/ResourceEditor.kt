@@ -363,7 +363,6 @@ object ResourceEditor {
 
             override fun modified(modified: Any) {
                 val resource = modified as? HasMetadata
-                val cluster = getClusterResource(editor)
                 UIHelper.executeInUI {
                     if (resource != null
                         && !isModified(editor)) {
