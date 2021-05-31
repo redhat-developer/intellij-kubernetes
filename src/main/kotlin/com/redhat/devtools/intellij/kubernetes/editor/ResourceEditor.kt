@@ -50,6 +50,7 @@ import org.jetbrains.yaml.YAMLFileType
 import java.io.File
 import java.io.IOException
 import java.nio.charset.StandardCharsets
+import java.nio.file.Paths
 import java.util.function.Supplier
 import javax.swing.JComponent
 
@@ -198,12 +199,6 @@ object ResourceEditor {
     private fun isModified(editor: FileEditor): Boolean {
         val resource = getResource(editor)
         return getClusterResource(editor)?.isModified(resource) ?: return false
-    }
-
-    private fun canPush(resource: HasMetadata, editor: FileEditor): Boolean {
-        val cluster = getClusterResource(editor) ?: return false
-        return cluster.isSameResource(resource)
-                && cluster.canPush(resource)
     }
 
     fun push(editor: FileEditor, project: Project) {
@@ -377,10 +372,11 @@ object ResourceEditor {
     private object ResourceFile {
 
         private const val EXTENSION = YAMLFileType.DEFAULT_EXTENSION
+        private val TEMP_FOLDER = Paths.get(FileUtils.getTempDirectoryPath(), "intellij-kubernetes")
 
         fun matches(file: VirtualFile?): Boolean {
             return file?.path?.endsWith(EXTENSION, true) ?: false
-                    && file?.path?.startsWith(FileUtils.getTempDirectoryPath()) ?: false
+                    && file?.path?.startsWith(TEMP_FOLDER.toString()) ?: false
         }
 
         fun replace(resource: HasMetadata): VirtualFile? {
@@ -427,7 +423,7 @@ object ResourceEditor {
 
         fun getFile(resource: HasMetadata): File {
             val name = getName(resource)
-            return File(FileUtils.getTempDirectory(), name)
+            return File(TEMP_FOLDER.toString(), name)
         }
 
         private fun getName(resource: HasMetadata): String {
