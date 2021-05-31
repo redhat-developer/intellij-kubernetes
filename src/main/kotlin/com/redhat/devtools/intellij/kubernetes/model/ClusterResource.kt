@@ -197,12 +197,16 @@ open class ClusterResource(
      * @return true if the given resource is the same as the initial resource in this cluster resource
      */
     fun isSameResource(toCompare: HasMetadata?): Boolean {
-        val resource = get(false)
-        if (toCompare == null) {
-            return resource != null
-        }
+        try {
+            val resource = get(false)
+            if (toCompare == null) {
+                return resource != null
+            }
 
-        return toCompare.isSameResource(resource)
+            return toCompare.isSameResource(resource)
+        } catch (e: ResourceException) {
+            return false
+        }
     }
 
     fun canPush(toCompare: HasMetadata?): Boolean {
