@@ -16,6 +16,14 @@
 
 -> editor has title matching pattern <resource-name>@<namespace-name>(2).yml
 
+**Editor would not rename on startup**
+1. "Edit..." resource
+1. change metadata > name / metadata > namespace / kind
+      -> push notification ("create new" not "update existing")
+1. restart IJ
+
+-> editor title is still the same. It was not renamed to <XXXX(1).yml> 
+
 **Irrelevant change, no notification**
 1. "Edit..." resource
 1. add space after property value

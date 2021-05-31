@@ -28,7 +28,7 @@ import io.fabric8.kubernetes.client.KubernetesClientException
  */
 open class ClusterResource(
     resource: HasMetadata,
-    val contextName: String,
+    private val contextName: String,
     private val clients: Clients<out KubernetesClient> = ::createClients.invoke(contextName),
     private val watch: ResourceWatch<HasMetadata> = ResourceWatch(),
     private val modelChange: ModelChangeObservable = ModelChangeObservable()
@@ -190,7 +190,8 @@ open class ClusterResource(
 
     /**
      * Returns `true` if the given resource is the same as the resource that was given when creating this cluster resource instance.
-     * A resource is considered the same if it is equal in [io.fabric8.kubernetes.api.model.ObjectMeta.getUid] and [[io.fabric8.kubernetes.api.model.ObjectMeta.getSelfLink]
+     * A resource is considered the same if it is equal in [io.fabric8.kubernetes.api.model.ObjectMeta.getUid]
+     * and [io.fabric8.kubernetes.api.model.ObjectMeta.getSelfLink]
      * Returns `false` otherwise
      *
      * @param toCompare the resource to compare to the initial cluster resource
