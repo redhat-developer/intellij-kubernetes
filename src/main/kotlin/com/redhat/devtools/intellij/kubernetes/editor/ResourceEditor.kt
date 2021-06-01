@@ -71,12 +71,22 @@ object ResourceEditor {
     fun close(file: VirtualFile, project: Project) {
         FileEditorManager.getInstance(project).closeFile(file)
         val editor = getEditor(file, project)
-        dispose(editor, file)
-    }
-
-    fun dispose(editor: FileEditor?, file: VirtualFile) {
         getClusterResource(editor)?.close()
         ResourceFile.delete(file)
+    }
+
+    fun updateEditor(editor: FileEditor, project: Project) {
+        try {
+            val resource = getResource(editor) ?: return
+            val oldClusterResource = getClusterResource(editor)
+            val clusterResource = getOrCreateClusterResource(resource, editor, project) ?: return
+            if (clusterResource != oldClusterResource) {
+                renameEditor(editor, resource)
+            }
+            showNotifications(oldClusterResource, clusterResource, editor, resource, project)
+        } catch (e: ResourceException) {
+            showErrorNotification(editor, project, e)
+        }
     }
 
     fun isResourceEditor(editor: FileEditor): Boolean {
@@ -135,20 +145,6 @@ object ResourceEditor {
         }
     }
 
-    fun updateEditor(editor: FileEditor, project: Project) {
-        try {
-            val resource = getResource(editor) ?: return
-            val oldClusterResource = getClusterResource(editor)
-            val clusterResource = getOrCreateClusterResource(resource, editor, project) ?: return
-            if (clusterResource != oldClusterResource) {
-                renameEditor(editor, resource)
-            }
-            showNotifications(oldClusterResource, clusterResource, editor, resource, project)
-        } catch (e: ResourceException) {
-            showErrorNotification(editor, project, e)
-        }
-    }
-
     private fun showNotifications(
         oldClusterResource: ClusterResource?,
         clusterResource: ClusterResource,
@@ -159,8 +155,7 @@ object ResourceEditor {
         hideNotifications(editor, project)
         if (oldClusterResource != null
             && oldClusterResource.isDeleted()
-            && !clusterResource.exists()
-        ) {
+            && !clusterResource.exists()) {
             DeletedNotification.show(editor, resource, project)
         } else if (clusterResource.isOutdated(resource)) {
             ReloadNotification.show(editor, resource, project)
