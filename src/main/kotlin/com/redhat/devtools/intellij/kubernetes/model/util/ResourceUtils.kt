@@ -133,11 +133,29 @@ fun getApiVersion(clazz: Class<out HasMetadata>): String {
  */
 fun getApiVersion(apiGroup: String, apiVersion: String) = "$apiGroup/$apiVersion"
 
+/**
+ * Returns the version for given [CustomResourceDefinitionSpec].
+ * The version with the highest priority is chosen if there are several available.
+ *
+ * @param spec the [CustomResourceDefinitionSpec] to get the version from
+ *
+ * @return the version for the given [CustomResourceDefinitionSpec]
+ */
 fun getVersion(spec: CustomResourceDefinitionSpec): String {
 	val versions = spec.versions.map { it.name }
 	return KubernetesVersionPriority.highestPriority(versions) ?: spec.version
 }
 
+/**
+ * Returns a [CustomResourceDefinitionContext] for the given [CustomResourceDefinition].
+ * The version with the highest priority among the available ones is used.
+ *
+ * @param definition [CustomResourceDefinition] to create the context for
+ *
+ * @return the [CustomResourceDefinitionContext] for the given [CustomResourceDefinition]
+ *
+ * @see [getVersion]
+ */
 fun createContext(definition: CustomResourceDefinition): CustomResourceDefinitionContext {
 	return CustomResourceDefinitionContext.Builder()
 		.withGroup(definition.spec.group)
