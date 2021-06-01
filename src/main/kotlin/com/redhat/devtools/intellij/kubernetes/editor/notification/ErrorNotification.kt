@@ -30,7 +30,7 @@ object ErrorNotification {
 
     private val KEY_PANEL = Key<JComponent>(ErrorNotification::javaClass.name)
 
-    fun show(editor: FileEditor, project: Project, title: String, message: String) {
+    fun show(editor: FileEditor, project: Project, title: String, message: String?) {
         editor.showNotification(KEY_PANEL, { createPanel(editor, title, message) }, project)
     }
 
@@ -51,7 +51,8 @@ object ErrorNotification {
     }
 
     private fun addDetailsAction(message: String?, panel: EditorNotificationPanel, editor: FileEditor) {
-        if (message == null) {
+        if (message == null
+            || message.isBlank()) {
             return
         }
         panel.createActionLabel("Details") {
