@@ -184,7 +184,7 @@ open class ClusterResource(
     }
 
     private fun areEqual(thisResource: HasMetadata?, thatResource: HasMetadata?): Boolean {
-        return (thisResource == null && updatedResource == null)
+        return (thisResource == null && thatResource == null)
                 || thisResource == thatResource
     }
 
