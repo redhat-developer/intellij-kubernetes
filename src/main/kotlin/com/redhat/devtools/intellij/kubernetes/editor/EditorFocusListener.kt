@@ -11,6 +11,7 @@
 package com.redhat.devtools.intellij.kubernetes.editor
 
 import com.intellij.openapi.fileEditor.FileEditor
+import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.fileEditor.FileEditorManagerEvent
 import com.intellij.openapi.fileEditor.FileEditorManagerListener
 import com.intellij.openapi.project.Project
@@ -18,11 +19,19 @@ import com.intellij.openapi.vfs.VirtualFile
 import com.redhat.devtools.intellij.kubernetes.editor.notification.ErrorNotification
 import com.redhat.devtools.intellij.kubernetes.model.ResourceException
 
-class EditorFocusListener(private val project: Project) : FileEditorManagerListener {
+class EditorFocusListener(private val project: Project) : FileEditorManagerListener, FileEditorManagerListener.Before {
 
     override fun selectionChanged(event: FileEditorManagerEvent) {
         handleSelectionLost(event.oldEditor, event.oldFile, project)
         handleSelectionGained(event.newEditor, event.newFile, project)
+    }
+
+    override fun fileClosed(source: FileEditorManager, file: VirtualFile) {
+        ResourceEditor.onClosed(file)
+    }
+
+    override fun beforeFileClosed(source: FileEditorManager, file: VirtualFile) {
+        ResourceEditor.onBeforeClosed(source.getSelectedEditor(file), source.project)
     }
 
     private fun handleSelectionLost(editor: FileEditor?, file: VirtualFile?, project: Project) {
