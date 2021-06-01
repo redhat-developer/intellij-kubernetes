@@ -111,7 +111,7 @@ object ResourceEditor {
     private fun showErrorNotification(editor: FileEditor, project: Project, e: Throwable) {
         hideNotifications(editor, project)
         ErrorNotification.show(editor, project,
-            e.message ?: "", trimWithEllipsis(e.cause?.message, 300) ?: "")
+            e.message ?: "", e.cause?.message)
     }
 
     private fun hideNotifications(editor: FileEditor, project: Project) {
