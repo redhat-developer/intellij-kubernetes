@@ -68,11 +68,20 @@ object ResourceEditor {
         return editor
     }
 
-    fun close(file: VirtualFile, project: Project) {
-        FileEditorManager.getInstance(project).closeFile(file)
-        val editor = getEditor(file, project)
-        getClusterResource(editor)?.close()
+    fun onClosed(file: VirtualFile) {
+        if (!isResourceFile(file)) {
+            return
+        }
         ResourceFile.delete(file)
+    }
+
+    fun onBeforeClosed(editor: FileEditor?, project: Project?) {
+        if (editor == null
+            || project == null
+            || !isResourceEditor(editor)) {
+            return
+        }
+        getClusterResource(editor)?.close()
     }
 
     fun updateEditor(editor: FileEditor, project: Project) {
@@ -121,7 +130,10 @@ object ResourceEditor {
         PushNotification.hide(editor, project)
     }
 
-    fun isResourceEditor(editor: FileEditor): Boolean {
+    fun isResourceEditor(editor: FileEditor?): Boolean {
+        if (editor == null) {
+            return false
+        }
         return isResourceFile(editor.file)
     }
 

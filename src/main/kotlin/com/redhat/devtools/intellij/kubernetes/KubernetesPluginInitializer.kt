@@ -26,7 +26,10 @@ class KubernetesPluginInitializer : StartupActivity {
         project.messageBus.connect().subscribe(FileEditorManagerListener.FILE_EDITOR_MANAGER,
             EditorFocusListener(project)
         )
-        enableNonProjectEditing(project)
+        project.messageBus.connect().subscribe(FileEditorManagerListener.Before.FILE_EDITOR_MANAGER,
+            EditorFocusListener(project)
+        )
+        enableAllEditorsNonProjectEditing(project)
         showResourceEditorNotifications(project)
 
         project.messageBus.connect().subscribe(PsiDocumentTransactionListener.TOPIC,
@@ -34,7 +37,7 @@ class KubernetesPluginInitializer : StartupActivity {
         )
     }
 
-    private fun enableNonProjectEditing(project: Project) {
+    private fun enableAllEditorsNonProjectEditing(project: Project) {
         FileEditorManager.getInstance(project).allEditors
             .filter { editor -> ResourceEditor.isResourceEditor(editor) }
             .mapNotNull { editor -> ResourceEditor.getResourceFile(editor) }
