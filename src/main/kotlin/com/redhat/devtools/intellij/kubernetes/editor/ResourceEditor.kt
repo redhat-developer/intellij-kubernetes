@@ -89,6 +89,38 @@ object ResourceEditor {
         }
     }
 
+    private fun showNotifications(
+        oldClusterResource: ClusterResource?,
+        clusterResource: ClusterResource,
+        editor: FileEditor,
+        resource: HasMetadata,
+        project: Project
+    ) {
+        hideNotifications(editor, project)
+        if (oldClusterResource != null
+            && oldClusterResource.isDeleted()
+            && !clusterResource.exists()) {
+            DeletedNotification.show(editor, resource, project)
+        } else if (clusterResource.isOutdated(resource)) {
+            ReloadNotification.show(editor, resource, project)
+        } else if (clusterResource.canPush(resource)) {
+            PushNotification.show(editor, resource, project)
+        }
+    }
+
+    private fun showErrorNotification(editor: FileEditor, project: Project, e: Throwable) {
+        hideNotifications(editor, project)
+        ErrorNotification.show(editor, project,
+            e.message ?: "", trimWithEllipsis(e.cause?.message, 300) ?: "")
+    }
+
+    private fun hideNotifications(editor: FileEditor, project: Project) {
+        ErrorNotification.hide(editor, project)
+        ReloadNotification.hide(editor, project)
+        DeletedNotification.hide(editor, project)
+        PushNotification.hide(editor, project)
+    }
+
     fun isResourceEditor(editor: FileEditor): Boolean {
         return isResourceFile(editor.file)
     }
@@ -143,38 +175,6 @@ object ResourceEditor {
         return ReadAction.compute<Document, Exception> {
             FileDocumentManager.getInstance().getDocument(file)
         }
-    }
-
-    private fun showNotifications(
-        oldClusterResource: ClusterResource?,
-        clusterResource: ClusterResource,
-        editor: FileEditor,
-        resource: HasMetadata,
-        project: Project
-    ) {
-        hideNotifications(editor, project)
-        if (oldClusterResource != null
-            && oldClusterResource.isDeleted()
-            && !clusterResource.exists()) {
-            DeletedNotification.show(editor, resource, project)
-        } else if (clusterResource.isOutdated(resource)) {
-            ReloadNotification.show(editor, resource, project)
-        } else if (clusterResource.canPush(resource)) {
-            PushNotification.show(editor, resource, project)
-        }
-    }
-
-    private fun showErrorNotification(editor: FileEditor, project: Project, e: Throwable) {
-        hideNotifications(editor, project)
-        ErrorNotification.show(editor, project,
-            e.message ?: "", trimWithEllipsis(e.cause?.message, 300) ?: "")
-    }
-
-    private fun hideNotifications(editor: FileEditor, project: Project) {
-        ErrorNotification.hide(editor, project)
-        ReloadNotification.hide(editor, project)
-        DeletedNotification.hide(editor, project)
-        PushNotification.hide(editor, project)
     }
 
     fun loadResourceFromCluster(forceLatest: Boolean = false, editor: FileEditor): HasMetadata? {
