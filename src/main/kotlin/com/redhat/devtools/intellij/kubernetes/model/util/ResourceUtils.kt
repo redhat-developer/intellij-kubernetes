@@ -10,7 +10,6 @@
  ******************************************************************************/
 package com.redhat.devtools.intellij.kubernetes.model.util
 
-import com.redhat.devtools.intellij.kubernetes.model.resource.ResourceKind
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.apiextensions.v1beta1.CustomResourceDefinition
 import io.fabric8.kubernetes.api.model.apiextensions.v1beta1.CustomResourceDefinitionSpec
@@ -32,7 +31,8 @@ const val MARKER_WILL_BE_DELETED = "willBeDeleted"
  *     <li>name</li>
  *     <li>namespace</li>
  * </ul>
- * This allows to identify resource equality in different instances and when enriched by the server
+ * regardless of other differences.
+ * This method allows to determine resource identity across instances regardless of updates (ex. resource version) applied by the server
  *
  * @see io.fabric8.kubernetes.api.model.HasMetadata.getKind
  * @see io.fabric8.kubernetes.api.model.HasMetadata.getApiVersion
@@ -57,21 +57,6 @@ fun HasMetadata.isSameApiVersion(resource: HasMetadata?): Boolean {
 		return false
 	}
 	return apiVersion == resource.apiVersion
-}
-
-/**
- * returns {@code true} if the given resource has the same uid as this resource. Returns {@code false} otherwise.
- *
- * @see io.fabric8.kubernetes.api.model.ObjectMeta.getUid()
- */
-fun HasMetadata.isSameUid(resource: HasMetadata?): Boolean {
-	if (resource == null) {
-		return false
-	} else if (this.metadata?.uid == null
-		&& resource.metadata?.uid == null) {
-		return false
-	}
-	return resource.metadata?.uid == this.metadata?.uid
 }
 
 fun HasMetadata.isSameName(resource: HasMetadata?): Boolean {
@@ -104,29 +89,20 @@ fun HasMetadata.isSameKind(resource: HasMetadata?): Boolean {
 	return this.kind == resource.kind
 }
 
-fun HasMetadata.isSameRevision(resource: HasMetadata?): Boolean {
-	if (resource == null) {
-		return false
-	} else if (this.metadata?.resourceVersion == null
-			&& resource.metadata?.resourceVersion == null) {
-		return true
-	}
-	return this.metadata?.resourceVersion == resource.metadata?.resourceVersion
-}
-
+/**
+ * Returns `true` if this resource is a newer version than the given resource.
+ * Returns `false` otherwise. If this resource has a `null` resourceVersion the result is always `false`.
+ * If the given resource has a `null` resourceVersion while this hasn't, it'll return `true`.
+ *
+ * @see [io.fabric8.kubernetes.api.model.ObjectMeta.resourceVersion]
+ */
 fun HasMetadata.isNewerVersionThan(resource: HasMetadata?): Boolean {
 	if (resource == null
 		|| !isSameResource(resource)) {
 		return false
 	}
-	val thisVersion = this.metadata?.resourceVersion?.toIntOrNull()
-	val thatVersion = resource.metadata?.resourceVersion?.toIntOrNull()
-	if (thisVersion == null) {
-		return thatVersion == null
-	}
-	if (thatVersion == null) {
-		return true
-	}
+	val thisVersion = this.metadata?.resourceVersion?.toIntOrNull() ?: return false
+	val thatVersion = resource.metadata?.resourceVersion?.toIntOrNull() ?: return true
 	return  thisVersion > thatVersion
 }
 

@@ -146,7 +146,7 @@ class ResourceUtilsTest {
 	}
 
 	@Test
-	fun `#isNewerVersionThan should return true if this resource has older version than given`() {
+	fun `#isNewerVersionThan should return true if this resource has older version`() {
 		// given
 		val older = resource<Pod>("neo", "ns","uid", "v1", "1")
 		val newer = resource<Pod>("neo", "ns","uid", "v1", "2")
@@ -168,7 +168,7 @@ class ResourceUtilsTest {
 	}
 
 	@Test
-	fun `#isNewerVersionThan should return false if this resource has no version, given resource has a version`() {
+	fun `#isNewerVersionThan should return false if one resource has no version, other resource has a version`() {
 		// given
 		val noVersion = resource<Pod>("neo", "ns","uid", "v1",null)
 		val hasVersion = resource<Pod>("neo", "ns","uid", "v1","1")
@@ -179,7 +179,7 @@ class ResourceUtilsTest {
 	}
 
 	@Test
-	fun `#isNewerVersionThan should return true if this resource has version, given resource has no version`() {
+	fun `#isNewerVersionThan should return true if one resource has version, other one has no version`() {
 		// given
 		val noVersion = resource<Pod>("neo", "zion", "uid", "v1",null)
 		val hasVersion = resource<Pod>("neo", "zion", "uid", "v1","1")
@@ -190,10 +190,21 @@ class ResourceUtilsTest {
 	}
 
 	@Test
-	fun `#isNewerVersionThan should return false if resource do NOT have same name`() {
+	fun `#isNewerVersionThan should return false if both resources have no version`() {
 		// given
-		val neo = resource<Pod>("neo", "ns", "uid", "v1","2")
-		val morpheus = resource<Pod>("morpheus", "ns", "uid", "v1","1")
+		val noVersion = resource<Pod>("neo", "zion", "uid", "v1",null)
+		val hasVersion = resource<Pod>("neo", "zion", "uid", "v1",null)
+		// when
+		val newer = hasVersion.isNewerVersionThan(noVersion)
+		// then
+		assertThat(newer).isFalse()
+	}
+
+	@Test
+	fun `#isNewerVersionThan should return false if resources have different name`() {
+		// given
+		val neo = resource<Pod>("neo", "ns", "uid", "v1","1")
+		val morpheus = resource<Pod>("morpheus", "ns", "uid", "v1","2")
 		// when
 		val newer = morpheus.isNewerVersionThan(neo)
 		// then
@@ -201,14 +212,24 @@ class ResourceUtilsTest {
 	}
 
 	@Test
-	fun `#isNewerVersionThan should return false if resource have different same namespace`() {
+	fun `#isNewerVersionThan should return false if resources have different namespace`() {
 		// given
-		val neo = resource<Pod>("neo", "matrix", "uid", "v1","2")
-		val morpheus = resource<Pod>("neo", "zion", "uid", "v1","1")
+		val neo = resource<Pod>("neo", "matrix", "uid", "v1","1")
+		val morpheus = resource<Pod>("neo", "zion", "uid", "v1","2")
 		// when
 		val newer = morpheus.isNewerVersionThan(neo)
 		// then
 		assertThat(newer).isFalse()
 	}
 
+	@Test
+	fun `#isNewerVersionThan should return false if resources have different api version`() {
+		// given
+		val neo = resource<Pod>("neo", "zion", "uid", "v1","1")
+		val morpheus = resource<Pod>("neo", "zion", "uid", "v2","2")
+		// when
+		val newer = morpheus.isNewerVersionThan(neo)
+		// then
+		assertThat(newer).isFalse()
+	}
 }
