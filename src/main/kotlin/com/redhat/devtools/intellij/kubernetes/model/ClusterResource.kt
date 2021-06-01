@@ -132,13 +132,14 @@ open class ClusterResource(
                 "unsupported resource kind ${resource.kind} in version ${resource.apiVersion}.")
         }
         try {
-            this.updatedResource =
+            val updated =
                 if (exists()) {
                     operator?.replace(resource)
                 } else {
                     operator?.create(resource)
                 }
-            return updatedResource
+            set(updated)
+            return updated
         } catch (e: KubernetesClientException) {
             val details = getDetails(e)
             throw ResourceException(details, e)
@@ -172,7 +173,7 @@ open class ClusterResource(
      * @see HasMetadata.isNewerVersionThan
      */
     fun isOutdated(toCompare: HasMetadata?): Boolean {
-        val resource = get(true)
+        val resource = get(false)
         return if (toCompare == null) {
             resource != null
         } else {
@@ -230,7 +231,7 @@ open class ClusterResource(
      */
     fun isModified(toCompare: HasMetadata?): Boolean {
         return isSameResource(toCompare)
-                && !areEqual(updatedResource, toCompare)
+                && !areEqual(get(false), toCompare)
     }
 
     /**
