@@ -49,6 +49,12 @@
 -> new resource appears in tree
 -> editor title changes
 
+**Push notification with "update existing" for custom resource**
+1. "Edit..." custom resource
+1. add label 
+
+-> push notification ("update existing")
+
 **Error notification disappears**
 1. "Edit..." resource
 1. change kind to invalid value

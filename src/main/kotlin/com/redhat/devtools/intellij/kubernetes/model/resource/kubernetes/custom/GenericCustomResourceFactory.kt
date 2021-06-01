@@ -12,8 +12,8 @@ package com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.custom
 
 import com.fasterxml.jackson.core.type.TypeReference
 import com.fasterxml.jackson.databind.JsonNode
-import com.fasterxml.jackson.databind.ObjectMapper
 import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.AbstractResourceFactory
+import io.fabric8.kubernetes.client.utils.Serialization
 
 object GenericCustomResourceFactory: AbstractResourceFactory<GenericCustomResource>() {
 
@@ -39,7 +39,7 @@ object GenericCustomResourceFactory: AbstractResourceFactory<GenericCustomResour
 	}
 
 	private fun createSpec(node: JsonNode?): Map<String, Any?> {
-		return ObjectMapper().convertValue(node, object : TypeReference<Map<String, Any>>() {})
+		return Serialization.jsonMapper().convertValue(node, object : TypeReference<Map<String, Any>>() {})
 	}
 
 }
