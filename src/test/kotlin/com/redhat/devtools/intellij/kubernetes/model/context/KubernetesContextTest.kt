@@ -537,7 +537,7 @@ class KubernetesContextTest {
 		context.namespacedOperators
 		clearInvocations(context.watch)
 		// when
-		context.watch(ResourceKind.create(namespacedDefinition))
+		context.watch(ResourceKind.create(namespacedDefinition.spec))
 		// then
 		@Suppress("UNCHECKED_CAST")
 		verify(context.watch).watch(
@@ -563,7 +563,7 @@ class KubernetesContextTest {
 		context.namespacedOperators
 		clearInvocations(context.watch)
 		// when
-		context.watch(ResourceKind.create(clusterwideDefinition))
+		context.watch(ResourceKind.create(clusterwideDefinition.spec))
 		// then
 		verify(context.watch).watch(
 			eq(nonNamespacedCustomResourcesOperator.kind),

@@ -41,11 +41,6 @@ data class ResourceKind<R : HasMetadata> private constructor(
 		}
 
 		@JvmStatic
-		fun create(definition: CustomResourceDefinition): ResourceKind<out HasMetadata> {
-			return create(definition.spec)
-		}
-
-		@JvmStatic
 		fun create(spec: CustomResourceDefinitionSpec): ResourceKind<GenericCustomResource> {
 			return ResourceKind(
 				removeK8sio(getApiVersion(spec.group, getVersion(spec))),
