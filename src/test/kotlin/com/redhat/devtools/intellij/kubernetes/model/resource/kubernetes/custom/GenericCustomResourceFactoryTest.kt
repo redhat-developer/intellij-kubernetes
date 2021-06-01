@@ -17,6 +17,7 @@ import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.Abstrac
 import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.AbstractResourceFactory.Companion.GENERATION
 import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.AbstractResourceFactory.Companion.ITEMS
 import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.AbstractResourceFactory.Companion.KIND
+import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.AbstractResourceFactory.Companion.LABELS
 import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.AbstractResourceFactory.Companion.METADATA
 import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.AbstractResourceFactory.Companion.NAME
 import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.AbstractResourceFactory.Companion.NAMESPACE
@@ -24,7 +25,9 @@ import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.Abstrac
 import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.AbstractResourceFactory.Companion.SELF_LINK
 import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.AbstractResourceFactory.Companion.UID
 import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.custom.GenericCustomResourceFactory.SPEC
+import io.fabric8.kubernetes.api.model.HasMetadata
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.data.MapEntry
 import org.junit.Test
 
 private const val SCOPE = "scope"
@@ -80,6 +83,7 @@ class GenericCustomResourceFactoryTest {
 		val namespace = "namespace1"
 		val metadataResourceVersion = "metadataResourceVersion1"
 		val selfLink = "selflink1"
+		val labels = mapOf(Pair("jedi", "yoda"))
 		val uid = "uid"
 
 		// resource list
@@ -93,7 +97,8 @@ class GenericCustomResourceFactoryTest {
 						namespace,
 						metadataResourceVersion,
 						selfLink,
-						uid),
+						uid,
+						labels),
 				createSpecMap(scope)
 		))))
 		// when
@@ -113,6 +118,7 @@ class GenericCustomResourceFactoryTest {
 		assertThat(metadata.resourceVersion).isEqualTo(metadataResourceVersion)
 		assertThat(metadata.selfLink).isEqualTo(selfLink)
 		assertThat(metadata.uid).isEqualTo(uid)
+		assertThat(metadata.labels).containsExactly(*labels.entries.toTypedArray())
 
 		val spec = resource.spec
 		assertThat(spec?.get(SCOPE)).isEqualTo(scope)
@@ -131,7 +137,10 @@ class GenericCustomResourceFactoryTest {
 					"name": "alfaromeo",
 					"resourceVersion": "472968",
 					"selfLink": "/apis/openshift.pub/v1/cars/alfaromeo",
-					"uid": "1229d4a6-b8aa-43a0-a5dc-b5ce6c59bf2e"
+					"uid": "1229d4a6-b8aa-43a0-a5dc-b5ce6c59bf2e",
+					"labels": {
+						"cuore": "sportivo"
+					}
 				},
 				"spec": {
 					"date_of_manufacturing": "2016-07-01T00:00:00Z",
@@ -153,6 +162,7 @@ class GenericCustomResourceFactoryTest {
 		assertThat(metadata.resourceVersion).isEqualTo("472968")
 		assertThat(metadata.selfLink).isEqualTo("/apis/openshift.pub/v1/cars/alfaromeo")
 		assertThat(metadata.uid).isEqualTo("1229d4a6-b8aa-43a0-a5dc-b5ce6c59bf2e")
+		assertThat(metadata.labels).containsExactly(MapEntry.entry("cuore", "sportivo"))
 
 		val spec = resource.spec
 		assertThat(spec?.get("date_of_manufacturing")).isEqualTo("2016-07-01T00:00:00Z")
@@ -170,7 +180,8 @@ class GenericCustomResourceFactoryTest {
 			namespace: String? = null,
 			resourceVersion: String? = null,
 			selfLink: String? = null,
-			uid: String? = null
+			uid: String? = null,
+			labels: Map<String, Any>
 	): Map<String, Any?> {
 		return mapOf(
 				Pair(CREATION_TIMESTAMP, creationTimestamp),
@@ -179,7 +190,9 @@ class GenericCustomResourceFactoryTest {
 				Pair(NAMESPACE, namespace),
 				Pair(RESOURCE_VERSION, resourceVersion),
 				Pair(SELF_LINK, selfLink),
-				Pair(UID, uid))
+				Pair(UID, uid),
+				Pair(LABELS, labels)
+		)
 	}
 
 	private fun createGenericCustomResourceMap(

@@ -10,10 +10,12 @@
  ******************************************************************************/
 package com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes
 
+import com.fasterxml.jackson.core.type.TypeReference
 import com.fasterxml.jackson.databind.JsonNode
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.ObjectMeta
 import io.fabric8.kubernetes.api.model.ObjectMetaBuilder
+import io.fabric8.kubernetes.client.utils.Serialization
 import java.util.stream.Collectors
 
 abstract class AbstractResourceFactory<T : HasMetadata> {
@@ -30,6 +32,7 @@ abstract class AbstractResourceFactory<T : HasMetadata> {
         @JvmStatic val RESOURCE_VERSION = "resourceVersion"
         @JvmStatic val SELF_LINK = "selfLink"
         @JvmStatic val UID = "uid"
+        @JvmStatic val LABELS = "labels"
     }
 
     fun createResources(resourcesList: Map<String, Any?>): List<T> {
@@ -52,15 +55,17 @@ abstract class AbstractResourceFactory<T : HasMetadata> {
         if (metadata == null) {
             return ObjectMetaBuilder().build()
         }
+        @Suppress("UNCHECKED_CAST")
         return ObjectMetaBuilder()
             .withCreationTimestamp(metadata[CREATION_TIMESTAMP] as? String?)
             // jackson is deserializing 'generation' to Int
-            .withGeneration((metadata[GENERATION] as? Integer?)?.toLong())
+            .withGeneration((metadata[GENERATION] as? Int?)?.toLong())
             .withName(metadata[NAME] as? String?)
             .withNamespace(metadata[NAMESPACE] as? String?)
             .withResourceVersion(metadata[RESOURCE_VERSION] as? String?)
             .withSelfLink(metadata[SELF_LINK] as? String?)
             .withUid(metadata[UID] as? String?)
+            .withLabels(metadata[LABELS] as? Map<String, String>?)
             .build()
     }
 
@@ -73,6 +78,9 @@ abstract class AbstractResourceFactory<T : HasMetadata> {
             .withResourceVersion(metadata.get(RESOURCE_VERSION)?.asText())
             .withSelfLink(metadata.get(SELF_LINK)?.asText())
             .withUid(metadata.get(UID)?.asText())
+            .withLabels(Serialization.jsonMapper().convertValue(
+                    metadata.get(LABELS), object : TypeReference<Map<String, Any>>() {})
+            )
             .build()
     }
 }
