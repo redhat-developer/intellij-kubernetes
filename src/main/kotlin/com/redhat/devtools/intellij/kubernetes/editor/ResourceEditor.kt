@@ -158,13 +158,6 @@ object ResourceEditor {
         FileDocumentManager.getInstance().reloadFiles(file)
     }
 
-    private fun getEditor(file: VirtualFile?, project: Project): FileEditor? {
-        if (file == null) {
-            return null
-        }
-        return FileEditorManager.getInstance(project).getEditors(file).firstOrNull()
-    }
-
     fun getResourceFile(editor: FileEditor): VirtualFile? {
         return editor.file
     }
