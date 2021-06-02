@@ -226,7 +226,7 @@ object ResourceEditor {
         try {
             val newResource = createResource(editor) ?: return
             try {
-                if (isClusterSameResource(newResource, editor)) {
+                if (isSameResourceOnCluster(newResource, editor)) {
                     pushSameResource(newResource, editor, project)
                 } else {
                     pushNewResource(newResource, editor, project)
@@ -243,27 +243,27 @@ object ResourceEditor {
         }
     }
 
-    private fun isClusterSameResource(resource: HasMetadata, editor: FileEditor): Boolean {
+    private fun isSameResourceOnCluster(resource: HasMetadata, editor: FileEditor): Boolean {
         val oldClusterResource = getClusterResource(editor)
         val oldResource = oldClusterResource?.get(false)
         return oldResource != null
                 && oldResource.isSameResource(resource)
     }
 
-    private fun pushSameResource(newResource: HasMetadata, editor: FileEditor, project: Project): HasMetadata? {
-        val cluster = createClusterResource(newResource, editor, project) ?: return null
+    private fun pushSameResource(resource: HasMetadata, editor: FileEditor, project: Project): HasMetadata? {
+        val cluster = createClusterResource(resource, editor, project) ?: return null
         hideNotifications(editor, project)
-        val updatedResource = cluster.push(newResource) ?: return null
+        val updatedResource = cluster.push(resource) ?: return null
         reloadEditor(updatedResource, editor)
         return updatedResource
     }
 
-    private fun pushNewResource(newResource: HasMetadata, editor: FileEditor, project: Project): HasMetadata? {
-        val cluster = createClusterResource(newResource, editor, project) ?: return null
+    private fun pushNewResource(resource: HasMetadata, editor: FileEditor, project: Project): HasMetadata? {
+        val cluster = createClusterResource(resource, editor, project) ?: return null
         hideNotifications(editor, project)
-        val updatedResource = cluster.push(newResource) ?: return null
+        val updatedResource = cluster.push(resource) ?: return null
         reloadEditor(updatedResource, editor)
-        renameEditor(editor, newResource)
+        renameEditor(editor, resource)
         return updatedResource
     }
 
