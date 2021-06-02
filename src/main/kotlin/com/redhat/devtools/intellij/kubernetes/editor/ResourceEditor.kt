@@ -278,13 +278,9 @@ object ResourceEditor {
         if (file == null) {
             return false
         }
-        val newFile = ResourceFile.getFile(resource)
         val existingName = ResourceFile.removeUniqueSuffix(file.name)
-        val newName = newFile.name
-        if (existingName == newName) {
-            return false
-        }
-        return true
+        val newName = ResourceFile.getFile(resource).name
+        return existingName != newName
     }
 
     fun startWatch(editor: FileEditor?, project: Project) {
