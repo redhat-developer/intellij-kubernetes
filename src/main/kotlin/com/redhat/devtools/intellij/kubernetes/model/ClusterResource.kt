@@ -47,6 +47,7 @@ open class ClusterResource(
         },
         { changed ->
             set(changed)
+            setDeleted(false)
             modelChange.fireModified(changed)
         })
     private var isDeleted: Boolean = false
