@@ -86,7 +86,7 @@ object ResourceEditor {
 
     fun updateEditor(editor: FileEditor, project: Project) {
         try {
-            val resource = getResource(editor) ?: return
+            val resource = createResource(editor) ?: return
             val oldClusterResource = getClusterResource(editor)
             val clusterResource = getOrCreateClusterResource(resource, editor, project) ?: return
             if (clusterResource != oldClusterResource) {
@@ -173,12 +173,33 @@ object ResourceEditor {
         return FileDocumentManager.getInstance().getFile(document)
     }
 
-    private fun getResource(editor: FileEditor): HasMetadata? {
+    private fun createResource(editor: FileEditor): HasMetadata? {
         val document = getDocument(editor)
         return if (document?.text == null) {
             null
         } else {
             createResource(document.text)
+        }
+    }
+
+    private fun createResource(jsonYaml: String): HasMetadata {
+        try {
+            return createResource<HasMetadata>(jsonYaml)
+        } catch (e: KubernetesClientException) {
+            if (e.cause is MismatchedInputException) {
+                // invalid json
+                throw ResourceException("Invalid yaml/json", e)
+            } else {
+                // unknown type
+                try {
+                    return createResource<GenericCustomResource>(jsonYaml)
+                } catch (e: java.lang.RuntimeException) {
+                    throw ResourceException("Unknown resource type", e)
+                }
+            }
+        } catch (e: RuntimeException) {
+            // invalid json/Yaml
+            throw ResourceException("Invalid yaml/json", e)
         }
     }
 
@@ -199,18 +220,18 @@ object ResourceEditor {
     }
 
     fun isOutdated(editor: FileEditor): Boolean {
-        val resource = getResource(editor)
+        val resource = createResource(editor)
         return getClusterResource(editor)?.isOutdated(resource) ?: return false
     }
 
     private fun isModified(editor: FileEditor): Boolean {
-        val resource = getResource(editor)
+        val resource = createResource(editor)
         return getClusterResource(editor)?.isModified(resource) ?: return false
     }
 
     fun push(editor: FileEditor, project: Project) {
         try {
-            val newResource = getResource(editor) ?: return
+            val newResource = createResource(editor) ?: return
             try {
                 if (isClusterSameResource(newResource, editor)) {
                     pushSameResource(newResource, editor, project)
@@ -277,7 +298,7 @@ object ResourceEditor {
         if (editor == null) {
             return
         }
-        val resource = getResource(editor) ?: return
+        val resource = createResource(editor) ?: return
         val clusterResource = getOrCreateClusterResource(resource, editor, project) ?: return
         clusterResource.watch()
     }
@@ -330,27 +351,6 @@ object ResourceEditor {
             }
         }
         return clusterResource
-    }
-
-    fun createResource(jsonYaml: String): HasMetadata {
-        try {
-            return createResource<HasMetadata>(jsonYaml)
-        } catch (e: KubernetesClientException) {
-            if (e.cause is MismatchedInputException) {
-                // invalid json
-                throw ResourceException("Invalid yaml/json", e)
-            } else {
-                // unknown type
-                try {
-                    return createResource<GenericCustomResource>(jsonYaml)
-                } catch (e: java.lang.RuntimeException) {
-                    throw ResourceException("Unknown resource type", e)
-                }
-            }
-        } catch (e: RuntimeException) {
-            // invalid json/Yaml
-            throw ResourceException("Invalid yaml/json", e)
-        }
     }
 
     private fun onResourceChanged(editor: FileEditor, project: Project): ModelChangeObservable.IResourceChangeListener {
