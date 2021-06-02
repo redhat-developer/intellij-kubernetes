@@ -23,7 +23,7 @@ class EditorFocusListener(private val project: Project) : FileEditorManagerListe
 
     override fun selectionChanged(event: FileEditorManagerEvent) {
         handleSelectionLost(event.oldEditor, event.oldFile, project)
-        handleSelectionGained(event.newEditor, event.newFile, project)
+        handleSelectionGained(event.newEditor, project)
     }
 
     override fun fileClosed(source: FileEditorManager, file: VirtualFile) {
@@ -36,7 +36,7 @@ class EditorFocusListener(private val project: Project) : FileEditorManagerListe
 
     private fun handleSelectionLost(editor: FileEditor?, file: VirtualFile?, project: Project) {
         if (editor == null
-            || !ResourceEditor.isResourceFile(file)) {
+            || !ResourceEditor.isResourceEditor(editor)) {
             return
         }
         try {
@@ -51,9 +51,9 @@ class EditorFocusListener(private val project: Project) : FileEditorManagerListe
         }
     }
 
-    private fun handleSelectionGained(editor: FileEditor?, file: VirtualFile?, project: Project) {
+    private fun handleSelectionGained(editor: FileEditor?, project: Project) {
         if (editor == null
-            || !ResourceEditor.isResourceFile(file)) {
+            || !ResourceEditor.isResourceEditor(editor)) {
             return
         }
         try {
