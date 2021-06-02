@@ -137,10 +137,6 @@ object ResourceEditor {
         return isResourceFile(editor.file)
     }
 
-    fun isResourceFile(file: VirtualFile?): Boolean {
-        return ResourceFile.matches(file)
-    }
-
     fun reloadEditor(resource: HasMetadata, editor: FileEditor) {
         UIHelper.executeInUI {
             val file = editor.file
@@ -164,6 +160,10 @@ object ResourceEditor {
 
     fun getResourceFile(document: Document): VirtualFile? {
         return FileDocumentManager.getInstance().getFile(document)
+    }
+
+    private fun isResourceFile(file: VirtualFile?): Boolean {
+        return ResourceFile.matches(file)
     }
 
     private fun createResource(editor: FileEditor): HasMetadata? {
