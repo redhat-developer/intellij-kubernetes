@@ -11,37 +11,16 @@
 package com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.custom
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize
-import io.fabric8.kubernetes.api.model.HasMetadata
+import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.hasmetadata.HasMetadataResource
 import io.fabric8.kubernetes.api.model.ObjectMeta
-import java.util.*
 
 @JsonDeserialize(using = GenericCustomResourceDeserializer::class)
 class GenericCustomResource(
-	private val kind: String?,
-	private var apiVersion: String?,
-	private var metadata: ObjectMeta,
+	kind: String?,
+	apiVersion: String?,
+	metadata: ObjectMeta,
 	val spec: Map<String, Any?>?
-) : HasMetadata {
-
-	override fun setMetadata(metadata: ObjectMeta) {
-		this.metadata = metadata
-	}
-
-	override fun getMetadata(): ObjectMeta {
-		return metadata
-	}
-
-	override fun getKind(): String? {
-		return kind
-	}
-
-	override fun setApiVersion(version: String?) {
-		this.apiVersion = version
-	}
-
-	override fun getApiVersion(): String? {
-		return apiVersion
-	}
+) : HasMetadataResource(kind, apiVersion, metadata) {
 
 	override fun equals(other: Any?): Boolean {
 		if (this === other) return true
@@ -49,9 +28,7 @@ class GenericCustomResource(
 
 		other as GenericCustomResource
 
-		if (kind != other.kind) return false
-		if (apiVersion != other.apiVersion) return false
-		if (metadata != other.metadata) return false
+		if (!equalsProperties(other)) return false
 		if (spec != other.spec) return false
 
 		return true

@@ -15,6 +15,7 @@ import com.redhat.devtools.intellij.kubernetes.model.ResourceWatch.WatchListener
 import com.redhat.devtools.intellij.kubernetes.model.resource.IResourceOperator
 import com.redhat.devtools.intellij.kubernetes.model.resource.OperatorFactory
 import com.redhat.devtools.intellij.kubernetes.model.resource.ResourceKind
+import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.custom.CustomResourceDefinitionMapping
 import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.custom.CustomResourceOperatorFactory
 import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.custom.GenericCustomResource
 import com.redhat.devtools.intellij.kubernetes.model.util.*
@@ -28,8 +29,7 @@ import io.fabric8.kubernetes.client.KubernetesClientException
  */
 open class ClusterResource(
     resource: HasMetadata,
-    private val contextName: String,
-    private val clients: Clients<out KubernetesClient> = ::createClients.invoke(contextName),
+    private val clients: Clients<out KubernetesClient>,
     private val watch: ResourceWatch<HasMetadata> = ResourceWatch(),
     private val modelChange: ModelChangeObservable = ModelChangeObservable()
 ) {
@@ -95,8 +95,9 @@ open class ClusterResource(
                 throw ResourceException(
                     "Unsupported resource kind ${initialResource.kind} in version ${initialResource.apiVersion}."
                 )
+            } else {
+                operator!!.get(this.initialResource)
             }
-            operator!!.get(this.initialResource)
         } catch (e: KubernetesClientException) {
             if (e.isNotFound()) {
                 null
@@ -295,7 +296,7 @@ open class ClusterResource(
     protected open fun createOperator(resource: HasMetadata): IResourceOperator<out HasMetadata>? {
         return if (resource is GenericCustomResource) {
             val client = clients.get()
-            val definitions = CustomResourceOperatorFactory.getDefinitions(client)
+            val definitions = CustomResourceDefinitionMapping.getDefinitions(client)
             CustomResourceOperatorFactory.create(resource, definitions, client)
         } else {
             val kind = ResourceKind.create(resource)

@@ -22,15 +22,14 @@ import io.fabric8.kubernetes.model.util.Helper
 import java.util.stream.Collectors
 
 const val MARKER_WILL_BE_DELETED = "willBeDeleted"
+const val API_GROUP_VERSION_DELIMITER = '/'
 
 /**
- * returns {@code true} if the given resource has the same
- * <ul>
- *     <li>kind</li>
- *     <li>apiVersion</li>
- *     <li>name</li>
- *     <li>namespace</li>
- * </ul>
+ * returns `true` if the given resource has the same
+ * - kind
+ * - apiVersion
+ * - name
+ * - namespace
  * regardless of other differences.
  * This method allows to determine resource identity across instances regardless of updates (ex. resource version) applied by the server
  *
@@ -131,7 +130,66 @@ fun getApiVersion(clazz: Class<out HasMetadata>): String {
 /**
  * Returns the version for given apiGroup and apiVersion. Both values are concatenated and separated by '/'.
  */
-fun getApiVersion(apiGroup: String, apiVersion: String) = "$apiGroup/$apiVersion"
+fun getApiVersion(apiGroup: String, apiVersion: String): String {
+	return "$apiGroup$API_GROUP_VERSION_DELIMITER$apiVersion"
+}
+
+/**
+ * Returns the apiGroup and apiVersion of the given [HasMetadata].
+ *
+ * @param resource the [HasMetadata] whose apiGroup and apiVersion should be returned
+ * @return the agiGroup and apiVersion of the given [HasMetadata]
+ *
+ * @see [io.fabric8.kubernetes.api.model.HasMetadata.getApiVersion]
+ */
+fun getApiGroupAndVersion(resource: HasMetadata): Pair<String?, String> {
+    val split = resource.apiVersion.split(API_GROUP_VERSION_DELIMITER)
+    return if (split.size == 1) {
+        Pair(null, split[0])
+    } else {
+        Pair(split[0], split[1])
+    }
+}
+
+/**
+ * Returns `true` if the given [HasMetadata] is matching the [CustomResourceDefinitionSpec]
+ * of the given [CustomResourceDefinition] in
+ * - group
+ * - version
+ * - kind
+ *
+ * @param resource the [HasMetadata] to check against the given definition
+ * @param definition the [CustomResourceDefinition] to check against the given resource
+ * @return true if the given resource is matching the given definition
+ *
+ * @see HasMetadata
+ * @see CustomResourceDefinition
+ */
+fun isMatching(resource: HasMetadata, definition: CustomResourceDefinition): Boolean {
+	val groupAndVersion = getApiGroupAndVersion(resource)
+	return isMatching(resource.kind, groupAndVersion.first, groupAndVersion.second, definition)
+}
+
+/**
+ * Returns `true` if the given [HasMetadata] is matching the given
+ * - kind
+ * - group
+ * - version
+ *
+ * @param kind the kind to check against the given definition
+ * @param apiGroup the apiGroup to check against the given definition
+ * @param apiVersion the apiVersion to check against the given definition
+ * @param definition the [CustomResourceDefinition] to check against the given resource
+ * @return true if the given resource is matching the given kind, apiGroup and apiVersion
+ *
+ * @see HasMetadata
+ * @see CustomResourceDefinition
+ */
+fun isMatching(kind: String, apiGroup: String?, apiVersion: String, definition: CustomResourceDefinition): Boolean {
+	return definition.spec.names.kind == kind
+			&& definition.spec.group == apiGroup
+			&& definition.spec.versions.find { it.name == apiVersion } != null
+}
 
 /**
  * Returns the version for given [CustomResourceDefinitionSpec].
@@ -141,7 +199,7 @@ fun getApiVersion(apiGroup: String, apiVersion: String) = "$apiGroup/$apiVersion
  *
  * @return the version for the given [CustomResourceDefinitionSpec]
  */
-fun getVersion(spec: CustomResourceDefinitionSpec): String {
+fun getHighestPriorityVersion(spec: CustomResourceDefinitionSpec): String {
 	val versions = spec.versions.map { it.name }
 	return KubernetesVersionPriority.highestPriority(versions) ?: spec.version
 }
@@ -154,12 +212,12 @@ fun getVersion(spec: CustomResourceDefinitionSpec): String {
  *
  * @return the [CustomResourceDefinitionContext] for the given [CustomResourceDefinition]
  *
- * @see [getVersion]
+ * @see [getHighestPriorityVersion]
  */
 fun createContext(definition: CustomResourceDefinition): CustomResourceDefinitionContext {
 	return CustomResourceDefinitionContext.Builder()
 		.withGroup(definition.spec.group)
-		.withVersion(getVersion(definition.spec)) // use version with highest priority
+		.withVersion(getHighestPriorityVersion(definition.spec)) // use version with highest priority
 		.withScope(definition.spec.scope)
 		.withName(definition.metadata.name)
 		.withPlural(definition.spec.names.plural)
