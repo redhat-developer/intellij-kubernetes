@@ -129,9 +129,14 @@ fun getApiVersion(clazz: Class<out HasMetadata>): String {
 
 /**
  * Returns the version for given apiGroup and apiVersion. Both values are concatenated and separated by '/'.
+ * If there is no apiGroup value, then only the apiVersion is returned.
  */
-fun getApiVersion(apiGroup: String, apiVersion: String): String {
-	return "$apiGroup$API_GROUP_VERSION_DELIMITER$apiVersion"
+fun getApiVersion(apiGroup: String?, apiVersion: String): String {
+	return if (apiGroup != null) {
+		"$apiGroup$API_GROUP_VERSION_DELIMITER$apiVersion"
+	} else {
+		apiVersion
+	}
 }
 
 /**

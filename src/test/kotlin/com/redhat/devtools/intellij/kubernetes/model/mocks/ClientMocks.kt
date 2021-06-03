@@ -162,24 +162,24 @@ object ClientMocks {
     }
 
     fun customResourceDefinition(
-            name: String,
-            namespace: String,
-            uid: String,
-            apiVersion: String,
-            version: String,
-            group: String,
-            kind: String,
-            scope: String): CustomResourceDefinition {
+        name: String,
+        namespace: String,
+        uid: String,
+        apiVersion: String,
+        specVersion: String,
+        specGroup: String?,
+        specKind: String,
+        specScope: String): CustomResourceDefinition {
         return customResourceDefinition(
             name,
             namespace,
             uid,
             apiVersion,
-            version,
-            listOf(version(version)),
-            group,
-            kind,
-            scope)
+            specVersion,
+            listOf(customResourceDefinitionVersion(specVersion)),
+            specGroup,
+            specKind,
+            specScope)
     }
 
     fun customResourceDefinition(
@@ -187,20 +187,20 @@ object ClientMocks {
         namespace: String,
         uid: String,
         apiVersion: String,
-        version: String,
-        versions: List<CustomResourceDefinitionVersion>,
-        group: String,
-        kind: String,
-        scope: String): CustomResourceDefinition {
+        specVersion: String,
+        specVersions: List<CustomResourceDefinitionVersion>,
+        specGroup: String?,
+        specKind: String,
+        specScope: String): CustomResourceDefinition {
         val names: CustomResourceDefinitionNames = mock {
-            on { mock.kind } doReturn kind
+            on { mock.kind } doReturn specKind
         }
         val spec = mock<CustomResourceDefinitionSpec> {
-            on { mock.version } doReturn version
-            on { mock.versions } doReturn versions
-            on { mock.group } doReturn group
+            on { mock.version } doReturn specVersion
+            on { mock.versions } doReturn specVersions
+            on { mock.group } doReturn specGroup
             on { mock.names } doReturn names
-            on { mock.scope } doReturn scope
+            on { mock.scope } doReturn specScope
         }
         val definition = resource<CustomResourceDefinition>(name, namespace, uid, apiVersion)
         whenever(definition.spec)
@@ -208,7 +208,7 @@ object ClientMocks {
         return definition
     }
 
-    private fun version(name: String): CustomResourceDefinitionVersion {
+    fun customResourceDefinitionVersion(name: String): CustomResourceDefinitionVersion {
         return mock {
             on { mock.name } doReturn name
         }
