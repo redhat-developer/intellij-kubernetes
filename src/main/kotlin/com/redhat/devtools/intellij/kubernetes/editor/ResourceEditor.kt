@@ -37,12 +37,17 @@ import com.redhat.devtools.intellij.kubernetes.model.IResourceModel
 import com.redhat.devtools.intellij.kubernetes.model.ModelChangeObservable
 import com.redhat.devtools.intellij.kubernetes.model.Notification
 import com.redhat.devtools.intellij.kubernetes.model.ResourceException
+import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.custom.CustomResourceDefinitionMapping
 import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.custom.GenericCustomResource
+import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.hasmetadata.HasMetadataResource
+import com.redhat.devtools.intellij.kubernetes.model.util.Clients
+import com.redhat.devtools.intellij.kubernetes.model.util.createClients
 import com.redhat.devtools.intellij.kubernetes.model.util.createResource
 import com.redhat.devtools.intellij.kubernetes.model.util.isSameResource
 import com.redhat.devtools.intellij.kubernetes.model.util.trimWithEllipsis
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.Namespace
+import io.fabric8.kubernetes.client.KubernetesClient
 import io.fabric8.kubernetes.client.KubernetesClientException
 import io.fabric8.kubernetes.client.utils.Serialization
 import org.apache.commons.io.FileUtils
@@ -57,6 +62,7 @@ import javax.swing.JComponent
 object ResourceEditor {
 
     private val KEY_CLUSTER_RESOURCE = Key<ClusterResource>(ClusterResource::class.java.name)
+    private val KEY_CLIENTS = Key<Clients<out KubernetesClient>>(Clients::class.java.name)
     private val resourceModel = ServiceManager.getService(IResourceModel::class.java)
 
     @Throws(IOException::class)
@@ -171,27 +177,25 @@ object ResourceEditor {
         return if (document?.text == null) {
             null
         } else {
-            createResource(document.text)
+            val clients = getOrCreateClients(editor)
+            if (clients == null) {
+                null
+            } else {
+                createResource(document.text, clients)
+            }
         }
     }
 
-    private fun createResource(jsonYaml: String): HasMetadata {
+    private fun createResource(jsonYaml: String, clients: Clients<out KubernetesClient>): HasMetadata {
         try {
-            return createResource<HasMetadata>(jsonYaml)
-        } catch (e: KubernetesClientException) {
-            if (e.cause is MismatchedInputException) {
-                // invalid json
-                throw ResourceException("Invalid yaml/json", e)
+            val resource = createResource<HasMetadataResource>(jsonYaml)
+            val definitions = CustomResourceDefinitionMapping.getDefinitions(clients.get())
+            return if (CustomResourceDefinitionMapping.isCustomResource(resource, definitions)) {
+                createResource<GenericCustomResource>(jsonYaml)
             } else {
-                // unknown type
-                try {
-                    return createResource<GenericCustomResource>(jsonYaml)
-                } catch (e: java.lang.RuntimeException) {
-                    throw ResourceException("Unknown resource type", e)
-                }
+                createResource(jsonYaml)
             }
         } catch (e: RuntimeException) {
-            // invalid json/Yaml
             throw ResourceException("Invalid yaml/json", e)
         }
     }
@@ -224,17 +228,22 @@ object ResourceEditor {
 
     fun push(editor: FileEditor, project: Project) {
         try {
-            val newResource = createResource(editor) ?: return
+            val editorResource = createResource(editor) ?: return
             try {
-                if (isSameResourceOnCluster(newResource, editor)) {
-                    pushSameResource(newResource, editor, project)
+                val cluster = getClusterResource(editor)
+                if (isSameResourceOnCluster(editorResource, cluster)) {
+                    pushResource(editorResource, cluster, editor, project)
                 } else {
-                    pushNewResource(newResource, editor, project)
+                    val newCluster = createClusterResource(editorResource, editor, project)
+                    val updatedResource = pushResource(editorResource, newCluster, editor, project)
+                    if (updatedResource != null) {
+                        renameEditor(editor, updatedResource)
+                    }
                 }
             } catch (e: ResourceException) {
                 logger<ResourceEditor>().warn(e)
                 Notification().error(
-                    "Could not save ${newResource.kind} ${newResource.metadata.name} to cluster",
+                    "Could not save ${editorResource.kind} ${editorResource.metadata.name} to cluster",
                     trimWithEllipsis(e.message, 300) ?: ""
                 )
             }
@@ -243,27 +252,19 @@ object ResourceEditor {
         }
     }
 
-    private fun isSameResourceOnCluster(resource: HasMetadata, editor: FileEditor): Boolean {
-        val oldClusterResource = getClusterResource(editor)
-        val oldResource = oldClusterResource?.get(false)
+    private fun isSameResourceOnCluster(resource: HasMetadata, cluster: ClusterResource?): Boolean {
+        val oldResource = cluster?.get(false)
         return oldResource != null
                 && oldResource.isSameResource(resource)
     }
 
-    private fun pushSameResource(resource: HasMetadata, editor: FileEditor, project: Project): HasMetadata? {
-        val cluster = createClusterResource(resource, editor, project) ?: return null
+    private fun pushResource(resource: HasMetadata, cluster: ClusterResource?, editor: FileEditor, project: Project): HasMetadata? {
+        if (cluster == null) {
+            return null
+        }
         hideNotifications(editor, project)
         val updatedResource = cluster.push(resource) ?: return null
         reloadEditor(updatedResource, editor)
-        return updatedResource
-    }
-
-    private fun pushNewResource(resource: HasMetadata, editor: FileEditor, project: Project): HasMetadata? {
-        val cluster = createClusterResource(resource, editor, project) ?: return null
-        hideNotifications(editor, project)
-        val updatedResource = cluster.push(resource) ?: return null
-        reloadEditor(updatedResource, editor)
-        renameEditor(editor, resource)
         return updatedResource
     }
 
@@ -297,13 +298,8 @@ object ResourceEditor {
         clusterResource.stopWatch()
     }
 
-    private fun getOrCreateClusterResource(resource: HasMetadata, editor: FileEditor?, project: Project): ClusterResource? {
-        var cluster = getClusterResource(editor)
-        if (cluster == null
-            || !cluster.isSameResource(resource)) {
-            cluster = createClusterResource(resource, editor, project)
-        }
-        return cluster
+    fun enableNonProjectFileEditing(file: VirtualFile?) {
+        file?.putUserData(AllowNonProjectEditing.ALLOW_NON_PROJECT_EDITING, true)
     }
 
     private fun getClusterResource(editor: FileEditor?): ClusterResource? {
@@ -311,6 +307,15 @@ object ResourceEditor {
             return null
         }
         return editor.getUserData(KEY_CLUSTER_RESOURCE)
+    }
+
+    private fun getOrCreateClusterResource(resource: HasMetadata, editor: FileEditor?, project: Project): ClusterResource? {
+        var cluster = getClusterResource(editor)
+        if (cluster == null
+            || !cluster.isSameResource(resource)) {
+            cluster = createClusterResource(resource, editor, project)
+        }
+        return cluster
     }
 
     private fun createClusterResource(resource: HasMetadata?, editor: FileEditor?, project: Project): ClusterResource? {
@@ -321,25 +326,39 @@ object ResourceEditor {
         if (resource == null) {
             return null
         }
-        val cluster = createClusterResource(resource) ?: return null
-        editor.putUserData(KEY_CLUSTER_RESOURCE, cluster)
-        cluster.addListener(onResourceChanged(editor, project))
-        cluster.watch()
-        return cluster
+        val clients = getOrCreateClients(editor)
+        val clusterResource = createClusterResource(resource, clients) ?: return null
+        editor.putUserData(KEY_CLUSTER_RESOURCE, clusterResource)
+        clusterResource.addListener(onResourceChanged(editor, project))
+        clusterResource.watch()
+        return clusterResource
     }
 
-    private fun createClusterResource(resource: HasMetadata?): ClusterResource? {
+    private fun createClusterResource(resource: HasMetadata?, clients: Clients<out KubernetesClient>?): ClusterResource? {
         var clusterResource: ClusterResource? = null
-        if (resource != null) {
+        if (resource != null
+            && clients != null) {
+            clusterResource = ClusterResource(resource, clients)
+        }
+        return clusterResource
+    }
+
+    private fun getOrCreateClients(editor: FileEditor?): Clients<out KubernetesClient>? {
+        if (editor == null) {
+            return null
+        }
+        var clients = editor.getUserData(KEY_CLIENTS)
+        if (clients == null) {
             // we're using the current context (and the namespace in the resource).
             // This may be wrong for editors that are restored after IDE restart
             // TODO: save context as [FileAttribute] for the file so that it can be restored
             val context = resourceModel.getCurrentContext()
             if (context != null) {
-                clusterResource = ClusterResource(resource, context.context.context.cluster)
+                clients = ::createClients.invoke(context.context.context.cluster)
+                editor.putUserData(KEY_CLIENTS, clients)
             }
         }
-        return clusterResource
+        return clients
     }
 
     private fun onResourceChanged(editor: FileEditor, project: Project): ModelChangeObservable.IResourceChangeListener {
@@ -462,11 +481,6 @@ object ResourceEditor {
             }
             return name.removeRange(suffixStart, suffixStop + 1)
         }
-
-    }
-
-    fun enableNonProjectFileEditing(file: VirtualFile?) {
-        file?.putUserData(AllowNonProjectEditing.ALLOW_NON_PROJECT_EDITING, true)
     }
 }
 

@@ -333,7 +333,7 @@ class ClusterResourceTest {
         clients: Clients<KubernetesClient>,
         watch: ResourceWatch<HasMetadata>,
         observable: ModelChangeObservable
-    ) : ClusterResource(resource, "ClusterResourceTest", clients, watch, observable) {
+    ) : ClusterResource(resource, clients, watch, observable) {
 
         public override val watchListeners: ResourceWatch.WatchListeners
             get() {

@@ -36,7 +36,7 @@ import io.fabric8.kubernetes.api.model.storage.StorageClass
 import com.redhat.devtools.intellij.kubernetes.model.IResourceModel
 import com.redhat.devtools.intellij.kubernetes.model.context.KubernetesContext
 import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.custom.GenericCustomResource
-import com.redhat.devtools.intellij.kubernetes.model.util.getVersion
+import com.redhat.devtools.intellij.kubernetes.model.util.getHighestPriorityVersion
 import com.redhat.devtools.intellij.kubernetes.tree.AbstractTreeStructureContribution.DescriptorFactory
 import com.redhat.devtools.intellij.kubernetes.tree.TreeStructure.ResourceDescriptor
 import com.redhat.devtools.intellij.kubernetes.tree.TreeStructure.ResourcePropertyDescriptor
@@ -159,7 +159,7 @@ object KubernetesDescriptors {
 				return
 			}
 			presentation.addText(getLabel(element!!), SimpleTextAttributes.REGULAR_ATTRIBUTES)
-			presentation.addText(" (${element!!.spec.group}/${getVersion(element!!.spec)})", SimpleTextAttributes.GRAYED_SMALL_ATTRIBUTES)
+			presentation.addText(" (${element!!.spec.group}/${getHighestPriorityVersion(element!!.spec)})", SimpleTextAttributes.GRAYED_SMALL_ATTRIBUTES)
 		}
 
 		override fun watchResources() {

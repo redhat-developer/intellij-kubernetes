@@ -8,37 +8,29 @@
  * Contributors:
  * Red Hat, Inc. - initial API and implementation
  ******************************************************************************/
-package com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.custom
+package com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.hasmetadata
 
-import com.fasterxml.jackson.core.type.TypeReference
 import com.fasterxml.jackson.databind.JsonNode
 import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.AbstractResourceFactory
-import io.fabric8.kubernetes.client.utils.Serialization
 
-object GenericCustomResourceFactory: AbstractResourceFactory<GenericCustomResource>() {
+object HasMetadataResourceFactory: AbstractResourceFactory<HasMetadataResource>() {
 
 	const val SPEC = "spec"
 
-	override fun createResource(item: Map<String, Any?>): GenericCustomResource {
+	override fun createResource(item: Map<String, Any?>): HasMetadataResource {
 		@Suppress("UNCHECKED_CAST")
-		return GenericCustomResource(
+		return HasMetadataResource(
 			item[KIND] as? String,
 			item[API_VERSION] as? String,
-			createObjectMetadata(item[METADATA] as? Map<String, Any?>),
-			item[SPEC] as? Map<String, Any?>?
+			createObjectMetadata(item[METADATA] as? Map<String, Any?>)
 		)
 	}
 
-	override fun createResource(node: JsonNode): GenericCustomResource {
-		return GenericCustomResource(
+	override fun createResource(node: JsonNode): HasMetadataResource {
+		return HasMetadataResource(
 			node.get(KIND).asText(),
 			node.get(API_VERSION).asText(),
-			createObjectMetadata(node.get(METADATA)),
-			createSpec(node.get(SPEC))
+			createObjectMetadata(node.get(METADATA))
 		)
-	}
-
-	private fun createSpec(node: JsonNode?): Map<String, Any?> {
-		return Serialization.jsonMapper().convertValue(node, object : TypeReference<Map<String, Any>>() {})
 	}
 }

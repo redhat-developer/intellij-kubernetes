@@ -13,6 +13,9 @@ package com.redhat.devtools.intellij.kubernetes.model.util
 import io.fabric8.kubernetes.api.model.Pod
 import org.assertj.core.api.Assertions.assertThat
 import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.resource
+import io.fabric8.kubernetes.api.model.HasMetadata
+import io.fabric8.kubernetes.api.model.Service
+import io.fabric8.kubernetes.api.model.storage.StorageClass
 import io.fabric8.openshift.api.model.BuildConfig
 import org.junit.Test
 
@@ -69,10 +72,76 @@ class ResourceUtilsTest {
 	}
 
 	@Test
+	fun `#isSameName should return false if both resources differ in name`() {
+		// given
+		val morpheus = resource<Pod>("morpheus", "zion", "uid", "v1","1")
+		val neo = resource<Pod>("neo", "zion", "uid", "v1","1")
+		// when
+		val same = morpheus.isSameName(neo)
+		// then
+		assertThat(same).isFalse()
+	}
+
+	@Test
+	fun `#isSameName should return true if both resources have same name`() {
+		// given
+		val neo1 = resource<Pod>("neo", "zion1", "uid1", "v1","1")
+		val neo2 = resource<Pod>("neo", "zion2", "uid2", "v2","2")
+		// when
+		val same = neo1.isSameName(neo2)
+		// then
+		assertThat(same).isTrue()
+	}
+
+	@Test
+	fun `#isSameNamespace should return false if both resources differ in namespace`() {
+		// given
+		val neoMatrix = resource<Pod>("neo", "matrix", "uid", "v1","1")
+		val neoZion = resource<Pod>("neo", "zion", "uid", "v1","1")
+		// when
+		val same = neoMatrix.isSameNamespace(neoZion)
+		// then
+		assertThat(same).isFalse()
+	}
+
+	@Test
+	fun `#isSameNamespace should return true if both resources have same namespace`() {
+		// given
+		val neoMatrix = resource<Pod>("neo1", "zion", "uid1", "v1","1")
+		val neoZion = resource<Pod>("neo2", "zion", "uid2", "v2","2")
+		// when
+		val same = neoMatrix.isSameNamespace(neoZion)
+		// then
+		assertThat(same).isTrue()
+	}
+
+	@Test
+	fun `#isSameKind should return false if both resources differ in kind`() {
+		// given
+		val neoMatrix = resource<Service>("neo1", "zion1", "uid", "v1","1")
+		val neoZion = resource<Pod>("neo2", "zion2", "uid", "v1","1")
+		// when
+		val same = neoMatrix.isSameKind(neoZion)
+		// then
+		assertThat(same).isFalse()
+	}
+
+	@Test
+	fun `#isSameKind should return true if both resources have same kind`() {
+		// given
+		val neoMatrix = resource<Pod>("neo", "matrix", "uid1", "v2","1")
+		val neoZion = resource<Pod>("neo", "zion", "uid2", "v2","2")
+		// when
+		val same = neoMatrix.isSameKind(neoZion)
+		// then
+		assertThat(same).isTrue()
+	}
+
+	@Test
 	fun `#isSameResource should return true if both resources only differ in version`() {
 		// given
-		val version1001 = resource<Pod>("nemo", "ns", "red pill", "v1","1001")
-		val version2002 = resource<Pod>("nemo", "ns", "red pill", "v1","2002")
+		val version1001 = resource<Pod>("neo", "ns", "red pill", "v1","1001")
+		val version2002 = resource<Pod>("neo", "ns", "red pill", "v1","2002")
 		// when
 		val same = version1001.isSameResource(version2002)
 		// then
@@ -82,8 +151,8 @@ class ResourceUtilsTest {
 	@Test
 	fun `#isSameResource should return true if both resources differ in uid`() {
 		// given
-		val redPillUid = resource<Pod>("nemo", "ns", "red pill", "v1","1")
-		val bluePillUid = resource<Pod>("nemo", "ns", "blue pill", "v1","1")
+		val redPillUid = resource<Pod>("neo", "ns", "red pill", "v1","1")
+		val bluePillUid = resource<Pod>("neo", "ns", "blue pill", "v1","1")
 		// when
 		val same = redPillUid.isSameResource(bluePillUid)
 		// then difference in uid should not matter
@@ -93,10 +162,10 @@ class ResourceUtilsTest {
 	@Test
 	fun `#isSameResource should return false if both resources differ in name`() {
 		// given
-		val nemo = resource<Pod>("nemo", "ns", "uid", "v1","1")
+		val neo = resource<Pod>("neo", "ns", "uid", "v1","1")
 		val morpheus = resource<Pod>("morpheus", "ns", "uid", "v1","1")
 		// when
-		val same = nemo.isSameResource(morpheus)
+		val same = neo.isSameResource(morpheus)
 		// then
 		assertThat(same).isFalse()
 	}
@@ -104,8 +173,8 @@ class ResourceUtilsTest {
 	@Test
 	fun `#isSameResource should return false if both resources differ in namespace`() {
 		// given
-		val matrixNamespace = resource<Pod>("nemo", "matrix", "uid", "v1","1")
-		val zionNamespace = resource<Pod>("nemo", "zion", "uid", "v1","1")
+		val matrixNamespace = resource<Pod>("neo", "matrix", "uid", "v1","1")
+		val zionNamespace = resource<Pod>("neo", "zion", "uid", "v1","1")
 		// when
 		val same = matrixNamespace.isSameResource(zionNamespace)
 		// then
@@ -115,8 +184,8 @@ class ResourceUtilsTest {
 	@Test
 	fun `#isSameResource should return false if both resources have different kind`() {
 		// given
-		val pod = resource<Pod>("nemo", "zion", "uid", "v1","link")
-		val buildConfig = resource<BuildConfig>("nemo", "zion", "uid", "v1","link")
+		val pod = resource<Pod>("neo", "zion", "uid", "v1","link")
+		val buildConfig = resource<BuildConfig>("neo", "zion", "uid", "v1","link")
 		// when
 		val same = pod.isSameResource(buildConfig)
 		// then
@@ -126,8 +195,8 @@ class ResourceUtilsTest {
 	@Test
 	fun `#isSameResource should return false if both resources differ in apiVersion`() {
 		// given
-		val apiVersion1 = resource<Pod>("nemo", "matrix", "uid", "v1","1")
-		val apiVersion2 = resource<Pod>("nemo", "zion", "uid", "v2","1")
+		val apiVersion1 = resource<Pod>("neo", "matrix", "uid", "v1","1")
+		val apiVersion2 = resource<Pod>("neo", "zion", "uid", "v2","1")
 		// when
 		val same = apiVersion1.isSameResource(apiVersion2)
 		// then
@@ -232,4 +301,77 @@ class ResourceUtilsTest {
 		// then
 		assertThat(newer).isFalse()
 	}
+
+	@Test
+	fun `#getApiVersion should concatenate group and version with delimiter`() {
+		// given
+		val group = "group"
+		val version = "version"
+		// when
+		val apiVersion = getApiVersion(group, version)
+		// then
+		assertThat(apiVersion).isEqualTo("$group$API_GROUP_VERSION_DELIMITER$version")
+	}
+
+	@Test
+	fun `#getApiVersion should concatenate group and version found in class annotation`() {
+		// given
+		// StorageClass
+		// @Version("v1")
+		// @Group("storage.k8s.io")
+		// when
+		val apiVersion = getApiVersion(StorageClass::class.java)
+		// then
+		assertThat(apiVersion).isEqualTo("storage.k8s.io/v1")
+	}
+
+	@Test
+	fun `#getApiVersion should return only version if there is no group`() {
+		// given
+		// Pod
+		// @Version("v1")
+		// @Group("")
+		// when
+		val apiVersion = getApiVersion(Pod::class.java)
+		// then
+		assertThat(apiVersion).isEqualTo("v1")
+	}
+
+	@Test
+	fun `#getApiVersion should return simple class name if class has annotations`() {
+		// given
+		// Pod
+		// @Version("v1")
+		// @Group("")
+		// when
+		val apiVersion = getApiVersion(HasMetadata::class.java)
+		// then
+		assertThat(apiVersion).isEqualTo(HasMetadata::class.java.simpleName)
+	}
+
+	@Test
+	fun `#getApiGroupAndVersion should return group and version if both exist in apiVersion`() {
+		// given
+		val group = "neoGroup"
+		val version = "neoVersion"
+		val neo = resource<Pod>("neo", "zion", "uid", "$group/$version","1")
+		// when
+		val groupAndVersion = getApiGroupAndVersion(neo)
+		// then
+		assertThat(groupAndVersion.first).isEqualTo(group)
+		assertThat(groupAndVersion.second).isEqualTo(version)
+	}
+
+	@Test
+	fun `#getApiGroupAndVersion should return version if no group exists`() {
+		// given
+		val version = "neoVersion"
+		val neo = resource<Pod>("neo", "zion", "uid", "$version","1")
+		// when
+		val groupAndVersion = getApiGroupAndVersion(neo)
+		// then
+		assertThat(groupAndVersion.first).isNull()
+		assertThat(groupAndVersion.second).isEqualTo(version)
+	}
+
 }
