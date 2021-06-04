@@ -235,7 +235,7 @@ object ClientMocks {
 
     fun customResourceDefinitionVersion(name: String): CustomResourceDefinitionVersion {
         return mock {
-            on { mock.name } doReturn name
+            on { getName() } doReturn name
         }
     }
 

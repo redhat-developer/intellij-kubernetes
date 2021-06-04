@@ -17,13 +17,13 @@ import io.fabric8.kubernetes.client.KubernetesClient
 
 object CustomResourceDefinitionMapping {
 
-    fun getCustomResourceDefinition(resource: HasMetadata, definitions: Collection<CustomResourceDefinition>): CustomResourceDefinition? {
+    fun getDefinitionFor(resource: HasMetadata, definitions: Collection<CustomResourceDefinition>): CustomResourceDefinition? {
         return definitions
             .firstOrNull { definition -> isMatchingSpec(resource, definition) }
     }
 
     fun isCustomResource(resource: HasMetadata, definitions: Collection<CustomResourceDefinition>): Boolean {
-        return getCustomResourceDefinition(resource, definitions) != null
+        return getDefinitionFor(resource, definitions) != null
     }
 
     fun getDefinitions(client: KubernetesClient): Collection<CustomResourceDefinition> {
