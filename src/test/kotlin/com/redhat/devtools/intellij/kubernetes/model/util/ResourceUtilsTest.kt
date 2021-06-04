@@ -10,7 +10,6 @@
  ******************************************************************************/
 package com.redhat.devtools.intellij.kubernetes.model.util
 
-import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks
 import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.resource
 import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.customResourceDefinition
 import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.customResourceDefinitionVersion
@@ -381,7 +380,7 @@ class ResourceUtilsTest {
 	}
 
 	@Test
-	fun `#isMatching should return true if crd has spec with same kind, group and version`() {
+	fun `#isMatchingSpec should return true if crd has spec with same kind, group and version`() {
 		// given
 		val group = null
 		val version = "v1"
@@ -402,13 +401,13 @@ class ResourceUtilsTest {
 			CustomResourceScope.CLUSTER
 		)
 		// when
-		val matching = isMatching(neo, crd)
+		val matching = isMatchingSpec(neo, crd)
 		// then
 		assertThat(matching).isTrue()
 	}
 
 	@Test
-	fun `#isMatching should return false if crd has spec with different kind`() {
+	fun `#isMatchingSpec should return false if crd has spec with different kind`() {
 		// given
 		val group = null
 		val version = "v1"
@@ -425,13 +424,13 @@ class ResourceUtilsTest {
 			CustomResourceScope.CLUSTER
 		)
 		// when
-		val matching = isMatching(neo, crd)
+		val matching = isMatchingSpec(neo, crd)
 		// then
 		assertThat(matching).isFalse()
 	}
 
 	@Test
-	fun `#isMatching should return false if crd has spec with different version`() {
+	fun `#isMatchingSpec should return false if crd has spec with different version`() {
 		// given
 		val group = null
 		val version = "v1"
@@ -449,7 +448,7 @@ class ResourceUtilsTest {
 			CustomResourceScope.CLUSTER
 		)
 		// when
-		val matching = isMatching(neo, crd)
+		val matching = isMatchingSpec(neo, crd)
 		// then
 		assertThat(matching).isFalse()
 	}

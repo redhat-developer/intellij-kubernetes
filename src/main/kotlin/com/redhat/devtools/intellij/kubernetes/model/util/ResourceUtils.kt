@@ -170,9 +170,9 @@ fun getApiGroupAndVersion(resource: HasMetadata): Pair<String?, String> {
  * @see HasMetadata
  * @see CustomResourceDefinition
  */
-fun isMatching(resource: HasMetadata, definition: CustomResourceDefinition): Boolean {
+fun isMatchingSpec(resource: HasMetadata, definition: CustomResourceDefinition): Boolean {
 	val groupAndVersion = getApiGroupAndVersion(resource)
-	return isMatching(resource.kind, groupAndVersion.first, groupAndVersion.second, definition)
+	return isMatchingSpec(resource.kind, groupAndVersion.first, groupAndVersion.second, definition)
 }
 
 /**
@@ -190,7 +190,7 @@ fun isMatching(resource: HasMetadata, definition: CustomResourceDefinition): Boo
  * @see HasMetadata
  * @see CustomResourceDefinition
  */
-fun isMatching(kind: String, apiGroup: String?, apiVersion: String, definition: CustomResourceDefinition): Boolean {
+fun isMatchingSpec(kind: String, apiGroup: String?, apiVersion: String, definition: CustomResourceDefinition): Boolean {
 	return definition.spec.names.kind == kind
 			&& definition.spec.group == apiGroup
 			&& definition.spec.versions.find { it.name == apiVersion } != null
