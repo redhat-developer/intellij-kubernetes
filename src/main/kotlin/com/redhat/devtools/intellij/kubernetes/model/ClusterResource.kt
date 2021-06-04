@@ -35,7 +35,7 @@ open class ClusterResource(
 ) {
     private val initialResource: HasMetadata = resource
     protected open var updatedResource: HasMetadata? = null
-    private val operator: IResourceOperator<out HasMetadata>? by lazy {
+    protected open val operator: IResourceOperator<out HasMetadata>? by lazy {
         createOperator(resource)
     }
     protected open val watchListeners = WatchListeners(
@@ -119,6 +119,18 @@ open class ClusterResource(
         }
     }
 
+    fun canPush(toCompare: HasMetadata?): Boolean {
+        if (toCompare == null) {
+            return true
+        }
+        val resource = get(false)
+        return if (resource == null) {
+            true
+        } else {
+            isModified(toCompare)
+        }
+    }
+
     /**
      * Pushes the given resource to the cluster. The currently existing resource on the cluster is replaced
      * if it is the same resource in an older version. A new resource is created if the given resource
@@ -188,7 +200,7 @@ open class ClusterResource(
 
     /**
      * Returns `true` if the given resource is the same as the resource that was given when creating this cluster resource instance.
-     * Returns `false` otherwise
+     * Returns `false` otherwise.
      *
      * @param toCompare the resource to compare to the initial cluster resource
      * @return true if the given resource is the same as the initial resource in this cluster resource
@@ -199,24 +211,12 @@ open class ClusterResource(
         try {
             val resource = get(false)
             if (toCompare == null) {
-                return resource != null
+                return resource == null
             }
 
             return toCompare.isSameResource(resource)
         } catch (e: ResourceException) {
             return false
-        }
-    }
-
-    fun canPush(toCompare: HasMetadata?): Boolean {
-        val resource = get(false)
-        if (toCompare == null) {
-            return true
-        }
-        return if (resource == null) {
-            true
-        } else {
-            isModified(toCompare)
         }
     }
 
