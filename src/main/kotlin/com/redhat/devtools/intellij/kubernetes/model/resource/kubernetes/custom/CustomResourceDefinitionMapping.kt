@@ -10,7 +10,7 @@
  ******************************************************************************/
 package com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.custom
 
-import com.redhat.devtools.intellij.kubernetes.model.util.isMatching
+import com.redhat.devtools.intellij.kubernetes.model.util.isMatchingSpec
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.apiextensions.v1beta1.CustomResourceDefinition
 import io.fabric8.kubernetes.client.KubernetesClient
@@ -19,7 +19,7 @@ object CustomResourceDefinitionMapping {
 
     fun getCustomResourceDefinition(resource: HasMetadata, definitions: Collection<CustomResourceDefinition>): CustomResourceDefinition? {
         return definitions
-            .firstOrNull { definition -> isMatching(resource, definition) }
+            .firstOrNull { definition -> isMatchingSpec(resource, definition) }
     }
 
     fun isCustomResource(resource: HasMetadata, definitions: Collection<CustomResourceDefinition>): Boolean {
