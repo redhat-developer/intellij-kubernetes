@@ -119,7 +119,7 @@ object ResourceEditor {
         } else if (clusterResource.isOutdated(resource)) {
             ReloadNotification.show(editor, resource, project)
         } else if (clusterResource.canPush(resource)) {
-            PushNotification.show(editor, resource, project)
+            PushNotification.show(editor, project)
         }
     }
 
