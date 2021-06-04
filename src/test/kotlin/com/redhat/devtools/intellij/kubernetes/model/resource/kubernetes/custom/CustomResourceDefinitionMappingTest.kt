@@ -11,7 +11,6 @@
 package com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.custom
 
 import com.nhaarman.mockitokotlin2.verify
-import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks
 import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.client
 import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.resource
 import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.customResourceDefinition
@@ -28,6 +27,7 @@ class CustomResourceDefinitionMappingTest {
     private val version = "v1"
     private val neo = resource<HasMetadataResource>("neo", "zion", "uid", getApiVersion(group, version), "1")
     private val kind = neo.kind!!
+    private val morpheus = resource<HasMetadataResource>("morpheus", "zion", "uid", getApiVersion(group, "v2021"), "1")
 
     private val crd1 = customResourceDefinition(
         "crd1", "ns1", "uid1", "apiVersion1",
@@ -43,7 +43,7 @@ class CustomResourceDefinitionMappingTest {
         "crd2", "ns2", "uid2", "apiVersion2",
         version,
         listOf(
-            customResourceDefinitionVersion("v84"),
+            customResourceDefinitionVersion("84"),
             customResourceDefinitionVersion(version),
             customResourceDefinitionVersion("v21")
         ),
@@ -74,34 +74,32 @@ class CustomResourceDefinitionMappingTest {
         CustomResourceScope.CLUSTER
     )
 
-    private val morpheus = resource<HasMetadataResource>("morpheus", "zion", "uid", getApiVersion(group, "v2021"), "1")
-
     @Test
-    fun `#getCustomResourceDefinition should return crd that has spec with same kind, group and version`() {
+    fun `#getDefinitionFor should return crd that has spec with same kind, group and version`() {
         // given
         val crds = listOf(crd1, crd2, crd3)
         // when
-        val crd = CustomResourceDefinitionMapping.getCustomResourceDefinition(neo, crds)
+        val crd = CustomResourceDefinitionMapping.getDefinitionFor(neo, crds)
         // then
         assertThat(crd).isEqualTo(crd2)
     }
 
     @Test
-    fun `#getCustomResourceDefinition should return null if has no crd with spec that matches resource`() {
+    fun `#getDefinitionFor should return null if has no crd with spec that matches resource`() {
         // given
         val crds = listOf(crd1, crd3)
         // when
-        val crd = CustomResourceDefinitionMapping.getCustomResourceDefinition(neo, crds)
+        val crd = CustomResourceDefinitionMapping.getDefinitionFor(neo, crds)
         // then
         assertThat(crd).isNull()
     }
 
     @Test
-    fun `#getCustomResourceDefinition should return first crd that matches if there are several ones`() {
+    fun `#getDefinitionFor should return first crd that matches if there are several ones`() {
         // given crd2 & crd4 are matching
         val crds = listOf(crd1, crd2, crd3, crd4 )
         // when
-        val crd = CustomResourceDefinitionMapping.getCustomResourceDefinition(neo, crds)
+        val crd = CustomResourceDefinitionMapping.getDefinitionFor(neo, crds)
         // then crd2 is returned
         assertThat(crd).isEqualTo(crd2)
     }
@@ -137,6 +135,6 @@ class CustomResourceDefinitionMappingTest {
         // when
         CustomResourceDefinitionMapping.getDefinitions(client)
         // then
-        verify(client.apiextensions().v1beta1().customResourceDefinitions().list())
+        verify(client.apiextensions().v1beta1().customResourceDefinitions().list()).items
     }
 }
