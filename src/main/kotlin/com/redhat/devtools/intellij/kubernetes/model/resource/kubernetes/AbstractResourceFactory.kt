@@ -79,7 +79,7 @@ abstract class AbstractResourceFactory<T : HasMetadata> {
             .withSelfLink(metadata.get(SELF_LINK)?.asText())
             .withUid(metadata.get(UID)?.asText())
             .withLabels(Serialization.jsonMapper().convertValue(
-                    metadata.get(LABELS), object : TypeReference<Map<String, Any>>() {})
+                    metadata.get(LABELS), object : TypeReference<Map<String, String>>() {})
             )
             .build()
     }
