@@ -13,6 +13,8 @@ package com.redhat.devtools.intellij.kubernetes.model.mocks
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.whenever
+import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.custom.GenericCustomResource
+import com.redhat.devtools.intellij.kubernetes.model.util.getApiVersion
 import io.fabric8.kubernetes.api.model.Context
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.NamedContext
@@ -22,17 +24,18 @@ import io.fabric8.kubernetes.api.model.ObjectMeta
 import io.fabric8.kubernetes.api.model.Pod
 import io.fabric8.kubernetes.api.model.PodList
 import io.fabric8.kubernetes.api.model.apiextensions.v1beta1.CustomResourceDefinition
+import io.fabric8.kubernetes.api.model.apiextensions.v1beta1.CustomResourceDefinitionList
 import io.fabric8.kubernetes.api.model.apiextensions.v1beta1.CustomResourceDefinitionNames
 import io.fabric8.kubernetes.api.model.apiextensions.v1beta1.CustomResourceDefinitionSpec
 import io.fabric8.kubernetes.api.model.apiextensions.v1beta1.CustomResourceDefinitionVersion
 import io.fabric8.kubernetes.client.Config
+import io.fabric8.kubernetes.client.KubernetesClient
+import io.fabric8.kubernetes.client.V1beta1ApiextensionAPIGroupDSL
+import io.fabric8.kubernetes.client.dsl.ApiextensionsAPIGroupDSL
 import io.fabric8.kubernetes.client.dsl.MixedOperation
 import io.fabric8.kubernetes.client.dsl.NonNamespaceOperation
 import io.fabric8.kubernetes.client.dsl.PodResource
 import io.fabric8.kubernetes.client.dsl.Resource
-import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.custom.GenericCustomResource
-import com.redhat.devtools.intellij.kubernetes.model.util.getApiVersion
-import io.fabric8.kubernetes.client.KubernetesClient
 import org.mockito.ArgumentMatchers
 import java.net.URL
 
@@ -49,18 +52,24 @@ object ClientMocks {
     val POD2 = resource<Pod>("pod2", "namespace2", "podUid2", "v1", "1")
     val POD3 = resource<Pod>("pod3", "namespace3", "podUid3", "v1", "1")
 
-    fun client(currentNamespace: String?, namespaces: Array<Namespace>, masterUrl: URL = URL("http://localhost"))
-            : KubernetesClient {
+    fun client(
+        currentNamespace: String?,
+        namespaces: Array<Namespace>,
+        masterUrl: URL = URL("http://localhost"),
+        customResourceDefinitions: List<CustomResourceDefinition> = emptyList()
+    ): KubernetesClient {
         val namespacesMock = namespaceListOperation(namespaces)
         val config = mock<Config> {
             on { namespace } doReturn currentNamespace
         }
+        val apiExtensions = apiextensionsOperation(customResourceDefinitions)
 
         return mock {
             on { namespaces() } doReturn namespacesMock
             on { namespace } doReturn currentNamespace
             on { configuration } doReturn config
             on { getMasterUrl() } doReturn masterUrl
+            on { apiextensions() } doReturn apiExtensions
         }
     }
 
@@ -72,6 +81,22 @@ object ClientMocks {
             on { list() } doReturn namespaceList
         }
     }
+
+    private fun apiextensionsOperation(definitions: List<CustomResourceDefinition>): ApiextensionsAPIGroupDSL {
+        val v1beta1CrdListOperation: CustomResourceDefinitionList = mock {
+            on { items } doReturn definitions
+        }
+        val v1beta1CrdsOperation = mock<MixedOperation<CustomResourceDefinition, CustomResourceDefinitionList, Resource<CustomResourceDefinition>>> {
+            on { list() } doReturn v1beta1CrdListOperation
+        }
+        val v1beta1Operation: V1beta1ApiextensionAPIGroupDSL = mock {
+            on { customResourceDefinitions() } doReturn v1beta1CrdsOperation
+        }
+        return mock {
+            on { v1beta1() } doReturn v1beta1Operation
+        }
+    }
+
 
     fun inNamespace(mixedOp: MixedOperation<Pod, PodList, PodResource<Pod>>)
             : NonNamespaceOperation<Pod, PodList, PodResource<Pod>> {
