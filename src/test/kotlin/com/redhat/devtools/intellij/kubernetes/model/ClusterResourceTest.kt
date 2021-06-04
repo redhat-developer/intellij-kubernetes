@@ -28,6 +28,7 @@ import com.redhat.devtools.intellij.kubernetes.model.util.Clients
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.Namespace
 import io.fabric8.kubernetes.api.model.Pod
+import io.fabric8.kubernetes.api.model.PodBuilder
 import io.fabric8.kubernetes.client.KubernetesClient
 import io.fabric8.kubernetes.client.KubernetesClientException
 import io.fabric8.kubernetes.client.Watch
@@ -133,7 +134,93 @@ class ClusterResourceTest {
     }
 
     @Test
-    fun `#save should replace if exists on cluster`() {
+    fun `#canPush should return true if cluster has no resource`() {
+        // given
+        whenever(operator.get(any()))
+            .doReturn(null)
+        // when
+        val canPush = cluster.canPush(endorResource)
+        // then
+        assertThat(canPush).isTrue()
+    }
+
+    @Test
+    fun `#canPush should return true if given resource is null`() {
+        // given
+        // when
+        val canPush = cluster.canPush(null)
+        // then
+        assertThat(canPush).isTrue()
+    }
+
+    @Test
+    fun `#canPush should return true if given resource is modified`() {
+        // given
+        val modifiedResource = PodBuilder(endorResourceOnCluster)
+                .editOrNewMetadata()
+                .withNewResourceVersion("resourceVersion-42")
+                .endMetadata()
+            .build()
+        // when
+        val canPush = cluster.canPush(modifiedResource)
+        // then
+        assertThat(canPush).isTrue()
+    }
+
+    @Test
+    fun `#canPush should return false if given resource has different name (new cluster resource should be created)`() {
+        // given
+        val differentName = PodBuilder(endorResourceOnCluster)
+            .editOrNewMetadata()
+            .withNewName("name-42")
+            .endMetadata()
+            .build()
+        // when
+        val canPush = cluster.canPush(differentName)
+        // then
+        assertThat(canPush).isFalse()
+    }
+
+    @Test
+    fun `#canPush should return false if given resource has different namespace (new cluster resource should be created)`() {
+        // given
+        val differentNamespace = PodBuilder(endorResourceOnCluster)
+            .editOrNewMetadata()
+            .withNewNamespace("namespace-42")
+            .endMetadata()
+            .build()
+        // when
+        val canPush = cluster.canPush(differentNamespace)
+        // then
+        assertThat(canPush).isFalse()
+    }
+
+    @Test
+    fun `#canPush should return false if given resource has different kind (new cluster resource should be created)`() {
+        // given
+        val differentKind = PodBuilder(endorResourceOnCluster)
+            .withKind("kind-42")
+            .build()
+        // when
+        val canPush = cluster.canPush(differentKind)
+        // then
+        assertThat(canPush).isFalse()
+    }
+
+    @Test
+    fun `#canPush should return false if given resource has different apiVersion (new cluster resource should be created)`() {
+        // given
+        val differentApiVersion = PodBuilder(endorResourceOnCluster)
+            .withApiVersion("apiVersion-42")
+            .build()
+        // when
+        val canPush = cluster.canPush(differentApiVersion)
+        // then
+        assertThat(canPush).isFalse()
+    }
+
+    @Test
+    fun `#push should replace if exists on cluster`() {
         // given
         whenever(operator.get(any()))
             .doReturn(endorResourceOnCluster)
@@ -144,7 +231,7 @@ class ClusterResourceTest {
     }
 
     @Test
-    fun `#save should create if does NOT exist on cluster`() {
+    fun `#push should create if does NOT exist on cluster`() {
         // given
         whenever(operator.get(any()))
             .doReturn(null)
@@ -192,7 +279,7 @@ class ClusterResourceTest {
     }
 
     @Test
-    fun `#isDeleted() should return true if watch listener notified "removed"`() {
+    fun `#isDeleted() should return true if watch listener notified 'removed'`() {
         // given
         // when
         cluster.watchListeners.removed(endorResourceOnCluster)
@@ -201,25 +288,26 @@ class ClusterResourceTest {
     }
 
     @Test
-    fun `#isSameResource should return true if given null`() {
+    fun `#isSameResource should return false if given null and cluster has resource`() {
         // given
         // when
         val same = cluster.isSameResource(null)
         // then
-        assertThat(same).isTrue()
+        assertThat(same).isFalse()
     }
 
     @Test
     fun `#isSameResource should return true if given same resource as initial resource`() {
         // given
+        val clone = PodBuilder(endorResource).build()
         // when
-        val same = cluster.isSameResource(endorResource)
+        val same = cluster.isSameResource(clone)
         // then
         assertThat(same).isTrue()
     }
 
     @Test
-    fun `#isSameResource should return false if given is NOT same resource as initial resource`() {
+    fun `#isSameResource should return false if given has different name`() {
         // given
         // when
         val same = cluster.isSameResource(nabooResource)
@@ -286,6 +374,69 @@ class ClusterResourceTest {
     }
 
     @Test
+    fun `#isOutdated should return false if cluster has null resource`() {
+        // given
+        whenever(operator.get(any()))
+            .doReturn(null)
+        // when
+        val outdated = cluster.isOutdated(endorResource)
+        // then
+        assertThat(outdated).isFalse()
+    }
+
+    @Test
+    fun `#isModified should return false if given resource has different name`() {
+        // given
+        val modifiedResource = PodBuilder(endorResource)
+            .editOrNewMetadata()
+            .withNewName("name-42")
+            .endMetadata()
+            .build()
+        // when
+        val canPush = cluster.isModified(modifiedResource)
+        // then
+        assertThat(canPush).isFalse()
+    }
+
+    @Test
+    fun `#isModified should return false if given resource has different namespace`() {
+        // given
+        val differentNamespace = PodBuilder(endorResource)
+            .editOrNewMetadata()
+            .withNewNamespace("namespace-42")
+            .endMetadata()
+            .build()
+        // when
+        val canPush = cluster.canPush(differentNamespace)
+        // then
+        assertThat(canPush).isFalse()
+    }
+
+    @Test
+    fun `#isModified should return false if given resource has different kind`() {
+        // given
+        val differentKind = PodBuilder(endorResource)
+            .withKind("kind-42")
+            .build()
+        // when
+        val canPush = cluster.canPush(differentKind)
+        // then
+        assertThat(canPush).isFalse()
+    }
+
+    @Test
+    fun `#isModified should return false if given resource has different apiVersion`() {
+        // given
+        val differentApiVersion = PodBuilder(endorResource)
+            .withApiVersion("apiVersion-42")
+            .build()
+        // when
+        val canPush = cluster.canPush(differentApiVersion)
+        // then
+        assertThat(canPush).isFalse()
+    }
+
+    @Test
     fun `#exists should return false if resource retrieval has 404`() {
         // given
         whenever(operator.get(any()))
@@ -297,12 +448,22 @@ class ClusterResourceTest {
     }
 
     @Test
-    fun `#watch should watch`() {
+    fun `#watch should watch resource`() {
         // given
         // when
         cluster.watch()
         // then
         verify(resourceWatch).watch(eq(endorResource), any(), any())
+    }
+
+    @Test
+    fun `#watch should NOT watch resource if there is no operator`() {
+        // given
+        cluster.operator = null
+        // when
+        cluster.watch()
+        // then
+        verify(resourceWatch, never()).watch(eq(endorResource), any(), any())
     }
 
     @Test
@@ -361,7 +522,7 @@ class ClusterResourceTest {
 
     private class TestableClusterResource(
         resource: HasMetadata,
-        private val operator: IResourceOperator<out HasMetadata>?,
+        public override var operator: IResourceOperator<out HasMetadata>?,
         clients: Clients<KubernetesClient>,
         watch: ResourceWatch<HasMetadata>,
         observable: ModelChangeObservable
@@ -379,9 +540,5 @@ class ClusterResourceTest {
             get() {
                 return super.watchListeners
             }
-
-        override fun createOperator(resource: HasMetadata): IResourceOperator<out HasMetadata>? {
-            return operator
-        }
     }
 }
