@@ -52,6 +52,7 @@ object ClientMocks {
     val POD2 = resource<Pod>("pod2", "namespace2", "podUid2", "v1", "1")
     val POD3 = resource<Pod>("pod3", "namespace3", "podUid3", "v1", "1")
 
+
     fun client(
         currentNamespace: String?,
         namespaces: Array<Namespace>,

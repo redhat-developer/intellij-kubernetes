@@ -23,71 +23,74 @@ import java.net.URL
 
 class CustomResourceDefinitionMappingTest {
 
-    private val group = null
-    private val version = "v1"
-    private val neo = resource<HasMetadataResource>("neo", "zion", "uid", getApiVersion(group, version), "1")
-    private val kind = neo.kind!!
-    private val morpheus = resource<HasMetadataResource>("morpheus", "zion", "uid", getApiVersion(group, "v2021"), "1")
+    companion object {
+        private val group = null
+        private const val version = "v1"
+        private val neo = resource<HasMetadataResource>("neo", "zion", "uid", getApiVersion(group, version), "1")
+        private val kind = neo.kind!!
+        private val morpheus =
+            resource<HasMetadataResource>("morpheus", "zion", "uid", getApiVersion(group, "v2021"), "1")
 
-    private val crd1 = customResourceDefinition(
-        "crd1", "ns1", "uid1", "apiVersion1",
-        version,
-        listOf(
-            customResourceDefinitionVersion("v42")
-        ),
-        group,
-        kind,
-        CustomResourceScope.CLUSTER
-    )
-    private val crd2 = customResourceDefinition(
-        "crd2", "ns2", "uid2", "apiVersion2",
-        version,
-        listOf(
-            customResourceDefinitionVersion("84"),
-            customResourceDefinitionVersion(version),
-            customResourceDefinitionVersion("v21")
-        ),
-        group,
-        kind,
-        CustomResourceScope.CLUSTER
-    )
-    private val crd3 = customResourceDefinition(
-        "crd3", "ns3", "uid3", "apiVersion3",
-        version,
-        listOf(
-            customResourceDefinitionVersion("v168")
-        ),
-        group,
-        kind,
-        CustomResourceScope.CLUSTER
-    )
-    private val crd4 = customResourceDefinition(
-        "crd4", "ns4", "uid4", "apiVersion4",
-        version,
-        listOf(
-            customResourceDefinitionVersion("v11"),
-            customResourceDefinitionVersion("v22"),
-            customResourceDefinitionVersion(version)
-        ),
-        group,
-        kind,
-        CustomResourceScope.CLUSTER
-    )
+        private val CRD_NOT_MATCHING = customResourceDefinition(
+            "crd1", "ns1", "uid1", "apiVersion1",
+            version,
+            listOf(
+                customResourceDefinitionVersion("v42")
+            ),
+            group,
+            kind,
+            CustomResourceScope.CLUSTER
+        )
+        private val CRD_MATCHING_NEO = customResourceDefinition(
+            "crd2", "ns2", "uid2", "apiVersion2",
+            version,
+            listOf(
+                customResourceDefinitionVersion("84"),
+                customResourceDefinitionVersion(version),
+                customResourceDefinitionVersion("v21")
+            ),
+            group,
+            kind,
+            CustomResourceScope.CLUSTER
+        )
+        private val CRD_NOT_MATCHING_2 = customResourceDefinition(
+            "crd3", "ns3", "uid3", "apiVersion3",
+            version,
+            listOf(
+                customResourceDefinitionVersion("v168")
+            ),
+            group,
+            kind,
+            CustomResourceScope.CLUSTER
+        )
+        private val CRD_MATCHING_NEO_2 = customResourceDefinition(
+            "crd4", "ns4", "uid4", "apiVersion4",
+            version,
+            listOf(
+                customResourceDefinitionVersion("v11"),
+                customResourceDefinitionVersion("v22"),
+                customResourceDefinitionVersion(version)
+            ),
+            group,
+            kind,
+            CustomResourceScope.CLUSTER
+        )
+    }
 
     @Test
     fun `#getDefinitionFor should return crd that has spec with same kind, group and version`() {
         // given
-        val crds = listOf(crd1, crd2, crd3)
+        val crds = listOf(CRD_NOT_MATCHING, CRD_MATCHING_NEO, CRD_NOT_MATCHING_2)
         // when
         val crd = CustomResourceDefinitionMapping.getDefinitionFor(neo, crds)
         // then
-        assertThat(crd).isEqualTo(crd2)
+        assertThat(crd).isEqualTo(CRD_MATCHING_NEO)
     }
 
     @Test
     fun `#getDefinitionFor should return null if has no crd with spec that matches resource`() {
         // given
-        val crds = listOf(crd1, crd3)
+        val crds = listOf(CRD_NOT_MATCHING, CRD_NOT_MATCHING_2)
         // when
         val crd = CustomResourceDefinitionMapping.getDefinitionFor(neo, crds)
         // then
@@ -97,17 +100,17 @@ class CustomResourceDefinitionMappingTest {
     @Test
     fun `#getDefinitionFor should return first crd that matches if there are several ones`() {
         // given crd2 & crd4 are matching
-        val crds = listOf(crd1, crd2, crd3, crd4 )
+        val crds = listOf(CRD_NOT_MATCHING, CRD_MATCHING_NEO, CRD_NOT_MATCHING_2, CRD_MATCHING_NEO_2 )
         // when
         val crd = CustomResourceDefinitionMapping.getDefinitionFor(neo, crds)
         // then crd2 is returned
-        assertThat(crd).isEqualTo(crd2)
+        assertThat(crd).isEqualTo(CRD_MATCHING_NEO)
     }
 
     @Test
     fun `#isCustomResource should return true if given crds have a spec that matches resource`() {
         // given
-        val crds = listOf(crd1, crd2, crd3)
+        val crds = listOf(CRD_NOT_MATCHING, CRD_MATCHING_NEO, CRD_NOT_MATCHING_2)
         // when
         val isCustomResource = CustomResourceDefinitionMapping.isCustomResource(neo, crds)
         // then
@@ -117,7 +120,7 @@ class CustomResourceDefinitionMappingTest {
     @Test
     fun `#isCustomResource should return false if given crds have DO NOT have a spec that matches resource`() {
         // given
-        val crds = listOf(crd1, crd2, crd3)
+        val crds = listOf(CRD_NOT_MATCHING, CRD_MATCHING_NEO, CRD_NOT_MATCHING_2)
         // when
         val isCustomResource = CustomResourceDefinitionMapping.isCustomResource(morpheus, crds)
         // then
@@ -127,8 +130,8 @@ class CustomResourceDefinitionMappingTest {
     @Test
     fun `#getDefinitions should query cluster for existing definitions`() {
         // given
-        val crds = listOf(crd1, crd2, crd3)
-        var client = client("currentNamespace",
+        val crds = listOf(CRD_NOT_MATCHING, CRD_MATCHING_NEO, CRD_NOT_MATCHING_2)
+        val client = client("currentNamespace",
             emptyArray(),
             URL("https://kubernetes.cluster"),
             crds)
