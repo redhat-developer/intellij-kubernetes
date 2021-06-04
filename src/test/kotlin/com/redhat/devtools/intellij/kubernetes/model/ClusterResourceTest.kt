@@ -32,8 +32,8 @@ import io.fabric8.kubernetes.client.KubernetesClient
 import io.fabric8.kubernetes.client.KubernetesClientException
 import io.fabric8.kubernetes.client.Watch
 import io.fabric8.kubernetes.client.Watcher
-import org.junit.Test
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.Test
 
 class ClusterResourceTest {
 
@@ -44,7 +44,8 @@ class ClusterResourceTest {
     )
     private val clients: Clients<KubernetesClient> = Clients(client)
     private val endorResource: Pod = resource("Endor", rebelsNamespace.metadata.name, "endorUid", "v1", "1")
-    private val updatedEndorResource: Pod = resource("Endor", rebelsNamespace.metadata.name, "endorUid", "v1", "2")
+    private val endorResourceOnCluster: Pod = resource("Endor", rebelsNamespace.metadata.name, "endorUid", "v1", "2")
+    private val modifiedEndorResourceOnCluster: Pod = resource("Endor", rebelsNamespace.metadata.name, "endorUid", "v1", "2")
     private val nabooResource: Pod = resource("Naboo", rebelsNamespace.metadata.name, "nabooUid", "v1", "1")
     private val watch: Watch = mock()
     private val watchOp: (watcher: Watcher<in Pod>) -> Watch? = { watch }
@@ -54,15 +55,27 @@ class ClusterResourceTest {
         rebelsNamespace,
         watchOp,
         true,
-        updatedEndorResource
+        endorResourceOnCluster
     )
     private val resourceWatch: ResourceWatch<HasMetadata> = mock()
     private val observable: ModelChangeObservable = mock()
     private val cluster = TestableClusterResource(endorResource, operator, clients, resourceWatch, observable)
 
     @Test
-    fun `#get(false) should not retrieve from cluster`() {
+    fun `#get(false) should retrieve from cluster if there is no cached value yet`() {
         // given
+        assertThat(cluster.updatedResource).isNull()
+        // when
+        cluster.get(false)
+        // then
+        verify(operator).get(any())
+    }
+
+    @Test
+    fun `#get(false) should NOT retrieve from cluster if there is a cached value`() {
+        // given
+        cluster.updatedResource = endorResourceOnCluster
+        assertThat(cluster.updatedResource).isNotNull()
         // when
         cluster.get(false)
         // then
@@ -70,12 +83,14 @@ class ClusterResourceTest {
     }
 
     @Test
-    fun `#get() should not retrieve from cluster`() {
+    fun `#get(true) should retrieve from cluster if there is a cached value`() {
         // given
+        cluster.updatedResource = endorResourceOnCluster
+        assertThat(cluster.updatedResource).isNotNull()
         // when
-        cluster.get()
+        cluster.get(true)
         // then
-        verify(operator, never()).get(any())
+        verify(operator).get(any())
     }
 
     @Test
@@ -121,11 +136,11 @@ class ClusterResourceTest {
     fun `#save should replace if exists on cluster`() {
         // given
         whenever(operator.get(any()))
-            .doReturn(updatedEndorResource)
+            .doReturn(endorResourceOnCluster)
         // when
-        cluster.push(updatedEndorResource)
+        cluster.push(endorResourceOnCluster)
         // then
-        verify(operator).replace(updatedEndorResource)
+        verify(operator).replace(endorResourceOnCluster)
     }
 
     @Test
@@ -134,13 +149,13 @@ class ClusterResourceTest {
         whenever(operator.get(any()))
             .doReturn(null)
         // when
-        cluster.push(updatedEndorResource)
+        cluster.push(endorResourceOnCluster)
         // then
-        verify(operator).create(updatedEndorResource)
+        verify(operator).create(endorResourceOnCluster)
     }
 
     @Test(expected=ResourceException::class)
-    fun `#save should throw if given resource is NOT the same`() {
+    fun `#push should throw if given resource is NOT the same`() {
         // given
         whenever(operator.get(any()))
             .doReturn(null)
@@ -150,36 +165,48 @@ class ClusterResourceTest {
     }
 
     @Test
-    fun `#set should set resource that is returned from cache`() {
+    fun `#set should set resource if it's the same in kind, apiVersion, name, namespace`() {
         // given
-        val original = cluster.get(false)
-        assertThat(original).isNotEqualTo(updatedEndorResource)
         // when
-        cluster.set(updatedEndorResource)
+        cluster.set(modifiedEndorResourceOnCluster)
         // then
-        val updated = cluster.get(false)
-        assertThat(updated).isEqualTo(updatedEndorResource)
+        assertThat(cluster.updatedResource).isEqualTo(modifiedEndorResourceOnCluster)
     }
 
     @Test
-    fun `#set should NOT set resource that is returned from cache if given resource is different`() {
+    fun `#set should NOT set resource if it's NOT the same in kind, apiVersion, name, namespace`() {
         // given
-        val original = cluster.get(false)
-        assertThat(original).isNotEqualTo(updatedEndorResource)
         // when
         cluster.set(nabooResource)
         // then
-        val updated = cluster.get(false)
-        assertThat(updated).isNotEqualTo(updatedEndorResource)
+        assertThat(cluster.updatedResource).isNotEqualTo(endorResourceOnCluster)
     }
 
     @Test
-    fun `#isSameResource should return false if given null`() {
+    fun `#isDeleted() should be false initially`() {
+        // given
+        // when
+        val deleted = cluster.isDeleted()
+        // then
+        assertThat(deleted).isFalse()
+    }
+
+    @Test
+    fun `#isDeleted() should return true if watch listener notified "removed"`() {
+        // given
+        // when
+        cluster.watchListeners.removed(endorResourceOnCluster)
+        // then
+        assertThat(cluster.isDeleted()).isTrue()
+    }
+
+    @Test
+    fun `#isSameResource should return true if given null`() {
         // given
         // when
         val same = cluster.isSameResource(null)
         // then
-        assertThat(same).isFalse()
+        assertThat(same).isTrue()
     }
 
     @Test
@@ -203,10 +230,8 @@ class ClusterResourceTest {
     @Test
     fun `#isOutdated should return false if given same resource`() {
         // given
-        whenever(operator.get(any()))
-            .doReturn(updatedEndorResource)
         // when
-        val outdated = cluster.isOutdated(updatedEndorResource)
+        val outdated = cluster.isOutdated(endorResourceOnCluster)
         // then
         assertThat(outdated).isFalse()
     }
@@ -214,8 +239,6 @@ class ClusterResourceTest {
     @Test
     fun `#isOutdated should return false if given different resource`() {
         // given
-        whenever(operator.get(any()))
-            .doReturn(updatedEndorResource)
         // when
         val outdated = cluster.isOutdated(nabooResource)
         // then
@@ -223,8 +246,19 @@ class ClusterResourceTest {
     }
 
     @Test
-    fun `#isOutdated should return false if given null`() {
+    fun `#isOutdated should return true if given null`() {
         // given
+        // when
+        val outdated = cluster.isOutdated(null)
+        // then
+        assertThat(outdated).isTrue()
+    }
+
+    @Test
+    fun `#isOutdated should return false if given null and cluster does NOT have updated resource`() {
+        // given
+        whenever(operator.get(any()))
+            .doReturn(null)
         // when
         val outdated = cluster.isOutdated(null)
         // then
@@ -232,10 +266,8 @@ class ClusterResourceTest {
     }
 
     @Test
-    fun `#isOutdated should return true if given outdated resource and cluster has updated resource`() {
+    fun `#isOutdated should return true if given outdated resource`() {
         // given
-        whenever(operator.get(any()))
-            .doReturn(updatedEndorResource)
         // when
         val outdated = cluster.isOutdated(endorResource)
         // then
@@ -248,7 +280,7 @@ class ClusterResourceTest {
         whenever(operator.get(any()))
             .doReturn(endorResource)
         // when
-        val outdated = cluster.isOutdated(updatedEndorResource)
+        val outdated = cluster.isOutdated(endorResourceOnCluster)
         // then
         assertThat(outdated).isFalse()
     }
@@ -277,36 +309,36 @@ class ClusterResourceTest {
     fun `watchListener#removed should set cached resource to null`() {
         // given
         // when trigger watchListener#remove
-        cluster.watchListeners.removed(updatedEndorResource)
+        cluster.watchListeners.removed(endorResourceOnCluster)
         // then
-        assertThat(cluster.get(false)).isNull()
+        assertThat(cluster.updatedResource).isNull()
     }
 
     @Test
     fun `watchListener#removed should fire observable#removed`() {
         // given
         // when trigger watchListener#remove
-        cluster.watchListeners.removed(updatedEndorResource)
+        cluster.watchListeners.removed(endorResourceOnCluster)
         // then
-        verify(observable).fireRemoved(updatedEndorResource)
+        verify(observable).fireRemoved(endorResourceOnCluster)
     }
 
     @Test
     fun `watchListener#replaced should update cached resource`() {
         // given
         // when trigger watchListener#replaced
-        cluster.watchListeners.replaced(updatedEndorResource)
+        cluster.watchListeners.replaced(endorResourceOnCluster)
         // then
-        assertThat(cluster.get(false)).isEqualTo(updatedEndorResource)
+        assertThat(cluster.updatedResource).isEqualTo(endorResourceOnCluster)
     }
 
     @Test
     fun `watchListener#replace should fire observable#modified`() {
         // given
         // when trigger watchListener#replaced
-        cluster.watchListeners.replaced(updatedEndorResource)
+        cluster.watchListeners.replaced(endorResourceOnCluster)
         // then
-        verify(observable).fireModified(updatedEndorResource)
+        verify(observable).fireModified(endorResourceOnCluster)
     }
 
     @Test
@@ -334,6 +366,14 @@ class ClusterResourceTest {
         watch: ResourceWatch<HasMetadata>,
         observable: ModelChangeObservable
     ) : ClusterResource(resource, clients, watch, observable) {
+
+        public override var updatedResource: HasMetadata?
+            get(): HasMetadata? {
+                return super.updatedResource
+            }
+            set(value) {
+                super.updatedResource = value
+            }
 
         public override val watchListeners: ResourceWatch.WatchListeners
             get() {

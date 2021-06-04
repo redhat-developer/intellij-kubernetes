@@ -34,7 +34,7 @@ open class ClusterResource(
     private val modelChange: ModelChangeObservable = ModelChangeObservable()
 ) {
     private val initialResource: HasMetadata = resource
-    private var updatedResource: HasMetadata? = null
+    protected open var updatedResource: HasMetadata? = null
     private val operator: IResourceOperator<out HasMetadata>? by lazy {
         createOperator(resource)
     }
@@ -186,19 +186,14 @@ open class ClusterResource(
         }
     }
 
-    private fun areEqual(thisResource: HasMetadata?, thatResource: HasMetadata?): Boolean {
-        return (thisResource == null && thatResource == null)
-                || thisResource == thatResource
-    }
-
     /**
      * Returns `true` if the given resource is the same as the resource that was given when creating this cluster resource instance.
-     * A resource is considered the same if it is equal in [io.fabric8.kubernetes.api.model.ObjectMeta.getUid]
-     * and [io.fabric8.kubernetes.api.model.ObjectMeta.getSelfLink]
      * Returns `false` otherwise
      *
      * @param toCompare the resource to compare to the initial cluster resource
      * @return true if the given resource is the same as the initial resource in this cluster resource
+     *
+     * @see [HasMetadata.isSameResource]
      */
     fun isSameResource(toCompare: HasMetadata?): Boolean {
         try {
@@ -234,6 +229,11 @@ open class ClusterResource(
     fun isModified(toCompare: HasMetadata?): Boolean {
         return isSameResource(toCompare)
                 && !areEqual(get(false), toCompare)
+    }
+
+    private fun areEqual(thisResource: HasMetadata?, thatResource: HasMetadata?): Boolean {
+        return (thisResource == null && thatResource == null)
+                || thisResource == thatResource
     }
 
     /**
