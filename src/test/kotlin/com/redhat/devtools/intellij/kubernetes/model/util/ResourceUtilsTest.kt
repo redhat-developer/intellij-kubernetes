@@ -14,6 +14,7 @@ import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.resource
 import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.customResourceDefinition
 import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.customResourceDefinitionVersion
 import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.custom.CustomResourceScope
+import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.hasmetadata.HasMetadataResource
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.ObjectMetaBuilder
 import io.fabric8.kubernetes.api.model.Pod
@@ -384,8 +385,8 @@ class ResourceUtilsTest {
 		// given
 		val group = null
 		val version = "v1"
-		val neo = resource<Pod>("neo", "zion", "uid", getApiVersion(group, version), "1")
-		val kind = neo.kind
+		val neo = resource<HasMetadataResource>("neo", "zion", "uid", getApiVersion(group, version), "1")
+		val kind = neo.kind!!
 		val crd = customResourceDefinition(
 			"cluster crd",
 			"ns",
@@ -411,7 +412,7 @@ class ResourceUtilsTest {
 		// given
 		val group = null
 		val version = "v1"
-		val neo = resource<Pod>("neo", "zion", "uid", getApiVersion(group, version), "1")
+		val neo = resource<HasMetadataResource>("neo", "zion", "uid", getApiVersion(group, version), "1")
 		val crd = customResourceDefinition(
 			"cluster crd",
 			"ns",
