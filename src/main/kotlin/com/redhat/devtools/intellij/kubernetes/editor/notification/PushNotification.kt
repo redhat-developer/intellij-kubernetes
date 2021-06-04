@@ -24,15 +24,15 @@ object PushNotification {
 
     private val KEY_PANEL = Key<JComponent>(PushNotification::javaClass.name)
 
-    fun show(editor: FileEditor, resource: HasMetadata, project: Project) {
-        editor.showNotification(KEY_PANEL, { createPanel(editor, resource, project) }, project)
+    fun show(editor: FileEditor, project: Project) {
+        editor.showNotification(KEY_PANEL, { createPanel(editor, project) }, project)
     }
 
     fun hide(editor: FileEditor, project: Project) {
         editor.hideNotification(KEY_PANEL, project)
     }
 
-    private fun createPanel(editor: FileEditor, resource: HasMetadata, project: Project): EditorNotificationPanel {
+    private fun createPanel(editor: FileEditor, project: Project): EditorNotificationPanel {
         val panel = EditorNotificationPanel()
         panel.setText(
             "Push local changes, ${ if (!ResourceEditor.existsOnCluster(editor)) { "create new" } else { "update existing" }} resource on server?")
