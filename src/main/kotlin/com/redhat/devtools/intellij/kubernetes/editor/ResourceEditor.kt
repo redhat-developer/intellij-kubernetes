@@ -170,7 +170,7 @@ object ResourceEditor {
     }
 
     private fun isResourceFile(file: VirtualFile?): Boolean {
-        return ResourceFile.matches(file)
+        return ResourceFile.canHandle(file)
     }
 
     private fun createResource(editor: FileEditor): HasMetadata? {

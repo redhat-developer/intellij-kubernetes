@@ -33,19 +33,42 @@ object ResourceFile {
     private const val EXTENSION = YAMLFileType.DEFAULT_EXTENSION
     private val TEMP_FOLDER = Paths.get(FileUtils.getTempDirectoryPath(), "intellij-kubernetes")
 
-    fun matches(file: VirtualFile?): Boolean {
+    /**
+     * Returns `true` if the given file is a file that this class can handle.
+     *
+     * @param file the file which should checked whether it can be handled
+     * @return true if this class can handle the given file
+     */
+    fun canHandle(file: VirtualFile?): Boolean {
         return file?.path?.endsWith(EXTENSION, true) ?: false
                 && file?.path?.startsWith(TEMP_FOLDER.toString()) ?: false
     }
 
+    /**
+     * Replaces the resource file that this class is handling with the content of the given resource.
+     *
+     * @param resource the new content of the file
+     * @return the file whose content was replaced
+     */
     fun replace(resource: HasMetadata): VirtualFile? {
         return replace(resource, getFile(resource))
     }
 
+    /**
+     * Replaces the content of the given file with the given resource.
+     *
+     * @param resource the resource that should be set as content of the given file
+     * @param file the file whose content should be replaced
+     */
     fun replace(resource: HasMetadata, file: VirtualFile): VirtualFile? {
         return replace(resource, VfsUtilCore.virtualToIoFile(file))
     }
 
+    /**
+     * Deletes the given file.
+     *
+     * @param file the file to delete
+     */
     fun delete(file: VirtualFile) {
         UIHelper.executeInUI {
             WriteAction.compute<Unit, Exception> {
@@ -54,13 +77,19 @@ object ResourceFile {
         }
     }
 
+    /**
+     * Renames the given file so that it can hold the given resource.
+     *
+     * @param resource the content for the given file
+     * @param file the file that should be renamed so that it can hold the given resource
+     */
     fun rename(resource: HasMetadata, file: VirtualFile?) {
         if (file == null) {
             return
         }
+        val newFile = addUniqueSuffix(getFile(resource))
         UIHelper.executeInUI {
             WriteAction.compute<Unit, Exception> {
-                val newFile = addUniqueSuffix(getFile(resource))
                 file.rename(this, newFile.name)
                 file.refresh(true, true)
             }
@@ -80,6 +109,12 @@ object ResourceFile {
         })
     }
 
+    /**
+     * Returns the file for the given resource.
+     *
+     * @param resource the resource that the file for should be returned for
+     * @return the file for the given resource
+     */
     fun getFile(resource: HasMetadata): File {
         val name = getName(resource)
         return File(TEMP_FOLDER.toString(), name)
@@ -100,6 +135,13 @@ object ResourceFile {
         return "$name.$EXTENSION"
     }
 
+    /**
+     * Adds a suffix to the name of the given file if a file with the given name exists.
+     * ex. jedi-sword(2).yml where (2) is the suffix that's added so that the filename is unique.
+     *
+     * @param file the file that should be striped of a unique suffix
+     * @return the file with/or without a unique suffix
+     */
     private fun addUniqueSuffix(file: File): File {
         if (!file.exists()) {
             return file
@@ -114,15 +156,24 @@ object ResourceFile {
         return unused
     }
 
-    fun removeUniqueSuffix(name: String): String {
-        val suffixStart = name.indexOf('(')
+    /**
+     * Removes a unique suffix from the given filename if it exists. Returns the filename unaltered if it doesn't.
+     * ex. jedi-sword(2).yml where (2) is the suffix that's added so that the filename is unique.
+     *
+     * @param filename the filename that should be striped of a unique suffix
+     * @return the filename without the unique suffix if it exists
+     *
+     * @see [addUniqueSuffix]
+     */
+    fun removeUniqueSuffix(filename: String): String {
+        val suffixStart = filename.indexOf('(')
         if (suffixStart < 0) {
-            return name
+            return filename
         }
-        val suffixStop = name.indexOf(')')
+        val suffixStop = filename.indexOf(')')
         if (suffixStop < 0) {
-            return name
+            return filename
         }
-        return name.removeRange(suffixStart, suffixStop + 1)
+        return filename.removeRange(suffixStart, suffixStop + 1)
     }
 }
