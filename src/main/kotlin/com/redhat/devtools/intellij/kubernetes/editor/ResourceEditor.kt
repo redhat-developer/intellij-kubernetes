@@ -96,7 +96,7 @@ object ResourceEditor {
             if (clusterResource != oldClusterResource) {
                 renameEditor(editor, resource)
             }
-            showNotifications(oldClusterResource, clusterResource, editor, resource, project)
+            showNotifications(oldClusterResource, clusterResource, resource, editor, project)
         } catch (e: ResourceException) {
             showErrorNotification(editor, project, e)
         }
@@ -105,8 +105,8 @@ object ResourceEditor {
     private fun showNotifications(
         oldClusterResource: ClusterResource?,
         clusterResource: ClusterResource,
-        editor: FileEditor,
         resource: HasMetadata,
+        editor: FileEditor,
         project: Project
     ) {
         hideNotifications(editor, project)
@@ -115,15 +115,15 @@ object ResourceEditor {
             && !clusterResource.exists()) {
             DeletedNotification.show(editor, resource, project)
         } else if (clusterResource.isOutdated(resource)) {
-            showReloadNotification(resource, clusterResource, editor, project)
+            showReloadNotification(clusterResource, resource, editor, project)
         } else if (clusterResource.canPush(resource)) {
             PushNotification.show(editor, project)
         }
     }
 
     private fun showReloadNotification(
-        resource: HasMetadata,
         clusterResource: ClusterResource,
+        resource: HasMetadata,
         editor: FileEditor,
         project: Project
     ) {
@@ -192,12 +192,8 @@ object ResourceEditor {
         return if (document?.text == null) {
             null
         } else {
-            val clients = getOrCreateClients(editor)
-            if (clients == null) {
-                null
-            } else {
-                createResource(document.text, clients)
-            }
+            val clients = getOrCreateClients(editor) ?: return null
+            createResource(document.text, clients)
         }
     }
 
@@ -228,17 +224,17 @@ object ResourceEditor {
     }
 
     fun existsOnCluster(editor: FileEditor): Boolean {
-        return getClusterResource(editor)?.exists() ?: return false
+        return getClusterResource(editor)?.exists() ?: false
     }
 
     fun isOutdated(editor: FileEditor): Boolean {
         val resource = createResource(editor)
-        return getClusterResource(editor)?.isOutdated(resource) ?: return false
+        return getClusterResource(editor)?.isOutdated(resource) ?: false
     }
 
     private fun isModified(editor: FileEditor): Boolean {
         val resource = createResource(editor)
-        return getClusterResource(editor)?.isModified(resource) ?: return false
+        return getClusterResource(editor)?.isModified(resource) ?: false
     }
 
     fun push(editor: FileEditor, project: Project) {
