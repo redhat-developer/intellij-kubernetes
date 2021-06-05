@@ -11,7 +11,6 @@
 package com.redhat.devtools.intellij.kubernetes.editor
 
 import com.intellij.openapi.application.ReadAction
-import com.intellij.openapi.application.WriteAction
 import com.intellij.openapi.components.ServiceManager
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.editor.Document
@@ -20,11 +19,7 @@ import com.intellij.openapi.fileEditor.FileEditor
 import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Key
-import com.intellij.openapi.util.io.FileUtilRt
-import com.intellij.openapi.vfs.VfsUtil
-import com.intellij.openapi.vfs.VfsUtilCore
 import com.intellij.openapi.vfs.VirtualFile
-import com.intellij.ui.EditorNotificationPanel
 import com.redhat.devtools.intellij.common.editor.AllowNonProjectEditing
 import com.redhat.devtools.intellij.common.utils.UIHelper
 import com.redhat.devtools.intellij.kubernetes.editor.notification.DeletedNotification
@@ -45,17 +40,8 @@ import com.redhat.devtools.intellij.kubernetes.model.util.createResource
 import com.redhat.devtools.intellij.kubernetes.model.util.isSameResource
 import com.redhat.devtools.intellij.kubernetes.model.util.trimWithEllipsis
 import io.fabric8.kubernetes.api.model.HasMetadata
-import io.fabric8.kubernetes.api.model.Namespace
 import io.fabric8.kubernetes.client.KubernetesClient
-import io.fabric8.kubernetes.client.utils.Serialization
-import org.apache.commons.io.FileUtils
-import org.jetbrains.yaml.YAMLFileType
-import java.io.File
 import java.io.IOException
-import java.nio.charset.StandardCharsets
-import java.nio.file.Paths
-import java.util.function.Supplier
-import javax.swing.JComponent
 
 object ResourceEditor {
 
@@ -264,9 +250,8 @@ object ResourceEditor {
     }
 
     private fun isSameResourceOnCluster(resource: HasMetadata, cluster: ClusterResource?): Boolean {
-        val oldResource = cluster?.get(false)
-        return oldResource != null
-                && oldResource.isSameResource(resource)
+        val oldResource = cluster?.get(false) ?: return false
+        return oldResource.isSameResource(resource)
     }
 
     private fun pushResource(resource: HasMetadata, cluster: ClusterResource?, editor: FileEditor, project: Project): HasMetadata? {
@@ -394,119 +379,5 @@ object ResourceEditor {
             }
         }
     }
-
-    private object ResourceFile {
-
-        private const val EXTENSION = YAMLFileType.DEFAULT_EXTENSION
-        private val TEMP_FOLDER = Paths.get(FileUtils.getTempDirectoryPath(), "intellij-kubernetes")
-
-        fun matches(file: VirtualFile?): Boolean {
-            return file?.path?.endsWith(EXTENSION, true) ?: false
-                    && file?.path?.startsWith(TEMP_FOLDER.toString()) ?: false
-        }
-
-        fun replace(resource: HasMetadata): VirtualFile? {
-            return replace(resource, getFile(resource))
-        }
-
-        fun replace(resource: HasMetadata, file: VirtualFile): VirtualFile? {
-            return replace(resource, VfsUtilCore.virtualToIoFile(file))
-        }
-
-        fun delete(file: VirtualFile) {
-            UIHelper.executeInUI {
-                WriteAction.compute<Unit, Exception> {
-                    file.delete(this)
-                }
-            }
-        }
-
-        fun rename(resource: HasMetadata, file: VirtualFile?) {
-            if (file == null) {
-                return
-            }
-            UIHelper.executeInUI {
-                WriteAction.compute<Unit, Exception> {
-                    val newFile = addUniqueSuffix(getFile(resource))
-                    file.rename(this, newFile.name)
-                    file.refresh(true, true)
-                }
-            }
-        }
-
-        private fun replace(resource: HasMetadata, file: File): VirtualFile? {
-            return UIHelper.executeInUI(Supplier {
-                WriteAction.compute<VirtualFile?, Exception> {
-                    val content = Serialization.asYaml(resource)
-                    FileUtils.write(file, content, StandardCharsets.UTF_8, false)
-                    val virtualFile = VfsUtil.findFileByIoFile(file, true)
-                    virtualFile?.refresh(false, false)
-                    enableNonProjectFileEditing(virtualFile)
-                    virtualFile
-                }
-            })
-        }
-
-        fun getFile(resource: HasMetadata): File {
-            val name = getName(resource)
-            return File(TEMP_FOLDER.toString(), name)
-        }
-
-        private fun getName(resource: HasMetadata): String {
-            val name = when (resource) {
-                is Namespace,
-                is Project -> resource.metadata.name
-                else -> {
-                    if (resource.metadata.namespace != null) {
-                        "${resource.metadata.name}@${resource.metadata.namespace}"
-                    } else {
-                        resource.metadata.name
-                    }
-                }
-            }
-            return "$name.$EXTENSION"
-        }
-
-        private fun addUniqueSuffix(file: File): File {
-            if (!file.exists()) {
-                return file
-            }
-            val name = FileUtilRt.getNameWithoutExtension(file.absolutePath)
-            val suffix = FileUtilRt.getExtension(file.absolutePath)
-            var i = 1
-            var unused: File?
-            do {
-                unused = File("$name(${i++}).$suffix")
-            } while (unused!!.exists())
-            return unused
-        }
-
-        fun removeUniqueSuffix(name: String): String {
-            val suffixStart = name.indexOf('(')
-            if (suffixStart < 0) {
-                return name
-            }
-            val suffixStop = name.indexOf(')')
-            if (suffixStop < 0) {
-                return name
-            }
-            return name.removeRange(suffixStart, suffixStop + 1)
-        }
-    }
 }
 
-fun FileEditor.showNotification(key: Key<JComponent>, panelFactory: () -> EditorNotificationPanel, project: Project) {
-    if (getUserData(key) != null) {
-        // already shown
-        hideNotification(key, project)
-    }
-    val panel = panelFactory.invoke()
-    FileEditorManager.getInstance(project).addTopComponent(this, panel)
-    this.putUserData(key, panel)
-}
-
-fun FileEditor.hideNotification(key: Key<JComponent>, project: Project) {
-    val panel = this.getUserData(key) ?: return
-    FileEditorManager.getInstance(project).removeTopComponent(this, panel)
-    this.putUserData(key, null)
-}
