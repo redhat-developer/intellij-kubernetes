@@ -10,7 +10,6 @@
  ******************************************************************************/
 package com.redhat.devtools.intellij.kubernetes.editor
 
-import com.fasterxml.jackson.databind.exc.MismatchedInputException
 import com.intellij.openapi.application.ReadAction
 import com.intellij.openapi.application.WriteAction
 import com.intellij.openapi.components.ServiceManager
@@ -48,7 +47,6 @@ import com.redhat.devtools.intellij.kubernetes.model.util.trimWithEllipsis
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.Namespace
 import io.fabric8.kubernetes.client.KubernetesClient
-import io.fabric8.kubernetes.client.KubernetesClientException
 import io.fabric8.kubernetes.client.utils.Serialization
 import org.apache.commons.io.FileUtils
 import org.jetbrains.yaml.YAMLFileType
@@ -117,9 +115,26 @@ object ResourceEditor {
             && !clusterResource.exists()) {
             DeletedNotification.show(editor, resource, project)
         } else if (clusterResource.isOutdated(resource)) {
-            ReloadNotification.show(editor, resource, project)
+            showReloadNotification(resource, clusterResource, editor, project)
         } else if (clusterResource.canPush(resource)) {
             PushNotification.show(editor, project)
+        }
+    }
+
+    private fun showReloadNotification(
+        resource: HasMetadata,
+        clusterResource: ClusterResource,
+        editor: FileEditor,
+        project: Project
+    ) {
+        if (!clusterResource.isModified(resource)) {
+            // reload if not modified
+            val resourceOnCluster = clusterResource.get(false)
+            if (resourceOnCluster != null) {
+                reloadEditor(resourceOnCluster, editor)
+            }
+        } else {
+            ReloadNotification.show(editor, resource, project)
         }
     }
 
