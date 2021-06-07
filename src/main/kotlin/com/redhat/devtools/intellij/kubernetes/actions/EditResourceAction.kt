@@ -31,13 +31,10 @@ class EditResourceAction: StructureTreeAction() {
         try {
             ResourceEditor.open(toEdit, project)
         } catch (e: RuntimeException) {
-            Notification().error("Could not open editor", getCauseMessage(e))
+            Notification().error(
+                "Could not open editor for kubernetes resource ${toEdit.metadata.name}",
+                e.cause?.message ?: e.message ?: "")
         }
-
-    }
-
-    private fun getCauseMessage(e: RuntimeException): String {
-        return e.cause?.message ?: e.message ?: ""
     }
 
     override fun isVisible(selected: Array<out Any>?): Boolean {
