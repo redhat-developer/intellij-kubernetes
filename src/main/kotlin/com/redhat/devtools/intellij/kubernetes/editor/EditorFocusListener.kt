@@ -52,8 +52,7 @@ class EditorFocusListener(private val project: Project) : FileEditorManagerListe
     }
 
     private fun handleSelectionGained(editor: FileEditor?, project: Project) {
-        if (editor == null
-            || !ResourceEditor.isResourceEditor(editor)) {
+        if (editor == null) {
             return
         }
         try {
