@@ -51,7 +51,7 @@ object ResourceEditor {
 
     @Throws(IOException::class)
     fun open(resource: HasMetadata, project: Project): FileEditor? {
-        val file = ResourceFile.replace(resource) ?: return null
+        val file = ResourceFile.replaceContent(resource, ResourceFile.getFileFor(resource)) ?: return null
         val editors = FileEditorManager.getInstance(project).openFile(file, true, true)
         val editor = editors.getOrNull(0)
         createClusterResource(resource, editor, project)
@@ -157,7 +157,7 @@ object ResourceEditor {
         if (file == null) {
             return
         }
-        ResourceFile.replace(resource, file)
+        ResourceFile.replaceContent(resource, file)
         FileDocumentManager.getInstance().reloadFiles(file)
     }
 
@@ -170,7 +170,7 @@ object ResourceEditor {
     }
 
     private fun isResourceFile(file: VirtualFile?): Boolean {
-        return ResourceFile.canHandle(file)
+        return ResourceFile.isResourceFile(file)
     }
 
     private fun createResource(editor: FileEditor): HasMetadata? {
@@ -275,8 +275,8 @@ object ResourceEditor {
         if (file == null) {
             return false
         }
-        val existingName = ResourceFile.removeUniqueSuffix(file.name)
-        val newName = ResourceFile.getFile(resource).name
+        val existingName = ResourceFile.removeAddendum(file.name)
+        val newName = ResourceFile.getFileFor(resource).name
         return existingName != newName
     }
 
