@@ -149,6 +149,9 @@ object ResourceEditor {
     }
 
     fun reloadEditor(resource: HasMetadata, editor: FileEditor) {
+        if (!isResourceEditor(editor)) {
+            return
+        }
         UIHelper.executeInUI {
             val file = editor.file
             if (file != null) {
@@ -166,11 +169,18 @@ object ResourceEditor {
     }
 
     fun getResourceFile(editor: FileEditor): VirtualFile? {
+        if (!isResourceEditor(editor)) {
+            return null
+        }
         return editor.file
     }
 
     fun getResourceFile(document: Document): VirtualFile? {
-        return FileDocumentManager.getInstance().getFile(document)
+        val file = FileDocumentManager.getInstance().getFile(document)
+        if (!isResourceFile(file)) {
+            return null
+        }
+        return file
     }
 
     private fun isResourceFile(file: VirtualFile?): Boolean {
@@ -209,15 +219,24 @@ object ResourceEditor {
     }
 
     fun loadResourceFromCluster(forceLatest: Boolean = false, editor: FileEditor): HasMetadata? {
+        if (!isResourceEditor(editor)) {
+            return null
+        }
         val clusterResource = getClusterResource(editor) ?: return null
         return clusterResource.get(forceLatest)
     }
 
     fun existsOnCluster(editor: FileEditor): Boolean {
+        if (!isResourceEditor(editor)) {
+            return false
+        }
         return getClusterResource(editor)?.exists() ?: false
     }
 
     fun isOutdated(editor: FileEditor): Boolean {
+        if (!isResourceEditor(editor)) {
+            return false
+        }
         val resource = createResource(editor)
         return getClusterResource(editor)?.isOutdated(resource) ?: false
     }
@@ -228,6 +247,9 @@ object ResourceEditor {
     }
 
     fun push(editor: FileEditor, project: Project) {
+        if (!isResourceEditor(editor)) {
+            return
+        }
         try {
             val editorResource = createResource(editor) ?: return
             try {
