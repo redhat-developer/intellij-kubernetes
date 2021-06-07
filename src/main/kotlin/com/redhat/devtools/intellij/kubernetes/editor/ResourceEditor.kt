@@ -60,7 +60,7 @@ object ResourceEditor {
     }
 
     fun onClosed(file: VirtualFile) {
-        if (!isResourceFile(file)) {
+        if (!ResourceFile.isResourceFile(file)) {
             return
         }
         ResourceFile.delete(file)
@@ -145,7 +145,7 @@ object ResourceEditor {
         if (editor == null) {
             return false
         }
-        return isResourceFile(editor.file)
+        return ResourceFile.isResourceFile(editor.file)
     }
 
     fun reloadEditor(resource: HasMetadata, editor: FileEditor) {
@@ -177,14 +177,10 @@ object ResourceEditor {
 
     fun getResourceFile(document: Document): VirtualFile? {
         val file = FileDocumentManager.getInstance().getFile(document)
-        if (!isResourceFile(file)) {
+        if (!ResourceFile.isResourceFile(file)) {
             return null
         }
         return file
-    }
-
-    private fun isResourceFile(file: VirtualFile?): Boolean {
-        return ResourceFile.isResourceFile(file)
     }
 
     private fun createResource(editor: FileEditor): HasMetadata? {
