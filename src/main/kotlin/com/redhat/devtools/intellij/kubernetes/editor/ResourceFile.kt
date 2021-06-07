@@ -39,19 +39,9 @@ object ResourceFile {
      * @param file the file which should checked whether it can be handled
      * @return true if this class can handle the given file
      */
-    fun canHandle(file: VirtualFile?): Boolean {
+    fun isResourceFile(file: VirtualFile?): Boolean {
         return file?.path?.endsWith(EXTENSION, true) ?: false
                 && file?.path?.startsWith(TEMP_FOLDER.toString()) ?: false
-    }
-
-    /**
-     * Replaces the resource file that this class is handling with the content of the given resource.
-     *
-     * @param resource the new content of the file
-     * @return the file whose content was replaced
-     */
-    fun replace(resource: HasMetadata): VirtualFile? {
-        return replace(resource, getFile(resource))
     }
 
     /**
@@ -59,9 +49,30 @@ object ResourceFile {
      *
      * @param resource the resource that should be set as content of the given file
      * @param file the file whose content should be replaced
+     * @return the virtual file whose content was changed
      */
-    fun replace(resource: HasMetadata, file: VirtualFile): VirtualFile? {
-        return replace(resource, VfsUtilCore.virtualToIoFile(file))
+    fun replaceContent(resource: HasMetadata, file: VirtualFile): VirtualFile? {
+        return replaceContent(resource, VfsUtilCore.virtualToIoFile(file))
+    }
+
+    /**
+     * Replaces the content of the given file with the given resource.
+     *
+     * @param resource the resource that should be set as content of the given file
+     * @param file the file whose content should be replaced
+     * @return the virtual file whose content was changed
+     */
+    fun replaceContent(resource: HasMetadata, file: File): VirtualFile? {
+        val content = Serialization.asYaml(resource)
+        FileUtils.write(file, content, StandardCharsets.UTF_8, false)
+        return UIHelper.executeInUI(Supplier {
+            WriteAction.compute<VirtualFile?, Exception> {
+                val virtualFile = VfsUtil.findFileByIoFile(file, true)
+                virtualFile?.refresh(false, false)
+                enableNonProjectFileEditing(virtualFile)
+                virtualFile
+            }
+        })
     }
 
     /**
@@ -87,7 +98,7 @@ object ResourceFile {
         if (file == null) {
             return
         }
-        val newFile = addUniqueSuffix(getFile(resource))
+        val newFile = addAddendum(getFileFor(resource))
         UIHelper.executeInUI {
             WriteAction.compute<Unit, Exception> {
                 file.rename(this, newFile.name)
@@ -96,31 +107,18 @@ object ResourceFile {
         }
     }
 
-    private fun replace(resource: HasMetadata, file: File): VirtualFile? {
-        return UIHelper.executeInUI(Supplier {
-            WriteAction.compute<VirtualFile?, Exception> {
-                val content = Serialization.asYaml(resource)
-                FileUtils.write(file, content, StandardCharsets.UTF_8, false)
-                val virtualFile = VfsUtil.findFileByIoFile(file, true)
-                virtualFile?.refresh(false, false)
-                enableNonProjectFileEditing(virtualFile)
-                virtualFile
-            }
-        })
-    }
-
     /**
-     * Returns the file for the given resource.
+     * Returns a file for the given resource.
      *
      * @param resource the resource that the file for should be returned for
      * @return the file for the given resource
      */
-    fun getFile(resource: HasMetadata): File {
-        val name = getName(resource)
+    fun getFileFor(resource: HasMetadata): File {
+        val name = getFilenameFor(resource)
         return File(TEMP_FOLDER.toString(), name)
     }
 
-    private fun getName(resource: HasMetadata): String {
+    private fun getFilenameFor(resource: HasMetadata): String {
         val name = when (resource) {
             is Namespace,
             is Project -> resource.metadata.name
@@ -136,13 +134,13 @@ object ResourceFile {
     }
 
     /**
-     * Adds a suffix to the name of the given file if a file with the given name exists.
-     * ex. jedi-sword(2).yml where (2) is the suffix that's added so that the filename is unique.
+     * Adds an addendum to the name of the given file if a file with the name of the given file exists.
+     * ex. jedi-sword(2).yml where (2) is the addendum that's added so that the filename is unique.
      *
-     * @param file the file that should be striped of a unique suffix
+     * @param file the file whose filename should get a unique addendum
      * @return the file with/or without a unique suffix
      */
-    private fun addUniqueSuffix(file: File): File {
+    private fun addAddendum(file: File): File {
         if (!file.exists()) {
             return file
         }
@@ -157,15 +155,16 @@ object ResourceFile {
     }
 
     /**
-     * Removes a unique suffix from the given filename if it exists. Returns the filename unaltered if it doesn't.
-     * ex. jedi-sword(2).yml where (2) is the suffix that's added so that the filename is unique.
+     * Returns the filename without the the addendum that was added to make the given filename unique.
+     * Returns the filename as is if it has no addendum.
+     * ex. jedi-sword(2).yml where (2) is the suffix that was added so that the filename is unique.
      *
      * @param filename the filename that should be striped of a unique suffix
      * @return the filename without the unique suffix if it exists
      *
-     * @see [addUniqueSuffix]
+     * @see [addAddendum]
      */
-    fun removeUniqueSuffix(filename: String): String {
+    fun removeAddendum(filename: String): String {
         val suffixStart = filename.indexOf('(')
         if (suffixStart < 0) {
             return filename
