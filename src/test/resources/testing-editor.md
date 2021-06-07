@@ -4,9 +4,9 @@
 -> editor has corresponding schema selected (bottom right combo "Schema:")
 
 **Editor title is <resource-name>@<namespace-name>.yml**
-1. "Edit..." resource
+1. "Edit..." namespaced resource (ex. Pod)
 
--> editor has title matching pattern <resource>@<namespace>.yml
+-> editor title is matching pattern <resource-name>@<namespace-name>.yml
 
 **Editor file will rename file to <resource>@<namespace>(2).yml if name already used**
 1. "Edit..." resource
@@ -16,7 +16,12 @@
 
 -> editor has title matching pattern <resource-name>@<namespace-name>(2).yml
 
-**Editor would not rename on startup**
+**Editor title is <resource-name>.yml**
+1. "Edit..." non namespaced resource (ex. Namespace)
+
+-> editor title is matching pattern <resource-name>.yml
+
+**Editor does not rename resource-file on startup**
 1. "Edit..." resource
 1. change metadata > name / metadata > namespace / kind
       -> push notification ("create new" not "update existing")
@@ -30,24 +35,34 @@
 
 -> no notification
 
-**Push notification with "update existing"**
+**Push notification "update existing"**
 1. "Edit..." resource
 1. add label
    -> push notification ("Update" not "Create")
 1. hit "Push"
 
 -> notification disappears
--> label was added
 -> editor title unchanged
 
-**Push notification with "create new"**
+**Push notification "create new"**
 1. "Edit..." resource
-1. change metadata > name / metadata > namespace / kind
+1. change metadata > name / metadata > namespace / kind 
    -> push notification ("create new" not "update existing")
 1. hit "Push"
 
--> new resource appears in tree
+-> new resource appears in tree (if resource in current namespace was modified)
 -> editor title changes
+
+**Can push resource even if current namespace is different**
+1. "Edit..." namespaced resource
+1. "Use Namespace" on different Namespace   
+1. in editor: change metadata > name
+-> push notification "create new"
+1. hit "Push"
+-> resource does not appear in tree (current namespace is different)
+1. "Use Namespace" on initial Namespace
+
+-> new resource is visible in tree
 
 **Push notification with "update existing" for custom resource**
 1. "Edit..." custom resource
@@ -55,13 +70,15 @@
 
 -> push notification ("update existing")
 
-**Error notification disappears**
-1. "Edit..." resource
-1. change kind to invalid value
-   -> error notification ("Unsupported resource kind)
-1. change kind to valid value
+**Push notification with "update existing" for knative 'Service' custom resource**
+1. Install knative tutorial https://redhat-developer-demos.github.io/knative-tutorial/knative-tutorial/
+1. Make sure have "greeter" service at Custom Resources > services > greeter
+1. "Edit..." Custom Resources > services > greeter
+1. change name (ex. greeter2)
+   -> push notification "create new"
+1. hit "Push"
 
--> error notification disappears
+-> new Service "greeter2" appears in tree
 
 **Push notification with "update existing" turns "create new"**
 1. "Edit..." resource
@@ -73,7 +90,7 @@
 
 **Deleted notification appears**
 1. "Edit..." resource
-1. delete resource (ctx action, console, kubectl)
+1. delete resource (ctx action/console/kubectl)
 
 -> deleted notification appears
 
@@ -82,6 +99,24 @@
 1. modify resource externally (console, kubectl)
 
 -> modified notification appears
+
+**Modified notification replaced Push notification**
+1. "Edit..." resource
+1. modify resource (ex. change label)
+   -> Push notification appears
+1. modify resource externally
+
+-> Modified notification replaced push notification
+
+**Reload -> Modified notification disappears**
+1. "Edit..." resource
+1. modify resource (ex. change label)
+   -> Push notification appears
+1. modify resource externally
+   -> Push notification shows additional option "Reload"
+1. hit "Reload"
+
+-> editor shows new resource, notification disappears
 
 **Error notification appears when pasting invalid content**
 1. "Edit..." resource
@@ -93,34 +128,19 @@
 
 -> Error notification appears
 
-**Error notification disappears when correcting invalid content**
-1. have editor with invalid content
-2. correct error/paste valid content
-
-**Push notification with reload appears**
+**Details in error notification shows cause**
 1. "Edit..." resource
-1. modify resource (ex. change label)
-   -> Push notification appears
-1. modify resource externally
+1. change kind to invalid value
+   -> error notification ("Invalid kubernetes yaml/json")
+1. Hit "Details"
 
--> Push notification shows additional option "Reload"
+-> Balloon shows cause
 
-**Reload -> push notification disappears**
+**Error notification disappears**
 1. "Edit..." resource
-1. modify resource (ex. change label)
-   -> Push notification appears
-1. modify resource externally
-   -> Push notification shows additional option "Reload"
-1. hit "Reload"
+1. change kind to invalid value
+   -> error notification ("Invalid kubernetes yaml/json")
+1. change kind to valid value
 
--> editor shows new resource, notification disappears
+-> error notification disappears
 
-**Push now -> push notification disappears**
-1. "Edit..." resource
-1. modify resource (ex. change label)
-   -> Push notification appears
-1. modify resource externally
-   -> Push notification shows additional option "Reload"
-1. hit "Push now"
-
--> editor stays the same, notification disappears
