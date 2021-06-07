@@ -76,6 +76,9 @@ object ResourceEditor {
     }
 
     fun updateEditor(editor: FileEditor, project: Project) {
+        if (!isResourceEditor(editor)) {
+            return
+        }
         try {
             val resource = createResource(editor) ?: return
             val oldClusterResource = getClusterResource(editor)
@@ -282,7 +285,8 @@ object ResourceEditor {
     }
 
     fun startWatch(editor: FileEditor?, project: Project) {
-        if (editor == null) {
+        if (editor == null
+            || !isResourceEditor(editor)) {
             return
         }
         val resource = createResource(editor) ?: return

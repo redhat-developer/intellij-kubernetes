@@ -33,8 +33,7 @@ class EditorTransactionListener: PsiDocumentTransactionListener {
         val projectAndEditor = getProjectAndEditor(file) ?: return
         val editor = projectAndEditor.editor
         val project = projectAndEditor.project
-        if (!editor.isValid
-            || !ResourceEditor.isResourceEditor(editor)) {
+        if (!editor.isValid) {
             return
         }
         ResourceEditor.updateEditor(editor, project)
