@@ -41,6 +41,7 @@ import com.redhat.devtools.intellij.kubernetes.model.util.isSameResource
 import com.redhat.devtools.intellij.kubernetes.model.util.trimWithEllipsis
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.client.KubernetesClient
+import io.fabric8.kubernetes.client.KubernetesClientException
 import java.io.IOException
 
 object ResourceEditor {
@@ -192,8 +193,8 @@ object ResourceEditor {
             } else {
                 createResource(jsonYaml)
             }
-        } catch (e: RuntimeException) {
-            throw ResourceException("Invalid yaml/json", e)
+        } catch (e: KubernetesClientException) {
+            throw ResourceException("Invalid kubernetes yaml/json", e.cause ?: e)
         }
     }
 
