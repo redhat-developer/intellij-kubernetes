@@ -197,7 +197,7 @@ object ResourceEditor {
             } else {
                 createResource(jsonYaml)
             }
-        } catch (e: KubernetesClientException) {
+        } catch (e: Exception) {
             throw ResourceException("Invalid kubernetes yaml/json", e.cause ?: e)
         }
     }

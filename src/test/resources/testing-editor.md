@@ -135,6 +135,21 @@
 1. "Edit..." resource
 2. paste invalid yaml
 
+-> Error notification appears
+
+**Error notification appears when inserting invalid content**
+1. "Edit..." resource
+2. modify metadata: insert "aaaaa" on a new line right after metadata
+
+```
+metadata:
+   aaaaaa
+   annotations:
+      machine.openshift.io/machine: "openshift-machine-api/ci-ln-yp4gpzk-f76d1-rgqp-master-0" 
+```
+
+-> Error notification appears
+
 **Error notification appears on startup**
 1. have editor with invalid content
 2. restart IJ
