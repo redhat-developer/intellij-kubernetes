@@ -52,7 +52,8 @@ object ResourceEditor {
 
     @Throws(IOException::class)
     fun open(resource: HasMetadata, project: Project): FileEditor? {
-        val file = ResourceFile.replaceContent(resource, ResourceFile.getFileFor(resource)) ?: return null
+        val resourceFile = ResourceFile.create(resource) ?: return null
+        val file = resourceFile.replaceContent(resource) ?: return null
         val editors = FileEditorManager.getInstance(project).openFile(file, true, true)
         val editor = editors.getOrNull(0)
         createClusterResource(resource, editor, project)
@@ -60,10 +61,7 @@ object ResourceEditor {
     }
 
     fun onClosed(file: VirtualFile) {
-        if (!ResourceFile.isResourceFile(file)) {
-            return
-        }
-        ResourceFile.delete(file)
+        ResourceFile.create(file)?.delete()
     }
 
     fun onBeforeClosed(editor: FileEditor?, project: Project?) {
@@ -84,7 +82,7 @@ object ResourceEditor {
             val oldClusterResource = getClusterResource(editor)
             val clusterResource = getOrCreateClusterResource(resource, editor, project) ?: return
             if (clusterResource != oldClusterResource) {
-                renameEditor(editor, resource)
+                renameEditor(resource, editor)
             }
             showNotifications(oldClusterResource, clusterResource, resource, editor, project)
         } catch (e: ResourceException) {
@@ -142,10 +140,7 @@ object ResourceEditor {
     }
 
     fun isResourceEditor(editor: FileEditor?): Boolean {
-        if (editor == null) {
-            return false
-        }
-        return ResourceFile.isResourceFile(editor.file)
+        return ResourceFile.isResourceFile(editor?.file)
     }
 
     fun reloadEditor(resource: HasMetadata, editor: FileEditor) {
@@ -164,7 +159,7 @@ object ResourceEditor {
         if (file == null) {
             return
         }
-        ResourceFile.replaceContent(resource, file)
+        ResourceFile.create(file)?.replaceContent(resource) ?: return
         FileDocumentManager.getInstance().reloadFiles(file)
     }
 
@@ -256,7 +251,7 @@ object ResourceEditor {
                     val newCluster = createClusterResource(editorResource, editor, project)
                     val updatedResource = pushResource(editorResource, newCluster, editor, project)
                     if (updatedResource != null) {
-                        renameEditor(editor, updatedResource)
+                        renameEditor(updatedResource, editor)
                     }
                 }
             } catch (e: ResourceException) {
@@ -286,20 +281,12 @@ object ResourceEditor {
         return updatedResource
     }
 
-    private fun renameEditor(editor: FileEditor, newResource: HasMetadata) {
-        val file = getResourceFile(editor)
-        if (shouldChangeFilename(newResource, getResourceFile(editor))) {
-            ResourceFile.rename(newResource, file)
+    private fun renameEditor(newResource: HasMetadata, editor: FileEditor) {
+        val file = ResourceFile.create(editor.file) ?: return
+        val newFile = ResourceFile.create(newResource)
+        if (!file.hasEqualBasePath(newFile)) {
+            file.rename(newResource)
         }
-    }
-
-    private fun shouldChangeFilename(resource: HasMetadata, file: VirtualFile?): Boolean {
-        if (file == null) {
-            return false
-        }
-        val existingName = ResourceFile.removeAddendum(file.name)
-        val newName = ResourceFile.getFileFor(resource).name
-        return existingName != newName
     }
 
     fun startWatch(editor: FileEditor?, project: Project) {
