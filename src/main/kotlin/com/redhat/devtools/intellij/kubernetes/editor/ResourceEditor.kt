@@ -20,7 +20,6 @@ import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Key
 import com.intellij.openapi.vfs.VirtualFile
-import com.redhat.devtools.intellij.common.editor.AllowNonProjectEditing
 import com.redhat.devtools.intellij.common.utils.UIHelper
 import com.redhat.devtools.intellij.kubernetes.editor.notification.DeletedNotification
 import com.redhat.devtools.intellij.kubernetes.editor.notification.ErrorNotification
@@ -41,7 +40,6 @@ import com.redhat.devtools.intellij.kubernetes.model.util.isSameResource
 import com.redhat.devtools.intellij.kubernetes.model.util.trimWithEllipsis
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.client.KubernetesClient
-import io.fabric8.kubernetes.client.KubernetesClientException
 import java.io.IOException
 
 object ResourceEditor {
@@ -52,8 +50,7 @@ object ResourceEditor {
 
     @Throws(IOException::class)
     fun open(resource: HasMetadata, project: Project): FileEditor? {
-        val resourceFile = ResourceFile.create(resource) ?: return null
-        val file = resourceFile.replaceContent(resource) ?: return null
+        val file = ResourceFile.create(resource)?.write(resource) ?: return null
         val editors = FileEditorManager.getInstance(project).openFile(file, true, true)
         val editor = editors.getOrNull(0)
         createClusterResource(resource, editor, project)
@@ -159,7 +156,7 @@ object ResourceEditor {
         if (file == null) {
             return
         }
-        ResourceFile.create(file)?.replaceContent(resource) ?: return
+        ResourceFile.create(file)?.write(resource) ?: return
         FileDocumentManager.getInstance().reloadFiles(file)
     }
 
@@ -304,10 +301,6 @@ object ResourceEditor {
         clusterResource.stopWatch()
     }
 
-    fun enableNonProjectFileEditing(file: VirtualFile?) {
-        file?.putUserData(AllowNonProjectEditing.ALLOW_NON_PROJECT_EDITING, true)
-    }
-
     private fun getClusterResource(editor: FileEditor?): ClusterResource? {
         if (editor == null) {
             return null
@@ -389,5 +382,16 @@ object ResourceEditor {
             }
         }
     }
+
+    /**
+     * Enables editing of non project files for the given file. This prevents the IDE from presenting the
+     * "edit non-project" files dialog.
+     *
+     * @param file to enable the (non-project file) editing for
+     */
+    fun enableNonProjectFileEditing(file: VirtualFile) {
+        ResourceFile.create(file)?.enableNonProjectFileEditing()
+    }
+
 }
 

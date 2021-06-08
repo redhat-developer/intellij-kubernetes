@@ -10,31 +10,34 @@
  ******************************************************************************/
 package com.redhat.devtools.intellij.kubernetes.editor
 
+import com.intellij.openapi.application.ReadAction
 import com.intellij.openapi.application.WriteAction
-import com.intellij.openapi.util.io.FileUtil
 import com.intellij.openapi.util.io.FileUtilRt
 import com.intellij.openapi.vfs.VfsUtil
 import com.intellij.openapi.vfs.VirtualFile
+import com.redhat.devtools.intellij.common.editor.AllowNonProjectEditing
 import com.redhat.devtools.intellij.common.utils.UIHelper
-import com.redhat.devtools.intellij.kubernetes.editor.ResourceEditor.enableNonProjectFileEditing
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.Namespace
 import io.fabric8.kubernetes.client.utils.Serialization
 import io.fabric8.openshift.api.model.Project
 import org.apache.commons.io.FileUtils
 import org.jetbrains.yaml.YAMLFileType
-import java.io.File
 import java.nio.charset.StandardCharsets
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
 import java.util.function.Supplier
 
-class ResourceFile private constructor(val path: Path, var _virtualFile: VirtualFile? = null) {
+open class ResourceFile protected constructor(
+    open val path: Path,
+    protected open var _virtualFile: VirtualFile? = null
+) {
 
     companion object {
-        private const val EXTENSION = YAMLFileType.DEFAULT_EXTENSION
-        private val TEMP_FOLDER = Paths.get(FileUtils.getTempDirectoryPath(), "intellij-kubernetes")
+        const val EXTENSION = YAMLFileType.DEFAULT_EXTENSION
+        @JvmStatic
+        val TEMP_FOLDER: Path = Paths.get(FileUtils.getTempDirectoryPath(), "intellij-kubernetes")
 
         fun create(resource: HasMetadata): ResourceFile? {
             val path = getPathFor(resource)
@@ -107,42 +110,37 @@ class ResourceFile private constructor(val path: Path, var _virtualFile: Virtual
 
     }
 
-    private val virtualFile: VirtualFile?
+    protected open val virtualFile: VirtualFile?
         get() {
             if (_virtualFile == null) {
-                _virtualFile = VfsUtil.findFile(path, true)
+                // lookup virtual file if not present yet
+                _virtualFile = findVirtualFile(path)
             }
             return _virtualFile
         }
 
     /**
-     * Replaces the content of the given file with the given resource. A new file is created if it doesn't exist yet.
+     * Writes the given resource to file in this ResourceFile. A new file is created if it doesn't exist yet.
      *
      * @param resource the resource that should be set as content of the given file
-     * @param file the file whose content should be replaced
      * @return the virtual file whose content was changed
      */
-    fun replaceContent(resource: HasMetadata): VirtualFile? {
+    fun write(resource: HasMetadata): VirtualFile? {
         val content = Serialization.asYaml(resource)
-        FileUtils.write(path.toFile(), content, StandardCharsets.UTF_8, false)
-        return UIHelper.executeInUI(Supplier {
-            WriteAction.compute<VirtualFile?, Exception> {
-                val virtualFile = VfsUtil.findFile(path, true)
-                virtualFile?.refresh(false, false)
-                enableNonProjectFileEditing(virtualFile)
-                virtualFile
-            }
-        })
+        write(content, path)
+        return executeReadAction {
+            virtualFile?.refresh(false, false)
+            enableNonProjectFileEditing()
+            virtualFile
+        }
     }
 
     /**
      * Deletes the file that this class is dealing with.
      */
     fun delete() {
-        UIHelper.executeInUI {
-            WriteAction.compute<Unit, Exception> {
-                virtualFile?.delete(this)
-            }
+        executeWriteAction {
+            virtualFile?.delete(this)
         }
     }
 
@@ -153,11 +151,9 @@ class ResourceFile private constructor(val path: Path, var _virtualFile: Virtual
      */
     fun rename(resource: HasMetadata) {
         val newPath = addAddendum(getPathFor(resource))
-        UIHelper.executeInUI {
-            WriteAction.compute<Unit, Exception> {
-                virtualFile?.rename(this, newPath.fileName.toString())
-                virtualFile?.refresh(true, true)
-            }
+        executeWriteAction {
+            virtualFile?.rename(this, newPath.fileName.toString())
+            virtualFile?.refresh(true, true)
         }
     }
 
@@ -166,21 +162,21 @@ class ResourceFile private constructor(val path: Path, var _virtualFile: Virtual
      * Returns the path as is if the path doesn't exist yet.
      * ex. jedi-sword(2).yml where (2) is the addendum that's added so that the filename is unique.
      *
-     * @param file the file whose filename should get a unique addendum
+     * @param path the file whose filename should get a unique addendum
      * @return the file with/or without a unique suffix
      */
-    private fun addAddendum(file: Path): Path {
-        if (!Files.exists(file)) {
-            return file
+    private fun addAddendum(path: Path): Path {
+        if (!exists(path)) {
+            return path
         }
-        val name = FileUtilRt.getNameWithoutExtension(file.toString())
-        val suffix = FileUtilRt.getExtension(file.toString())
-        val parent = file.parent
+        val name = FileUtilRt.getNameWithoutExtension(path.toString())
+        val suffix = FileUtilRt.getExtension(path.toString())
+        val parent = path.parent
         var i = 1
         var unused: Path?
         do {
             unused = parent.resolve("$name(${i++}).$suffix")
-        } while (unused != null && Files.exists(unused))
+        } while (unused != null && exists(unused))
         return unused!!
     }
 
@@ -215,6 +211,34 @@ class ResourceFile private constructor(val path: Path, var _virtualFile: Virtual
             return filename
         }
         return filename.removeRange(suffixStart, suffixStop + 1)
+    }
+
+    open fun enableNonProjectFileEditing() {
+        virtualFile?.putUserData(AllowNonProjectEditing.ALLOW_NON_PROJECT_EDITING, true)
+    }
+
+    protected open fun write(content: String, path: Path) {
+        FileUtils.write(path.toFile(), content, StandardCharsets.UTF_8, false)
+    }
+
+    protected open fun exists(path: Path): Boolean {
+        return Files.exists(path)
+    }
+
+    protected open fun findVirtualFile(path: Path): VirtualFile? {
+        return VfsUtil.findFile(path, true)
+    }
+
+    protected open fun <R> executeReadAction(callable: () -> R): R {
+        return UIHelper.executeInUI(Supplier {
+            ReadAction.compute<R, java.lang.Exception>(callable)
+        })
+    }
+
+    protected open fun executeWriteAction(runnable: () -> Unit) {
+        UIHelper.executeInUI {
+            WriteAction.compute<Unit, java.lang.Exception>(runnable)
+        }
     }
 
     override fun equals(other: Any?): Boolean {
