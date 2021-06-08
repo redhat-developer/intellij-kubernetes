@@ -27,7 +27,7 @@
       -> push notification ("create new" not "update existing")
 1. restart IJ
 
--> editor title is still the same. It was not renamed to <XXXX(1).yml> 
+-> editor title is still the same. It was not renamed to <XXXX(1).yml> (was bug at some point)
 
 **Irrelevant change, no notification**
 1. "Edit..." resource
@@ -40,6 +40,19 @@
 1. add label
    -> push notification ("Update" not "Create")
 1. hit "Push"
+
+-> notification disappears
+-> editor title unchanged
+
+**Push notification "update existing" when chaning name to existing**
+1. "Edit..." resource
+1. change metadata > name
+1. push to server
+   -> new resource shows up in tree
+1. change metadata > name to initial name
+
+-> editor title is <initial-name>(2)
+-> editor shows push notification "update existing"
 
 -> notification disappears
 -> editor title unchanged
