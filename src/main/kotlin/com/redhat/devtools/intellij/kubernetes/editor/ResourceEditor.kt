@@ -46,15 +46,14 @@ object ResourceEditor {
 
     private val KEY_CLUSTER_RESOURCE = Key<ClusterResource>(ClusterResource::class.java.name)
     private val KEY_CLIENTS = Key<Clients<out KubernetesClient>>(Clients::class.java.name)
-    private val resourceModel = ServiceManager.getService(IResourceModel::class.java)
 
     @Throws(IOException::class)
-    fun open(resource: HasMetadata, project: Project): FileEditor? {
-        val file = ResourceFile.create(resource)?.write(resource) ?: return null
-        val editors = FileEditorManager.getInstance(project).openFile(file, true, true)
-        val editor = editors.getOrNull(0)
+    fun open(resource: HasMetadata, project: Project) {
+        val file = ResourceFile.create(resource)?.write(resource) ?: return
+        val editor = FileEditorManager.getInstance(project)
+            .openFile(file, true, true)
+            .getOrNull(0)
         createClusterResource(resource, editor, project)
-        return editor
     }
 
     fun onClosed(file: VirtualFile) {
@@ -351,7 +350,7 @@ object ResourceEditor {
             // we're using the current context (and the namespace in the resource).
             // This may be wrong for editors that are restored after IDE restart
             // TODO: save context as [FileAttribute] for the file so that it can be restored
-            val context = resourceModel.getCurrentContext()
+            val context = ServiceManager.getService(IResourceModel::class.java).getCurrentContext()
             if (context != null) {
                 clients = ::createClients.invoke(context.context.context.cluster)
                 editor.putUserData(KEY_CLIENTS, clients)
