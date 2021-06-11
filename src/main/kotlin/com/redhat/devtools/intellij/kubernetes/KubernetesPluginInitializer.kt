@@ -40,14 +40,14 @@ class KubernetesPluginInitializer : StartupActivity {
     private fun enableAllEditorsNonProjectEditing(project: Project) {
         FileEditorManager.getInstance(project).allEditors
             .filter { editor -> ResourceEditor.isResourceEditor(editor) }
-            .mapNotNull { editor -> ResourceEditor.getResourceFile(editor) }
-            .forEach { file -> ResourceEditor.enableNonProjectFileEditing(file) }
+            .mapNotNull { editor -> ResourceEditor.get(editor, project) }
+            .forEach { resourceEditor -> resourceEditor.enableNonProjectFileEditing() }
     }
 
     private fun showResourceEditorNotifications(project: Project) {
         val selected = FileEditorManager.getInstance(project).selectedEditor ?: return
         try {
-            ResourceEditor.updateEditor(selected, project)
+            ResourceEditor.get(selected, project)?.updateEditor()
         } catch (e: Exception) {
             ErrorNotification.show(
                 selected,

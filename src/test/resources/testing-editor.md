@@ -8,26 +8,18 @@
 
 -> editor title is matching pattern <resource-name>@<namespace-name>.yml
 
-**Editor file will rename file to <resource>@<namespace>(2).yml if name already used**
+**Editor file will rename file to <resource>@<namespace>(1).yml if name already used**
 1. "Edit..." resource
 1. "Edit..." other resource
 1. editor 1: Ctrl + A, Ctrl + C
 1. editor 2: Ctrl + v
 
--> editor has title matching pattern <resource-name>@<namespace-name>(2).yml
+-> editor has title matching pattern <resource-name>@<namespace-name>(1).yml
 
 **Editor title is <resource-name>.yml**
 1. "Edit..." non namespaced resource (ex. Namespace)
 
 -> editor title is matching pattern <resource-name>.yml
-
-**Editor does not rename resource-file on startup**
-1. "Edit..." resource
-1. change metadata > name / metadata > namespace / kind
-      -> push notification ("create new" not "update existing")
-1. restart IJ
-
--> editor title is still the same. It was not renamed to <XXXX(1).yml> (was bug at some point)
 
 **Irrelevant change, no notification**
 1. "Edit..." resource
@@ -44,7 +36,7 @@
 -> notification disappears
 -> editor title unchanged
 
-**Push notification "update existing" when chaning name to existing**
+**Push notification "update existing" when changing name to existing**
 1. "Edit..." resource
 1. change metadata > name
 1. push to server
@@ -59,12 +51,12 @@
 
 **Push notification "create new"**
 1. "Edit..." resource
-1. change metadata > name / metadata > namespace / kind 
+1. change metadata > name / namespace / kind 
    -> push notification ("create new" not "update existing")
 1. hit "Push"
 
 -> new resource appears in tree (if resource in current namespace was modified)
--> editor title changes
+-> editor title changed to new name OR namespace
 
 **Can push resource even if current namespace is different**
 1. "Edit..." namespaced resource
@@ -101,11 +93,26 @@
 
 -> push notification with "create new"
 
-**Deleted notification appears**
+**Deleted notification appears on new editor**
 1. "Edit..." resource
 1. delete resource (ctx action/console/kubectl)
 
 -> deleted notification appears
+
+**Deleted notification appears on editor after restart**
+1. "Edit..." resource
+1. restart IJ   
+1. delete resource (ctx action/console/kubectl)
+
+-> deleted notification appears
+
+**Deleted notification replaced by Push notification**
+1. "Edit..." resource
+1. delete resource (ctx action/console/kubectl)
+   -> deleted notification appears
+1. add label
+
+-> Push notification "create new"
 
 **Modified notification appears**
 1. "Edit..." resource

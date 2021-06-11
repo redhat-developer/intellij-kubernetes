@@ -36,10 +36,9 @@ object DeletedNotification {
         val panel = EditorNotificationPanel()
         panel.setText("${resource.kind} ${resource.metadata.name} deleted on cluster. Keep content?")
         panel.createActionLabel("Push to Cluster") {
-            ResourceEditor.push(editor, project)
+            ResourceEditor.get(editor, project)?.push()
         }
         panel.createActionLabel("Keep current") {
-            editor.isModified
             editor.hideNotification(KEY_PANEL, project)
         }
 
