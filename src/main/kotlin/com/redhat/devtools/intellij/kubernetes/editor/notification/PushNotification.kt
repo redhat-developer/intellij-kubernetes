@@ -17,7 +17,6 @@ import com.intellij.ui.EditorNotificationPanel
 import com.redhat.devtools.intellij.kubernetes.editor.ResourceEditor
 import com.redhat.devtools.intellij.kubernetes.editor.hideNotification
 import com.redhat.devtools.intellij.kubernetes.editor.showNotification
-import io.fabric8.kubernetes.api.model.HasMetadata
 import javax.swing.JComponent
 
 object PushNotification {
@@ -35,16 +34,20 @@ object PushNotification {
     private fun createPanel(editor: FileEditor, project: Project): EditorNotificationPanel {
         val panel = EditorNotificationPanel()
         panel.setText(
-            "Push local changes, ${ if (!ResourceEditor.existsOnCluster(editor)) { "create new" } else { "update existing" }} resource on server?")
-        panel.createActionLabel("Push to Cluster") {
-            ResourceEditor.push(editor, project)
-        }
-        if (ResourceEditor.isOutdated(editor)) {
-            panel.createActionLabel("Reload from Cluster") {
-                val latestRevision = ResourceEditor.loadResourceFromCluster(false, editor)
-                if (latestRevision != null) {
-                    ResourceEditor.reloadEditor(latestRevision, editor)
+            "Push local changes, ${
+                if (false == ResourceEditor.get(editor, project)?.existsOnCluster()) {
+                    "create new"
+                } else {
+                    "update existing"
                 }
+            } resource on server?"
+        )
+        panel.createActionLabel("Push to Cluster") {
+            ResourceEditor.get(editor, project)?.push()
+        }
+        if (true == ResourceEditor.get(editor, project)?.isOutdated()) {
+            panel.createActionLabel("Reload from Cluster") {
+                ResourceEditor.get(editor, project)?.reloadEditor()
                 editor.hideNotification(KEY_PANEL, project)
             }
         }

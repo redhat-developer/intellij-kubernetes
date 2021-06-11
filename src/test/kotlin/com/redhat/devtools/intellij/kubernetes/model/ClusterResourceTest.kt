@@ -270,6 +270,17 @@ class ClusterResourceTest {
     }
 
     @Test
+    fun `#set should reset deleted`() {
+        // given
+        cluster.setDeleted(true)
+        assertThat(cluster.isDeleted()).isTrue()
+        // when
+        cluster.set(modifiedEndorResourceOnCluster)
+        // then
+        assertThat(cluster.isDeleted()).isFalse()
+    }
+
+    @Test
     fun `#isDeleted() should be false initially`() {
         // given
         // when
@@ -540,5 +551,9 @@ class ClusterResourceTest {
             get() {
                 return super.watchListeners
             }
+
+        public override fun setDeleted(deleted: Boolean) {
+            super.setDeleted(deleted)
+        }
     }
 }

@@ -11,11 +11,6 @@
 package com.redhat.devtools.intellij.kubernetes.editor
 
 import com.intellij.openapi.editor.Document
-import com.intellij.openapi.fileEditor.FileEditor
-import com.intellij.openapi.fileEditor.FileEditorManager
-import com.intellij.openapi.project.Project
-import com.intellij.openapi.project.ProjectManager
-import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.PsiFile
 import com.intellij.psi.impl.PsiDocumentTransactionListener
 
@@ -25,30 +20,6 @@ class EditorTransactionListener: PsiDocumentTransactionListener {
     }
 
     override fun transactionCompleted(document: Document, file: PsiFile) {
-        updateEditor(document)
+        ResourceEditor.get(document)?.updateEditor()
     }
-
-    private fun updateEditor(document: Document) {
-        val file = ResourceEditor.getResourceFile(document) ?: return
-        val projectAndEditor = getProjectAndEditor(file) ?: return
-        val editor = projectAndEditor.editor
-        val project = projectAndEditor.project
-        if (!editor.isValid) {
-            return
-        }
-        ResourceEditor.updateEditor(editor, project)
-    }
-
-    private fun getProjectAndEditor(file: VirtualFile): ProjectAndEditor? {
-        return ProjectManager.getInstance().openProjects
-            .filter { project -> project.isInitialized && !project.isDisposed }
-            .flatMap { project ->
-                FileEditorManager.getInstance(project).getEditors(file).toList()
-                    .mapNotNull { editor -> ProjectAndEditor(project, editor) }
-            }
-            .firstOrNull()
-    }
-
-    private class ProjectAndEditor(val project: Project, val editor: FileEditor)
-
 }

@@ -27,21 +27,23 @@ class EditorFocusListener(private val project: Project) : FileEditorManagerListe
     }
 
     override fun fileClosed(source: FileEditorManager, file: VirtualFile) {
-        ResourceEditor.onClosed(file)
+        ResourceFile.create(file)?.delete()
     }
 
     override fun beforeFileClosed(source: FileEditorManager, file: VirtualFile) {
-        ResourceEditor.onBeforeClosed(source.getSelectedEditor(file), source.project)
+        ResourceEditor.get(source.getSelectedEditor(file), source.project)
+            ?.closeClusterResource()
     }
 
-    private fun handleSelectionLost(editor: FileEditor?, project: Project) {
-        if (editor == null
-            || !ResourceEditor.isResourceEditor(editor)) {
+    private fun handleSelectionGained(editor: FileEditor?, project: Project) {
+        if (editor == null) {
             return
         }
         try {
-            ResourceEditor.stopWatch(editor)
-        } catch (e: RuntimeException) {
+            ResourceEditor.get(editor, project)
+                ?.startWatch()
+                ?.updateEditor()
+        } catch (e: ResourceException) {
             ErrorNotification.show(
                 editor,
                 project,
@@ -51,14 +53,13 @@ class EditorFocusListener(private val project: Project) : FileEditorManagerListe
         }
     }
 
-    private fun handleSelectionGained(editor: FileEditor?, project: Project) {
+    private fun handleSelectionLost(editor: FileEditor?, project: Project) {
         if (editor == null) {
             return
         }
         try {
-            ResourceEditor.startWatch(editor, project)
-            ResourceEditor.updateEditor(editor, project)
-        } catch (e: ResourceException) {
+            ResourceEditor.get(editor, project)?.stopWatch()
+        } catch (e: RuntimeException) {
             ErrorNotification.show(
                 editor,
                 project,

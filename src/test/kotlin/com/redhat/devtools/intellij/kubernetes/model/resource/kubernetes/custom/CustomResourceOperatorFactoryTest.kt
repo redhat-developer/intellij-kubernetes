@@ -117,7 +117,7 @@ class CustomResourceOperatorFactoryTest {
     fun `#create(resource) should throw IllegalArgumentException if definition has unknown scope`() {
         // given
         // when
-        val operator = CustomResourceOperatorFactory.create(neo, listOf(CRD_UNKNOWN_SCOPE), client)
+        CustomResourceOperatorFactory.create(neo, listOf(CRD_UNKNOWN_SCOPE), client)
         // then
         // exception expected
     }

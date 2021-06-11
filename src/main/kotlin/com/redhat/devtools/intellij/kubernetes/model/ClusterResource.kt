@@ -68,6 +68,7 @@ open class ClusterResource(
                 return
             }
             this.updatedResource = resource
+            setDeleted(false)
         }
     }
 
@@ -107,7 +108,7 @@ open class ClusterResource(
         }
     }
 
-    private fun setDeleted(deleted: Boolean) {
+    open protected fun setDeleted(deleted: Boolean) {
         synchronized(this) {
             this.isDeleted = deleted
         }
@@ -124,11 +125,8 @@ open class ClusterResource(
             return true
         }
         val resource = get(false)
-        return if (resource == null) {
-            true
-        } else {
-            isModified(toCompare)
-        }
+        return resource == null
+                || isModified(toCompare)
     }
 
     /**
@@ -199,7 +197,7 @@ open class ClusterResource(
     }
 
     /**
-     * Returns `true` if the given resource is the same as the resource that was given when creating this cluster resource instance.
+     * Returns `true` if the given resource is the same as the resource in this cluster resource instance.
      * Returns `false` otherwise.
      *
      * @param toCompare the resource to compare to the initial cluster resource
@@ -208,21 +206,13 @@ open class ClusterResource(
      * @see [HasMetadata.isSameResource]
      */
     fun isSameResource(toCompare: HasMetadata?): Boolean {
-        try {
-            val resource = get(false)
-            if (toCompare == null) {
-                return resource == null
-            }
-
-            return toCompare.isSameResource(resource)
-        } catch (e: ResourceException) {
-            return false
-        }
+        return initialResource.isSameResource(toCompare)
     }
 
     /**
      * Returns `true` if the given resource is of the same kind and
      * modified compared to the same resource on the cluster.
+     * The cached cluster resource is used if it is present. It is retrieved from cluster if it wasn't yet.
      *
      * @param toCompare resource to compare to the resource on the cluster
      */

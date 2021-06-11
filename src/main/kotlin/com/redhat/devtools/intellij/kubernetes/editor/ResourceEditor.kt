@@ -18,6 +18,7 @@ import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.fileEditor.FileEditor
 import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.project.ProjectManager
 import com.intellij.openapi.util.Key
 import com.intellij.openapi.vfs.VirtualFile
 import com.redhat.devtools.intellij.common.utils.UIHelper
@@ -36,72 +37,157 @@ import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.hasmeta
 import com.redhat.devtools.intellij.kubernetes.model.util.Clients
 import com.redhat.devtools.intellij.kubernetes.model.util.createClients
 import com.redhat.devtools.intellij.kubernetes.model.util.createResource
-import com.redhat.devtools.intellij.kubernetes.model.util.isSameResource
 import com.redhat.devtools.intellij.kubernetes.model.util.trimWithEllipsis
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.client.KubernetesClient
 import java.io.IOException
 
-object ResourceEditor {
+class ResourceEditor(
+    private val editor: FileEditor,
+    private val project: Project
+) {
 
-    private val KEY_CLUSTER_RESOURCE = Key<ClusterResource>(ClusterResource::class.java.name)
-    private val KEY_CLIENTS = Key<Clients<out KubernetesClient>>(Clients::class.java.name)
-
-    @Throws(IOException::class)
-    fun open(resource: HasMetadata, project: Project) {
-        val file = ResourceFile.create(resource)?.write(resource) ?: return
-        val editor = FileEditorManager.getInstance(project)
-            .openFile(file, true, true)
-            .getOrNull(0)
-        createClusterResource(resource, editor, project)
+    constructor(resource: HasMetadata?, editor: FileEditor, project: Project): this(editor, project) {
+        this.resource = resource
     }
 
-    fun onClosed(file: VirtualFile) {
-        ResourceFile.create(file)?.delete()
-    }
+    companion object {
+        private val KEY_RESOURCE_EDITOR = Key<ResourceEditor>(ResourceEditor::class.java.name)
+        private val KEY_CLIENTS = Key<Clients<out KubernetesClient>>(Clients::class.java.name)
 
-    fun onBeforeClosed(editor: FileEditor?, project: Project?) {
-        if (editor == null
-            || project == null
-            || !isResourceEditor(editor)) {
-            return
+        fun isResourceEditor(editor: FileEditor?): Boolean {
+            return ResourceFile.isResourceFile(editor?.file)
         }
-        getClusterResource(editor)?.close()
-    }
 
-    fun updateEditor(editor: FileEditor, project: Project) {
-        if (!isResourceEditor(editor)) {
-            return
+        @Throws(IOException::class)
+        fun open(resource: HasMetadata, project: Project): ResourceEditor? {
+            val file = ResourceFile.create(resource)?.write(resource) ?: return null
+            val editor = FileEditorManager.getInstance(project)
+                .openFile(file, true, true)
+                .getOrNull(0)
+            return create(resource, editor, project)
         }
-        try {
-            val resource = createResource(editor) ?: return
-            val oldClusterResource = getClusterResource(editor)
-            val clusterResource = getOrCreateClusterResource(resource, editor, project) ?: return
-            if (clusterResource != oldClusterResource) {
-                renameEditor(resource, editor)
+
+        fun get(document: Document): ResourceEditor? {
+            val file = getResourceFile(document) ?: return null
+            val projectAndEditor = getProjectAndEditor(file) ?: return null
+            return get(projectAndEditor.editor, projectAndEditor.project)
+        }
+
+        fun get(editor: FileEditor?, project: Project?): ResourceEditor? {
+            if (false == editor?.isValid) {
+                return null
             }
-            showNotifications(oldClusterResource, clusterResource, resource, editor, project)
+            return editor?.getUserData(KEY_RESOURCE_EDITOR)
+                ?: create(editor, project)
+        }
+
+        private fun create(editor: FileEditor?, project: Project?): ResourceEditor? {
+            return create(null, editor, project)
+        }
+
+        private fun create(resource: HasMetadata?, editor: FileEditor?, project: Project?): ResourceEditor? {
+            if (editor == null
+                || !isResourceEditor(editor)
+                || project == null
+            ) {
+                return null
+            }
+            val resourceEditor = ResourceEditor(resource, editor, project)
+            editor.putUserData(KEY_RESOURCE_EDITOR, resourceEditor)
+            return resourceEditor
+        }
+
+        private fun getResourceFile(document: Document): VirtualFile? {
+            val file = FileDocumentManager.getInstance().getFile(document)
+            if (!ResourceFile.isResourceFile(file)) {
+                return null
+            }
+            return file
+        }
+
+        private fun getProjectAndEditor(file: VirtualFile): ProjectAndEditor? {
+            return ProjectManager.getInstance().openProjects
+                .filter { project -> project.isInitialized && !project.isDisposed }
+                .flatMap { project ->
+                    FileEditorManager.getInstance(project).getEditors(file).toList()
+                        .mapNotNull { editor -> ProjectAndEditor(project, editor) }
+                }
+                .firstOrNull()
+        }
+
+        private class ProjectAndEditor(val project: Project, val editor: FileEditor)
+
+    }
+
+    private var resource: HasMetadata? = null
+    private val clients: Clients<out KubernetesClient>?
+        get() {
+            var clients = editor.getUserData(KEY_CLIENTS)
+            if (clients == null) {
+                // we're using the current context (and the namespace in the resource).
+                // This may be wrong for editors that are restored after IDE restart
+                // TODO: save context as [FileAttribute] for the file so that it can be restored
+                val context = ServiceManager.getService(IResourceModel::class.java).getCurrentContext()
+                if (context != null) {
+                    clients = ::createClients.invoke(context.context.context.cluster)
+                    editor.putUserData(KEY_CLIENTS, clients)
+                }
+            }
+            return clients
+        }
+
+    private var oldClusterResource: ClusterResource? = null
+    private var _clusterResource: ClusterResource? = null
+    private val clusterResource: ClusterResource?
+        get() {
+            synchronized(this) {
+                if (_clusterResource == null
+                    || false == _clusterResource?.isSameResource(resource)) {
+                    oldClusterResource = _clusterResource
+                    oldClusterResource?.close()
+                    _clusterResource = createClusterResource(resource, clients)
+                }
+                return _clusterResource
+            }
+        }
+
+    fun updateEditor() {
+        try {
+            this.resource = createResource(editor) ?: return
+            updateEditor(resource, clusterResource, oldClusterResource)
         } catch (e: ResourceException) {
             showErrorNotification(editor, project, e)
         }
     }
 
+    private fun updateEditor(resource: HasMetadata?, clusterResource: ClusterResource?, oldClusterResource: ClusterResource?) {
+            if (resource == null
+                || clusterResource == null
+            ) {
+                return
+            }
+            if (clusterResource != oldClusterResource) {
+                // new cluster resource was created, resource has thus changed
+                renameEditor(resource, editor)
+            }
+            showNotifications(clusterResource, resource, editor, project)
+    }
+
     private fun showNotifications(
-        oldClusterResource: ClusterResource?,
         clusterResource: ClusterResource,
         resource: HasMetadata,
         editor: FileEditor,
         project: Project
     ) {
         hideNotifications(editor, project)
-        if (oldClusterResource != null
-            && oldClusterResource.isDeleted()
-            && !clusterResource.exists()) {
-            DeletedNotification.show(editor, resource, project)
-        } else if (clusterResource.isOutdated(resource)) {
-            showReloadNotification(clusterResource, resource, editor, project)
-        } else if (clusterResource.canPush(resource)) {
-            PushNotification.show(editor, project)
+        when {
+            clusterResource.isDeleted() && !clusterResource.isModified(resource)->
+                DeletedNotification.show(editor, resource, project)
+            clusterResource.isOutdated(resource) ->
+                showReloadNotification(clusterResource, resource, editor, project)
+            clusterResource.canPush(resource) ->
+                PushNotification.show(editor, project)
         }
     }
 
@@ -113,10 +199,7 @@ object ResourceEditor {
     ) {
         if (!clusterResource.isModified(resource)) {
             // reload if not modified
-            val resourceOnCluster = clusterResource.get(false)
-            if (resourceOnCluster != null) {
-                reloadEditor(resourceOnCluster, editor)
-            }
+                reloadEditor()
         } else {
             ReloadNotification.show(editor, resource, project)
         }
@@ -124,8 +207,10 @@ object ResourceEditor {
 
     private fun showErrorNotification(editor: FileEditor, project: Project, e: Throwable) {
         hideNotifications(editor, project)
-        ErrorNotification.show(editor, project,
-            e.message ?: "", e.cause?.message)
+        ErrorNotification.show(
+            editor, project,
+            e.message ?: "", e.cause?.message
+        )
     }
 
     private fun hideNotifications(editor: FileEditor, project: Project) {
@@ -135,66 +220,125 @@ object ResourceEditor {
         PushNotification.hide(editor, project)
     }
 
-    fun isResourceEditor(editor: FileEditor?): Boolean {
-        return ResourceFile.isResourceFile(editor?.file)
+    fun reloadEditor() {
+        val resource = clusterResource?.get(false) ?: return
+        reloadEditor(resource)
     }
 
-    fun reloadEditor(resource: HasMetadata, editor: FileEditor) {
-        if (!isResourceEditor(editor)) {
-            return
-        }
+    private fun reloadEditor(resource: HasMetadata) {
         UIHelper.executeInUI {
-            val file = editor.file
-            if (file != null) {
-                reloadEditor(resource, file)
+            if (editor.file != null) {
+                val file = ResourceFile.create(editor.file)?.write(resource)
+                if (file != null) {
+                    FileDocumentManager.getInstance().reloadFiles(file)
+                }
             }
         }
     }
 
-    private fun reloadEditor(resource: HasMetadata, file: VirtualFile?) {
-        if (file == null) {
-            return
-        }
-        ResourceFile.create(file)?.write(resource) ?: return
-        FileDocumentManager.getInstance().reloadFiles(file)
+    fun existsOnCluster(): Boolean {
+        return clusterResource?.exists() ?: false
     }
 
-    fun getResourceFile(editor: FileEditor): VirtualFile? {
-        if (!isResourceEditor(editor)) {
-            return null
-        }
-        return editor.file
+    fun isOutdated(): Boolean {
+        return clusterResource?.isOutdated(resource) ?: false
     }
 
-    fun getResourceFile(document: Document): VirtualFile? {
-        val file = FileDocumentManager.getInstance().getFile(document)
-        if (!ResourceFile.isResourceFile(file)) {
+    fun push() {
+        try {
+            this.resource = createResource(editor) ?: return
+            push(resource, clusterResource)
+        } catch (e: Exception) {
+            showErrorNotification(editor, project, e)
+        }
+    }
+
+    private fun push(resource: HasMetadata?, clusterResource: ClusterResource?) {
+        try {
+            if (resource == null
+                || clusterResource == null) {
+                return
+            }
+            hideNotifications(editor, project)
+            val updatedResource = clusterResource.push(resource) ?: return
+            reloadEditor(updatedResource)
+        } catch (e: ResourceException) {
+            logger<ResourceEditor>().warn(e)
+            Notification().error(
+                "Could not save ${
+                    if (resource != null) {
+                        "${resource.kind} ${resource.metadata.name}"
+                    } else {
+                        ""
+                    }
+                } to cluster",
+                trimWithEllipsis(e.message, 300) ?: ""
+            )
+        }
+    }
+
+    private fun renameEditor(resource: HasMetadata, editor: FileEditor) {
+        val file = ResourceFile.create(editor.file) ?: return
+        val newFile = ResourceFile.create(resource)
+        if (!file.hasEqualBasePath(newFile)) {
+            file.rename(resource)
+        }
+    }
+
+    fun startWatch(): ResourceEditor {
+        clusterResource?.watch()
+        return this
+    }
+
+    fun stopWatch() {
+        clusterResource?.stopWatch()
+    }
+
+    private fun createClusterResource(resource: HasMetadata?, clients: Clients<out KubernetesClient>?): ClusterResource? {
+        if (resource == null
+            || clients == null) {
             return null
         }
-        return file
+        val clusterResource = ClusterResource(resource, clients)
+        clusterResource.addListener(onResourceChanged())
+        clusterResource.watch()
+        return clusterResource
+    }
+
+    private fun onResourceChanged(): ModelChangeObservable.IResourceChangeListener {
+        return object : ModelChangeObservable.IResourceChangeListener {
+            override fun added(added: Any) {
+            }
+
+            override fun removed(removed: Any) {
+                updateEditor()
+            }
+
+            override fun modified(modified: Any) {
+                val resource = modified as? HasMetadata
+                UIHelper.executeInUI {
+                    if (resource != null
+                        && false == clusterResource?.isModified(resource)
+                    ) {
+                        reloadEditor(resource)
+                    } else {
+                        updateEditor()
+                    }
+                }
+            }
+        }
     }
 
     private fun createResource(editor: FileEditor): HasMetadata? {
-        val document = getDocument(editor)
+        return createResource(getDocument(editor))
+    }
+
+    private fun createResource(document: Document?): HasMetadata? {
         return if (document?.text == null) {
             null
         } else {
-            val clients = getOrCreateClients(editor) ?: return null
+            val clients = clients ?: return null
             createResource(document.text, clients)
-        }
-    }
-
-    private fun createResource(jsonYaml: String, clients: Clients<out KubernetesClient>): HasMetadata {
-        try {
-            val resource = createResource<HasMetadataResource>(jsonYaml)
-            val definitions = CustomResourceDefinitionMapping.getDefinitions(clients.get())
-            return if (CustomResourceDefinitionMapping.isCustomResource(resource, definitions)) {
-                createResource<GenericCustomResource>(jsonYaml)
-            } else {
-                createResource(jsonYaml)
-            }
-        } catch (e: Exception) {
-            throw ResourceException("Invalid kubernetes yaml/json", e.cause ?: e)
         }
     }
 
@@ -205,181 +349,22 @@ object ResourceEditor {
         }
     }
 
-    fun loadResourceFromCluster(forceLatest: Boolean = false, editor: FileEditor): HasMetadata? {
-        if (!isResourceEditor(editor)) {
-            return null
-        }
-        val clusterResource = getClusterResource(editor) ?: return null
-        return clusterResource.get(forceLatest)
-    }
-
-    fun existsOnCluster(editor: FileEditor): Boolean {
-        if (!isResourceEditor(editor)) {
-            return false
-        }
-        return getClusterResource(editor)?.exists() ?: false
-    }
-
-    fun isOutdated(editor: FileEditor): Boolean {
-        if (!isResourceEditor(editor)) {
-            return false
-        }
-        val resource = createResource(editor)
-        return getClusterResource(editor)?.isOutdated(resource) ?: false
-    }
-
-    private fun isModified(editor: FileEditor): Boolean {
-        val resource = createResource(editor)
-        return getClusterResource(editor)?.isModified(resource) ?: false
-    }
-
-    fun push(editor: FileEditor, project: Project) {
-        if (!isResourceEditor(editor)) {
-            return
-        }
-        try {
-            val editorResource = createResource(editor) ?: return
-            try {
-                val cluster = getClusterResource(editor)
-                if (isSameResourceOnCluster(editorResource, cluster)) {
-                    pushResource(editorResource, cluster, editor, project)
-                } else {
-                    val newCluster = createClusterResource(editorResource, editor, project)
-                    val updatedResource = pushResource(editorResource, newCluster, editor, project)
-                    if (updatedResource != null) {
-                        renameEditor(updatedResource, editor)
-                    }
-                }
-            } catch (e: ResourceException) {
-                logger<ResourceEditor>().warn(e)
-                Notification().error(
-                    "Could not save ${editorResource.kind} ${editorResource.metadata.name} to cluster",
-                    trimWithEllipsis(e.message, 300) ?: ""
-                )
+    private fun createResource(jsonYaml: String, clients: Clients<out KubernetesClient>): HasMetadata {
+        return try {
+            val resource = createResource<HasMetadataResource>(jsonYaml)
+            val definitions = CustomResourceDefinitionMapping.getDefinitions(clients.get())
+            if (CustomResourceDefinitionMapping.isCustomResource(resource, definitions)) {
+                createResource<GenericCustomResource>(jsonYaml)
+            } else {
+                createResource(jsonYaml)
             }
-        } catch (e: ResourceException) {
-            showErrorNotification(editor, project, e)
+        } catch (e: Exception) {
+            throw ResourceException("Invalid kubernetes yaml/json", e.cause ?: e)
         }
     }
 
-    private fun isSameResourceOnCluster(resource: HasMetadata, cluster: ClusterResource?): Boolean {
-        val oldResource = cluster?.get(false) ?: return false
-        return oldResource.isSameResource(resource)
-    }
-
-    private fun pushResource(resource: HasMetadata, cluster: ClusterResource?, editor: FileEditor, project: Project): HasMetadata? {
-        if (cluster == null) {
-            return null
-        }
-        hideNotifications(editor, project)
-        val updatedResource = cluster.push(resource) ?: return null
-        reloadEditor(updatedResource, editor)
-        return updatedResource
-    }
-
-    private fun renameEditor(newResource: HasMetadata, editor: FileEditor) {
-        val file = ResourceFile.create(editor.file) ?: return
-        val newFile = ResourceFile.create(newResource)
-        if (!file.hasEqualBasePath(newFile)) {
-            file.rename(newResource)
-        }
-    }
-
-    fun startWatch(editor: FileEditor?, project: Project) {
-        if (editor == null
-            || !isResourceEditor(editor)) {
-            return
-        }
-        val resource = createResource(editor) ?: return
-        val clusterResource = getOrCreateClusterResource(resource, editor, project) ?: return
-        clusterResource.watch()
-    }
-
-    fun stopWatch(editor: FileEditor?) {
-        val clusterResource = getClusterResource(editor) ?: return
-        clusterResource.stopWatch()
-    }
-
-    private fun getClusterResource(editor: FileEditor?): ClusterResource? {
-        if (editor == null) {
-            return null
-        }
-        return editor.getUserData(KEY_CLUSTER_RESOURCE)
-    }
-
-    private fun getOrCreateClusterResource(resource: HasMetadata, editor: FileEditor?, project: Project): ClusterResource? {
-        var cluster = getClusterResource(editor)
-        if (cluster == null
-            || !cluster.isSameResource(resource)) {
-            cluster = createClusterResource(resource, editor, project)
-        }
-        return cluster
-    }
-
-    private fun createClusterResource(resource: HasMetadata?, editor: FileEditor?, project: Project): ClusterResource? {
-        if (editor == null) {
-            return null
-        }
-        getClusterResource(editor)?.close()
-        if (resource == null) {
-            return null
-        }
-        val clients = getOrCreateClients(editor)
-        val clusterResource = createClusterResource(resource, clients) ?: return null
-        editor.putUserData(KEY_CLUSTER_RESOURCE, clusterResource)
-        clusterResource.addListener(onResourceChanged(editor, project))
-        clusterResource.watch()
-        return clusterResource
-    }
-
-    private fun createClusterResource(resource: HasMetadata?, clients: Clients<out KubernetesClient>?): ClusterResource? {
-        var clusterResource: ClusterResource? = null
-        if (resource != null
-            && clients != null) {
-            clusterResource = ClusterResource(resource, clients)
-        }
-        return clusterResource
-    }
-
-    private fun getOrCreateClients(editor: FileEditor?): Clients<out KubernetesClient>? {
-        if (editor == null) {
-            return null
-        }
-        var clients = editor.getUserData(KEY_CLIENTS)
-        if (clients == null) {
-            // we're using the current context (and the namespace in the resource).
-            // This may be wrong for editors that are restored after IDE restart
-            // TODO: save context as [FileAttribute] for the file so that it can be restored
-            val context = ServiceManager.getService(IResourceModel::class.java).getCurrentContext()
-            if (context != null) {
-                clients = ::createClients.invoke(context.context.context.cluster)
-                editor.putUserData(KEY_CLIENTS, clients)
-            }
-        }
-        return clients
-    }
-
-    private fun onResourceChanged(editor: FileEditor, project: Project): ModelChangeObservable.IResourceChangeListener {
-        return object : ModelChangeObservable.IResourceChangeListener {
-            override fun added(added: Any) {
-            }
-
-            override fun removed(removed: Any) {
-                updateEditor(editor, project)
-            }
-
-            override fun modified(modified: Any) {
-                val resource = modified as? HasMetadata
-                UIHelper.executeInUI {
-                    if (resource != null
-                        && !isModified(editor)) {
-                        reloadEditor(resource, editor)
-                    } else {
-                        updateEditor(editor, project)
-                    }
-                }
-            }
-        }
+    fun closeClusterResource() {
+        clusterResource?.close()
     }
 
     /**
@@ -388,9 +373,11 @@ object ResourceEditor {
      *
      * @param file to enable the (non-project file) editing for
      */
-    fun enableNonProjectFileEditing(file: VirtualFile) {
+    fun enableNonProjectFileEditing(file: VirtualFile? = editor.file) {
+        if (file == null) {
+            return
+        }
         ResourceFile.create(file)?.enableNonProjectFileEditing()
     }
-
 }
 
