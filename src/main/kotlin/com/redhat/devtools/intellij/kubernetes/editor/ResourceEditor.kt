@@ -163,8 +163,7 @@ class ResourceEditor(
 
     private fun updateEditor(resource: HasMetadata?, clusterResource: ClusterResource?, oldClusterResource: ClusterResource?) {
             if (resource == null
-                || clusterResource == null
-            ) {
+                || clusterResource == null) {
                 return
             }
             if (clusterResource != oldClusterResource) {
@@ -182,26 +181,13 @@ class ResourceEditor(
     ) {
         hideNotifications(editor, project)
         when {
-            clusterResource.isDeleted() && !clusterResource.isModified(resource)->
+            clusterResource.isDeleted()
+                    && !clusterResource.isModified(resource) ->
                 DeletedNotification.show(editor, resource, project)
             clusterResource.isOutdated(resource) ->
-                showReloadNotification(clusterResource, resource, editor, project)
+                ReloadNotification.show(editor, resource, project)
             clusterResource.canPush(resource) ->
                 PushNotification.show(editor, project)
-        }
-    }
-
-    private fun showReloadNotification(
-        clusterResource: ClusterResource,
-        resource: HasMetadata,
-        editor: FileEditor,
-        project: Project
-    ) {
-        if (!clusterResource.isModified(resource)) {
-            // reload if not modified
-                reloadEditor()
-        } else {
-            ReloadNotification.show(editor, resource, project)
         }
     }
 
@@ -315,16 +301,7 @@ class ResourceEditor(
             }
 
             override fun modified(modified: Any) {
-                val resource = modified as? HasMetadata
-                UIHelper.executeInUI {
-                    if (resource != null
-                        && false == clusterResource?.isModified(resource)
-                    ) {
-                        reloadEditor(resource)
-                    } else {
-                        updateEditor()
-                    }
-                }
+                updateEditor()
             }
         }
     }
