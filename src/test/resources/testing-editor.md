@@ -8,7 +8,7 @@
 
 -> editor title is matching pattern <resource-name>@<namespace-name>.yml
 
-**Editor file will rename file to <resource>@<namespace>(1).yml if name already used**
+**Editor renames file to <resource-name>@<namespace-name>(1).yml if name already used**
 1. "Edit..." resource
 1. "Edit..." other resource
 1. editor 1: Ctrl + A, Ctrl + C
@@ -42,9 +42,6 @@
 1. push to server
    -> new resource shows up in tree
 1. change metadata > name to initial name
-
--> editor title is <initial-name>(2)
--> editor shows push notification "update existing"
 
 -> notification disappears
 -> editor title unchanged
