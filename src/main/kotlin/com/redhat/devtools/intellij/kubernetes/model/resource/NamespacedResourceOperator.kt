@@ -103,6 +103,7 @@ abstract class NamespacedResourceOperator<R : HasMetadata, C: Client>(
         @Suppress("UNCHECKED_CAST")
         val toCreate = resource as? R ?: return null
         removeResourceVersion(toCreate)
+        removeUID(toCreate)
         return getOperation()
             ?.inNamespace(toCreate.metadata.namespace)
             ?.withName(toCreate.metadata.name)

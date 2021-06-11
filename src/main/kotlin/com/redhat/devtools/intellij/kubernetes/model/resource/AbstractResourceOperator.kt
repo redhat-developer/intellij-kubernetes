@@ -79,6 +79,10 @@ abstract class AbstractResourceOperator<R : HasMetadata> : IResourceOperator<R> 
         toCreate.metadata.resourceVersion = null
     }
 
+    protected fun removeUID(toCreate: R) {
+        toCreate.metadata.uid = null
+    }
+
     private fun isCorrectKind(resource: HasMetadata): Boolean {
         return kind.clazz.isAssignableFrom(resource::class.java)
     }

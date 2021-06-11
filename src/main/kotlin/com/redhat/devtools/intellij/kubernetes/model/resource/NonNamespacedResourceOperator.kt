@@ -71,6 +71,7 @@ abstract class NonNamespacedResourceOperator<R : HasMetadata, C : Client>(
         @Suppress("UNCHECKED_CAST")
         val toCreate = resource as? R ?: return null
         removeResourceVersion(toCreate)
+        removeUID(toCreate)
         return getOperation()
             ?.withName(toCreate.metadata.name)
             ?.create(toCreate)
