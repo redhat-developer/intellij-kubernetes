@@ -85,6 +85,14 @@
 
 -> new Service "greeter2" appears in tree
 
+**Push notification replaced by deleted notification**
+1. "Edit..." resource
+1. change metadata > name / namespace / kind
+   -> push notification ("create new" not "update existing")
+1. delete resource (in tree, kubectl or console)
+
+-> new Service "greeter2" appears in tree
+
 **Push notification with "update existing" turns "create new"**
 1. "Edit..." resource
 1. add label
@@ -99,23 +107,17 @@
 
 -> deleted notification appears
 
-**Deleted notification appears on editor after restart**
-1. "Edit..." resource
-1. restart IJ   
-1. delete resource (ctx action/console/kubectl)
-
--> deleted notification appears
-
 **Deleted notification replaced by Push notification**
 1. "Edit..." resource
 1. delete resource (ctx action/console/kubectl)
    -> deleted notification appears
-1. add label
+1. change name
 
 -> Push notification "create new"
 
 **Modified notification appears**
 1. "Edit..." resource
+1. add label 
 1. modify resource externally (console, kubectl)
 
 -> modified notification appears

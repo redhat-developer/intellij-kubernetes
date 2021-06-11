@@ -211,14 +211,16 @@ open class ClusterResource(
 
     /**
      * Returns `true` if the given resource is of the same kind and
-     * modified compared to the same resource on the cluster.
+     * not equal to the same resource on the cluster.
+     * It returns `false` if the given resource doesn't exist on the cluster.
      * The cached cluster resource is used if it is present. It is retrieved from cluster if it wasn't yet.
      *
      * @param toCompare resource to compare to the resource on the cluster
      */
     fun isModified(toCompare: HasMetadata?): Boolean {
+        val resource = get(false) ?: return false
         return isSameResource(toCompare)
-                && !areEqual(get(false), toCompare)
+                && !areEqual(resource, toCompare)
     }
 
     private fun areEqual(thisResource: HasMetadata?, thatResource: HasMetadata?): Boolean {
