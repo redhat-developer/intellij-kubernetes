@@ -36,9 +36,11 @@ import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.pods
 import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.resource
 import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.withName
 import com.redhat.devtools.intellij.kubernetes.model.util.Clients
+import io.fabric8.kubernetes.api.model.PodBuilder
 import io.fabric8.kubernetes.client.Watcher
 import org.junit.Before
 import org.junit.Test
+import org.mockito.ArgumentCaptor
 
 class NamespacedPodsOperatorTest {
 
@@ -346,6 +348,48 @@ class NamespacedPodsOperatorTest {
     }
 
     @Test
+    fun `#replace() is removing resource version`() {
+        // given
+        val resourceVersion = "azrael"
+        val pod = PodBuilder(POD2)
+            .editMetadata()
+            .withResourceVersion(resourceVersion)
+            .endMetadata()
+            .build()
+        assertThat(pod.metadata.resourceVersion).isEqualTo(resourceVersion)
+        val toReplace = ArgumentCaptor.forClass(Pod::class.java)
+        // when
+        operator.replace(pod)
+        // then
+        verify(clients.get().pods()
+            .inNamespace(pod.metadata.namespace)
+            .withName(pod.metadata.name))
+            .replace(toReplace.capture())
+        assertThat(toReplace.value.metadata.resourceVersion).isNull()
+    }
+
+    @Test
+    fun `#replace() is removing uid`() {
+        // given
+        val uid = "gargamel"
+        val pod = PodBuilder(POD2)
+            .editMetadata()
+            .withUid(uid)
+            .endMetadata()
+            .build()
+        assertThat(pod.metadata.uid).isEqualTo(uid)
+        val toReplace = ArgumentCaptor.forClass(Pod::class.java)
+        // when
+        operator.replace(pod)
+        // then
+        verify(clients.get().pods()
+            .inNamespace(pod.metadata.namespace)
+            .withName(pod.metadata.name))
+            .replace(toReplace.capture())
+        assertThat(toReplace.value.metadata.uid).isNull()
+    }
+
+    @Test
     fun `#replace() will replace even if namespace is null`() {
         // given
         operator.namespace =  null
@@ -384,6 +428,48 @@ class NamespacedPodsOperatorTest {
             .inNamespace(POD2.metadata.namespace)
             .withName(POD2.metadata.name))
             .create(POD2)
+    }
+
+    @Test
+    fun `#create() is removing resource version`() {
+        // given
+        val resourceVersion = "azrael"
+        val pod = PodBuilder(POD2)
+            .editMetadata()
+            .withResourceVersion(resourceVersion)
+            .endMetadata()
+            .build()
+        assertThat(pod.metadata.resourceVersion).isEqualTo(resourceVersion)
+        val toReplace = ArgumentCaptor.forClass(Pod::class.java)
+        // when
+        operator.create(pod)
+        // then
+        verify(clients.get().pods()
+            .inNamespace(pod.metadata.namespace)
+            .withName(pod.metadata.name))
+            .create(toReplace.capture())
+        assertThat(toReplace.value.metadata.resourceVersion).isNull()
+    }
+
+    @Test
+    fun `#create() is removing uid`() {
+        // given
+        val uid = "gargamel"
+        val pod = PodBuilder(POD2)
+            .editMetadata()
+            .withUid(uid)
+            .endMetadata()
+            .build()
+        assertThat(pod.metadata.uid).isEqualTo(uid)
+        val toReplace = ArgumentCaptor.forClass(Pod::class.java)
+        // when
+        operator.create(pod)
+        // then
+        verify(clients.get().pods()
+            .inNamespace(pod.metadata.namespace)
+            .withName(pod.metadata.name))
+            .create(toReplace.capture())
+        assertThat(toReplace.value.metadata.uid).isNull()
     }
 
     @Test
