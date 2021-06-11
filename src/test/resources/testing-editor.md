@@ -118,17 +118,10 @@
 **Modified notification appears**
 1. "Edit..." resource
 1. add label 
+
 1. modify resource externally (console, kubectl)
 
 -> modified notification appears
-
-**Modified notification replaced Push notification**
-1. "Edit..." resource
-1. modify resource (ex. change label)
-   -> Push notification appears
-1. modify resource externally
-
--> Modified notification replaced push notification
 
 **Reload -> Modified notification disappears**
 1. "Edit..." resource

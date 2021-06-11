@@ -189,10 +189,8 @@ open class ClusterResource(
         return if (toCompare == null) {
             resource != null
         } else {
-            if (resource == null) {
-                return false
-            }
-            return resource.isNewerVersionThan(toCompare)
+            resource != null
+                    && resource.isNewerVersionThan(toCompare)
         }
     }
 
