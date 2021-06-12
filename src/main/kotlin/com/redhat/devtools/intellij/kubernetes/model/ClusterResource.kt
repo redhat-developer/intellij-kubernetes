@@ -108,7 +108,7 @@ open class ClusterResource(
         }
     }
 
-    open protected fun setDeleted(deleted: Boolean) {
+    protected open fun setDeleted(deleted: Boolean) {
         synchronized(this) {
             this.isDeleted = deleted
         }
@@ -189,8 +189,7 @@ open class ClusterResource(
         return if (toCompare == null) {
             resource != null
         } else {
-            resource != null
-                    && resource.isNewerVersionThan(toCompare)
+            true == resource?.isNewerVersionThan(toCompare)
         }
     }
 
@@ -218,12 +217,7 @@ open class ClusterResource(
     fun isModified(toCompare: HasMetadata?): Boolean {
         val resource = get(false) ?: return false
         return isSameResource(toCompare)
-                && !areEqual(resource, toCompare)
-    }
-
-    private fun areEqual(thisResource: HasMetadata?, thatResource: HasMetadata?): Boolean {
-        return (thisResource == null && thatResource == null)
-                || thisResource == thatResource
+                && resource != toCompare
     }
 
     /**
