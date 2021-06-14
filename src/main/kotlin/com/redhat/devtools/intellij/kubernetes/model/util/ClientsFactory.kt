@@ -10,6 +10,7 @@
  ******************************************************************************/
 package com.redhat.devtools.intellij.kubernetes.model.util
 
+import com.redhat.devtools.intellij.kubernetes.model.ClientConfig
 import io.fabric8.kubernetes.client.Config
 import io.fabric8.kubernetes.client.DefaultKubernetesClient
 import io.fabric8.kubernetes.client.KubernetesClient
@@ -33,4 +34,9 @@ fun createClients(
 			else -> throw e
 		}
 	}
+}
+
+fun createClients(config: ClientConfig): Clients<out KubernetesClient>? {
+	val cluster =  config.currentContext?.context?.cluster ?: return null
+	return createClients(cluster)
 }

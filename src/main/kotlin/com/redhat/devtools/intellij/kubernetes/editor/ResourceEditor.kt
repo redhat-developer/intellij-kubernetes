@@ -10,15 +10,12 @@
  ******************************************************************************/
 package com.redhat.devtools.intellij.kubernetes.editor
 
-import com.intellij.openapi.application.ReadAction
-import com.intellij.openapi.components.ServiceManager
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.editor.Document
 import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.fileEditor.FileEditor
 import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.project.Project
-import com.intellij.openapi.project.ProjectManager
 import com.intellij.openapi.util.Key
 import com.intellij.openapi.vfs.VirtualFile
 import com.redhat.devtools.intellij.common.utils.UIHelper
@@ -26,25 +23,21 @@ import com.redhat.devtools.intellij.kubernetes.editor.notification.DeletedNotifi
 import com.redhat.devtools.intellij.kubernetes.editor.notification.ErrorNotification
 import com.redhat.devtools.intellij.kubernetes.editor.notification.PushNotification
 import com.redhat.devtools.intellij.kubernetes.editor.notification.ReloadNotification
+import com.redhat.devtools.intellij.kubernetes.editor.util.getProjectAndEditor
+import com.redhat.devtools.intellij.kubernetes.model.ClientConfig
 import com.redhat.devtools.intellij.kubernetes.model.ClusterResource
-import com.redhat.devtools.intellij.kubernetes.model.IResourceModel
 import com.redhat.devtools.intellij.kubernetes.model.ModelChangeObservable
 import com.redhat.devtools.intellij.kubernetes.model.Notification
 import com.redhat.devtools.intellij.kubernetes.model.ResourceException
-import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.custom.CustomResourceDefinitionMapping
-import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.custom.GenericCustomResource
-import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.hasmetadata.HasMetadataResource
 import com.redhat.devtools.intellij.kubernetes.model.util.Clients
 import com.redhat.devtools.intellij.kubernetes.model.util.createClients
-import com.redhat.devtools.intellij.kubernetes.model.util.createResource
 import com.redhat.devtools.intellij.kubernetes.model.util.trimWithEllipsis
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.client.KubernetesClient
-import org.jetbrains.kotlin.gradle.utils.loadPropertyFromResources
 import java.io.IOException
 
 open class ResourceEditor protected constructor(
-    private var resource: HasMetadata?,
+    private var localCopy: HasMetadata?,
     private val editor: FileEditor,
     private val project: Project,
     private val clients: Clients<out KubernetesClient>
@@ -63,7 +56,7 @@ open class ResourceEditor protected constructor(
                 .openFile(file, true, true)
                 .getOrNull(0)
                 ?: return null
-            val clients = clients() ?: return null
+            val clients = createClients(ClientConfig {  }) ?: return null
             return create(resource, editor, project, clients)
         }
 
@@ -74,42 +67,31 @@ open class ResourceEditor protected constructor(
         }
 
         fun get(editor: FileEditor?, project: Project?): ResourceEditor? {
-            if (false == editor?.isValid) {
+            if (editor == null
+                || !editor.isValid
+                || !isResourceEditor(editor)
+                || project == null) {
                 return null
             }
-            return editor?.getUserData(KEY_RESOURCE_EDITOR)
+            return editor.getUserData(KEY_RESOURCE_EDITOR)
                 ?: create(editor, project)
         }
 
-        private fun create(editor: FileEditor?, project: Project?): ResourceEditor? {
-            if (editor == null) {
-                return null
-            }
-            val clients = clients() ?: return null
-            val resource = createResource(editor, clients) ?: return null
+        private fun create(editor: FileEditor, project: Project): ResourceEditor? {
+            val clients = createClients(ClientConfig {}) ?: return null
+            val resource = EditorResourceFactory.create(editor, clients) ?: return null
             return create(resource, editor, project, clients)
         }
 
         private fun create(
             resource: HasMetadata,
             editor: FileEditor,
-            project: Project?,
+            project: Project,
             clients: Clients<out KubernetesClient>
-        ): ResourceEditor? {
-            if (!isResourceEditor(editor)
-                || project == null
-            ) {
-                return null
-            }
+        ): ResourceEditor {
             val resourceEditor = ResourceEditor(resource, editor, project, clients)
             editor.putUserData(KEY_RESOURCE_EDITOR, resourceEditor)
             return resourceEditor
-        }
-
-        private fun clients(): Clients<out KubernetesClient>? {
-            val context = ServiceManager.getService(IResourceModel::class.java).getCurrentContext()
-            val cluster =  context?.context?.context?.cluster ?: return null
-            return ::createClients.invoke(cluster)
         }
 
         private fun getResourceFile(document: Document): VirtualFile? {
@@ -119,52 +101,6 @@ open class ResourceEditor protected constructor(
             }
             return file
         }
-
-        private fun createResource(jsonYaml: String, clients: Clients<out KubernetesClient>): HasMetadata {
-            return try {
-                val resource = createResource<HasMetadataResource>(jsonYaml)
-                val definitions = CustomResourceDefinitionMapping.getDefinitions(clients.get())
-                if (CustomResourceDefinitionMapping.isCustomResource(resource, definitions)) {
-                    createResource<GenericCustomResource>(jsonYaml)
-                } else {
-                    createResource(jsonYaml)
-                }
-            } catch (e: Exception) {
-                throw ResourceException("Invalid kubernetes yaml/json", e.cause ?: e)
-            }
-        }
-
-        private fun createResource(editor: FileEditor, clients: Clients<out KubernetesClient>): HasMetadata? {
-            return createResource(getDocument(editor), clients)
-        }
-
-        private fun createResource(document: Document?, clients: Clients<out KubernetesClient>): HasMetadata? {
-            return if (document?.text == null) {
-                null
-            } else {
-                createResource(document.text, clients)
-            }
-        }
-
-        private fun getDocument(editor: FileEditor): Document? {
-            val file = editor.file ?: return null
-            return ReadAction.compute<Document, Exception> {
-                FileDocumentManager.getInstance().getDocument(file)
-            }
-        }
-
-        private fun getProjectAndEditor(file: VirtualFile): ProjectAndEditor? {
-            return ProjectManager.getInstance().openProjects
-                .filter { project -> project.isInitialized && !project.isDisposed }
-                .flatMap { project ->
-                    FileEditorManager.getInstance(project).getEditors(file).toList()
-                        .mapNotNull { editor -> ProjectAndEditor(project, editor) }
-                }
-                .firstOrNull()
-        }
-
-        private class ProjectAndEditor(val project: Project, val editor: FileEditor)
-
     }
 
     private var oldClusterResource: ClusterResource? = null
@@ -173,10 +109,10 @@ open class ResourceEditor protected constructor(
         get() {
             synchronized(this) {
                 if (_clusterResource == null
-                    || false == _clusterResource?.isSameResource(resource)) {
+                    || false == _clusterResource?.isSameResource(localCopy)) {
                     oldClusterResource = _clusterResource
                     oldClusterResource?.close()
-                    _clusterResource = createClusterResource(resource, clients)
+                    _clusterResource = createClusterResource(localCopy, clients)
                 }
                 return _clusterResource
             }
@@ -184,7 +120,7 @@ open class ResourceEditor protected constructor(
 
     fun updateEditor() {
         try {
-            val resource = createResource(editor, clients) ?: return
+            val resource = EditorResourceFactory.create(editor, clients) ?: return
             updateEditor(resource)
         } catch (e: ResourceException) {
             showErrorNotification(editor, project, e)
@@ -239,7 +175,7 @@ open class ResourceEditor protected constructor(
         project: Project
     ) {
         val resourceOnCluster = clusterResource?.get(false)
-        if (!isDirty(resource)
+        if (!hasLocalChanges(resource)
             && resourceOnCluster != null) {
             reloadEditor(resourceOnCluster)
         } else {
@@ -273,7 +209,7 @@ open class ResourceEditor protected constructor(
                 val file = ResourceFile.create(editor.file)?.write(resource)
                 if (file != null) {
                     FileDocumentManager.getInstance().reloadFiles(file)
-                    this.resource = resource
+                    this.localCopy = resource
                 }
             }
         }
@@ -284,14 +220,14 @@ open class ResourceEditor protected constructor(
     }
 
     fun isOutdated(): Boolean {
-        val resource = createResource(editor, clients)
+        val resource = EditorResourceFactory.create(editor, clients)
         return clusterResource?.isOutdated(resource) ?: false
     }
 
     fun push() {
         try {
-            this.resource = createResource(editor, clients) ?: return
-            push(resource, clusterResource)
+            this.localCopy = EditorResourceFactory.create(editor, clients) ?: return
+            push(localCopy, clusterResource)
         } catch (e: Exception) {
             showErrorNotification(editor, project, e)
         }
@@ -327,8 +263,8 @@ open class ResourceEditor protected constructor(
      * @param resource to be checked for modification
      * @return true if the resource is dirty
      */
-    private fun isDirty(resource: HasMetadata): Boolean {
-        return resource != this.resource
+    private fun hasLocalChanges(resource: HasMetadata): Boolean {
+        return resource != this.localCopy
     }
 
     fun startWatch(): ResourceEditor {
