@@ -34,10 +34,8 @@ class KubernetesSchemasProviderFactory : JsonSchemaProviderFactory {
 
     private val providers: List<KubernetesSchemaProvider> = listOf()
         get() {
-            return if (field.isEmpty()) {
+            return field.ifEmpty {
                 load()
-            } else {
-                field
             }
         }
 
@@ -46,27 +44,28 @@ class KubernetesSchemasProviderFactory : JsonSchemaProviderFactory {
     }
 
     private fun load(): List<KubernetesSchemaProvider> {
-        return javaClass.getResourceAsStream(Paths.get(BASE_DIR, INDEX_FILE).toString()).bufferedReader()
+        val input = javaClass.getResourceAsStream("$BASE_DIR/$INDEX_FILE")
+        return input.bufferedReader()
             .use { reader ->
                 @Suppress("UNCHECKED_CAST")
                 reader.lines()
                     .filter { !it.contains(INDEX_FILE) }
-                    .map { createProvider(Paths.get(BASE_DIR, it)) }
+                    .map { createProvider("$BASE_DIR/$it") }
                     .filter { it != null }
                     .collect(Collectors.toList()) as List<KubernetesSchemaProvider>
             }
     }
 
-    private fun createProvider(path: Path): KubernetesSchemaProvider? {
+    private fun createProvider(path: String): KubernetesSchemaProvider? {
         val type = createKubernetesTypeInfo(path) ?: return null
-        val url = KubernetesSchemasProviderFactory::class.java.getResource(path.toString()) ?: return null
+        val url = KubernetesSchemasProviderFactory::class.java.getResource(path) ?: return null
         val file = VirtualFileManager.getInstance().findFileByUrl(VfsUtil.convertFromUrl(url)) ?: return null
         return KubernetesSchemaProvider(type, file)
     }
 
-    private fun createKubernetesTypeInfo(path: Path): KubernetesTypeInfo? {
+    private fun createKubernetesTypeInfo(path: String): KubernetesTypeInfo? {
         try {
-            val schema = javaClass.getResourceAsStream(path.toString()) ?: return null
+            val schema = javaClass.getResourceAsStream(path) ?: return null
             val apiGroupKind = getApiGroupKind(schema) ?: return null
             return KubernetesTypeInfo(apiGroupKind.first, apiGroupKind.second)
         } catch (e: Exception) {
