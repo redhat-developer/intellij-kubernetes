@@ -46,14 +46,6 @@ class KubernetesPluginInitializer : StartupActivity {
 
     private fun showResourceEditorNotifications(project: Project) {
         val selected = FileEditorManager.getInstance(project).selectedEditor ?: return
-        try {
-            ResourceEditor.get(selected, project)?.updateEditor()
-        } catch (e: Exception) {
-            ErrorNotification.show(
-                selected,
-                project,
-                "Error contacting cluster. Make sure it's reachable, document valid, api version supported etc.",
-                e.cause ?: e)
-        }
+        ResourceEditor.get(selected, project)?.updateEditor()
     }
 }
