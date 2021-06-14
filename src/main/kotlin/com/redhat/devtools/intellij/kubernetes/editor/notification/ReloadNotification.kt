@@ -36,7 +36,7 @@ object ReloadNotification {
         val panel = EditorNotificationPanel()
         panel.setText("${resource.metadata.name} changed on server. Reload?")
         panel.createActionLabel("Reload from Cluster") {
-            ResourceEditor.get(editor, project)?.reloadEditor()
+            ResourceEditor.get(editor, project)?.replaceEditor()
             editor.hideNotification(KEY_PANEL, project)
         }
 
