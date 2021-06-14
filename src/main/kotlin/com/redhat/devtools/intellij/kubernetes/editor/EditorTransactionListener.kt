@@ -13,6 +13,8 @@ package com.redhat.devtools.intellij.kubernetes.editor
 import com.intellij.openapi.editor.Document
 import com.intellij.psi.PsiFile
 import com.intellij.psi.impl.PsiDocumentTransactionListener
+import com.redhat.devtools.intellij.kubernetes.editor.util.getProjectAndEditor
+import com.redhat.devtools.intellij.kubernetes.editor.util.getResourceFile
 
 class EditorTransactionListener: PsiDocumentTransactionListener {
 
@@ -20,6 +22,13 @@ class EditorTransactionListener: PsiDocumentTransactionListener {
     }
 
     override fun transactionCompleted(document: Document, file: PsiFile) {
-        ResourceEditor.get(document)?.updateEditor()
+        getResourceEditor(document)?.updateEditor()
     }
+
+    private fun getResourceEditor(document: Document): ResourceEditor? {
+        val file = getResourceFile(document) ?: return null
+        val projectAndEditor = getProjectAndEditor(file) ?: return null
+        return ResourceEditor.get(projectAndEditor.editor, projectAndEditor.project)
+    }
+
 }

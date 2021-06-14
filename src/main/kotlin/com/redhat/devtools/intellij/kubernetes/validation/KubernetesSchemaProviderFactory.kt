@@ -19,10 +19,7 @@ import com.intellij.openapi.vfs.VirtualFileManager
 import com.jetbrains.jsonSchema.extension.JsonSchemaFileProvider
 import com.jetbrains.jsonSchema.extension.JsonSchemaProviderFactory
 import com.redhat.devtools.intellij.common.validation.KubernetesTypeInfo
-import org.slf4j.LoggerFactory
 import java.io.InputStream
-import java.nio.file.Path
-import java.nio.file.Paths
 import java.util.stream.Collectors
 
 class KubernetesSchemasProviderFactory : JsonSchemaProviderFactory {

@@ -11,7 +11,6 @@
 package com.redhat.devtools.intellij.kubernetes.editor
 
 import com.intellij.openapi.diagnostic.logger
-import com.intellij.openapi.editor.Document
 import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.fileEditor.FileEditor
 import com.intellij.openapi.fileEditor.FileEditorManager
@@ -23,7 +22,6 @@ import com.redhat.devtools.intellij.kubernetes.editor.notification.DeletedNotifi
 import com.redhat.devtools.intellij.kubernetes.editor.notification.ErrorNotification
 import com.redhat.devtools.intellij.kubernetes.editor.notification.PushNotification
 import com.redhat.devtools.intellij.kubernetes.editor.notification.ReloadNotification
-import com.redhat.devtools.intellij.kubernetes.editor.util.getProjectAndEditor
 import com.redhat.devtools.intellij.kubernetes.model.ClientConfig
 import com.redhat.devtools.intellij.kubernetes.model.ClusterResource
 import com.redhat.devtools.intellij.kubernetes.model.ModelChangeObservable
@@ -34,8 +32,10 @@ import com.redhat.devtools.intellij.kubernetes.model.util.createClients
 import com.redhat.devtools.intellij.kubernetes.model.util.trimWithEllipsis
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.client.KubernetesClient
-import java.io.IOException
 
+/**
+ * An adapter for [FileEditor] instances that allows to push or load the editor content to/from a remote cluster.
+ */
 open class ResourceEditor protected constructor(
     private var localCopy: HasMetadata?,
     private val editor: FileEditor,
@@ -49,7 +49,13 @@ open class ResourceEditor protected constructor(
             return ResourceFile.isResourceFile(editor?.file)
         }
 
-        @Throws(IOException::class)
+        /**
+         * Opens a new editor for the given [HasMetadata] and [Project].
+         *
+         * @param resource to edit
+         * @param project that this editor belongs to
+         * @return the new [ResourceEditor] that was opened
+         */
         fun open(resource: HasMetadata, project: Project): ResourceEditor? {
             val file = ResourceFile.create(resource)?.write(resource) ?: return null
             val editor = FileEditorManager.getInstance(project)
@@ -60,15 +66,14 @@ open class ResourceEditor protected constructor(
             return create(resource, editor, project, clients)
         }
 
-        fun get(document: Document): ResourceEditor? {
-            val file = getResourceFile(document) ?: return null
-            val projectAndEditor = getProjectAndEditor(file) ?: return null
-            return get(projectAndEditor.editor, projectAndEditor.project)
-        }
-
+        /**
+         * Returns the existing or creates a new [ResourceEditor] for the given [FileEditor] and [Project].
+         * Returns `null` if the given [FileEditor] is `null`, not a [ResourceEditor] or the given [Project] is `null`.
+         *
+         * @return the existing or a new [ResourceEditor].
+         */
         fun get(editor: FileEditor?, project: Project?): ResourceEditor? {
             if (editor == null
-                || !editor.isValid
                 || !isResourceEditor(editor)
                 || project == null) {
                 return null
@@ -93,14 +98,6 @@ open class ResourceEditor protected constructor(
             editor.putUserData(KEY_RESOURCE_EDITOR, resourceEditor)
             return resourceEditor
         }
-
-        private fun getResourceFile(document: Document): VirtualFile? {
-            val file = FileDocumentManager.getInstance().getFile(document)
-            if (!ResourceFile.isResourceFile(file)) {
-                return null
-            }
-            return file
-        }
     }
 
     private var oldClusterResource: ClusterResource? = null
@@ -118,8 +115,16 @@ open class ResourceEditor protected constructor(
             }
         }
 
+    /**
+     * Updates this editors notifications and title. Does nothing if the editor content is not valid.
+     *
+     * @see [FileEditor.isValid]
+     */
     fun updateEditor() {
         try {
+            if (!editor.isValid) {
+                return
+            }
             val resource = EditorResourceFactory.create(editor, clients) ?: return
             updateEditor(resource)
         } catch (e: ResourceException) {
@@ -177,7 +182,7 @@ open class ResourceEditor protected constructor(
         val resourceOnCluster = clusterResource?.get(false)
         if (!hasLocalChanges(resource)
             && resourceOnCluster != null) {
-            reloadEditor(resourceOnCluster)
+            replaceEditor(resourceOnCluster)
         } else {
             ReloadNotification.show(editor, resource, project)
         }
@@ -198,12 +203,16 @@ open class ResourceEditor protected constructor(
         PushNotification.hide(editor, project)
     }
 
-    fun reloadEditor() {
+    /**
+     * Replaces the content of this editor with the resource that exists on the cluster.
+     * Does nothing if it doesn't exist.
+     */
+    fun replaceEditor() {
         val resource = clusterResource?.get(false) ?: return
-        reloadEditor(resource)
+        replaceEditor(resource)
     }
 
-    private fun reloadEditor(resource: HasMetadata) {
+    private fun replaceEditor(resource: HasMetadata) {
         UIHelper.executeInUI {
             if (editor.file != null) {
                 val file = ResourceFile.create(editor.file)?.write(resource)
@@ -215,6 +224,10 @@ open class ResourceEditor protected constructor(
         }
     }
 
+    /**
+     * Returns `true` if the resource in this editor exists on the cluster. Returns `false` otherwise.
+     * @return true if the resource in this editor exists on the cluster
+     */
     fun existsOnCluster(): Boolean {
         return clusterResource?.exists() ?: false
     }
@@ -224,6 +237,9 @@ open class ResourceEditor protected constructor(
         return clusterResource?.isOutdated(resource) ?: false
     }
 
+    /**
+     * Pushes the editor content to the cluster.
+     */
     fun push() {
         try {
             this.localCopy = EditorResourceFactory.create(editor, clients) ?: return
@@ -241,7 +257,7 @@ open class ResourceEditor protected constructor(
             }
             hideNotifications(editor, project)
             val updatedResource = clusterResource.push(resource) ?: return
-            reloadEditor(updatedResource)
+            replaceEditor(updatedResource)
         } catch (e: ResourceException) {
             logger<ResourceEditor>().warn(e)
             Notification().error(
