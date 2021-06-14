@@ -19,7 +19,7 @@ import io.fabric8.openshift.client.NamespacedOpenShiftClient
 import io.fabric8.openshift.client.OpenShiftNotAvailableException
 
 fun createClients(
-	context: String
+	context: String?
 ): Clients<out KubernetesClient> {
 	val config = Config.autoConfigure(context)
 	val k8Client = DefaultKubernetesClient(config)
@@ -37,6 +37,6 @@ fun createClients(
 }
 
 fun createClients(config: ClientConfig): Clients<out KubernetesClient>? {
-	val cluster =  config.currentContext?.context?.cluster ?: return null
+	val cluster =  config.currentContext?.context?.cluster
 	return createClients(cluster)
 }

@@ -62,7 +62,7 @@ open class ResourceEditor protected constructor(
                 .openFile(file, true, true)
                 .getOrNull(0)
                 ?: return null
-            val clients = createClients(ClientConfig {  }) ?: return null
+            val clients = createClients(ClientConfig {}) ?: return null
             return create(resource, editor, project, clients)
         }
 
@@ -83,9 +83,14 @@ open class ResourceEditor protected constructor(
         }
 
         private fun create(editor: FileEditor, project: Project): ResourceEditor? {
-            val clients = createClients(ClientConfig {}) ?: return null
-            val resource = EditorResourceFactory.create(editor, clients) ?: return null
-            return create(resource, editor, project, clients)
+            try {
+                val clients = createClients(ClientConfig {}) ?: return null
+                val resource = EditorResourceFactory.create(editor, clients) ?: return null
+                return create(resource, editor, project, clients)
+            } catch(e: ResourceException) {
+                ErrorNotification.show(editor, project,e.message ?: "", e.cause?.message)
+                return null
+            }
         }
 
         private fun create(
@@ -116,15 +121,12 @@ open class ResourceEditor protected constructor(
         }
 
     /**
-     * Updates this editors notifications and title. Does nothing if the editor content is not valid.
+     * Updates this editors notifications and title.
      *
      * @see [FileEditor.isValid]
      */
     fun updateEditor() {
         try {
-            if (!editor.isValid) {
-                return
-            }
             val resource = EditorResourceFactory.create(editor, clients) ?: return
             updateEditor(resource)
         } catch (e: ResourceException) {

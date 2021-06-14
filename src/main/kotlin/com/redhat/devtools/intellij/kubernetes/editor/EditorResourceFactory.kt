@@ -22,6 +22,7 @@ import com.redhat.devtools.intellij.kubernetes.model.util.Clients
 import com.redhat.devtools.intellij.kubernetes.model.util.createResource
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.client.KubernetesClient
+import io.fabric8.kubernetes.client.KubernetesClientException
 
 object EditorResourceFactory {
 
@@ -67,16 +68,27 @@ object EditorResourceFactory {
      * @see CustomResourceDefinitionMapping
      */
     fun create(jsonYaml: String, clients: Clients<out KubernetesClient>): HasMetadata {
+        val resource = try {
+            createResource<HasMetadataResource>(jsonYaml)
+        } catch (e: Exception) {
+            throw ResourceException("Invalid kubernetes yaml/json", e.cause ?: e)
+        }
+
         return try {
-            val resource = createResource<HasMetadataResource>(jsonYaml)
             val definitions = CustomResourceDefinitionMapping.getDefinitions(clients.get())
             if (CustomResourceDefinitionMapping.isCustomResource(resource, definitions)) {
                 createResource<GenericCustomResource>(jsonYaml)
             } else {
                 createResource(jsonYaml)
             }
-        } catch (e: Exception) {
-            throw ResourceException("Invalid kubernetes yaml/json", e.cause ?: e)
+        } catch(e: KubernetesClientException) {
+            // cluster not reachable or invalid kube config
+            return try {
+                createResource(jsonYaml)
+            } catch(e: KubernetesClientException) {
+                // unknown type
+                createResource<GenericCustomResource>(jsonYaml)
+            }
         }
     }
 
