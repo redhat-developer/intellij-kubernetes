@@ -43,7 +43,7 @@
    -> new resource shows up in tree
 1. change metadata > name to initial name
 
--> notification disappears
+-> Push notification changes to "update existing"
 -> editor title unchanged
 
 **Push notification "create new"**
