@@ -46,7 +46,7 @@ object EditorResourceFactory {
      * @return [HasMetadata] for the given editor and clients
      *
      */
-    fun create(document: Document?, clients: Clients<out KubernetesClient>): HasMetadata? {
+    private fun create(document: Document?, clients: Clients<out KubernetesClient>): HasMetadata? {
         return if (document?.text == null) {
             null
         } else {
@@ -67,7 +67,7 @@ object EditorResourceFactory {
      *
      * @see CustomResourceDefinitionMapping
      */
-    fun create(jsonYaml: String, clients: Clients<out KubernetesClient>): HasMetadata {
+    private fun create(jsonYaml: String, clients: Clients<out KubernetesClient>): HasMetadata {
         val resource = try {
             createResource<HasMetadataResource>(jsonYaml)
         } catch (e: Exception) {

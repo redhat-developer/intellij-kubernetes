@@ -34,16 +34,18 @@ open class ResourceFile protected constructor(
     protected open var _virtualFile: VirtualFile? = null
 ) {
 
-    companion object {
+    companion object Factory {
         const val EXTENSION = YAMLFileType.DEFAULT_EXTENSION
         @JvmStatic
         val TEMP_FOLDER: Path = Paths.get(FileUtils.getTempDirectoryPath(), "intellij-kubernetes")
 
+        @JvmStatic
         fun create(resource: HasMetadata): ResourceFile? {
             val path = getPathFor(resource)
             return create(path)
         }
 
+        @JvmStatic
         fun create(virtualFile: VirtualFile?): ResourceFile? {
             if (virtualFile == null) {
                 return null
@@ -51,6 +53,7 @@ open class ResourceFile protected constructor(
             return create(VfsUtil.virtualToIoFile(virtualFile).toPath(), virtualFile)
         }
 
+        @JvmStatic
         fun create(path: Path, virtualFile: VirtualFile? = null): ResourceFile? {
             if (!isResourceFile(path)) {
                 return null

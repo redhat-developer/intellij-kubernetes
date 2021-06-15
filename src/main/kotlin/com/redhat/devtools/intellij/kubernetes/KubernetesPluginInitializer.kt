@@ -39,7 +39,6 @@ class KubernetesPluginInitializer : StartupActivity {
 
     private fun enableAllEditorsNonProjectEditing(project: Project) {
         FileEditorManager.getInstance(project).allEditors
-            .filter { editor -> ResourceEditor.isResourceEditor(editor) }
             .mapNotNull { editor -> ResourceEditor.get(editor, project) }
             .forEach { resourceEditor -> resourceEditor.enableNonProjectFileEditing() }
     }

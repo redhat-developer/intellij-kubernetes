@@ -47,7 +47,7 @@ object PushNotification {
         }
         if (true == ResourceEditor.get(editor, project)?.isOutdated()) {
             panel.createActionLabel("Reload from Cluster") {
-                ResourceEditor.get(editor, project)?.replaceEditor()
+                ResourceEditor.get(editor, project)?.replaceEditorContent()
                 editor.hideNotification(KEY_PANEL, project)
             }
         }
