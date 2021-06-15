@@ -225,9 +225,9 @@ class ClusterResourceTest {
             .withApiVersion("apiVersion-42")
             .build()
         // when
-        val isModified = cluster.canPush(differentApiVersion)
+        val canPush = cluster.canPush(differentApiVersion)
         // then
-        assertThat(isModified).isFalse()
+        assertThat(canPush).isFalse()
     }
 
     @Test
@@ -396,7 +396,7 @@ class ClusterResourceTest {
     }
 
     @Test
-    fun `#isModified should return false if given resource has different kind`() {
+    fun `#isModified should return true if given resource has different kind`() {
         // given
         val modifiedResource = PodBuilder(endorResource)
             .withKind("kind-42")
@@ -404,11 +404,11 @@ class ClusterResourceTest {
         // when
         val isModified = cluster.isModified(modifiedResource)
         // then
-        assertThat(isModified).isFalse()
+        assertThat(isModified).isTrue()
     }
 
     @Test
-    fun `#isModified should return false if given resource has different apiVersion`() {
+    fun `#isModified should return true if given resource has different apiVersion`() {
         // given
         val modifiedResource = PodBuilder(endorResource)
             .withApiVersion("apiVersion-42")
@@ -416,11 +416,11 @@ class ClusterResourceTest {
         // when
         val isModified = cluster.isModified(modifiedResource)
         // then
-        assertThat(isModified).isFalse()
+        assertThat(isModified).isTrue()
     }
 
     @Test
-    fun `#isModified should return false if given resource has different namespace`() {
+    fun `#isModified should return true if given resource has different namespace`() {
         // given
         val modifiedResource = PodBuilder(endorResource)
             .editOrNewMetadata()
@@ -430,11 +430,11 @@ class ClusterResourceTest {
         // when
         val isModified = cluster.isModified(modifiedResource)
         // then
-        assertThat(isModified).isFalse()
+        assertThat(isModified).isTrue()
     }
 
     @Test
-    fun `#isModified should return false if given resource has different name`() {
+    fun `#isModified should return true if given resource has different name`() {
         // given
         val modifiedResource = PodBuilder(endorResource)
             .editOrNewMetadata()
@@ -444,7 +444,7 @@ class ClusterResourceTest {
         // when
         val isModified = cluster.isModified(modifiedResource)
         // then
-        assertThat(isModified).isFalse()
+        assertThat(isModified).isTrue()
     }
 
     @Test
