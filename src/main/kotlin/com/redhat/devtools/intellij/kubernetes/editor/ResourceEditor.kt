@@ -41,14 +41,26 @@ open class ResourceEditor protected constructor(
     private val editor: FileEditor,
     private val project: Project,
     private val clients: Clients<out KubernetesClient>,
-    private val resourceFactory: (editor: FileEditor, clients: Clients<out KubernetesClient>) -> HasMetadata? =
+    // for mocking purposes
+    private val createResource: (editor: FileEditor, clients: Clients<out KubernetesClient>) -> HasMetadata? =
         EditorResourceFactory::create,
+    // for mocking purposes
+    private val createClusterResource: (resource: HasMetadata, clients: Clients<out KubernetesClient>) -> ClusterResource =
+        { resource, clients -> ClusterResource(resource, clients) },
     // for mocking purposes
     private val createFileForVirtual: (file: VirtualFile?) -> ResourceFile? =
         ResourceFile.Factory::create,
     // for mocking purposes
     private val createFileForResource: (resource: HasMetadata) -> ResourceFile? =
-        ResourceFile.Factory::create
+        ResourceFile.Factory::create,
+    // for mocking purposes
+    private val pushNotification: PushNotification = PushNotification(editor, project),
+    // for mocking purposes
+    private val modifiedNotification: ModifiedNotification = ModifiedNotification(editor, project),
+    // for mocking purposes
+    private val deletedNotification: DeletedNotification = DeletedNotification(editor, project),
+    // for mocking purposes
+    private val errorNotification: ErrorNotification = ErrorNotification(editor, project)
 ) {
     companion object {
         private val KEY_RESOURCE_EDITOR = Key<ResourceEditor>(ResourceEditor::class.java.name)
@@ -128,26 +140,22 @@ open class ResourceEditor protected constructor(
                 return _clusterResource
             }
         }
-    protected open val pushNotification = PushNotification(editor, project)
-    protected open val modifiedNotification = ModifiedNotification(editor, project)
-    protected open val deletedNotification = DeletedNotification(editor, project)
-    protected open val errorNotification = ErrorNotification(editor, project)
 
     /**
      * Updates this editors notifications and title.
      *
      * @see [FileEditor.isValid]
      */
-    fun updateEditor() {
+    fun update() {
         try {
-            this.editorResource = resourceFactory.invoke(editor, clients) ?: return
-            updateEditor(editorResource, clusterResource, oldClusterResource)
+            this.editorResource = createResource.invoke(editor, clients) ?: return
+            update(editorResource, clusterResource, oldClusterResource)
         } catch (e: ResourceException) {
             showErrorNotification(e)
         }
     }
 
-    private fun updateEditor(resource: HasMetadata?, clusterResource: ClusterResource?, oldClusterResource: ClusterResource?) {
+    private fun update(resource: HasMetadata?, clusterResource: ClusterResource?, oldClusterResource: ClusterResource?) {
             if (resource == null
                 || clusterResource == null) {
                 return
@@ -176,18 +184,18 @@ open class ResourceEditor protected constructor(
                     && !clusterResource.isModified(resource) ->
                 deletedNotification.show(resource)
             clusterResource.isOutdated(resource) ->
-                replaceEditorOrShowReloadNotification(resource)
+                replaceOrNotifyReload(resource)
             clusterResource.canPush(resource) ->
                 pushNotification.show()
         }
     }
 
-    private fun replaceEditorOrShowReloadNotification(
+    private fun replaceOrNotifyReload(
         resource: HasMetadata) {
         val resourceOnCluster = clusterResource?.get(false)
         if (!hasLocalChanges(resource)
             && resourceOnCluster != null) {
-            replaceEditorContent(resourceOnCluster)
+            replaceContent(resourceOnCluster)
         } else {
             modifiedNotification.show(resource)
         }
@@ -209,12 +217,12 @@ open class ResourceEditor protected constructor(
      * Replaces the content of this editor with the resource that exists on the cluster.
      * Does nothing if it doesn't exist.
      */
-    fun replaceEditorContent() {
+    fun replaceContent() {
         val resource = clusterResource?.get(false) ?: return
-        replaceEditorContent(resource)
+        replaceContent(resource)
     }
 
-    private fun replaceEditorContent(resource: HasMetadata) {
+    private fun replaceContent(resource: HasMetadata) {
         UIHelper.executeInUI {
             if (editor.file != null) {
                 val file = createFileForVirtual.invoke(editor.file)?.write(resource)
@@ -235,7 +243,7 @@ open class ResourceEditor protected constructor(
     }
 
     fun isOutdated(): Boolean {
-        this.editorResource = resourceFactory.invoke(editor, clients)
+        this.editorResource = createResource.invoke(editor, clients)
         return clusterResource?.isOutdated(editorResource) ?: false
     }
 
@@ -244,7 +252,7 @@ open class ResourceEditor protected constructor(
      */
     fun push() {
         try {
-            this.editorResource = resourceFactory.invoke(editor, clients) ?: return
+            this.editorResource = createResource.invoke(editor, clients) ?: return
             this.localCopy = editorResource
             push(localCopy, clusterResource)
         } catch (e: Exception) {
@@ -260,7 +268,7 @@ open class ResourceEditor protected constructor(
             }
             hideNotifications()
             val updatedResource = clusterResource.push(resource) ?: return
-            replaceEditorContent(updatedResource)
+            replaceContent(updatedResource)
         } catch (e: ResourceException) {
             logger<ResourceEditor>().warn(e)
             Notification().error(
@@ -300,7 +308,7 @@ open class ResourceEditor protected constructor(
             || clients == null) {
             return null
         }
-        val clusterResource = ClusterResource(resource, clients)
+        val clusterResource = createClusterResource.invoke(resource, clients)
         clusterResource.addListener(onResourceChanged())
         clusterResource.watch()
         return clusterResource
@@ -312,11 +320,11 @@ open class ResourceEditor protected constructor(
             }
 
             override fun removed(removed: Any) {
-                updateEditor()
+                update()
             }
 
             override fun modified(modified: Any) {
-                updateEditor()
+                update()
             }
         }
     }
