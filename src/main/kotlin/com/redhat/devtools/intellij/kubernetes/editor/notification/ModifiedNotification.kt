@@ -42,7 +42,7 @@ class ModifiedNotification(private val editor: FileEditor, private val project: 
         val panel = EditorNotificationPanel()
         panel.setText("${resource.metadata.name} changed on server. Reload?")
         panel.createActionLabel("Reload from Cluster") {
-            ResourceEditor.get(editor, project)?.replaceEditorContent()
+            ResourceEditor.get(editor, project)?.replaceContent()
             editor.hideNotification(KEY_PANEL, project)
         }
 

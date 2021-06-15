@@ -42,7 +42,7 @@ class EditorFocusListener(private val project: Project) : FileEditorManagerListe
         try {
             ResourceEditor.get(editor, project)
                 ?.startWatch()
-                ?.updateEditor()
+                ?.update()
         } catch (e: ResourceException) {
             ErrorNotification(editor, project).show(
                 "Error contacting cluster. Make sure it's reachable, api version supported, etc.",

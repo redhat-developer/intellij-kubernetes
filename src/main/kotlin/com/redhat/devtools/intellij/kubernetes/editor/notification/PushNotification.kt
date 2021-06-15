@@ -52,7 +52,7 @@ class PushNotification(private val editor: FileEditor, private val project: Proj
         }
         if (true == ResourceEditor.get(editor, project)?.isOutdated()) {
             panel.createActionLabel("Reload from Cluster") {
-                ResourceEditor.get(editor, project)?.replaceEditorContent()
+                ResourceEditor.get(editor, project)?.replaceContent()
                 editor.hideNotification(KEY_PANEL, project)
             }
         }

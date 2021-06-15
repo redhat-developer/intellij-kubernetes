@@ -22,7 +22,7 @@ class EditorTransactionListener: PsiDocumentTransactionListener {
     }
 
     override fun transactionCompleted(document: Document, file: PsiFile) {
-        getResourceEditor(document)?.updateEditor()
+        getResourceEditor(document)?.update()
     }
 
     private fun getResourceEditor(document: Document): ResourceEditor? {

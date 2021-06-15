@@ -18,7 +18,6 @@ import com.intellij.psi.impl.PsiDocumentTransactionListener
 import com.redhat.devtools.intellij.kubernetes.editor.EditorFocusListener
 import com.redhat.devtools.intellij.kubernetes.editor.EditorTransactionListener
 import com.redhat.devtools.intellij.kubernetes.editor.ResourceEditor
-import com.redhat.devtools.intellij.kubernetes.editor.notification.ErrorNotification
 
 class KubernetesPluginInitializer : StartupActivity {
 
@@ -45,6 +44,6 @@ class KubernetesPluginInitializer : StartupActivity {
 
     private fun showResourceEditorNotifications(project: Project) {
         val selected = FileEditorManager.getInstance(project).selectedEditor ?: return
-        ResourceEditor.get(selected, project)?.updateEditor()
+        ResourceEditor.get(selected, project)?.update()
     }
 }
