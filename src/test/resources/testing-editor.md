@@ -84,11 +84,10 @@
 
 **Push notification replaced by deleted notification**
 1. "Edit..." resource
-1. change metadata > name / namespace / kind
-   -> push notification ("create new" not "update existing")
+1. change/add label
 1. delete resource (in tree, kubectl or console)
 
--> new Service "greeter2" appears in tree
+-> "Push existing resource" turns "Deleted on Cluster"
 
 **Push notification with "update existing" turns "create new"**
 1. "Edit..." resource
