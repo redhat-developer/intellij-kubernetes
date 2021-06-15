@@ -26,19 +26,24 @@ import com.redhat.devtools.intellij.kubernetes.model.util.trimWithEllipsis
 import java.awt.Point
 import javax.swing.JComponent
 
-object ErrorNotification {
+/**
+ * An editor (panel) notification that shows errors.
+ */
+class ErrorNotification(private val editor: FileEditor, private val project: Project) {
 
-    private val KEY_PANEL = Key<JComponent>(ErrorNotification::javaClass.name)
+    companion object {
+        private val KEY_PANEL = Key<JComponent>(ErrorNotification::javaClass.name)
+    }
 
-    fun show(editor: FileEditor, project: Project, title: String, message: String?) {
+    fun show(title: String, message: String?) {
         editor.showNotification(KEY_PANEL, { createPanel(editor, title, message) }, project)
     }
 
-    fun show(editor: FileEditor, project: Project, title: String, e: Throwable) {
+    fun show(title: String, e: Throwable) {
         editor.showNotification(KEY_PANEL, { createPanel(editor, title, e.message) }, project)
     }
 
-    fun hide(editor: FileEditor, project: Project) {
+    fun hide() {
         editor.hideNotification(KEY_PANEL, project)
     }
 

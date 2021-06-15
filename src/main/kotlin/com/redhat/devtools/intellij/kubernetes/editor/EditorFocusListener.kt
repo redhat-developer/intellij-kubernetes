@@ -44,9 +44,7 @@ class EditorFocusListener(private val project: Project) : FileEditorManagerListe
                 ?.startWatch()
                 ?.updateEditor()
         } catch (e: ResourceException) {
-            ErrorNotification.show(
-                editor,
-                project,
+            ErrorNotification(editor, project).show(
                 "Error contacting cluster. Make sure it's reachable, api version supported, etc.",
                 e.cause ?: e
             )
@@ -60,9 +58,7 @@ class EditorFocusListener(private val project: Project) : FileEditorManagerListe
         try {
             ResourceEditor.get(editor, project)?.stopWatch()
         } catch (e: RuntimeException) {
-            ErrorNotification.show(
-                editor,
-                project,
+            ErrorNotification(editor, project).show(
                 "Error contacting cluster. Make sure it's reachable, api version supported, etc.",
                 e.cause ?: e
             )

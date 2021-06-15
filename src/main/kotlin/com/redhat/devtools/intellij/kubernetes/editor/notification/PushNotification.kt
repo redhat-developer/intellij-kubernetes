@@ -19,15 +19,20 @@ import com.redhat.devtools.intellij.kubernetes.editor.hideNotification
 import com.redhat.devtools.intellij.kubernetes.editor.showNotification
 import javax.swing.JComponent
 
-object PushNotification {
+/**
+ * An editor (panel) notification that informs of a change in the editor that may be pushed to the cluster.
+ */
+class PushNotification(private val editor: FileEditor, private val project: Project) {
 
-    private val KEY_PANEL = Key<JComponent>(PushNotification::javaClass.name)
+    companion object {
+        private val KEY_PANEL = Key<JComponent>(PushNotification::javaClass.name)
+    }
 
-    fun show(editor: FileEditor, project: Project) {
+    fun show() {
         editor.showNotification(KEY_PANEL, { createPanel(editor, project) }, project)
     }
 
-    fun hide(editor: FileEditor, project: Project) {
+    fun hide() {
         editor.hideNotification(KEY_PANEL, project)
     }
 

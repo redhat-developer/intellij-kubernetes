@@ -20,15 +20,20 @@ import com.redhat.devtools.intellij.kubernetes.editor.showNotification
 import io.fabric8.kubernetes.api.model.HasMetadata
 import javax.swing.JComponent
 
-object DeletedNotification {
+/**
+ * An editor (panel) notification that informs about a deleted resource on the cluster.
+ */
+class DeletedNotification(private val editor: FileEditor, private val project: Project) {
 
-    private val KEY_PANEL = Key<JComponent>(DeletedNotification::javaClass.name)
+    companion object {
+        private val KEY_PANEL = Key<JComponent>(DeletedNotification::javaClass.name)
+    }
 
-    fun show(editor: FileEditor, resource: HasMetadata, project: Project) {
+    fun show(resource: HasMetadata) {
         editor.showNotification(KEY_PANEL, { createPanel(editor, resource, project) }, project)
     }
 
-    fun hide(editor: FileEditor, project: Project) {
+    fun hide() {
         editor.hideNotification(KEY_PANEL, project)
     }
 
