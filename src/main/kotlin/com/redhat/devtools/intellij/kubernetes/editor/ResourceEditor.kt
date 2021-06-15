@@ -40,14 +40,18 @@ open class ResourceEditor protected constructor(
     private var localCopy: HasMetadata?,
     private val editor: FileEditor,
     private val project: Project,
-    private val clients: Clients<out KubernetesClient>
+    private val clients: Clients<out KubernetesClient>,
+    private val resourceFactory: (editor: FileEditor, clients: Clients<out KubernetesClient>) -> HasMetadata? =
+        EditorResourceFactory::create,
+    // for mocking purposes
+    private val createFileForVirtual: (file: VirtualFile?) -> ResourceFile? =
+        ResourceFile.Factory::create,
+    // for mocking purposes
+    private val createFileForResource: (resource: HasMetadata) -> ResourceFile? =
+        ResourceFile.Factory::create
 ) {
     companion object {
         private val KEY_RESOURCE_EDITOR = Key<ResourceEditor>(ResourceEditor::class.java.name)
-
-        fun isResourceEditor(editor: FileEditor?): Boolean {
-            return ResourceFile.isResourceFile(editor?.file)
-        }
 
         /**
          * Opens a new editor for the given [HasMetadata] and [Project].
@@ -103,18 +107,23 @@ open class ResourceEditor protected constructor(
             editor.putUserData(KEY_RESOURCE_EDITOR, resourceEditor)
             return resourceEditor
         }
+
+        private fun isResourceEditor(editor: FileEditor?): Boolean {
+            return ResourceFile.isResourceFile(editor?.file)
+        }
     }
 
+    private var editorResource: HasMetadata? = null
     private var oldClusterResource: ClusterResource? = null
     private var _clusterResource: ClusterResource? = null
     private val clusterResource: ClusterResource?
         get() {
             synchronized(this) {
                 if (_clusterResource == null
-                    || false == _clusterResource?.isSameResource(localCopy)) {
+                    || false == _clusterResource?.isSameResource(editorResource)) {
                     oldClusterResource = _clusterResource
                     oldClusterResource?.close()
-                    _clusterResource = createClusterResource(localCopy, clients)
+                    _clusterResource = createClusterResource(editorResource, clients)
                 }
                 return _clusterResource
             }
@@ -127,15 +136,11 @@ open class ResourceEditor protected constructor(
      */
     fun updateEditor() {
         try {
-            val resource = EditorResourceFactory.create(editor, clients) ?: return
-            updateEditor(resource)
+            this.editorResource = resourceFactory.invoke(editor, clients) ?: return
+            updateEditor(editorResource, clusterResource, oldClusterResource)
         } catch (e: ResourceException) {
             showErrorNotification(editor, project, e)
         }
-    }
-
-    private fun updateEditor(resource: HasMetadata) {
-        updateEditor(resource, clusterResource, oldClusterResource)
     }
 
     private fun updateEditor(resource: HasMetadata?, clusterResource: ClusterResource?, oldClusterResource: ClusterResource?) {
@@ -151,8 +156,8 @@ open class ResourceEditor protected constructor(
     }
 
     private fun renameEditor(resource: HasMetadata, editor: FileEditor) {
-        val file = ResourceFile.create(editor.file) ?: return
-        val newFile = ResourceFile.create(resource)
+        val file = createFileForVirtual.invoke(editor.file) ?: return
+        val newFile = createFileForResource.invoke(resource)
         if (!file.hasEqualBasePath(newFile)) {
             file.rename(resource)
         }
@@ -168,15 +173,23 @@ open class ResourceEditor protected constructor(
         when {
             clusterResource.isDeleted()
                     && !clusterResource.isModified(resource) ->
-                DeletedNotification.show(editor, resource, project)
+                showDeletedNotification(editor, resource, project)
             clusterResource.isOutdated(resource) ->
-                showReloadNotification(editor, resource, project)
+                replaceEditorOrShowReloadNotification(editor, resource, project)
             clusterResource.canPush(resource) ->
                 PushNotification.show(editor, project)
         }
     }
 
-    private fun showReloadNotification(
+    protected open fun showDeletedNotification(
+        editor: FileEditor,
+        resource: HasMetadata,
+        project: Project
+    ) {
+        DeletedNotification.show(editor, resource, project)
+    }
+
+    private fun replaceEditorOrShowReloadNotification(
         editor: FileEditor,
         resource: HasMetadata,
         project: Project
@@ -184,10 +197,18 @@ open class ResourceEditor protected constructor(
         val resourceOnCluster = clusterResource?.get(false)
         if (!hasLocalChanges(resource)
             && resourceOnCluster != null) {
-            replaceEditor(resourceOnCluster)
+            replaceEditorContent(resourceOnCluster)
         } else {
-            ReloadNotification.show(editor, resource, project)
+            showReloadNotification(editor, resource, project)
         }
+    }
+
+    protected open fun showReloadNotification(
+        editor: FileEditor,
+        resource: HasMetadata,
+        project: Project
+    ) {
+        ReloadNotification.show(editor, resource, project)
     }
 
     private fun showErrorNotification(editor: FileEditor, project: Project, e: Throwable) {
@@ -209,15 +230,15 @@ open class ResourceEditor protected constructor(
      * Replaces the content of this editor with the resource that exists on the cluster.
      * Does nothing if it doesn't exist.
      */
-    fun replaceEditor() {
+    fun replaceEditorContent() {
         val resource = clusterResource?.get(false) ?: return
-        replaceEditor(resource)
+        replaceEditorContent(resource)
     }
 
-    private fun replaceEditor(resource: HasMetadata) {
+    private fun replaceEditorContent(resource: HasMetadata) {
         UIHelper.executeInUI {
             if (editor.file != null) {
-                val file = ResourceFile.create(editor.file)?.write(resource)
+                val file = createFileForVirtual.invoke(editor.file)?.write(resource)
                 if (file != null) {
                     FileDocumentManager.getInstance().reloadFiles(file)
                     this.localCopy = resource
@@ -235,8 +256,8 @@ open class ResourceEditor protected constructor(
     }
 
     fun isOutdated(): Boolean {
-        val resource = EditorResourceFactory.create(editor, clients)
-        return clusterResource?.isOutdated(resource) ?: false
+        this.editorResource = resourceFactory.invoke(editor, clients)
+        return clusterResource?.isOutdated(editorResource) ?: false
     }
 
     /**
@@ -244,7 +265,8 @@ open class ResourceEditor protected constructor(
      */
     fun push() {
         try {
-            this.localCopy = EditorResourceFactory.create(editor, clients) ?: return
+            this.editorResource = resourceFactory.invoke(editor, clients) ?: return
+            this.localCopy = editorResource
             push(localCopy, clusterResource)
         } catch (e: Exception) {
             showErrorNotification(editor, project, e)
@@ -259,7 +281,7 @@ open class ResourceEditor protected constructor(
             }
             hideNotifications(editor, project)
             val updatedResource = clusterResource.push(resource) ?: return
-            replaceEditor(updatedResource)
+            replaceEditorContent(updatedResource)
         } catch (e: ResourceException) {
             logger<ResourceEditor>().warn(e)
             Notification().error(
@@ -334,7 +356,7 @@ open class ResourceEditor protected constructor(
         if (file == null) {
             return
         }
-        ResourceFile.create(file)?.enableNonProjectFileEditing()
+        createFileForVirtual(file)?.enableNonProjectFileEditing()
     }
 }
 
