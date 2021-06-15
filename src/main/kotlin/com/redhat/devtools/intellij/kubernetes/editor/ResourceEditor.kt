@@ -21,7 +21,7 @@ import com.redhat.devtools.intellij.common.utils.UIHelper
 import com.redhat.devtools.intellij.kubernetes.editor.notification.DeletedNotification
 import com.redhat.devtools.intellij.kubernetes.editor.notification.ErrorNotification
 import com.redhat.devtools.intellij.kubernetes.editor.notification.PushNotification
-import com.redhat.devtools.intellij.kubernetes.editor.notification.ReloadNotification
+import com.redhat.devtools.intellij.kubernetes.editor.notification.ModifiedNotification
 import com.redhat.devtools.intellij.kubernetes.model.ClientConfig
 import com.redhat.devtools.intellij.kubernetes.model.ClusterResource
 import com.redhat.devtools.intellij.kubernetes.model.ModelChangeObservable
@@ -92,7 +92,7 @@ open class ResourceEditor protected constructor(
                 val resource = EditorResourceFactory.create(editor, clients) ?: return null
                 return create(resource, editor, project, clients)
             } catch(e: ResourceException) {
-                ErrorNotification.show(editor, project,e.message ?: "", e.cause?.message)
+                ErrorNotification(editor, project).show(e.message ?: "", e.cause?.message)
                 return null
             }
         }
@@ -128,6 +128,10 @@ open class ResourceEditor protected constructor(
                 return _clusterResource
             }
         }
+    protected open val pushNotification = PushNotification(editor, project)
+    protected open val modifiedNotification = ModifiedNotification(editor, project)
+    protected open val deletedNotification = DeletedNotification(editor, project)
+    protected open val errorNotification = ErrorNotification(editor, project)
 
     /**
      * Updates this editors notifications and title.
@@ -139,7 +143,7 @@ open class ResourceEditor protected constructor(
             this.editorResource = resourceFactory.invoke(editor, clients) ?: return
             updateEditor(editorResource, clusterResource, oldClusterResource)
         } catch (e: ResourceException) {
-            showErrorNotification(editor, project, e)
+            showErrorNotification(e)
         }
     }
 
@@ -152,7 +156,7 @@ open class ResourceEditor protected constructor(
                 // new cluster resource was created, resource has thus changed
                 renameEditor(resource, editor)
             }
-            showNotifications(clusterResource, resource, editor, project)
+            showNotifications(clusterResource, resource)
     }
 
     private fun renameEditor(resource: HasMetadata, editor: FileEditor) {
@@ -165,65 +169,40 @@ open class ResourceEditor protected constructor(
 
     private fun showNotifications(
         clusterResource: ClusterResource,
-        resource: HasMetadata,
-        editor: FileEditor,
-        project: Project
-    ) {
-        hideNotifications(editor, project)
+        resource: HasMetadata) {
+        hideNotifications()
         when {
             clusterResource.isDeleted()
                     && !clusterResource.isModified(resource) ->
-                showDeletedNotification(editor, resource, project)
+                deletedNotification.show(resource)
             clusterResource.isOutdated(resource) ->
-                replaceEditorOrShowReloadNotification(editor, resource, project)
+                replaceEditorOrShowReloadNotification(resource)
             clusterResource.canPush(resource) ->
-                PushNotification.show(editor, project)
+                pushNotification.show()
         }
     }
 
-    protected open fun showDeletedNotification(
-        editor: FileEditor,
-        resource: HasMetadata,
-        project: Project
-    ) {
-        DeletedNotification.show(editor, resource, project)
-    }
-
     private fun replaceEditorOrShowReloadNotification(
-        editor: FileEditor,
-        resource: HasMetadata,
-        project: Project
-    ) {
+        resource: HasMetadata) {
         val resourceOnCluster = clusterResource?.get(false)
         if (!hasLocalChanges(resource)
             && resourceOnCluster != null) {
             replaceEditorContent(resourceOnCluster)
         } else {
-            showReloadNotification(editor, resource, project)
+            modifiedNotification.show(resource)
         }
     }
 
-    protected open fun showReloadNotification(
-        editor: FileEditor,
-        resource: HasMetadata,
-        project: Project
-    ) {
-        ReloadNotification.show(editor, resource, project)
+    private fun showErrorNotification(e: Throwable) {
+        hideNotifications()
+        errorNotification.show(e.message ?: "", e.cause?.message)
     }
 
-    private fun showErrorNotification(editor: FileEditor, project: Project, e: Throwable) {
-        hideNotifications(editor, project)
-        ErrorNotification.show(
-            editor, project,
-            e.message ?: "", e.cause?.message
-        )
-    }
-
-    private fun hideNotifications(editor: FileEditor, project: Project) {
-        ErrorNotification.hide(editor, project)
-        ReloadNotification.hide(editor, project)
-        DeletedNotification.hide(editor, project)
-        PushNotification.hide(editor, project)
+    private fun hideNotifications() {
+        errorNotification.hide()
+        modifiedNotification.hide()
+        deletedNotification.hide()
+        pushNotification.hide()
     }
 
     /**
@@ -269,7 +248,7 @@ open class ResourceEditor protected constructor(
             this.localCopy = editorResource
             push(localCopy, clusterResource)
         } catch (e: Exception) {
-            showErrorNotification(editor, project, e)
+            showErrorNotification(e)
         }
     }
 
@@ -279,7 +258,7 @@ open class ResourceEditor protected constructor(
                 || clusterResource == null) {
                 return
             }
-            hideNotifications(editor, project)
+            hideNotifications()
             val updatedResource = clusterResource.push(resource) ?: return
             replaceEditorContent(updatedResource)
         } catch (e: ResourceException) {
