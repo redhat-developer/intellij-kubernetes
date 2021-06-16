@@ -190,7 +190,7 @@ open class ResourceFile protected constructor(
         return getBasePath() == file.getBasePath()
     }
 
-    private fun getBasePath(): String {
+    fun getBasePath(): String {
         return removeAddendum(path.fileName.toString())
     }
 

@@ -14,10 +14,8 @@ import com.intellij.openapi.fileEditor.FileEditor
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.VirtualFile
 import com.nhaarman.mockitokotlin2.any
-import com.nhaarman.mockitokotlin2.anyOrNull
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.doThrow
-import com.nhaarman.mockitokotlin2.isNull
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.spy
 import com.nhaarman.mockitokotlin2.verify
@@ -30,6 +28,7 @@ import com.redhat.devtools.intellij.kubernetes.model.ClusterResource
 import com.redhat.devtools.intellij.kubernetes.model.ResourceException
 import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks
 import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.POD2
+import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.POD3
 import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.client
 import com.redhat.devtools.intellij.kubernetes.model.util.Clients
 import io.fabric8.kubernetes.api.model.HasMetadata
@@ -42,13 +41,31 @@ class ResourceEditorTest {
     private val allNamespaces = arrayOf(ClientMocks.NAMESPACE1, ClientMocks.NAMESPACE2, ClientMocks.NAMESPACE3)
     private val currentNamespace = ClientMocks.NAMESPACE2
     private val localCopy = POD2
-    private val fileEditor: FileEditor = mock()
+    private val virtualFile: VirtualFile = mock()
+    private val fileEditor: FileEditor = mock<FileEditor>().apply {
+        doReturn(virtualFile)
+            .whenever(this).file
+    }
     private val resourceFile: ResourceFile = mock()
+    private val resourceFileForVirtual: (file: VirtualFile?) -> ResourceFile? =
+        mock<(file: VirtualFile?) -> ResourceFile?>().apply {
+            doReturn(resourceFile)
+                .whenever(this).invoke(any())
+        }
+    private val resourceFileForResource: (resource: HasMetadata?) -> ResourceFile? =
+        mock<(file: HasMetadata?) -> ResourceFile?>().apply {
+            doReturn(resourceFile)
+                .whenever(this).invoke(any())
+        }
+
     private val project: Project = mock()
     private val clients: Clients<KubernetesClient> =
         Clients(client(currentNamespace.metadata.name, allNamespaces))
     private val createResource: (editor: FileEditor, clients: Clients<out KubernetesClient>) -> HasMetadata? =
-        spy({ editor, clients -> localCopy })
+        mock<(editor: FileEditor, clients: Clients<out KubernetesClient>) -> HasMetadata?>().apply  {
+            doReturn(localCopy)
+                .whenever(this).invoke(any(), any())
+        }
     private val clusterResource: ClusterResource = mock()
     private val pushNotification: PushNotification = mock()
     private val modifiedNotification: ModifiedNotification = mock()
@@ -62,8 +79,8 @@ class ResourceEditorTest {
             clients,
             createResource,
             { resource, clients -> clusterResource },
-            { resourceFile },
-            { resourceFile },
+            resourceFileForVirtual,
+            resourceFileForResource,
             pushNotification,
             modifiedNotification,
             deletedNotification,
@@ -80,6 +97,30 @@ class ResourceEditorTest {
         editor.update()
         // then
         verify(errorNotification).show("resource error", "client error")
+    }
+
+    @Test
+    fun `#update should rename file if resource in editor has different name`() {
+        // given editor resource is POD3
+        doReturn(POD3)
+            .whenever(createResource).invoke(any(), any())
+        // editor resource is POD2
+        val editorFile: ResourceFile = mockResourceFile(POD2.metadata.name)
+        doReturn(editorFile)
+            .whenever(resourceFileForVirtual).invoke(any())
+        val resourceFile: ResourceFile = mockResourceFile(POD3.metadata.name)
+        doReturn(resourceFile)
+            .whenever(resourceFileForResource).invoke(any())
+        // when
+        editor.update()
+        // then rename to POD3
+        verify(editorFile).rename(POD3)
+    }
+
+    private fun mockResourceFile(basePath: String): ResourceFile {
+        return mock {
+            on { getBasePath() } doReturn basePath
+        }
     }
 
     private class TestableResourceEditor(
@@ -108,7 +149,6 @@ class ResourceEditorTest {
         modifiedNotification,
         deletedNotification,
         errorNotification
-    ) {
-    }
+    )
 
 }
