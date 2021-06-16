@@ -11,6 +11,7 @@
 package com.redhat.devtools.intellij.kubernetes.model.mocks
 
 import com.nhaarman.mockitokotlin2.*
+import com.redhat.devtools.intellij.kubernetes.editor.ResourceFile
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.NamedContext
 import io.fabric8.kubernetes.api.model.Namespace
@@ -109,4 +110,14 @@ object Mocks {
     fun resourceModel(): IResourceModel {
         return mock {}
     }
+
+    fun resourceFile(basePath: String): ResourceFile {
+        return mock {
+            on { getBasePath() } doReturn basePath
+            on { hasEqualBasePath(any()) } doAnswer {
+                    invocationOnMock -> basePath == (invocationOnMock.arguments[0] as? ResourceFile)?.getBasePath()
+            }
+        }
+    }
+
 }

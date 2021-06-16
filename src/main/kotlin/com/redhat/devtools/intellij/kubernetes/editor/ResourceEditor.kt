@@ -60,7 +60,9 @@ open class ResourceEditor protected constructor(
     // for mocking purposes
     private val deletedNotification: DeletedNotification = DeletedNotification(editor, project),
     // for mocking purposes
-    private val errorNotification: ErrorNotification = ErrorNotification(editor, project)
+    private val errorNotification: ErrorNotification = ErrorNotification(editor, project),
+    // for mocking purposes
+    private val documentManager: FileDocumentManager = FileDocumentManager.getInstance()
 ) {
     companion object {
         private val KEY_RESOURCE_EDITOR = Key<ResourceEditor>(ResourceEditor::class.java.name)
@@ -190,8 +192,7 @@ open class ResourceEditor protected constructor(
         }
     }
 
-    private fun replaceOrNotifyReload(
-        resource: HasMetadata) {
+    private fun replaceOrNotifyReload(resource: HasMetadata) {
         val resourceOnCluster = clusterResource?.get(false)
         if (!hasLocalChanges(resource)
             && resourceOnCluster != null) {
@@ -223,15 +224,19 @@ open class ResourceEditor protected constructor(
     }
 
     private fun replaceContent(resource: HasMetadata) {
-        UIHelper.executeInUI {
+        executeInUI {
             if (editor.file != null) {
                 val file = createFileForVirtual.invoke(editor.file)?.write(resource)
                 if (file != null) {
-                    FileDocumentManager.getInstance().reloadFiles(file)
+                    documentManager.reloadFiles(file)
                     this.localCopy = resource
                 }
             }
         }
+    }
+
+    protected open fun executeInUI(runnable: () -> Unit) {
+        UIHelper.executeInUI(runnable)
     }
 
     /**

@@ -13,6 +13,7 @@ package com.redhat.devtools.intellij.kubernetes.model.mocks
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.whenever
+import com.redhat.devtools.intellij.kubernetes.editor.ResourceFile
 import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.custom.GenericCustomResource
 import com.redhat.devtools.intellij.kubernetes.model.util.getApiVersion
 import io.fabric8.kubernetes.api.model.Context
@@ -286,5 +287,4 @@ object ClientMocks {
             on { getResourceVersion() } doReturn resourceVersion
         }
     }
-
 }
