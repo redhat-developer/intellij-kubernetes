@@ -62,7 +62,9 @@ open class ResourceEditor protected constructor(
     // for mocking purposes
     private val errorNotification: ErrorNotification = ErrorNotification(editor, project),
     // for mocking purposes
-    private val documentManager: FileDocumentManager = FileDocumentManager.getInstance()
+    private val documentManager: FileDocumentManager = FileDocumentManager.getInstance(),
+    // for mocking purposes
+    private val ideNotification: Notification = Notification()
 ) {
     companion object {
         private val KEY_RESOURCE_EDITOR = Key<ResourceEditor>(ResourceEditor::class.java.name)
@@ -127,7 +129,7 @@ open class ResourceEditor protected constructor(
         }
     }
 
-    private var editorResource: HasMetadata? = null
+    private var editorResource: HasMetadata? = localCopy
     private var oldClusterResource: ClusterResource? = null
     private var _clusterResource: ClusterResource? = null
     private val clusterResource: ClusterResource?
@@ -194,8 +196,8 @@ open class ResourceEditor protected constructor(
 
     private fun replaceOrNotifyReload(resource: HasMetadata) {
         val resourceOnCluster = clusterResource?.get(false)
-        if (!hasLocalChanges(resource)
-            && resourceOnCluster != null) {
+        if (resourceOnCluster != null
+            && !hasLocalChanges(resource)) {
             replaceContent(resourceOnCluster)
         } else {
             modifiedNotification.show(resource)
@@ -276,7 +278,7 @@ open class ResourceEditor protected constructor(
             replaceContent(updatedResource)
         } catch (e: ResourceException) {
             logger<ResourceEditor>().warn(e)
-            Notification().error(
+            ideNotification.error(
                 "Could not save ${
                     if (resource != null) {
                         "${resource.kind} ${resource.metadata.name}"
@@ -308,9 +310,8 @@ open class ResourceEditor protected constructor(
         clusterResource?.stopWatch()
     }
 
-    private fun createClusterResource(resource: HasMetadata?, clients: Clients<out KubernetesClient>?): ClusterResource? {
-        if (resource == null
-            || clients == null) {
+    private fun createClusterResource(resource: HasMetadata?, clients: Clients<out KubernetesClient>): ClusterResource? {
+        if (resource == null) {
             return null
         }
         val clusterResource = createClusterResource.invoke(resource, clients)
@@ -334,7 +335,7 @@ open class ResourceEditor protected constructor(
         }
     }
 
-    fun closeClusterResource() {
+    fun close() {
         clusterResource?.close()
     }
 

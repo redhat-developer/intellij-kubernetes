@@ -32,7 +32,7 @@ class EditorFocusListener(private val project: Project) : FileEditorManagerListe
 
     override fun beforeFileClosed(source: FileEditorManager, file: VirtualFile) {
         ResourceEditor.get(source.getSelectedEditor(file), source.project)
-            ?.closeClusterResource()
+            ?.close()
     }
 
     private fun handleSelectionGained(editor: FileEditor?, project: Project) {
