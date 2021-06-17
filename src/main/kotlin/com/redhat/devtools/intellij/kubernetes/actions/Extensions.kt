@@ -11,7 +11,6 @@
 package com.redhat.devtools.intellij.kubernetes.actions
 
 import com.intellij.openapi.actionSystem.AnAction
-import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.components.ServiceManager
 import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.progress.ProgressManager
@@ -22,6 +21,10 @@ import com.redhat.devtools.intellij.kubernetes.model.IResourceModel
 import org.jetbrains.annotations.NotNull
 import javax.swing.tree.DefaultMutableTreeNode
 import com.redhat.devtools.intellij.kubernetes.tree.TreeStructure.Descriptor
+import java.awt.event.MouseAdapter
+import java.awt.event.MouseEvent
+import java.awt.event.MouseListener
+import javax.swing.JTree
 
 fun AnAction.getResourceModel(): IResourceModel? {
     return ServiceManager.getService(IResourceModel::class.java)
@@ -47,6 +50,18 @@ inline fun <reified T> Any.getElement(): T? {
     } else {
         null
     }
+}
+
+fun JTree.addDoubleClickListener(listener: MouseListener) {
+    this.addMouseListener(object: MouseAdapter() {
+        override fun mouseClicked(event: MouseEvent) {
+            if (event.source !is JTree
+                || 2 != event.clickCount) {
+                return
+            }
+            listener.mouseClicked(event)
+        }
+    })
 }
 
 fun run(title: String, canBeCancelled: Boolean, runnable: Progressive) {
