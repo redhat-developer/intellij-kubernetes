@@ -12,7 +12,7 @@ package com.redhat.devtools.intellij.kubernetes.model.resource
 
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.client.Client
-import com.redhat.devtools.intellij.kubernetes.model.util.Clients
+import com.redhat.devtools.intellij.kubernetes.model.Clients
 
 interface IResourceOperatorFactory<N: HasMetadata, C: Client, P: IResourceOperator<N>> {
     fun create(client: Clients<C>): P

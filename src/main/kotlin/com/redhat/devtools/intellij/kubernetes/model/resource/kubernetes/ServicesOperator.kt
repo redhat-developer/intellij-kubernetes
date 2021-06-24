@@ -15,7 +15,7 @@ import io.fabric8.kubernetes.api.model.Service
 import io.fabric8.kubernetes.client.KubernetesClient
 import com.redhat.devtools.intellij.kubernetes.model.resource.NamespacedResourceOperator
 import com.redhat.devtools.intellij.kubernetes.model.resource.ResourceKind
-import com.redhat.devtools.intellij.kubernetes.model.util.Clients
+import com.redhat.devtools.intellij.kubernetes.model.Clients
 
 class ServicesOperator(clients: Clients<out KubernetesClient>)
     : NamespacedResourceOperator<Service, KubernetesClient>(clients.get()) {

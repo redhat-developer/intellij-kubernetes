@@ -19,12 +19,12 @@ import com.redhat.devtools.intellij.kubernetes.model.resource.IResourceOperator
 import com.redhat.devtools.intellij.kubernetes.model.resource.OperatorFactory
 import com.redhat.devtools.intellij.kubernetes.model.resource.ResourceKind
 import com.redhat.devtools.intellij.kubernetes.model.resource.openshift.ProjectsOperator
-import com.redhat.devtools.intellij.kubernetes.model.util.Clients
+import com.redhat.devtools.intellij.kubernetes.model.Clients
 
 open class OpenShiftContext(
     modelChange: IModelChangeObservable,
     clients: Clients<OpenShiftClient>,
-	context: NamedContext
+    context: NamedContext
 ) : ActiveContext<Project, OpenShiftClient>(modelChange, clients, context) {
 
 	override fun getInternalResourceOperators(clients: Clients<OpenShiftClient>)

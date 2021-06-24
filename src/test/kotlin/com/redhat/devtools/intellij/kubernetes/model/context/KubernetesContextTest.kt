@@ -55,7 +55,7 @@ import com.redhat.devtools.intellij.kubernetes.model.resource.ResourceKind
 import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.*
 import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.custom.CustomResourceScope
 import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.custom.GenericCustomResource
-import com.redhat.devtools.intellij.kubernetes.model.util.Clients
+import com.redhat.devtools.intellij.kubernetes.model.Clients
 import com.redhat.devtools.intellij.kubernetes.model.util.MultiResourceException
 import io.fabric8.kubernetes.client.KubernetesClient
 import io.fabric8.kubernetes.client.Watch
@@ -1030,15 +1030,15 @@ class KubernetesContextTest {
 	}
 
 	class TestableKubernetesContext(
-		observable: ModelChangeObservable,
-		clients: Clients<KubernetesClient>,
-		private val internalResourceOperators: List<IResourceOperator<out HasMetadata>>,
-		private val extensionResourceOperators: List<IResourceOperator<out HasMetadata>>,
-		private val customResourcesOperators: Pair<
+        observable: ModelChangeObservable,
+        clients: Clients<KubernetesClient>,
+        private val internalResourceOperators: List<IResourceOperator<out HasMetadata>>,
+        private val extensionResourceOperators: List<IResourceOperator<out HasMetadata>>,
+        private val customResourcesOperators: Pair<
 					INamespacedResourceOperator<GenericCustomResource, KubernetesClient>,
 					INonNamespacedResourceOperator<GenericCustomResource, KubernetesClient>>,
-		public override var watch: ResourceWatch<ResourceKind<out HasMetadata>>,
-		override val notification: Notification)
+        public override var watch: ResourceWatch<ResourceKind<out HasMetadata>>,
+        override val notification: Notification)
 		: KubernetesContext(observable, clients, mock()) {
 
 		public override val namespacedOperators

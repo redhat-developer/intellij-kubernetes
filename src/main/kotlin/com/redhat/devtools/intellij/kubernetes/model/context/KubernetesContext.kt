@@ -18,13 +18,13 @@ import com.redhat.devtools.intellij.kubernetes.model.resource.IResourceOperator
 import com.redhat.devtools.intellij.kubernetes.model.resource.OperatorFactory
 import com.redhat.devtools.intellij.kubernetes.model.resource.ResourceKind
 import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.NamespacesOperator
-import com.redhat.devtools.intellij.kubernetes.model.util.Clients
+import com.redhat.devtools.intellij.kubernetes.model.Clients
 import io.fabric8.kubernetes.client.KubernetesClient
 
 open class KubernetesContext(
-	modelChange: IModelChangeObservable,
-	clients: Clients<KubernetesClient>,
-	context: NamedContext
+    modelChange: IModelChangeObservable,
+    clients: Clients<KubernetesClient>,
+    context: NamedContext
 ) : ActiveContext<Namespace, KubernetesClient>(modelChange, clients, context) {
 
 	override fun getInternalResourceOperators(clients: Clients<KubernetesClient>)

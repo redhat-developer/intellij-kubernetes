@@ -15,7 +15,7 @@ import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.NAMESPACE
 import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.NAMESPACE2
 import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.NAMESPACE3
 import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.client
-import com.redhat.devtools.intellij.kubernetes.model.util.Clients
+import com.redhat.devtools.intellij.kubernetes.model.Clients
 import org.junit.Test
 
 class NamespacesOperatorTest {

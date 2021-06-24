@@ -35,7 +35,7 @@ import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.custom.
 import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.custom.GenericCustomResource
 import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.custom.NamespacedCustomResourceOperator
 import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.custom.NonNamespacedCustomResourceOperator
-import com.redhat.devtools.intellij.kubernetes.model.util.Clients
+import com.redhat.devtools.intellij.kubernetes.model.Clients
 import com.redhat.devtools.intellij.kubernetes.model.util.MultiResourceException
 import com.redhat.devtools.intellij.kubernetes.model.util.ResourceException
 import com.redhat.devtools.intellij.kubernetes.model.util.isSameResource
@@ -45,9 +45,9 @@ import io.fabric8.kubernetes.client.Config
 import java.net.URL
 
 abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
-        private val modelChange: IModelChangeObservable,
-        private val clients: Clients<C>,
-        context: NamedContext
+    private val modelChange: IModelChangeObservable,
+    private val clients: Clients<C>,
+    context: NamedContext
 ) : Context(context), IActiveContext<N, C> {
 
     override val active: Boolean = true
