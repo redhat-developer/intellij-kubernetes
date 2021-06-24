@@ -10,6 +10,7 @@
  ******************************************************************************/
 package com.redhat.devtools.intellij.kubernetes.editor
 
+import com.intellij.openapi.util.io.FileUtil
 import com.intellij.openapi.util.io.FileUtilRt
 import com.intellij.openapi.vfs.VirtualFile
 import com.nhaarman.mockitokotlin2.any
@@ -25,11 +26,9 @@ import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.NAMESPACE
 import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.NAMESPACE2
 import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.POD1
 import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.POD3
-import org.apache.commons.io.FileUtils
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test
 import org.mockito.ArgumentCaptor
-import org.mockito.Mockito.startsWith
 import java.nio.file.Path
 import java.nio.file.Paths
 
@@ -48,7 +47,7 @@ class ResourceFileTest {
         // when
         val file = ResourceFile.create(NAMESPACE1)
         // then
-        assertThat(file?.path.toString()).startsWith(FileUtils.getTempDirectoryPath())
+        assertThat(file?.path.toString()).startsWith(ResourceFile.TEMP_FOLDER.toString())
         assertThat(file?.path.toString()).endsWith("${NAMESPACE1.metadata.name}.${ResourceFile.EXTENSION}")
     }
 
@@ -58,7 +57,7 @@ class ResourceFileTest {
         // when
         val file = ResourceFile.create(POD1)
         // then
-        assertThat(file?.path.toString()).startsWith(FileUtils.getTempDirectoryPath())
+        assertThat(file?.path.toString()).startsWith(ResourceFile.TEMP_FOLDER.toString())
         assertThat(file?.path.toString()).endsWith("${POD1.metadata.name}@${POD1.metadata.namespace}.${ResourceFile.EXTENSION}")
     }
 
