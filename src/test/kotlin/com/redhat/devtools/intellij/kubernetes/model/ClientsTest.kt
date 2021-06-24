@@ -8,12 +8,11 @@
  * Contributors:
  * Red Hat, Inc. - initial API and implementation
  ******************************************************************************/
-package com.redhat.devtools.intellij.kubernetes.model.util
+package com.redhat.devtools.intellij.kubernetes.model
 
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.verify
-import com.redhat.devtools.intellij.kubernetes.model.Clients
 import io.fabric8.kubernetes.client.AppsAPIGroupClient
 import io.fabric8.kubernetes.client.KubernetesClient
 import io.fabric8.openshift.client.OpenShiftClient

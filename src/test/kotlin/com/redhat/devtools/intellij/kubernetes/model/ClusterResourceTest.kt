@@ -24,7 +24,6 @@ import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.resource
 import com.redhat.devtools.intellij.kubernetes.model.mocks.Mocks.namespacedResourceOperator
 import com.redhat.devtools.intellij.kubernetes.model.resource.IResourceOperator
 import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.AllPodsOperator
-import com.redhat.devtools.intellij.kubernetes.model.util.Clients
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.Namespace
 import io.fabric8.kubernetes.api.model.Pod

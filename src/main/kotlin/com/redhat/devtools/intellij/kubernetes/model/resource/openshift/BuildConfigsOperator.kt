@@ -15,7 +15,7 @@ import io.fabric8.openshift.api.model.BuildConfig
 import io.fabric8.openshift.client.OpenShiftClient
 import com.redhat.devtools.intellij.kubernetes.model.resource.NamespacedResourceOperator
 import com.redhat.devtools.intellij.kubernetes.model.resource.ResourceKind
-import com.redhat.devtools.intellij.kubernetes.model.util.Clients
+import com.redhat.devtools.intellij.kubernetes.model.Clients
 
 class BuildConfigsOperator(clients: Clients<out OpenShiftClient>)
     : NamespacedResourceOperator<BuildConfig, OpenShiftClient>(clients.get()) {

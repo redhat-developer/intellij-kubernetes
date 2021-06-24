@@ -34,7 +34,7 @@ import com.redhat.devtools.intellij.kubernetes.model.resource.openshift.Deployme
 import com.redhat.devtools.intellij.kubernetes.model.resource.openshift.ImageStreamsOperator
 import com.redhat.devtools.intellij.kubernetes.model.resource.openshift.ProjectsOperator
 import com.redhat.devtools.intellij.kubernetes.model.resource.openshift.ReplicationControllersOperator
-import com.redhat.devtools.intellij.kubernetes.model.util.Clients
+import com.redhat.devtools.intellij.kubernetes.model.Clients
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.client.KubernetesClient
 import io.fabric8.openshift.client.OpenShiftClient

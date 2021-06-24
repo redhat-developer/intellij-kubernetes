@@ -15,7 +15,7 @@ import io.fabric8.kubernetes.api.model.storage.StorageClass
 import io.fabric8.kubernetes.client.StorageAPIGroupClient
 import com.redhat.devtools.intellij.kubernetes.model.resource.NonNamespacedResourceOperator
 import com.redhat.devtools.intellij.kubernetes.model.resource.ResourceKind
-import com.redhat.devtools.intellij.kubernetes.model.util.Clients
+import com.redhat.devtools.intellij.kubernetes.model.Clients
 import io.fabric8.kubernetes.client.KubernetesClient
 
 class StorageClassesOperator(clients: Clients<out KubernetesClient>)

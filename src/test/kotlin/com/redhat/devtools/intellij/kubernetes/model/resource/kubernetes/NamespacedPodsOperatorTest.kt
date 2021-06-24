@@ -35,7 +35,7 @@ import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.list
 import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.pods
 import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.resource
 import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.withName
-import com.redhat.devtools.intellij.kubernetes.model.util.Clients
+import com.redhat.devtools.intellij.kubernetes.model.Clients
 import io.fabric8.kubernetes.api.model.PodBuilder
 import io.fabric8.kubernetes.client.Watcher
 import org.junit.Before

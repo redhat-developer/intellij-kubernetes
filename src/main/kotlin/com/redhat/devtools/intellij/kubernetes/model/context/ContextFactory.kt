@@ -19,7 +19,7 @@ import io.fabric8.kubernetes.client.KubernetesClientException
 import io.fabric8.openshift.client.NamespacedOpenShiftClient
 import io.fabric8.openshift.client.OpenShiftNotAvailableException
 import com.redhat.devtools.intellij.kubernetes.model.IModelChangeObservable
-import com.redhat.devtools.intellij.kubernetes.model.util.Clients
+import com.redhat.devtools.intellij.kubernetes.model.Clients
 
 fun create(
 	observable: IModelChangeObservable,

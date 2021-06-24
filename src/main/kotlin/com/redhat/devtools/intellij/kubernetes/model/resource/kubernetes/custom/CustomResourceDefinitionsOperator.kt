@@ -13,7 +13,7 @@ package com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.custom
 import com.redhat.devtools.intellij.kubernetes.model.resource.NonNamespacedOperation
 import com.redhat.devtools.intellij.kubernetes.model.resource.NonNamespacedResourceOperator
 import com.redhat.devtools.intellij.kubernetes.model.resource.ResourceKind
-import com.redhat.devtools.intellij.kubernetes.model.util.Clients
+import com.redhat.devtools.intellij.kubernetes.model.Clients
 import io.fabric8.kubernetes.api.model.apiextensions.v1beta1.CustomResourceDefinition
 import io.fabric8.kubernetes.client.KubernetesClient
 

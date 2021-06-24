@@ -38,7 +38,7 @@ import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.POD2
 import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.POD3
 import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.client
 import com.redhat.devtools.intellij.kubernetes.model.mocks.Mocks.resourceFile
-import com.redhat.devtools.intellij.kubernetes.model.util.Clients
+import com.redhat.devtools.intellij.kubernetes.model.Clients
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.PodBuilder
 import io.fabric8.kubernetes.client.KubernetesClient
