@@ -50,7 +50,7 @@ class PushNotification(private val editor: FileEditor, private val project: Proj
                 }
             } resource on server?"
         )
-        panel.createActionLabel("Push to Cluster") {
+        panel.createActionLabel("Push to server") {
             ResourceEditor.get(editor, project)?.push()
         }
         if (true == ResourceEditor.get(editor, project)?.isOutdated()) {
