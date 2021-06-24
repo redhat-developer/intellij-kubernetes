@@ -12,6 +12,7 @@ package com.redhat.devtools.intellij.kubernetes.editor
 
 import com.intellij.openapi.application.ReadAction
 import com.intellij.openapi.application.WriteAction
+import com.intellij.openapi.util.io.FileUtil
 import com.intellij.openapi.util.io.FileUtilRt
 import com.intellij.openapi.vfs.VfsUtil
 import com.intellij.openapi.vfs.VirtualFile
@@ -23,6 +24,7 @@ import io.fabric8.kubernetes.client.utils.Serialization
 import io.fabric8.openshift.api.model.Project
 import org.apache.commons.io.FileUtils
 import org.jetbrains.yaml.YAMLFileType
+import java.io.File
 import java.nio.charset.StandardCharsets
 import java.nio.file.Files
 import java.nio.file.Path
@@ -37,7 +39,7 @@ open class ResourceFile protected constructor(
     companion object Factory {
         const val EXTENSION = YAMLFileType.DEFAULT_EXTENSION
         @JvmStatic
-        val TEMP_FOLDER: Path = Paths.get(FileUtils.getTempDirectoryPath(), "intellij-kubernetes")
+        val TEMP_FOLDER: Path = Paths.get(FileUtil.resolveShortWindowsName(FileUtil.getTempDirectory()), "intellij-kubernetes")
 
         @JvmStatic
         fun create(resource: HasMetadata): ResourceFile? {
@@ -82,7 +84,7 @@ open class ResourceFile protected constructor(
          */
         fun isResourceFile(path: Path?): Boolean {
             return path?.toString()?.endsWith(EXTENSION, true) ?: false
-                    && path?.toString()?.startsWith(TEMP_FOLDER.toString()) ?: false
+                    && path?.startsWith(TEMP_FOLDER) ?: false
         }
 
         /**
