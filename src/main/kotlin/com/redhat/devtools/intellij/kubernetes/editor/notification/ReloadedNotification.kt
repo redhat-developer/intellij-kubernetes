@@ -14,20 +14,18 @@ import com.intellij.openapi.fileEditor.FileEditor
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Key
 import com.intellij.ui.EditorNotificationPanel
-import com.redhat.devtools.intellij.kubernetes.editor.ResourceEditor
 import com.redhat.devtools.intellij.kubernetes.editor.hideNotification
 import com.redhat.devtools.intellij.kubernetes.editor.showNotification
 import io.fabric8.kubernetes.api.model.HasMetadata
 import javax.swing.JComponent
 
 /**
- * An editor (panel) notification that informs about a modification of a resource on the cluster and allows to reload
- * this resource.
+ * An editor (panel) notification that informs about a deleted resource on the cluster.
  */
-class ModifiedNotification(private val editor: FileEditor, private val project: Project) {
+class ReloadedNotification(private val editor: FileEditor, private val project: Project) {
 
     companion object {
-        private val KEY_PANEL = Key<JComponent>(ModifiedNotification::javaClass.name)
+        private val KEY_PANEL = Key<JComponent>(ReloadedNotification::javaClass.name)
     }
 
     fun show(resource: HasMetadata) {
@@ -40,13 +38,7 @@ class ModifiedNotification(private val editor: FileEditor, private val project: 
 
     private fun createPanel(editor: FileEditor, resource: HasMetadata, project: Project): EditorNotificationPanel {
         val panel = EditorNotificationPanel()
-        panel.setText("${resource.kind} '${resource.metadata.name}' changed on server. Reload?")
-        panel.createActionLabel(ReloadAction.label, ReloadAction(editor, project, KEY_PANEL))
-        panel.createActionLabel(PushAction.label, PushAction(editor, project, KEY_PANEL))
-        panel.createActionLabel("Keep it") {
-            editor.hideNotification(KEY_PANEL, project)
-        }
+        panel.setText("Reloaded changed ${resource.kind} '${resource.metadata.name}' in revision ${resource.metadata.resourceVersion}.")
         return panel
     }
-
 }

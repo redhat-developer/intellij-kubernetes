@@ -111,12 +111,12 @@
 
 -> Push notification "create new"
 
-**Automatic reload of editor, no modified notification when local copy has no changes**
+**Automatic reload of editor & reloaded notification if local copy has no changes**
 1. "Edit..." resource
 1. modify resource externally (console, kubectl)
 
 -> editor is reloaded (verify by watching metadata > `resourceVersion`)
--> no modified notification appears
+-> reloaded notification appears
 
 **Modified notification appears**
 1. "Edit..." resource

@@ -22,6 +22,7 @@ import com.redhat.devtools.intellij.kubernetes.editor.notification.DeletedNotifi
 import com.redhat.devtools.intellij.kubernetes.editor.notification.ErrorNotification
 import com.redhat.devtools.intellij.kubernetes.editor.notification.PushNotification
 import com.redhat.devtools.intellij.kubernetes.editor.notification.ModifiedNotification
+import com.redhat.devtools.intellij.kubernetes.editor.notification.ReloadedNotification
 import com.redhat.devtools.intellij.kubernetes.model.ClientConfig
 import com.redhat.devtools.intellij.kubernetes.model.ClusterResource
 import com.redhat.devtools.intellij.kubernetes.model.ModelChangeObservable
@@ -57,6 +58,8 @@ open class ResourceEditor protected constructor(
     private val pushNotification: PushNotification = PushNotification(editor, project),
     // for mocking purposes
     private val modifiedNotification: ModifiedNotification = ModifiedNotification(editor, project),
+    // for mocking purposes
+    private val reloadedNotification: ReloadedNotification = ReloadedNotification(editor, project),
     // for mocking purposes
     private val deletedNotification: DeletedNotification = DeletedNotification(editor, project),
     // for mocking purposes
@@ -188,17 +191,18 @@ open class ResourceEditor protected constructor(
                     && !clusterResource.isModified(resource) ->
                 deletedNotification.show(resource)
             clusterResource.isOutdated(resource) ->
-                replaceOrNotifyReload(resource)
+                showReloadedOrModifiedNotification(resource)
             clusterResource.canPush(resource) ->
                 pushNotification.show()
         }
     }
 
-    private fun replaceOrNotifyReload(resource: HasMetadata) {
+    private fun showReloadedOrModifiedNotification(resource: HasMetadata) {
         val resourceOnCluster = clusterResource?.get(false)
         if (resourceOnCluster != null
             && !hasLocalChanges(resource)) {
             replaceContent(resourceOnCluster)
+            reloadedNotification.show(resource)
         } else {
             modifiedNotification.show(resource)
         }
@@ -214,6 +218,7 @@ open class ResourceEditor protected constructor(
         modifiedNotification.hide()
         deletedNotification.hide()
         pushNotification.hide()
+        reloadedNotification.hide()
     }
 
     /**

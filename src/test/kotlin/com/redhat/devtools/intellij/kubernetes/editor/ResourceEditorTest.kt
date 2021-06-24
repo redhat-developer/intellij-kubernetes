@@ -29,6 +29,7 @@ import com.redhat.devtools.intellij.kubernetes.editor.notification.DeletedNotifi
 import com.redhat.devtools.intellij.kubernetes.editor.notification.ErrorNotification
 import com.redhat.devtools.intellij.kubernetes.editor.notification.ModifiedNotification
 import com.redhat.devtools.intellij.kubernetes.editor.notification.PushNotification
+import com.redhat.devtools.intellij.kubernetes.editor.notification.ReloadedNotification
 import com.redhat.devtools.intellij.kubernetes.model.ClusterResource
 import com.redhat.devtools.intellij.kubernetes.model.ModelChangeObservable
 import com.redhat.devtools.intellij.kubernetes.model.Notification
@@ -113,6 +114,7 @@ class ResourceEditorTest {
         }
     private val pushNotification: PushNotification = mock()
     private val modifiedNotification: ModifiedNotification = mock()
+    private val reloadedNotification: ReloadedNotification = mock()
     private val deletedNotification: DeletedNotification = mock()
     private val errorNotification: ErrorNotification = mock()
     private val documentManager: FileDocumentManager = mock()
@@ -130,6 +132,7 @@ class ResourceEditorTest {
             createResourceFileForResource,
             pushNotification,
             modifiedNotification,
+            reloadedNotification,
             deletedNotification,
             errorNotification,
             documentManager,
@@ -250,11 +253,11 @@ class ResourceEditorTest {
             .doReturn(
                 GARGAMELv2, // 1st call to factory in #update: editor is modified -> modified notification, no automatic reload
                 AZRAEL) // 2nd call to factory in #update after replace: editor has resource from cluster -> no modified notification
-        editor.update() // 1st call: shows modified notification
+        editor.update() // 1st call: local changes, shows modified notification
         editor.replaceContent()
         // when
         editor.update() // 2nd call: no local changes (editor content was replaced), no modified notification
-        // then modification notification only shown once even though called twice
+        // then modification notification only shown once even though #update called twice
         verify(modifiedNotification, times(1)).show(any())
     }
 
@@ -271,6 +274,21 @@ class ResourceEditorTest {
         editor.update()
         // then
         verify(modifiedNotification, never()).show(any())
+    }
+
+    @Test
+    fun `#update should show reloaded notification if resource on cluster is modified BUT there are NO local changes to resource`() {
+        // given
+        doReturn(true)
+            .whenever(clusterResource).isOutdated(any())
+        doReturn(GARGAMEL)
+            .whenever(clusterResource).get(any())
+        doReturn(GARGAMEL)
+            .whenever(createResource).invoke(any(), any())
+        // when
+        editor.update()
+        // then
+        verify(reloadedNotification).show(any())
     }
 
     @Test
@@ -549,6 +567,7 @@ class ResourceEditorTest {
         resourceFileForResource: (resource: HasMetadata) -> ResourceFile?,
         pushNotification: PushNotification,
         modifiedNotification: ModifiedNotification,
+        reloadedNotification: ReloadedNotification,
         deletedNotification: DeletedNotification,
         errorNotification: ErrorNotification,
         documentManager: FileDocumentManager,
@@ -564,6 +583,7 @@ class ResourceEditorTest {
         resourceFileForResource,
         pushNotification,
         modifiedNotification,
+        reloadedNotification,
         deletedNotification,
         errorNotification,
         documentManager,
