@@ -41,15 +41,8 @@ class ModifiedNotification(private val editor: FileEditor, private val project: 
     private fun createPanel(editor: FileEditor, resource: HasMetadata, project: Project): EditorNotificationPanel {
         val panel = EditorNotificationPanel()
         panel.setText("${resource.metadata.name} changed on server. Reload?")
-        panel.createActionLabel("Reload from Cluster") {
-            ResourceEditor.get(editor, project)?.replaceContent()
-            editor.hideNotification(KEY_PANEL, project)
-        }
-
-        panel.createActionLabel("Push to Cluster") {
-            ResourceEditor.get(editor, project)?.push()
-        }
-
+        panel.createActionLabel(ReloadAction.label, ReloadAction(editor, project, KEY_PANEL))
+        panel.createActionLabel(PushAction.label, PushAction(editor, project, KEY_PANEL))
         panel.createActionLabel("Keep current") {
             editor.hideNotification(KEY_PANEL, project)
         }

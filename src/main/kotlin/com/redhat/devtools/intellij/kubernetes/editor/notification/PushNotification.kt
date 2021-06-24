@@ -11,12 +11,15 @@
 package com.redhat.devtools.intellij.kubernetes.editor.notification
 
 import com.intellij.openapi.fileEditor.FileEditor
+import com.intellij.openapi.progress.Progressive
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Key
 import com.intellij.ui.EditorNotificationPanel
+import com.redhat.devtools.intellij.kubernetes.actions.run
 import com.redhat.devtools.intellij.kubernetes.editor.ResourceEditor
 import com.redhat.devtools.intellij.kubernetes.editor.hideNotification
 import com.redhat.devtools.intellij.kubernetes.editor.showNotification
+import com.redhat.devtools.intellij.kubernetes.model.Notification
 import javax.swing.JComponent
 
 /**
@@ -51,13 +54,10 @@ class PushNotification(private val editor: FileEditor, private val project: Proj
             ResourceEditor.get(editor, project)?.push()
         }
         if (true == ResourceEditor.get(editor, project)?.isOutdated()) {
-            panel.createActionLabel("Reload from Cluster") {
-                ResourceEditor.get(editor, project)?.replaceContent()
+            panel.createActionLabel(ReloadAction.label, ReloadAction(editor, project, KEY_PANEL))
+            panel.createActionLabel ("Ignore") {
                 editor.hideNotification(KEY_PANEL, project)
             }
-        }
-        panel.createActionLabel("Ignore") {
-            editor.hideNotification(KEY_PANEL, project)
         }
 
         return panel
