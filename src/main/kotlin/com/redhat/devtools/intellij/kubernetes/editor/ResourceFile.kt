@@ -10,6 +10,7 @@
  ******************************************************************************/
 package com.redhat.devtools.intellij.kubernetes.editor
 
+import com.intellij.diff.util.DiffUtil
 import com.intellij.openapi.application.ReadAction
 import com.intellij.openapi.application.WriteAction
 import com.intellij.openapi.util.io.FileUtil
@@ -25,6 +26,7 @@ import io.fabric8.openshift.api.model.Project
 import org.apache.commons.io.FileUtils
 import org.jetbrains.yaml.YAMLFileType
 import java.io.File
+import java.io.IOException
 import java.nio.charset.StandardCharsets
 import java.nio.file.Files
 import java.nio.file.Path
@@ -223,7 +225,9 @@ open class ResourceFile protected constructor(
     }
 
     protected open fun write(content: String, path: Path) {
-        FileUtils.write(path.toFile(), content, StandardCharsets.UTF_8, false)
+        executeWriteAction {
+            FileUtils.write(path.toFile(), content, StandardCharsets.UTF_8, false)
+        }
     }
 
     protected open fun exists(path: Path): Boolean {
