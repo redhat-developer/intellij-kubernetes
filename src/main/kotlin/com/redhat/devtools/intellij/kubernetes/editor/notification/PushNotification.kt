@@ -11,15 +11,14 @@
 package com.redhat.devtools.intellij.kubernetes.editor.notification
 
 import com.intellij.openapi.fileEditor.FileEditor
-import com.intellij.openapi.progress.Progressive
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Key
 import com.intellij.ui.EditorNotificationPanel
-import com.redhat.devtools.intellij.kubernetes.actions.run
 import com.redhat.devtools.intellij.kubernetes.editor.ResourceEditor
+import com.redhat.devtools.intellij.kubernetes.editor.action.PushAction
+import com.redhat.devtools.intellij.kubernetes.editor.action.ReloadAction
 import com.redhat.devtools.intellij.kubernetes.editor.hideNotification
 import com.redhat.devtools.intellij.kubernetes.editor.showNotification
-import com.redhat.devtools.intellij.kubernetes.model.Notification
 import javax.swing.JComponent
 
 /**
@@ -28,7 +27,7 @@ import javax.swing.JComponent
 class PushNotification(private val editor: FileEditor, private val project: Project) {
 
     companion object {
-        private val KEY_PANEL = Key<JComponent>(PushNotification::javaClass.name)
+        val KEY_PANEL = Key<JComponent>(PushNotification::javaClass.name)
     }
 
     fun show() {
@@ -48,13 +47,11 @@ class PushNotification(private val editor: FileEditor, private val project: Proj
                 } else {
                     "update existing"
                 }
-            } resource on server?"
+            } resource on cluster?"
         )
-        panel.createActionLabel("Push to server") {
-            ResourceEditor.get(editor, project)?.push()
-        }
+        panel.createActionLabel("Push to Cluster", PushAction.ID)
         if (true == ResourceEditor.get(editor, project)?.isOutdated()) {
-            panel.createActionLabel(ReloadAction.label, ReloadAction(editor, project, KEY_PANEL))
+            panel.createActionLabel("Reload from Cluster", ReloadAction.ID)
             panel.createActionLabel ("Ignore") {
                 editor.hideNotification(KEY_PANEL, project)
             }

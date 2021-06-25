@@ -8,37 +8,32 @@
  * Contributors:
  * Red Hat, Inc. - initial API and implementation
  ******************************************************************************/
-package com.redhat.devtools.intellij.kubernetes.editor.notification
+package com.redhat.devtools.intellij.kubernetes.editor.action
 
-import com.intellij.openapi.fileEditor.FileEditor
+import com.intellij.openapi.actionSystem.AnAction
+import com.intellij.openapi.actionSystem.AnActionEvent
+import com.intellij.openapi.actionSystem.CommonDataKeys
 import com.intellij.openapi.progress.Progressive
-import com.intellij.openapi.project.Project
-import com.intellij.openapi.util.Key
-import com.redhat.devtools.intellij.kubernetes.actions.run
 import com.redhat.devtools.intellij.kubernetes.editor.ResourceEditor
-import com.redhat.devtools.intellij.kubernetes.editor.hideNotification
+import com.redhat.devtools.intellij.kubernetes.editor.util.getFileEditor
 import com.redhat.devtools.intellij.kubernetes.model.Notification
-import javax.swing.JComponent
 
-class PushAction(
-    private val editor: FileEditor,
-    private val project: Project,
-    private val keyPanel: Key<JComponent>
-) : Runnable {
+class ReloadAction: AnAction() {
 
     companion object {
-        const val label: String = "Push to Cluster"
+        const val ID = "com.redhat.devtools.intellij.kubernetes.editor.action.ReloadAction"
     }
 
-    override fun run() {
-        run("Pushing...", true,
+    override fun actionPerformed(e: AnActionEvent) {
+        val project = e.dataContext.getData(CommonDataKeys.PROJECT) ?: return
+        val editor = getFileEditor(project)
+        com.redhat.devtools.intellij.kubernetes.actions.run("Reloading...", true,
             Progressive {
                 try {
-                    ResourceEditor.get(editor, project)?.push()
-                    editor.hideNotification(keyPanel, project)
+                    ResourceEditor.get(editor, project)?.replaceContent()
                 } catch (e: Exception) {
                     ResourceEditor.get(editor, project)
-                    Notification().error("Error Pushing", "Could not push resource to cluster: ${e.message}")
+                    Notification().error("Error Loading", "Could not load resource from cluster: ${e.message}")
                 }
             })
     }

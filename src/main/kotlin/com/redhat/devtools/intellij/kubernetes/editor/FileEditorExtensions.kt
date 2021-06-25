@@ -26,14 +26,14 @@ fun FileEditor.showNotification(key: Key<JComponent>, panelFactory: () -> Editor
     val panel = panelFactory.invoke()
     UIHelper.executeInUI {
         FileEditorManager.getInstance(project).addTopComponent(this, panel)
+        this.putUserData(key, panel)
     }
-    this.putUserData(key, panel)
 }
 
 fun FileEditor.hideNotification(key: Key<JComponent>, project: Project) {
     val panel = this.getUserData(key) ?: return
     UIHelper.executeInUI {
         FileEditorManager.getInstance(project).removeTopComponent(this, panel)
+        this.putUserData(key, null)
     }
-    this.putUserData(key, null)
 }

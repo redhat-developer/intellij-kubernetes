@@ -14,6 +14,7 @@ import com.intellij.openapi.application.ReadAction
 import com.intellij.openapi.editor.Document
 import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.fileEditor.FileEditor
+import com.redhat.devtools.intellij.kubernetes.editor.util.getDocument
 import com.redhat.devtools.intellij.kubernetes.model.ResourceException
 import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.custom.CustomResourceDefinitionMapping
 import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.custom.GenericCustomResource
@@ -89,13 +90,6 @@ object EditorResourceFactory {
                 // unknown type
                 createResource<GenericCustomResource>(jsonYaml)
             }
-        }
-    }
-
-    private fun getDocument(editor: FileEditor): Document? {
-        val file = editor.file ?: return null
-        return ReadAction.compute<Document, Exception> {
-            FileDocumentManager.getInstance().getDocument(file)
         }
     }
 }

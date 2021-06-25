@@ -10,10 +10,14 @@
  ******************************************************************************/
 package com.redhat.devtools.intellij.kubernetes.editor.notification
 
+import com.intellij.icons.AllIcons
+import com.intellij.openapi.actionSystem.AnAction
+import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.fileEditor.FileEditor
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Key
 import com.intellij.ui.EditorNotificationPanel
+import com.redhat.devtools.intellij.kubernetes.editor.action.PushAction
 import com.redhat.devtools.intellij.kubernetes.editor.hideNotification
 import com.redhat.devtools.intellij.kubernetes.editor.showNotification
 import io.fabric8.kubernetes.api.model.HasMetadata
@@ -39,7 +43,7 @@ class DeletedNotification(private val editor: FileEditor, private val project: P
     private fun createPanel(editor: FileEditor, resource: HasMetadata, project: Project): EditorNotificationPanel {
         val panel = EditorNotificationPanel()
         panel.setText("${resource.kind} ${resource.metadata.name} was deleted on cluster. Keep it?")
-        panel.createActionLabel(PushAction.label, PushAction(editor, project, KEY_PANEL))
+        panel.createActionLabel("Push to Cluster", PushAction.ID)
         panel.createActionLabel("Keep it") {
             editor.hideNotification(KEY_PANEL, project)
         }

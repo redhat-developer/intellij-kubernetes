@@ -17,6 +17,8 @@ import com.intellij.openapi.util.io.FileUtil
 import com.intellij.openapi.util.io.FileUtilRt
 import com.intellij.openapi.vfs.VfsUtil
 import com.intellij.openapi.vfs.VirtualFile
+import com.intellij.util.ui.EdtInvocationManager
+import com.intellij.util.ui.UIUtil
 import com.redhat.devtools.intellij.common.editor.AllowNonProjectEditing
 import com.redhat.devtools.intellij.common.utils.UIHelper
 import io.fabric8.kubernetes.api.model.HasMetadata
@@ -135,11 +137,19 @@ open class ResourceFile protected constructor(
     fun write(resource: HasMetadata): VirtualFile? {
         val content = Serialization.asYaml(resource)
         write(content, path)
-        return executeReadAction {
+        /**
+         * When invoking synchronous refresh from a thread other than the event dispatch thread,
+         * the current thread must NOT be in a read action, otherwise a deadlock may occur
+         */
+        if (EdtInvocationManager.getInstance().isEventDispatchThread) {
+            executeReadAction {
+                virtualFile?.refresh(false, false)
+            }
+        } else {
             virtualFile?.refresh(false, false)
-            enableNonProjectFileEditing()
-            virtualFile
         }
+        enableNonProjectFileEditing()
+        return virtualFile
     }
 
     /**
@@ -239,15 +249,13 @@ open class ResourceFile protected constructor(
     }
 
     protected open fun <R> executeReadAction(callable: () -> R): R {
-        return UIHelper.executeInUI(Supplier {
-            ReadAction.compute<R, java.lang.Exception>(callable)
-        })
+        return ReadAction.compute<R, java.lang.Exception>(callable)
     }
 
     protected open fun executeWriteAction(runnable: () -> Unit) {
-        UIHelper.executeInUI {
+        UIHelper.executeInUI(Supplier {
             WriteAction.compute<Unit, java.lang.Exception>(runnable)
-        }
+        })
     }
 
     override fun equals(other: Any?): Boolean {

@@ -10,7 +10,7 @@
  ******************************************************************************/
 package com.redhat.devtools.intellij.kubernetes.editor
 
-import com.intellij.openapi.fileEditor.FileDocumentManager
+import com.intellij.openapi.editor.Document
 import com.intellij.openapi.fileEditor.FileEditor
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.VirtualFile
@@ -27,7 +27,7 @@ import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.whenever
 import com.redhat.devtools.intellij.kubernetes.editor.notification.DeletedNotification
 import com.redhat.devtools.intellij.kubernetes.editor.notification.ErrorNotification
-import com.redhat.devtools.intellij.kubernetes.editor.notification.ModifiedNotification
+import com.redhat.devtools.intellij.kubernetes.editor.notification.ReloadNotification
 import com.redhat.devtools.intellij.kubernetes.editor.notification.PushNotification
 import com.redhat.devtools.intellij.kubernetes.editor.notification.ReloadedNotification
 import com.redhat.devtools.intellij.kubernetes.model.ClusterResource
@@ -44,6 +44,7 @@ import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.PodBuilder
 import io.fabric8.kubernetes.client.KubernetesClient
 import io.fabric8.kubernetes.client.KubernetesClientException
+import io.fabric8.kubernetes.client.utils.Serialization
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test
 
@@ -60,9 +61,19 @@ class ResourceEditorTest {
         .endMetadata()
         .withApiVersion("v1")
         .build()
+    private val GARGAMEL_WITH_LABEL = PodBuilder(GARGAMEL)
+        .editMetadata()
+        .withLabels(mapOf(Pair("hat", "none")))
+        .endMetadata()
+        .build()
     private val GARGAMELv2 = PodBuilder(GARGAMEL)
         .editMetadata()
         .withResourceVersion("2")
+        .endMetadata()
+        .build()
+    private val GARGAMELv2_WITH_LABEL = PodBuilder(GARGAMELv2)
+        .editMetadata()
+        .withLabels(mapOf(Pair("hat", "none")))
         .endMetadata()
         .build()
     // need real resources, not mocks - #equals used to track changes
@@ -113,11 +124,12 @@ class ResourceEditorTest {
                 .whenever(this).invoke(any(), any())
         }
     private val pushNotification: PushNotification = mock()
-    private val modifiedNotification: ModifiedNotification = mock()
+    private val reloadNotification: ReloadNotification = mock()
     private val reloadedNotification: ReloadedNotification = mock()
     private val deletedNotification: DeletedNotification = mock()
     private val errorNotification: ErrorNotification = mock()
-    private val documentManager: FileDocumentManager = mock()
+    private val document: Document = mock()
+    private val documentProvider: (FileEditor) -> Document? = { document }
     private val ideNotification: Notification = mock()
 
     private val editor = spy(
@@ -131,11 +143,11 @@ class ResourceEditorTest {
             createResourceFileForVirtual,
             createResourceFileForResource,
             pushNotification,
-            modifiedNotification,
+            reloadNotification,
             reloadedNotification,
             deletedNotification,
             errorNotification,
-            documentManager,
+            documentProvider,
             ideNotification
         )
     )
@@ -147,7 +159,7 @@ class ResourceEditorTest {
         editor.update()
         // then
         verify(pushNotification).hide()
-        verify(modifiedNotification).hide()
+        verify(reloadNotification).hide()
         verify(deletedNotification).hide()
         verify(errorNotification).hide()
     }
@@ -232,12 +244,12 @@ class ResourceEditorTest {
             .whenever(clusterResource).isOutdated(any())
         doReturn(GARGAMEL)
             .whenever(clusterResource).get(any())
-        doReturn(AZRAEL) // editor resource is modified
+        doReturn(GARGAMEL_WITH_LABEL) // editor resource is modified
             .whenever(createResource).invoke(any(), any())
         // when
         editor.update()
         // then
-        verify(modifiedNotification).show(any())
+        verify(reloadNotification).show(any())
     }
 
     @Test
@@ -258,7 +270,7 @@ class ResourceEditorTest {
         // when
         editor.update() // 2nd call: no local changes (editor content was replaced), no modified notification
         // then modification notification only shown once even though #update called twice
-        verify(modifiedNotification, times(1)).show(any())
+        verify(reloadNotification, times(1)).show(any())
     }
 
     @Test
@@ -273,7 +285,7 @@ class ResourceEditorTest {
         // when
         editor.update()
         // then
-        verify(modifiedNotification, never()).show(any())
+        verify(reloadNotification, never()).show(any())
     }
 
     @Test
@@ -292,7 +304,7 @@ class ResourceEditorTest {
     }
 
     @Test
-    fun `#update should write resource to file if resource on cluster is modified and there are NO local changes to resource`() {
+    fun `#update should set text of document if resource on cluster is modified and there are NO local changes to resource`() {
         // given
         doReturn(true)
             .whenever(clusterResource).isOutdated(any())
@@ -303,24 +315,7 @@ class ResourceEditorTest {
         // when
         editor.update()
         // then
-        verify(resourceFile).write(GARGAMEL)
-    }
-
-    @Test
-    fun `#update should reload file if resource on cluster is modified and there are NO local changes to resource`() {
-        // given
-        doReturn(true)
-            .whenever(clusterResource).isOutdated(any())
-        doReturn(GARGAMEL)
-            .whenever(clusterResource).get(any())
-        doReturn(GARGAMEL)
-            .whenever(createResource).invoke(any(), any())
-        doReturn(virtualFile)
-            .whenever(resourceFile).write(any())
-        // when
-        editor.update()
-        // then
-        verify(documentManager).reloadFiles(any())
+        verify(document).setText(Serialization.asYaml(GARGAMEL))
     }
 
     @Test
@@ -350,7 +345,7 @@ class ResourceEditorTest {
     }
 
     @Test
-    fun `#push should write file that cluster returned after pushing`() {
+    fun `#push should set text of document`() {
         // given
         doReturn(GARGAMEL)
             .whenever(createResource).invoke(any(), any())
@@ -359,20 +354,7 @@ class ResourceEditorTest {
         // when
         editor.push()
         // then
-        verify(resourceFile).write(GARGAMELv2)
-    }
-
-    @Test
-    fun `#push should reload file`() {
-        // given
-        doReturn(GARGAMEL)
-            .whenever(createResource).invoke(any(), any())
-        doReturn(GARGAMELv2)
-            .whenever(clusterResource).push(any())
-        // when
-        editor.push()
-        // then
-        verify(documentManager).reloadFiles(any())
+        verify(document).setText(Serialization.asYaml(GARGAMELv2))
     }
 
     @Test
@@ -462,27 +444,14 @@ class ResourceEditorTest {
     }
 
     @Test
-    fun `#replaceContent should write cluster resource to the editor file`() {
+    fun `#replaceContent should set text of document`() {
         // given
         doReturn(GARGAMELv2)
             .whenever(clusterResource).get(any())
         // when
         editor.replaceContent()
         // then
-        verify(resourceFile).write(GARGAMELv2)
-    }
-
-    @Test
-    fun `#replaceContent should reload the editor file`() {
-        // given
-        doReturn(GARGAMELv2)
-            .whenever(clusterResource).get(any())
-        doReturn(virtualFile)
-            .whenever(resourceFile).write(any())
-        // when
-        editor.replaceContent()
-        // then
-        verify(documentManager).reloadFiles(any())
+        verify(document).setText(Serialization.asYaml(GARGAMELv2))
     }
 
     @Test
@@ -534,7 +503,7 @@ class ResourceEditorTest {
         // when
         listener!!.modified(GARGAMELv2)
         // then
-        verify(modifiedNotification).show(GARGAMELv2)
+        verify(reloadNotification).show(GARGAMELv2)
     }
 
     /**
@@ -566,11 +535,11 @@ class ResourceEditorTest {
         resourceFileForVirtual: (file: VirtualFile?) -> ResourceFile?,
         resourceFileForResource: (resource: HasMetadata) -> ResourceFile?,
         pushNotification: PushNotification,
-        modifiedNotification: ModifiedNotification,
+        reloadNotification: ReloadNotification,
         reloadedNotification: ReloadedNotification,
         deletedNotification: DeletedNotification,
         errorNotification: ErrorNotification,
-        documentManager: FileDocumentManager,
+        documentProvider: (FileEditor) -> Document?,
         ideNotification: Notification
     ) : ResourceEditor(
         localCopy,
@@ -582,14 +551,14 @@ class ResourceEditorTest {
         resourceFileForVirtual,
         resourceFileForResource,
         pushNotification,
-        modifiedNotification,
+        reloadNotification,
         reloadedNotification,
         deletedNotification,
         errorNotification,
-        documentManager,
+        documentProvider,
         ideNotification
     ) {
-        override fun executeInUI(runnable: () -> Unit) {
+        override fun executeWriteAction(runnable: () -> Unit) {
             // dont execute in application thread pool
             runnable.invoke()
         }

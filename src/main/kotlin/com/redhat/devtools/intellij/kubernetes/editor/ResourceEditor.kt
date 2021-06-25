@@ -10,35 +10,46 @@
  ******************************************************************************/
 package com.redhat.devtools.intellij.kubernetes.editor
 
+import com.intellij.openapi.actionSystem.ActionGroup
+import com.intellij.openapi.actionSystem.ActionManager
+import com.intellij.openapi.actionSystem.ActionPlaces
+import com.intellij.openapi.actionSystem.ActionToolbar
+import com.intellij.openapi.actionSystem.impl.ActionToolbarImpl
+import com.intellij.openapi.application.WriteAction
 import com.intellij.openapi.diagnostic.logger
-import com.intellij.openapi.fileEditor.FileDocumentManager
+import com.intellij.openapi.editor.Document
 import com.intellij.openapi.fileEditor.FileEditor
 import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Key
 import com.intellij.openapi.vfs.VirtualFile
+import com.intellij.ui.AppUIUtil
+import com.intellij.util.ui.JBEmptyBorder
 import com.redhat.devtools.intellij.common.utils.UIHelper
 import com.redhat.devtools.intellij.kubernetes.editor.notification.DeletedNotification
 import com.redhat.devtools.intellij.kubernetes.editor.notification.ErrorNotification
 import com.redhat.devtools.intellij.kubernetes.editor.notification.PushNotification
-import com.redhat.devtools.intellij.kubernetes.editor.notification.ModifiedNotification
+import com.redhat.devtools.intellij.kubernetes.editor.notification.ReloadNotification
 import com.redhat.devtools.intellij.kubernetes.editor.notification.ReloadedNotification
+import com.redhat.devtools.intellij.kubernetes.editor.util.getDocument
 import com.redhat.devtools.intellij.kubernetes.model.ClientConfig
+import com.redhat.devtools.intellij.kubernetes.model.Clients
 import com.redhat.devtools.intellij.kubernetes.model.ClusterResource
 import com.redhat.devtools.intellij.kubernetes.model.ModelChangeObservable
 import com.redhat.devtools.intellij.kubernetes.model.Notification
 import com.redhat.devtools.intellij.kubernetes.model.ResourceException
-import com.redhat.devtools.intellij.kubernetes.model.Clients
 import com.redhat.devtools.intellij.kubernetes.model.createClients
 import com.redhat.devtools.intellij.kubernetes.model.util.trimWithEllipsis
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.client.KubernetesClient
+import io.fabric8.kubernetes.client.utils.Serialization
+import java.util.concurrent.atomic.AtomicReference
 
 /**
  * An adapter for [FileEditor] instances that allows to push or load the editor content to/from a remote cluster.
  */
 open class ResourceEditor protected constructor(
-    private var localCopy: HasMetadata?,
+    localCopy: HasMetadata?,
     private val editor: FileEditor,
     private val project: Project,
     private val clients: Clients<out KubernetesClient>,
@@ -57,7 +68,7 @@ open class ResourceEditor protected constructor(
     // for mocking purposes
     private val pushNotification: PushNotification = PushNotification(editor, project),
     // for mocking purposes
-    private val modifiedNotification: ModifiedNotification = ModifiedNotification(editor, project),
+    private val reloadNotification: ReloadNotification = ReloadNotification(editor, project),
     // for mocking purposes
     private val reloadedNotification: ReloadedNotification = ReloadedNotification(editor, project),
     // for mocking purposes
@@ -65,12 +76,13 @@ open class ResourceEditor protected constructor(
     // for mocking purposes
     private val errorNotification: ErrorNotification = ErrorNotification(editor, project),
     // for mocking purposes
-    private val documentManager: FileDocumentManager = FileDocumentManager.getInstance(),
+    private val documentProvider: (FileEditor) -> Document? = ::getDocument,
     // for mocking purposes
     private val ideNotification: Notification = Notification()
 ) {
     companion object {
         private val KEY_RESOURCE_EDITOR = Key<ResourceEditor>(ResourceEditor::class.java.name)
+        private val KEY_TOOLBAR = Key<ActionToolbar>(ActionToolbar::class.java.name)
 
         /**
          * Opens a new editor for the given [HasMetadata] and [Project].
@@ -124,7 +136,24 @@ open class ResourceEditor protected constructor(
         ): ResourceEditor {
             val resourceEditor = ResourceEditor(resource, editor, project, clients)
             editor.putUserData(KEY_RESOURCE_EDITOR, resourceEditor)
+            createToolbar(editor, project)
             return resourceEditor
+        }
+
+        private fun createToolbar(editor: FileEditor, project: Project) {
+            var editorToolbar: ActionToolbar? = editor.getUserData(KEY_TOOLBAR)
+            if (editorToolbar != null) {
+                return
+            }
+            val actionManager = ActionManager.getInstance()
+            val group = actionManager.getAction("Kubernetes.Editor.Toolbar") as ActionGroup
+            editorToolbar = actionManager.createActionToolbar(ActionPlaces.EDITOR_TOOLBAR, group, true) as ActionToolbarImpl
+            editorToolbar.isOpaque = false
+            editorToolbar.border = JBEmptyBorder(0, 2, 0, 2)
+            editor.putUserData(KEY_TOOLBAR, editorToolbar)
+            AppUIUtil.invokeOnEdt {
+                FileEditorManager.getInstance(project).addTopComponent(editor, editorToolbar)
+            }
         }
 
         private fun isResourceEditor(editor: FileEditor?): Boolean {
@@ -132,17 +161,19 @@ open class ResourceEditor protected constructor(
         }
     }
 
-    private var editorResource: HasMetadata? = localCopy
+    private var localCopy: AtomicReference<HasMetadata?> = AtomicReference(localCopy)
+    private var editorResource: AtomicReference<HasMetadata?> = AtomicReference(localCopy)
     private var oldClusterResource: ClusterResource? = null
     private var _clusterResource: ClusterResource? = null
     private val clusterResource: ClusterResource?
         get() {
             synchronized(this) {
                 if (_clusterResource == null
-                    || false == _clusterResource?.isSameResource(editorResource)) {
+                    // create new cluster resource if editor has different resource (name, kind, etc. changed)
+                    || false == _clusterResource?.isSameResource(editorResource.get())) {
                     oldClusterResource = _clusterResource
                     oldClusterResource?.close()
-                    _clusterResource = createClusterResource(editorResource, clients)
+                    _clusterResource = createClusterResource(editorResource.get(), clients)
                 }
                 return _clusterResource
             }
@@ -155,8 +186,9 @@ open class ResourceEditor protected constructor(
      */
     fun update() {
         try {
-            this.editorResource = createResource.invoke(editor, clients) ?: return
-            update(editorResource, clusterResource, oldClusterResource)
+            val resource = createResource.invoke(editor, clients) ?: return
+            this.editorResource.set(resource)
+            update(editorResource.get(), clusterResource, oldClusterResource)
         } catch (e: ResourceException) {
             showErrorNotification(e)
         }
@@ -177,7 +209,7 @@ open class ResourceEditor protected constructor(
     private fun renameEditor(resource: HasMetadata, editor: FileEditor) {
         val file = createFileForVirtual.invoke(editor.file) ?: return
         val newFile = createFileForResource.invoke(resource)
-        if (!file.hasEqualBasePath(newFile)) {
+            if (!file.hasEqualBasePath(newFile)) {
             file.rename(resource)
         }
     }
@@ -197,15 +229,33 @@ open class ResourceEditor protected constructor(
         }
     }
 
+    private fun hideNotifications() {
+        errorNotification.hide()
+        reloadNotification.hide()
+        deletedNotification.hide()
+        pushNotification.hide()
+        reloadedNotification.hide()
+    }
+
     private fun showReloadedOrModifiedNotification(resource: HasMetadata) {
         val resourceOnCluster = clusterResource?.get(false)
         if (resourceOnCluster != null
             && !hasLocalChanges(resource)) {
-            replaceContent(resourceOnCluster)
+            replaceDocument(resourceOnCluster)
             reloadedNotification.show(resource)
         } else {
-            modifiedNotification.show(resource)
+            reloadNotification.show(resource)
         }
+    }
+
+    /**
+     * Returns `true` if the given resource is dirty aka has modifications that were not pushed.
+     *
+     * @param resource to be checked for modification
+     * @return true if the resource is dirty
+     */
+    private fun hasLocalChanges(resource: HasMetadata): Boolean {
+        return resource != this.localCopy.get()
     }
 
     private fun showErrorNotification(e: Throwable) {
@@ -213,37 +263,29 @@ open class ResourceEditor protected constructor(
         errorNotification.show(e.message ?: "", e.cause?.message)
     }
 
-    private fun hideNotifications() {
-        errorNotification.hide()
-        modifiedNotification.hide()
-        deletedNotification.hide()
-        pushNotification.hide()
-        reloadedNotification.hide()
-    }
-
     /**
      * Replaces the content of this editor with the resource that exists on the cluster.
      * Does nothing if it doesn't exist.
      */
     fun replaceContent() {
-        val resource = clusterResource?.get(false) ?: return
-        replaceContent(resource)
+        hideNotifications()
+        var resource = clusterResource?.get(true) ?: return
+        this.editorResource.set(resource)
+        replaceDocument(resource)
+        this.localCopy.set(resource)
     }
 
-    private fun replaceContent(resource: HasMetadata) {
-        executeInUI {
-            if (editor.file != null) {
-                val file = createFileForVirtual.invoke(editor.file)?.write(resource)
-                if (file != null) {
-                    documentManager.reloadFiles(file)
-                    this.localCopy = resource
-                }
+    private fun replaceDocument(resource: HasMetadata) {
+        if (editor.file == null) {
+            return
+        }
+        val document = documentProvider.invoke(editor)
+        if (document != null) {
+            executeWriteAction {
+                document.setText(Serialization.asYaml(resource))
             }
         }
-    }
 
-    protected open fun executeInUI(runnable: () -> Unit) {
-        UIHelper.executeInUI(runnable)
     }
 
     /**
@@ -255,18 +297,20 @@ open class ResourceEditor protected constructor(
     }
 
     fun isOutdated(): Boolean {
-        this.editorResource = createResource.invoke(editor, clients)
-        return clusterResource?.isOutdated(editorResource) ?: false
+        val resource = createResource.invoke(editor, clients) ?: return false
+        this.editorResource.set(resource)
+        return clusterResource?.isOutdated(resource) ?: false
     }
 
     /**
      * Pushes the editor content to the cluster.
      */
     fun push() {
+        hideNotifications()
         try {
-            this.editorResource = createResource.invoke(editor, clients) ?: return
-            this.localCopy = editorResource
-            push(localCopy, clusterResource)
+            val resource = createResource.invoke(editor, clients) ?: return
+            this.editorResource.set(resource)
+            push(resource, clusterResource)
         } catch (e: Exception) {
             showErrorNotification(e)
         }
@@ -280,7 +324,7 @@ open class ResourceEditor protected constructor(
             }
             hideNotifications()
             val updatedResource = clusterResource.push(resource) ?: return
-            replaceContent(updatedResource)
+            replaceDocument(updatedResource)
         } catch (e: ResourceException) {
             logger<ResourceEditor>().warn(e)
             ideNotification.error(
@@ -294,16 +338,6 @@ open class ResourceEditor protected constructor(
                 trimWithEllipsis(e.message, 300) ?: ""
             )
         }
-    }
-
-    /**
-     * Returns `true` if the given resource is dirty aka has modifications that were not pushed.
-     *
-     * @param resource to be checked for modification
-     * @return true if the resource is dirty
-     */
-    private fun hasLocalChanges(resource: HasMetadata): Boolean {
-        return resource != this.localCopy
     }
 
     fun startWatch(): ResourceEditor {
@@ -356,5 +390,12 @@ open class ResourceEditor protected constructor(
         }
         createFileForVirtual(file)?.enableNonProjectFileEditing()
     }
+
+    protected open fun executeWriteAction(runnable: () -> Unit) {
+        UIHelper.executeInUI {
+            WriteAction.compute<Unit, Exception>(runnable)
+        }
+    }
+
 }
 

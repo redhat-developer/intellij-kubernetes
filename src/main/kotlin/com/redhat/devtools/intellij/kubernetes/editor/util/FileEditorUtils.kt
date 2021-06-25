@@ -10,6 +10,7 @@
  ******************************************************************************/
 package com.redhat.devtools.intellij.kubernetes.editor.util
 
+import com.intellij.openapi.application.ReadAction
 import com.intellij.openapi.editor.Document
 import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.fileEditor.FileEditor
@@ -35,6 +36,22 @@ fun getResourceFile(document: Document): VirtualFile? {
         return null
     }
     return file
+}
+
+fun getFileEditor(project: Project): FileEditor? {
+    val editor = FileEditorManager.getInstance(project).selectedEditor ?: return null
+    return if (!ResourceFile.isResourceFile(editor.file)) {
+        return null
+    } else {
+        editor
+    }
+}
+
+fun getDocument(editor: FileEditor): Document? {
+    val file = editor.file ?: return null
+    return ReadAction.compute<Document, Exception> {
+        FileDocumentManager.getInstance().getDocument(file)
+    }
 }
 
 class ProjectAndEditor(val project: Project, val editor: FileEditor)

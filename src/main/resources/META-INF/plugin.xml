@@ -81,6 +81,18 @@
                     text="Refresh"
                     icon="AllIcons.Actions.Refresh"/>
         </group>
+
+        <group id="Kubernetes.Editor.Toolbar" class="com.intellij.openapi.actionSystem.DefaultActionGroup">
+            <action class="com.redhat.devtools.intellij.kubernetes.editor.action.PushAction"
+                    id="com.redhat.devtools.intellij.kubernetes.editor.action.PushAction"
+                    text="Push editor content to the cluster"
+
+                    icon="/icons/upload.svg" />
+            <action class="com.redhat.devtools.intellij.kubernetes.editor.action.ReloadAction"
+                    id="com.redhat.devtools.intellij.kubernetes.editor.action.ReloadAction"
+                    text="Reload the editor content from the cluster"
+                    icon="/icons/download.svg" />
+        </group>
     </actions>
 
 </idea-plugin>
