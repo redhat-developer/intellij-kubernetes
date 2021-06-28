@@ -31,7 +31,7 @@ class PushAction(
     }
 
     override fun run() {
-        run("Reloading...", true,
+        run("Pushing...", true,
             Progressive {
                 try {
                     ResourceEditor.get(editor, project)?.push()
