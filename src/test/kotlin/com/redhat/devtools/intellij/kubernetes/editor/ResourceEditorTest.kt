@@ -47,6 +47,7 @@ import io.fabric8.kubernetes.client.KubernetesClientException
 import io.fabric8.kubernetes.client.utils.Serialization
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test
+import java.util.concurrent.atomic.AtomicReference
 
 class ResourceEditorTest {
 
@@ -61,19 +62,16 @@ class ResourceEditorTest {
         .endMetadata()
         .withApiVersion("v1")
         .build()
+    // need real resources, not mocks - #equals used to track changes
     private val GARGAMEL_WITH_LABEL = PodBuilder(GARGAMEL)
         .editMetadata()
         .withLabels(mapOf(Pair("hat", "none")))
         .endMetadata()
         .build()
+    // need real resources, not mocks - #equals used to track changes
     private val GARGAMELv2 = PodBuilder(GARGAMEL)
         .editMetadata()
         .withResourceVersion("2")
-        .endMetadata()
-        .build()
-    private val GARGAMELv2_WITH_LABEL = PodBuilder(GARGAMELv2)
-        .editMetadata()
-        .withLabels(mapOf(Pair("hat", "none")))
         .endMetadata()
         .build()
     // need real resources, not mocks - #equals used to track changes
@@ -489,21 +487,40 @@ class ResourceEditorTest {
     }
 
     @Test
-    fun `IResourceChangeListener#modified should show modified notification`() {
+    fun `IResourceChangeListener#modified should show modified notification if editor is modified`() {
         // given
-        doReturn(true)
-            .whenever(clusterResource).isOutdated(any())
-        doReturn(GARGAMEL)
+        doReturn(GARGAMEL) // cluster has GARGAMEL
             .whenever(clusterResource).get(any())
-        doReturn(GARGAMELv2) // editor resource is modified
-            .whenever(createResource).invoke(any(), any())
+        doReturn(false) // dont show deleted notification
+            .whenever(clusterResource).isDeleted()
+        doReturn(true) // local copy is outdated
+            .whenever(clusterResource).isOutdated(any())
+        editor.editorResource.set(GARGAMEL_WITH_LABEL) // editor document is modified, is GARGAMEL_WITH_LABEL
         editor.startWatch() // create cluster
         val listener = captureClusterResourceListener(clusterResource) // listener added to cluster
         assertThat(listener).isNotNull()
         // when
-        listener!!.modified(GARGAMELv2)
+        listener!!.modified(GARGAMEL)
         // then
-        verify(pullNotification).show(GARGAMELv2)
+        verify(pullNotification).show(GARGAMEL_WITH_LABEL)
+    }
+
+    @Test
+    fun `IResourceChangeListener#modified should NOT show modified notification but replace document if editor is NOT modified`() {
+        // given
+        doReturn(GARGAMELv2)
+            .whenever(clusterResource).get(any())
+        doReturn(false) // dont show deleted notification
+            .whenever(clusterResource).isDeleted()
+        doReturn(true) // local copy is outdated
+            .whenever(clusterResource).isOutdated(any())
+        editor.startWatch() // create cluster
+        val listener = captureClusterResourceListener(clusterResource) // listener added to cluster
+        assertThat(listener).isNotNull()
+        // when
+        listener!!.modified(GARGAMEL)
+        // then
+        verify(document).setText(Serialization.asYaml(GARGAMELv2))
     }
 
     /**
@@ -558,6 +575,9 @@ class ResourceEditorTest {
         documentProvider,
         ideNotification
     ) {
+        public override val editorResource: AtomicReference<HasMetadata?>
+            get() = super.editorResource
+
         override fun executeWriteAction(runnable: () -> Unit) {
             // dont execute in application thread pool
             runnable.invoke()

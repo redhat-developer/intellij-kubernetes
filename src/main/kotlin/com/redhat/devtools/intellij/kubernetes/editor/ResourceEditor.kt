@@ -162,8 +162,8 @@ open class ResourceEditor protected constructor(
         }
     }
 
-    private var localCopy: AtomicReference<HasMetadata?> = AtomicReference(localCopy)
-    private var editorResource: AtomicReference<HasMetadata?> = AtomicReference(localCopy)
+    private val localCopy: AtomicReference<HasMetadata?> = AtomicReference(localCopy)
+    protected open val editorResource: AtomicReference<HasMetadata?> = AtomicReference(localCopy)
     private var oldClusterResource: ClusterResource? = null
     private var _clusterResource: ClusterResource? = null
     private val clusterResource: ClusterResource?
@@ -225,7 +225,7 @@ open class ResourceEditor protected constructor(
                     && !clusterResource.isModified(resource) ->
                 deletedNotification.show(resource)
             clusterResource.isOutdated(resource) ->
-                showReloadedOrModifiedNotification(resource)
+                showPulledOrPullNotification(resource)
             clusterResource.canPush(resource) ->
                 pushNotification.show()
         }
@@ -239,7 +239,7 @@ open class ResourceEditor protected constructor(
         pulledNotification.hide()
     }
 
-    private fun showReloadedOrModifiedNotification(resource: HasMetadata) {
+    private fun showPulledOrPullNotification(resource: HasMetadata) {
         val resourceOnCluster = clusterResource?.get(false)
         if (resourceOnCluster != null
             && !hasLocalChanges(resource)) {
@@ -271,22 +271,19 @@ open class ResourceEditor protected constructor(
      */
     fun replaceContent() {
         hideNotifications()
-        var resource = clusterResource?.get() ?: return
+        val resource = clusterResource?.get() ?: return
         replaceDocument(resource)
     }
 
     private fun replaceDocument(resource: HasMetadata) {
-        if (editor.file == null) {
-            return
-        }
-        // watch modification notification can get in before document was replaced
-        this.editorResource.set(resource)
+        // set editor resource now, watch modification notification can get in before document was replaced
+        editorResource.set(resource)
         val document = documentProvider.invoke(editor)
         if (document != null) {
             executeWriteAction {
                 document.setText(Serialization.asYaml(resource))
-                this.localCopy.set(resource)
-                this.editorResource.set(resource)
+                localCopy.set(resource)
+                editorResource.set(resource)
             }
         }
 
@@ -302,7 +299,7 @@ open class ResourceEditor protected constructor(
 
     fun isOutdated(): Boolean {
         val resource = createResource.invoke(editor, clients) ?: return false
-        this.editorResource.set(resource)
+        editorResource.set(resource)
         return clusterResource?.isOutdated(resource) ?: false
     }
 
@@ -313,7 +310,7 @@ open class ResourceEditor protected constructor(
         hideNotifications()
         try {
             val resource = createResource.invoke(editor, clients) ?: return
-            this.editorResource.set(resource)
+            editorResource.set(resource)
             push(resource, clusterResource)
         } catch (e: Exception) {
             showErrorNotification(e)
