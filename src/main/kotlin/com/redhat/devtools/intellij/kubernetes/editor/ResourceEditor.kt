@@ -196,15 +196,15 @@ open class ResourceEditor protected constructor(
     }
 
     private fun update(resource: HasMetadata?, clusterResource: ClusterResource?, oldClusterResource: ClusterResource?) {
-            if (resource == null
-                || clusterResource == null) {
-                return
-            }
-            if (clusterResource != oldClusterResource) {
-                // new cluster resource was created, resource has thus changed
-                renameEditor(resource, editor)
-            }
-            showNotifications(resource, clusterResource)
+        if (resource == null
+            || clusterResource == null) {
+            return
+        }
+        if (clusterResource != oldClusterResource) {
+            // new cluster resource was created, resource has thus changed
+            renameEditor(resource, editor)
+        }
+        showNotifications(resource, clusterResource)
     }
 
     private fun renameEditor(resource: HasMetadata, editor: FileEditor) {
@@ -367,10 +367,14 @@ open class ResourceEditor protected constructor(
             }
 
             override fun removed(removed: Any) {
-                update()
+                showNotifications()
             }
 
             override fun modified(modified: Any) {
+                showNotifications()
+            }
+
+            private fun showNotifications() {
                 val resource = editorResource.get() ?: return
                 val clusterResource = this@ResourceEditor.clusterResource ?: return
                 if (resource.isSameResource(localCopy.get())) {

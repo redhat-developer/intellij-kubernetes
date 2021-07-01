@@ -32,7 +32,7 @@ import javax.swing.JComponent
 class ErrorNotification(private val editor: FileEditor, private val project: Project) {
 
     companion object {
-        private val KEY_PANEL = Key<JComponent>(ErrorNotification::javaClass.name)
+        private val KEY_PANEL = Key<JComponent>(ErrorNotification::class.java.canonicalName)
     }
 
     fun show(title: String, message: String?) {

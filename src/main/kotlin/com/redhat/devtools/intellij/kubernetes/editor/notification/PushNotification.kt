@@ -27,7 +27,7 @@ import javax.swing.JComponent
 class PushNotification(private val editor: FileEditor, private val project: Project) {
 
     companion object {
-        val KEY_PANEL = Key<JComponent>(PushNotification::javaClass.name)
+        val KEY_PANEL = Key<JComponent>(PushNotification::class.java.canonicalName)
     }
 
     fun show() {

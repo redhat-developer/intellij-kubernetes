@@ -28,7 +28,7 @@ import javax.swing.JComponent
 class PullNotification(private val editor: FileEditor, private val project: Project) {
 
     companion object {
-        val KEY_PANEL = Key<JComponent>(PullNotification::javaClass.name)
+        val KEY_PANEL = Key<JComponent>(PullNotification::class.java.canonicalName)
     }
 
     fun show(resource: HasMetadata) {
