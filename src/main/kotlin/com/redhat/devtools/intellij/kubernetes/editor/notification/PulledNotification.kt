@@ -20,12 +20,12 @@ import io.fabric8.kubernetes.api.model.HasMetadata
 import javax.swing.JComponent
 
 /**
- * An editor (panel) notification that informs about a deleted resource on the cluster.
+ * An editor (panel) notification that informs that the resource was pulled from the cluster.
  */
-class ReloadedNotification(private val editor: FileEditor, private val project: Project) {
+class PulledNotification(private val editor: FileEditor, private val project: Project) {
 
     companion object {
-        private val KEY_PANEL = Key<JComponent>(ReloadedNotification::javaClass.name)
+        private val KEY_PANEL = Key<JComponent>(PulledNotification::javaClass.name)
     }
 
     fun show(resource: HasMetadata) {

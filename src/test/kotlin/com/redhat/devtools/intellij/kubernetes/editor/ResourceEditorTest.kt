@@ -27,9 +27,9 @@ import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.whenever
 import com.redhat.devtools.intellij.kubernetes.editor.notification.DeletedNotification
 import com.redhat.devtools.intellij.kubernetes.editor.notification.ErrorNotification
-import com.redhat.devtools.intellij.kubernetes.editor.notification.ReloadNotification
+import com.redhat.devtools.intellij.kubernetes.editor.notification.PullNotification
 import com.redhat.devtools.intellij.kubernetes.editor.notification.PushNotification
-import com.redhat.devtools.intellij.kubernetes.editor.notification.ReloadedNotification
+import com.redhat.devtools.intellij.kubernetes.editor.notification.PulledNotification
 import com.redhat.devtools.intellij.kubernetes.model.ClusterResource
 import com.redhat.devtools.intellij.kubernetes.model.ModelChangeObservable
 import com.redhat.devtools.intellij.kubernetes.model.Notification
@@ -124,8 +124,8 @@ class ResourceEditorTest {
                 .whenever(this).invoke(any(), any())
         }
     private val pushNotification: PushNotification = mock()
-    private val reloadNotification: ReloadNotification = mock()
-    private val reloadedNotification: ReloadedNotification = mock()
+    private val pullNotification: PullNotification = mock()
+    private val pulledNotification: PulledNotification = mock()
     private val deletedNotification: DeletedNotification = mock()
     private val errorNotification: ErrorNotification = mock()
     private val document: Document = mock()
@@ -143,8 +143,8 @@ class ResourceEditorTest {
             createResourceFileForVirtual,
             createResourceFileForResource,
             pushNotification,
-            reloadNotification,
-            reloadedNotification,
+            pullNotification,
+            pulledNotification,
             deletedNotification,
             errorNotification,
             documentProvider,
@@ -159,7 +159,7 @@ class ResourceEditorTest {
         editor.update()
         // then
         verify(pushNotification).hide()
-        verify(reloadNotification).hide()
+        verify(pullNotification).hide()
         verify(deletedNotification).hide()
         verify(errorNotification).hide()
     }
@@ -249,7 +249,7 @@ class ResourceEditorTest {
         // when
         editor.update()
         // then
-        verify(reloadNotification).show(any())
+        verify(pullNotification).show(any())
     }
 
     @Test
@@ -270,7 +270,7 @@ class ResourceEditorTest {
         // when
         editor.update() // 2nd call: no local changes (editor content was replaced), no modified notification
         // then modification notification only shown once even though #update called twice
-        verify(reloadNotification, times(1)).show(any())
+        verify(pullNotification, times(1)).show(any())
     }
 
     @Test
@@ -285,7 +285,7 @@ class ResourceEditorTest {
         // when
         editor.update()
         // then
-        verify(reloadNotification, never()).show(any())
+        verify(pullNotification, never()).show(any())
     }
 
     @Test
@@ -300,7 +300,7 @@ class ResourceEditorTest {
         // when
         editor.update()
         // then
-        verify(reloadedNotification).show(any())
+        verify(pulledNotification).show(any())
     }
 
     @Test
@@ -503,7 +503,7 @@ class ResourceEditorTest {
         // when
         listener!!.modified(GARGAMELv2)
         // then
-        verify(reloadNotification).show(GARGAMELv2)
+        verify(pullNotification).show(GARGAMELv2)
     }
 
     /**
@@ -535,8 +535,8 @@ class ResourceEditorTest {
         resourceFileForVirtual: (file: VirtualFile?) -> ResourceFile?,
         resourceFileForResource: (resource: HasMetadata) -> ResourceFile?,
         pushNotification: PushNotification,
-        reloadNotification: ReloadNotification,
-        reloadedNotification: ReloadedNotification,
+        pullNotification: PullNotification,
+        pulledNotification: PulledNotification,
         deletedNotification: DeletedNotification,
         errorNotification: ErrorNotification,
         documentProvider: (FileEditor) -> Document?,
@@ -551,8 +551,8 @@ class ResourceEditorTest {
         resourceFileForVirtual,
         resourceFileForResource,
         pushNotification,
-        reloadNotification,
-        reloadedNotification,
+        pullNotification,
+        pulledNotification,
         deletedNotification,
         errorNotification,
         documentProvider,

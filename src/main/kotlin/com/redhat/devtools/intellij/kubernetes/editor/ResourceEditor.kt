@@ -29,8 +29,8 @@ import com.redhat.devtools.intellij.common.utils.UIHelper
 import com.redhat.devtools.intellij.kubernetes.editor.notification.DeletedNotification
 import com.redhat.devtools.intellij.kubernetes.editor.notification.ErrorNotification
 import com.redhat.devtools.intellij.kubernetes.editor.notification.PushNotification
-import com.redhat.devtools.intellij.kubernetes.editor.notification.ReloadNotification
-import com.redhat.devtools.intellij.kubernetes.editor.notification.ReloadedNotification
+import com.redhat.devtools.intellij.kubernetes.editor.notification.PullNotification
+import com.redhat.devtools.intellij.kubernetes.editor.notification.PulledNotification
 import com.redhat.devtools.intellij.kubernetes.editor.util.getDocument
 import com.redhat.devtools.intellij.kubernetes.model.ClientConfig
 import com.redhat.devtools.intellij.kubernetes.model.Clients
@@ -39,6 +39,7 @@ import com.redhat.devtools.intellij.kubernetes.model.ModelChangeObservable
 import com.redhat.devtools.intellij.kubernetes.model.Notification
 import com.redhat.devtools.intellij.kubernetes.model.ResourceException
 import com.redhat.devtools.intellij.kubernetes.model.createClients
+import com.redhat.devtools.intellij.kubernetes.model.util.isSameResource
 import com.redhat.devtools.intellij.kubernetes.model.util.trimWithEllipsis
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.client.KubernetesClient
@@ -68,9 +69,9 @@ open class ResourceEditor protected constructor(
     // for mocking purposes
     private val pushNotification: PushNotification = PushNotification(editor, project),
     // for mocking purposes
-    private val reloadNotification: ReloadNotification = ReloadNotification(editor, project),
+    private val pullNotification: PullNotification = PullNotification(editor, project),
     // for mocking purposes
-    private val reloadedNotification: ReloadedNotification = ReloadedNotification(editor, project),
+    private val pulledNotification: PulledNotification = PulledNotification(editor, project),
     // for mocking purposes
     private val deletedNotification: DeletedNotification = DeletedNotification(editor, project),
     // for mocking purposes
@@ -203,7 +204,7 @@ open class ResourceEditor protected constructor(
                 // new cluster resource was created, resource has thus changed
                 renameEditor(resource, editor)
             }
-            showNotifications(clusterResource, resource)
+            showNotifications(resource, clusterResource)
     }
 
     private fun renameEditor(resource: HasMetadata, editor: FileEditor) {
@@ -215,8 +216,9 @@ open class ResourceEditor protected constructor(
     }
 
     private fun showNotifications(
-        clusterResource: ClusterResource,
-        resource: HasMetadata) {
+        resource: HasMetadata,
+        clusterResource: ClusterResource
+    ) {
         hideNotifications()
         when {
             clusterResource.isDeleted()
@@ -231,10 +233,10 @@ open class ResourceEditor protected constructor(
 
     private fun hideNotifications() {
         errorNotification.hide()
-        reloadNotification.hide()
+        pullNotification.hide()
         deletedNotification.hide()
         pushNotification.hide()
-        reloadedNotification.hide()
+        pulledNotification.hide()
     }
 
     private fun showReloadedOrModifiedNotification(resource: HasMetadata) {
@@ -242,9 +244,9 @@ open class ResourceEditor protected constructor(
         if (resourceOnCluster != null
             && !hasLocalChanges(resource)) {
             replaceDocument(resourceOnCluster)
-            reloadedNotification.show(resource)
+            pulledNotification.show(resource)
         } else {
-            reloadNotification.show(resource)
+            pullNotification.show(resource)
         }
     }
 
@@ -269,20 +271,22 @@ open class ResourceEditor protected constructor(
      */
     fun replaceContent() {
         hideNotifications()
-        var resource = clusterResource?.get(true) ?: return
-        this.editorResource.set(resource)
+        var resource = clusterResource?.get() ?: return
         replaceDocument(resource)
-        this.localCopy.set(resource)
     }
 
     private fun replaceDocument(resource: HasMetadata) {
         if (editor.file == null) {
             return
         }
+        // watch modification notification can get in before document was replaced
+        this.editorResource.set(resource)
         val document = documentProvider.invoke(editor)
         if (document != null) {
             executeWriteAction {
                 document.setText(Serialization.asYaml(resource))
+                this.localCopy.set(resource)
+                this.editorResource.set(resource)
             }
         }
 
@@ -324,6 +328,7 @@ open class ResourceEditor protected constructor(
             }
             hideNotifications()
             val updatedResource = clusterResource.push(resource) ?: return
+            this.localCopy.set(updatedResource)
             replaceDocument(updatedResource)
         } catch (e: ResourceException) {
             logger<ResourceEditor>().warn(e)
@@ -369,7 +374,11 @@ open class ResourceEditor protected constructor(
             }
 
             override fun modified(modified: Any) {
-                update()
+                val resource = editorResource.get() ?: return
+                val clusterResource = this@ResourceEditor.clusterResource ?: return
+                if (resource.isSameResource(localCopy.get())) {
+                    showNotifications(resource, clusterResource)
+                }
             }
         }
     }
