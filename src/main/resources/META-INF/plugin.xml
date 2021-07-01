@@ -88,9 +88,9 @@
                     text="Push editor content to the cluster"
 
                     icon="/icons/upload.svg" />
-            <action class="com.redhat.devtools.intellij.kubernetes.editor.action.ReloadAction"
-                    id="com.redhat.devtools.intellij.kubernetes.editor.action.ReloadAction"
-                    text="Reload the editor content from the cluster"
+            <action class="com.redhat.devtools.intellij.kubernetes.editor.action.PullAction"
+                    id="com.redhat.devtools.intellij.kubernetes.editor.action.PullAction"
+                    text="Pull from cluster to the editor"
                     icon="/icons/download.svg" />
         </group>
     </actions>

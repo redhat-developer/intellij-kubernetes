@@ -18,10 +18,10 @@ import com.redhat.devtools.intellij.kubernetes.editor.ResourceEditor
 import com.redhat.devtools.intellij.kubernetes.editor.util.getFileEditor
 import com.redhat.devtools.intellij.kubernetes.model.Notification
 
-class ReloadAction: AnAction() {
+class PullAction: AnAction() {
 
     companion object {
-        const val ID = "com.redhat.devtools.intellij.kubernetes.editor.action.ReloadAction"
+        const val ID = "com.redhat.devtools.intellij.kubernetes.editor.action.PullAction"
     }
 
     override fun actionPerformed(e: AnActionEvent) {

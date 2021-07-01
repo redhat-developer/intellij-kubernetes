@@ -16,7 +16,7 @@ import com.intellij.openapi.util.Key
 import com.intellij.ui.EditorNotificationPanel
 import com.redhat.devtools.intellij.kubernetes.editor.ResourceEditor
 import com.redhat.devtools.intellij.kubernetes.editor.action.PushAction
-import com.redhat.devtools.intellij.kubernetes.editor.action.ReloadAction
+import com.redhat.devtools.intellij.kubernetes.editor.action.PullAction
 import com.redhat.devtools.intellij.kubernetes.editor.hideNotification
 import com.redhat.devtools.intellij.kubernetes.editor.showNotification
 import javax.swing.JComponent
@@ -49,9 +49,9 @@ class PushNotification(private val editor: FileEditor, private val project: Proj
                 }
             } resource on cluster?"
         )
-        panel.createActionLabel("Push to Cluster", PushAction.ID)
+        panel.createActionLabel("Push", PushAction.ID)
         if (true == ResourceEditor.get(editor, project)?.isOutdated()) {
-            panel.createActionLabel("Reload from Cluster", ReloadAction.ID)
+            panel.createActionLabel("Pull", PullAction.ID)
             panel.createActionLabel ("Ignore") {
                 editor.hideNotification(KEY_PANEL, project)
             }

@@ -42,9 +42,9 @@ class DeletedNotification(private val editor: FileEditor, private val project: P
 
     private fun createPanel(editor: FileEditor, resource: HasMetadata, project: Project): EditorNotificationPanel {
         val panel = EditorNotificationPanel()
-        panel.setText("${resource.kind} ${resource.metadata.name} was deleted on cluster. Keep it?")
-        panel.createActionLabel("Push to Cluster", PushAction.ID)
-        panel.createActionLabel("Keep it") {
+        panel.setText("${resource.kind} ${resource.metadata.name} was deleted on cluster. Push to Cluster?")
+        panel.createActionLabel("Push", PushAction.ID)
+        panel.createActionLabel("Ignore") {
             editor.hideNotification(KEY_PANEL, project)
         }
 
