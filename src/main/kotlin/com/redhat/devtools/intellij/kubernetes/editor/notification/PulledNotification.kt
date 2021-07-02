@@ -38,7 +38,15 @@ class PulledNotification(private val editor: FileEditor, private val project: Pr
 
     private fun createPanel(editor: FileEditor, resource: HasMetadata, project: Project): EditorNotificationPanel {
         val panel = EditorNotificationPanel()
-        panel.setText("Pulled changed ${resource.kind} '${resource.metadata.name}' in revision ${resource.metadata.resourceVersion}.")
+        panel.setText(
+            "Pulled changed ${resource.kind} '${resource.metadata.name}' ${
+                if (resource.metadata.resourceVersion != null) {
+                    "in revision ${resource.metadata.resourceVersion}"
+                } else {
+                    ""
+                }
+            }"
+        )
         return panel
     }
 }
