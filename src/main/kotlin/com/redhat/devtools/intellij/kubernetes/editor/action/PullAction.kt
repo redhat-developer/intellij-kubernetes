@@ -14,6 +14,7 @@ import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.CommonDataKeys
 import com.intellij.openapi.progress.Progressive
+import com.intellij.openapi.ui.MessageDialogBuilder
 import com.redhat.devtools.intellij.kubernetes.editor.ResourceEditor
 import com.redhat.devtools.intellij.kubernetes.editor.util.getFileEditor
 import com.redhat.devtools.intellij.kubernetes.model.Notification
@@ -25,6 +26,9 @@ class PullAction: AnAction() {
     }
 
     override fun actionPerformed(e: AnActionEvent) {
+        if (!MessageDialogBuilder.yesNo("Overwrite Editor", "Loose local changes?").isYes) {
+            return
+        }
         val project = e.dataContext.getData(CommonDataKeys.PROJECT) ?: return
         val editor = getFileEditor(project)
         com.redhat.devtools.intellij.kubernetes.actions.run("Reloading...", true,

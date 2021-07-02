@@ -25,13 +25,14 @@ import com.intellij.openapi.util.Key
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.PsiDocumentManager
 import com.intellij.ui.AppUIUtil
+import com.intellij.ui.components.JBLabel
 import com.intellij.util.ui.JBEmptyBorder
 import com.redhat.devtools.intellij.common.utils.UIHelper
 import com.redhat.devtools.intellij.kubernetes.editor.notification.DeletedNotification
 import com.redhat.devtools.intellij.kubernetes.editor.notification.ErrorNotification
-import com.redhat.devtools.intellij.kubernetes.editor.notification.PushNotification
 import com.redhat.devtools.intellij.kubernetes.editor.notification.PullNotification
 import com.redhat.devtools.intellij.kubernetes.editor.notification.PulledNotification
+import com.redhat.devtools.intellij.kubernetes.editor.notification.PushNotification
 import com.redhat.devtools.intellij.kubernetes.editor.util.getDocument
 import com.redhat.devtools.intellij.kubernetes.model.ClientConfig
 import com.redhat.devtools.intellij.kubernetes.model.Clients
