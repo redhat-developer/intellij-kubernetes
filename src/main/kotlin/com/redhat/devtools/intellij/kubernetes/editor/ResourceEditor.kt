@@ -18,7 +18,6 @@ import com.intellij.openapi.actionSystem.impl.ActionToolbarImpl
 import com.intellij.openapi.application.WriteAction
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.editor.Document
-import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.fileEditor.FileEditor
 import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.project.Project
@@ -80,6 +79,8 @@ open class ResourceEditor protected constructor(
     private val errorNotification: ErrorNotification = ErrorNotification(editor, project),
     // for mocking purposes
     private val documentProvider: (FileEditor) -> Document? = ::getDocument,
+    // for mocking purposes
+    private val psiDocumentManagerProvider: (Project) -> PsiDocumentManager = { PsiDocumentManager.getInstance(project) },
     // for mocking purposes
     private val ideNotification: Notification = Notification()
 ) {
@@ -288,13 +289,12 @@ open class ResourceEditor protected constructor(
         val document = documentProvider.invoke(editor)
         if (document != null) {
             executeWriteAction {
-                PsiDocumentManager.getInstance(project)
-                    .performForCommittedDocument(document) { document.setText(Serialization.asYaml(resource)) }
+                document.setText(Serialization.asYaml(resource))
+                psiDocumentManagerProvider.invoke(project).commitDocument(document)
                 localCopy.set(resource)
                 editorResource.set(resource)
             }
         }
-
     }
 
     /**

@@ -14,6 +14,7 @@ import com.intellij.openapi.editor.Document
 import com.intellij.openapi.fileEditor.FileEditor
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.VirtualFile
+import com.intellij.psi.PsiDocumentManager
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.argWhere
 import com.nhaarman.mockitokotlin2.atLeastOnce
@@ -128,6 +129,8 @@ class ResourceEditorTest {
     private val errorNotification: ErrorNotification = mock()
     private val document: Document = mock()
     private val documentProvider: (FileEditor) -> Document? = { document }
+    private val psiDocumentManager: PsiDocumentManager = mock()
+    private val psiDocumentManagerProvider: (Project) -> PsiDocumentManager = { psiDocumentManager }
     private val ideNotification: Notification = mock()
 
     private val editor = spy(
@@ -146,24 +149,48 @@ class ResourceEditorTest {
             deletedNotification,
             errorNotification,
             documentProvider,
+            psiDocumentManagerProvider,
             ideNotification
         )
     )
 
     @Test
-    fun `#update should hide all notifications`() {
+    fun `#update should hide all notifications when resource on cluster is deleted`() {
         // given
+        doReturn(true)
+            .whenever(clusterResource).isDeleted()
+        doReturn(false)
+            .whenever(clusterResource).isModified(any())
         // when
         editor.update()
         // then
-        verify(pushNotification).hide()
-        verify(pullNotification).hide()
-        verify(deletedNotification).hide()
-        verify(errorNotification).hide()
+        verifyHideAllNotifications()
     }
 
     @Test
-    fun `#update should show error notification if creating resource throws ResourceException`() {
+    fun `#update should hide all notifications when resource on cluster is outdated`() {
+        // given
+        doReturn(true)
+            .whenever(clusterResource).isOutdated(any())
+        // when
+        editor.update()
+        // then
+        verifyHideAllNotifications()
+    }
+
+    @Test
+    fun `#update should hide all notifications when editor resource can be pushed`() {
+        // given
+        doReturn(true)
+            .whenever(clusterResource).canPush(any())
+        // when
+        editor.update()
+        // then
+        verifyHideAllNotifications()
+    }
+
+    @Test
+    fun `#update should show error notification and hide all notifications if creating resource throws ResourceException`() {
         // given
         doThrow(ResourceException("resource error", KubernetesClientException("client error")))
             .whenever(createResource).invoke(any(), any())
@@ -171,6 +198,7 @@ class ResourceEditorTest {
         editor.update()
         // then
         verify(errorNotification).show("resource error", "client error")
+        verifyHideAllNotifications()
     }
 
     @Test
@@ -453,6 +481,17 @@ class ResourceEditorTest {
     }
 
     @Test
+    fun `#replaceContent should commit document`() {
+        // given
+        doReturn(GARGAMELv2)
+            .whenever(clusterResource).get(any())
+        // when
+        editor.replaceContent()
+        // then
+        verify(psiDocumentManager).commitDocument(document)
+    }
+
+    @Test
     fun `#startWatch should start watching the cluster`() {
         // given
         // when
@@ -542,6 +581,14 @@ class ResourceEditorTest {
         return listener
     }
 
+    private fun verifyHideAllNotifications() {
+        verify(errorNotification).hide()
+        verify(pullNotification).hide()
+        verify(deletedNotification).hide()
+        verify(pushNotification).hide()
+        verify(pulledNotification).hide()
+    }
+
     private class TestableResourceEditor(
         localCopy: HasMetadata?,
         editor: FileEditor,
@@ -557,6 +604,7 @@ class ResourceEditorTest {
         deletedNotification: DeletedNotification,
         errorNotification: ErrorNotification,
         documentProvider: (FileEditor) -> Document?,
+        psiDocumentManagerProvider: (Project) -> PsiDocumentManager,
         ideNotification: Notification
     ) : ResourceEditor(
         localCopy,
@@ -573,6 +621,7 @@ class ResourceEditorTest {
         deletedNotification,
         errorNotification,
         documentProvider,
+        psiDocumentManagerProvider,
         ideNotification
     ) {
         public override val editorResource: AtomicReference<HasMetadata?>
