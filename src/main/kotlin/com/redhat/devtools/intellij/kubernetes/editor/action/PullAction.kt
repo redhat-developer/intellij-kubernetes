@@ -10,15 +10,18 @@
  ******************************************************************************/
 package com.redhat.devtools.intellij.kubernetes.editor.action
 
+import com.intellij.icons.AllIcons
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.CommonDataKeys
 import com.intellij.openapi.progress.Progressive
 import com.intellij.openapi.ui.MessageDialogBuilder
+import com.intellij.openapi.ui.Messages.YES
 import com.redhat.devtools.intellij.common.utils.UIHelper
 import com.redhat.devtools.intellij.kubernetes.editor.ResourceEditor
 import com.redhat.devtools.intellij.kubernetes.editor.util.getFileEditor
 import com.redhat.devtools.intellij.kubernetes.model.Notification
+import com.intellij.openapi.ui.Messages
 import java.util.function.Supplier
 
 class PullAction: AnAction() {
@@ -37,10 +40,11 @@ class PullAction: AnAction() {
                     if (resourceEditor != null
                         && resourceEditor.hasLocalChanges()
                         && UIHelper.executeInUI(Supplier {
-                            MessageDialogBuilder.yesNo(
-                                "Overwrite Editor",
-                                "Loose local changes?"
-                            ).isYes
+                            Messages.showOkCancelDialog(
+                                "Overwrite",
+                                "Loose local changes?",
+                                AllIcons.General.QuestionDialog
+                            ) == YES
                         })
                     ) {
                         ResourceEditor.get(editor, project)?.pull()

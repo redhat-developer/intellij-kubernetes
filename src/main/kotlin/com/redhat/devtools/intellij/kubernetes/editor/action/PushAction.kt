@@ -10,11 +10,14 @@
  ******************************************************************************/
 package com.redhat.devtools.intellij.kubernetes.editor.action
 
+import com.intellij.icons.AllIcons
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.CommonDataKeys
 import com.intellij.openapi.progress.Progressive
 import com.intellij.openapi.ui.MessageDialogBuilder
+import com.intellij.openapi.ui.Messages
+import com.intellij.openapi.ui.Messages.YES
 import com.redhat.devtools.intellij.common.utils.UIHelper
 import com.redhat.devtools.intellij.kubernetes.editor.ResourceEditor
 import com.redhat.devtools.intellij.kubernetes.editor.util.getFileEditor
@@ -37,10 +40,11 @@ class PushAction: AnAction() {
                     if (resourceEditor != null
                         && resourceEditor.existsOnCluster()
                         && UIHelper.executeInUI(Supplier {
-                            MessageDialogBuilder.yesNo(
-                                "Overwrite Cluster",
-                                "Overwrite resource on cluster?"
-                            ).isYes
+                            Messages.showYesNoDialog(
+                                "Overwrite",
+                                "Overwrite resource on cluster?",
+                                AllIcons.General.QuestionDialog
+                            ) == YES
                         })
                     ) {
                         ResourceEditor.get(editor, project)?.push()
