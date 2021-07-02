@@ -18,11 +18,13 @@ import com.intellij.openapi.actionSystem.impl.ActionToolbarImpl
 import com.intellij.openapi.application.WriteAction
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.editor.Document
+import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.fileEditor.FileEditor
 import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Key
 import com.intellij.openapi.vfs.VirtualFile
+import com.intellij.psi.PsiDocumentManager
 import com.intellij.ui.AppUIUtil
 import com.intellij.util.ui.JBEmptyBorder
 import com.redhat.devtools.intellij.common.utils.UIHelper
@@ -189,7 +191,7 @@ open class ResourceEditor protected constructor(
         try {
             val resource = createResource.invoke(editor, clients) ?: return
             this.editorResource.set(resource)
-            update(editorResource.get(), clusterResource, oldClusterResource)
+            update(resource, clusterResource, oldClusterResource)
         } catch (e: ResourceException) {
             showErrorNotification(e)
         }
@@ -219,15 +221,20 @@ open class ResourceEditor protected constructor(
         resource: HasMetadata,
         clusterResource: ClusterResource
     ) {
-        hideNotifications()
         when {
             clusterResource.isDeleted()
-                    && !clusterResource.isModified(resource) ->
+                    && !clusterResource.isModified(resource) -> {
+                hideNotifications()
                 deletedNotification.show(resource)
-            clusterResource.isOutdated(resource) ->
+            }
+            clusterResource.isOutdated(resource) -> {
+                hideNotifications()
                 showPulledOrPullNotification(resource)
-            clusterResource.canPush(resource) ->
+            }
+            clusterResource.canPush(resource) -> {
+                hideNotifications()
                 pushNotification.show()
+            }
         }
     }
 
@@ -281,7 +288,8 @@ open class ResourceEditor protected constructor(
         val document = documentProvider.invoke(editor)
         if (document != null) {
             executeWriteAction {
-                document.setText(Serialization.asYaml(resource))
+                PsiDocumentManager.getInstance(project)
+                    .performForCommittedDocument(document) { document.setText(Serialization.asYaml(resource)) }
                 localCopy.set(resource)
                 editorResource.set(resource)
             }
@@ -307,7 +315,6 @@ open class ResourceEditor protected constructor(
      * Pushes the editor content to the cluster.
      */
     fun push() {
-        hideNotifications()
         try {
             val resource = createResource.invoke(editor, clients) ?: return
             editorResource.set(resource)
