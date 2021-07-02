@@ -15,9 +15,11 @@ import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.CommonDataKeys
 import com.intellij.openapi.progress.Progressive
 import com.intellij.openapi.ui.MessageDialogBuilder
+import com.redhat.devtools.intellij.common.utils.UIHelper
 import com.redhat.devtools.intellij.kubernetes.editor.ResourceEditor
 import com.redhat.devtools.intellij.kubernetes.editor.util.getFileEditor
 import com.redhat.devtools.intellij.kubernetes.model.Notification
+import java.util.function.Supplier
 
 class PushAction: AnAction() {
 
@@ -28,16 +30,21 @@ class PushAction: AnAction() {
     override fun actionPerformed(e: AnActionEvent) {
         val project = e.dataContext.getData(CommonDataKeys.PROJECT) ?: return
         val editor = getFileEditor(project)
-        val exists = ResourceEditor.get(editor, project)?.existsOnCluster() ?: false
-        if (exists
-            && !MessageDialogBuilder.yesNo(
-                "Overwrite Cluster", "Overwrite resource on cluster?").isYes) {
-            return
-        }
         com.redhat.devtools.intellij.kubernetes.actions.run("Pushing...", true,
             Progressive {
                 try {
+                    val resourceEditor = ResourceEditor.get(editor, project)
+                    if (resourceEditor != null
+                        && resourceEditor.existsOnCluster()
+                        && UIHelper.executeInUI(Supplier {
+                            MessageDialogBuilder.yesNo(
+                                "Overwrite Cluster",
+                                "Overwrite resource on cluster?"
+                            ).isYes
+                        })
+                    ) {
                         ResourceEditor.get(editor, project)?.push()
+                    }
                 } catch (e: Exception) {
                     ResourceEditor.get(editor, project)
                     Notification().error("Error Pushing", "Could not push resource to cluster: ${e.message}")
