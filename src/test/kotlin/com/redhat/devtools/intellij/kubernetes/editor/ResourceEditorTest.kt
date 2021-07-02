@@ -292,7 +292,7 @@ class ResourceEditorTest {
                 GARGAMELv2, // 1st call to factory in #update: editor is modified -> modified notification, no automatic reload
                 AZRAEL) // 2nd call to factory in #update after replace: editor has resource from cluster -> no modified notification
         editor.update() // 1st call: local changes, shows modified notification
-        editor.replaceContent()
+        editor.pull()
         // when
         editor.update() // 2nd call: no local changes (editor content was replaced), no modified notification
         // then modification notification only shown once even though #update called twice
@@ -475,7 +475,7 @@ class ResourceEditorTest {
         doReturn(GARGAMELv2)
             .whenever(clusterResource).get(any())
         // when
-        editor.replaceContent()
+        editor.pull()
         // then
         verify(document).setText(Serialization.asYaml(GARGAMELv2))
     }
@@ -486,7 +486,7 @@ class ResourceEditorTest {
         doReturn(GARGAMELv2)
             .whenever(clusterResource).get(any())
         // when
-        editor.replaceContent()
+        editor.pull()
         // then
         verify(psiDocumentManager).commitDocument(document)
     }

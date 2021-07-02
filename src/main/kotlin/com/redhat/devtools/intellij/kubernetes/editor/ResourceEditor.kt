@@ -170,7 +170,7 @@ open class ResourceEditor protected constructor(
     private val localCopy: AtomicReference<HasMetadata?> = AtomicReference(localCopy)
     protected open val editorResource: AtomicReference<HasMetadata?> = AtomicReference(localCopy)
     /** mutex to exclude concurrent execution of push & watch notification **/
-    private val pushResourceChangeMutex = ReentrantLock()
+    private val resourceChangeMutex = ReentrantLock()
     private var oldClusterResource: ClusterResource? = null
     private var _clusterResource: ClusterResource? = null
     private val clusterResource: ClusterResource?
@@ -283,17 +283,27 @@ open class ResourceEditor protected constructor(
     }
 
     /**
-     * Replaces the content of this editor with the resource that exists on the cluster.
+     * Pulls the resource from the cluster and replaces the content of this editor.
      * Does nothing if it doesn't exist.
      */
-    fun replaceContent() {
+    fun pull() {
         hideNotifications()
-        val resource = clusterResource?.get() ?: return
-        replaceDocument(resource)
+        val pulledResource = resourceChangeMutex.withLock {
+            val pulled = clusterResource?.get() ?: return
+            /**
+             * set editor resource now,
+             * watch change modification notification can get in before document was replaced
+             */
+            this.editorResource.set(pulled)
+            this.localCopy.set(pulled)
+            pulled
+        }
+        replaceDocument(pulledResource)
     }
 
     private fun replaceDocument(resource: HasMetadata) {
         editorResource.set(resource)
+        localCopy.set(resource)
         val document = documentProvider.invoke(editor)
         if (document != null) {
             executeWriteAction {
@@ -338,7 +348,7 @@ open class ResourceEditor protected constructor(
                 return
             }
             hideNotifications()
-            val updatedResource = pushResourceChangeMutex.withLock {
+            val updatedResource = resourceChangeMutex.withLock {
                 val updated = clusterResource.push(resource)
                 /**
                  * set editor resource now,
@@ -399,7 +409,7 @@ open class ResourceEditor protected constructor(
             }
 
             private fun showNotifications() {
-                val pair = pushResourceChangeMutex.withLock {
+                val pair = resourceChangeMutex.withLock {
                     val resource = editorResource.get()
                     val localCopy = localCopy.get()
                     Pair(resource, localCopy)

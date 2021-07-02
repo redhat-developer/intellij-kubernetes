@@ -43,7 +43,7 @@ class PullAction: AnAction() {
                             ).isYes
                         })
                     ) {
-                        ResourceEditor.get(editor, project)?.replaceContent()
+                        ResourceEditor.get(editor, project)?.pull()
                     }
                 } catch (e: Exception) {
                     ResourceEditor.get(editor, project)
