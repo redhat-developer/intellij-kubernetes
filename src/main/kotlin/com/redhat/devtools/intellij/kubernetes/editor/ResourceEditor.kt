@@ -25,7 +25,6 @@ import com.intellij.openapi.util.Key
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.PsiDocumentManager
 import com.intellij.ui.AppUIUtil
-import com.intellij.ui.components.JBLabel
 import com.intellij.util.ui.JBEmptyBorder
 import com.redhat.devtools.intellij.common.utils.UIHelper
 import com.redhat.devtools.intellij.kubernetes.editor.notification.DeletedNotification
@@ -47,6 +46,8 @@ import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.client.KubernetesClient
 import io.fabric8.kubernetes.client.utils.Serialization
 import java.util.concurrent.atomic.AtomicReference
+import java.util.concurrent.locks.ReentrantLock
+import kotlin.concurrent.withLock
 
 /**
  * An adapter for [FileEditor] instances that allows to push or load the editor content to/from a remote cluster.
@@ -168,6 +169,8 @@ open class ResourceEditor protected constructor(
 
     private val localCopy: AtomicReference<HasMetadata?> = AtomicReference(localCopy)
     protected open val editorResource: AtomicReference<HasMetadata?> = AtomicReference(localCopy)
+    /** mutex to exclude concurrent execution of push & watch notification **/
+    private val pushResourceChangeMutex = ReentrantLock()
     private var oldClusterResource: ClusterResource? = null
     private var _clusterResource: ClusterResource? = null
     private val clusterResource: ClusterResource?
@@ -259,6 +262,11 @@ open class ResourceEditor protected constructor(
         }
     }
 
+    fun hasLocalChanges(): Boolean {
+        val resource = createResource.invoke(editor, clients) ?: return false
+        this.editorResource.set(resource)
+        return hasLocalChanges(resource)
+    }
     /**
      * Returns `true` if the given resource is dirty aka has modifications that were not pushed.
      *
@@ -285,15 +293,12 @@ open class ResourceEditor protected constructor(
     }
 
     private fun replaceDocument(resource: HasMetadata) {
-        // set editor resource now, watch modification notification can get in before document was replaced
         editorResource.set(resource)
         val document = documentProvider.invoke(editor)
         if (document != null) {
             executeWriteAction {
                 document.setText(Serialization.asYaml(resource))
                 psiDocumentManagerProvider.invoke(project).commitDocument(document)
-                localCopy.set(resource)
-                editorResource.set(resource)
             }
         }
     }
@@ -328,13 +333,24 @@ open class ResourceEditor protected constructor(
     private fun push(resource: HasMetadata?, clusterResource: ClusterResource?) {
         try {
             if (resource == null
-                || clusterResource == null) {
+                || clusterResource == null
+            ) {
                 return
             }
             hideNotifications()
-            val updatedResource = clusterResource.push(resource) ?: return
-            this.localCopy.set(updatedResource)
-            replaceDocument(updatedResource)
+            val updatedResource = pushResourceChangeMutex.withLock {
+                val updated = clusterResource.push(resource)
+                /**
+                 * set editor resource now,
+                 * watch change modification notification can get in before document was replaced
+                 */
+                this.editorResource.set(updated)
+                this.localCopy.set(updated)
+                updated
+            }
+            if (updatedResource != null) {
+                replaceDocument(updatedResource)
+            }
         } catch (e: ResourceException) {
             logger<ResourceEditor>().warn(e)
             ideNotification.error(
@@ -383,10 +399,19 @@ open class ResourceEditor protected constructor(
             }
 
             private fun showNotifications() {
-                val resource = editorResource.get() ?: return
-                val clusterResource = this@ResourceEditor.clusterResource ?: return
-                if (resource.isSameResource(localCopy.get())) {
-                    showNotifications(resource, clusterResource)
+                val pair = pushResourceChangeMutex.withLock {
+                    val resource = editorResource.get()
+                    val localCopy = localCopy.get()
+                    Pair(resource, localCopy)
+                }
+                val resource = pair.first
+                val localCopy = pair.second
+                val sameResource = resource?.isSameResource(localCopy) ?: false
+                if (sameResource
+                    && resource != null
+                    && clusterResource != null
+                ) {
+                    showNotifications(resource, clusterResource!!)
                 }
             }
         }
@@ -414,6 +439,5 @@ open class ResourceEditor protected constructor(
             WriteAction.compute<Unit, Exception>(runnable)
         }
     }
-
 }
 
