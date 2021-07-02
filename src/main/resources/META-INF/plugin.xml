@@ -85,12 +85,12 @@
         <group id="Kubernetes.Editor.Toolbar" class="com.intellij.openapi.actionSystem.DefaultActionGroup">
             <action class="com.redhat.devtools.intellij.kubernetes.editor.action.PushAction"
                     id="com.redhat.devtools.intellij.kubernetes.editor.action.PushAction"
-                    text="Push editor content to the cluster"
+                    text="Push Editor to the Cluster"
 
                     icon="/icons/upload.svg" />
             <action class="com.redhat.devtools.intellij.kubernetes.editor.action.PullAction"
                     id="com.redhat.devtools.intellij.kubernetes.editor.action.PullAction"
-                    text="Pull from cluster to the editor"
+                    text="Pull from Cluster to the Editor"
                     icon="/icons/download.svg" />
         </group>
     </actions>
