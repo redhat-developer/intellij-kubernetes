@@ -86,7 +86,6 @@
             <action class="com.redhat.devtools.intellij.kubernetes.editor.action.PushAction"
                     id="com.redhat.devtools.intellij.kubernetes.editor.action.PushAction"
                     text="Push Editor to the Cluster"
-
                     icon="/icons/upload.svg" />
             <action class="com.redhat.devtools.intellij.kubernetes.editor.action.PullAction"
                     id="com.redhat.devtools.intellij.kubernetes.editor.action.PullAction"
