@@ -41,8 +41,8 @@ class PushAction: AnAction() {
                         && resourceEditor.existsOnCluster()
                         && UIHelper.executeInUI(Supplier {
                             Messages.showYesNoDialog(
-                                "Overwrite",
                                 "Overwrite resource on cluster?",
+                                "Overwrite Cluster",
                                 AllIcons.General.QuestionDialog
                             ) == YES
                         })

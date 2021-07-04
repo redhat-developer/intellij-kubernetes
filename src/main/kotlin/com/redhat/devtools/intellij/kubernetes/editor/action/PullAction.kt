@@ -41,8 +41,8 @@ class PullAction: AnAction() {
                         && resourceEditor.hasLocalChanges()
                         && UIHelper.executeInUI(Supplier {
                             Messages.showOkCancelDialog(
-                                "Overwrite",
                                 "Loose local changes?",
+                                "Overwrite Editor",
                                 AllIcons.General.QuestionDialog
                             ) == YES
                         })
@@ -51,7 +51,7 @@ class PullAction: AnAction() {
                     }
                 } catch (e: Exception) {
                     ResourceEditor.get(editor, project)
-                    Notification().error("Error Loading", "Could not load resource from cluster: ${e.message}")
+                    Notification().error("Error Pulling", "Could not pull resource from cluster: ${e.message}")
                 }
             })
     }
