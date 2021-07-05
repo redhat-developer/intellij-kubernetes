@@ -8,14 +8,13 @@
  * Contributors:
  * Red Hat, Inc. - initial API and implementation
  ******************************************************************************/
-package com.redhat.devtools.intellij.kubernetes.editor.action
+package com.redhat.devtools.intellij.kubernetes.editor.actions
 
 import com.intellij.icons.AllIcons
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.CommonDataKeys
 import com.intellij.openapi.progress.Progressive
-import com.intellij.openapi.ui.MessageDialogBuilder
 import com.intellij.openapi.ui.Messages
 import com.intellij.openapi.ui.Messages.YES
 import com.redhat.devtools.intellij.common.utils.UIHelper
@@ -27,7 +26,7 @@ import java.util.function.Supplier
 class PushAction: AnAction() {
 
     companion object {
-        const val ID = "com.redhat.devtools.intellij.kubernetes.editor.action.PushAction"
+        const val ID = "com.redhat.devtools.intellij.kubernetes.editor.actions.PushAction"
     }
 
     override fun actionPerformed(e: AnActionEvent) {

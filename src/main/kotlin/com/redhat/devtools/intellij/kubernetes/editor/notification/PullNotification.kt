@@ -14,8 +14,8 @@ import com.intellij.openapi.fileEditor.FileEditor
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Key
 import com.intellij.ui.EditorNotificationPanel
-import com.redhat.devtools.intellij.kubernetes.editor.action.PushAction
-import com.redhat.devtools.intellij.kubernetes.editor.action.PullAction
+import com.redhat.devtools.intellij.kubernetes.editor.actions.PushAction
+import com.redhat.devtools.intellij.kubernetes.editor.actions.PullAction
 import com.redhat.devtools.intellij.kubernetes.editor.hideNotification
 import com.redhat.devtools.intellij.kubernetes.editor.showNotification
 import io.fabric8.kubernetes.api.model.HasMetadata

@@ -526,7 +526,7 @@ class ResourceEditorTest {
     }
 
     @Test
-    fun `IResourceChangeListener#modified should show modified notification if editor is modified`() {
+    fun `IResourceChangeListener#modified should show pull notification if editor is modified`() {
         // given
         doReturn(GARGAMEL) // cluster has GARGAMEL
             .whenever(clusterResource).get(any())
@@ -541,11 +541,11 @@ class ResourceEditorTest {
         // when
         listener!!.modified(GARGAMEL)
         // then
-        verify(pullNotification).show(GARGAMEL_WITH_LABEL)
+        verify(pullNotification).show(GARGAMEL)
     }
 
     @Test
-    fun `IResourceChangeListener#modified should NOT show modified notification but replace document if editor is NOT modified`() {
+    fun `IResourceChangeListener#modified should replace document and show pulled notification if editor is NOT modified`() {
         // given
         doReturn(GARGAMELv2)
             .whenever(clusterResource).get(any())
@@ -560,6 +560,7 @@ class ResourceEditorTest {
         listener!!.modified(GARGAMEL)
         // then
         verify(document).setText(Serialization.asYaml(GARGAMELv2))
+        verify(pulledNotification).show(any())
     }
 
     /**

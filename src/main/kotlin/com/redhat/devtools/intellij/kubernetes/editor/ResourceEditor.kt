@@ -253,12 +253,13 @@ open class ResourceEditor protected constructor(
 
     private fun showPulledOrPullNotification(resource: HasMetadata) {
         val resourceOnCluster = clusterResource?.get(false)
-        if (resourceOnCluster != null
-            && !hasLocalChanges(resource)) {
-            replaceDocument(resourceOnCluster)
-            pulledNotification.show(resource)
-        } else {
-            pullNotification.show(resource)
+        if (resourceOnCluster != null) {
+            if (!hasLocalChanges(resource)) {
+                replaceDocument(resourceOnCluster)
+                pulledNotification.show(resourceOnCluster)
+            } else {
+                pullNotification.show(resourceOnCluster)
+            }
         }
     }
 
