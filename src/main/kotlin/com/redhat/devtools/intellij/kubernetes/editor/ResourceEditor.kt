@@ -167,23 +167,24 @@ open class ResourceEditor protected constructor(
         }
     }
 
-    private val localCopy: AtomicReference<HasMetadata?> = AtomicReference(localCopy)
-    protected open val editorResource: AtomicReference<HasMetadata?> = AtomicReference(localCopy)
+    private var localCopy: HasMetadata? = localCopy
+    protected open var editorResource: HasMetadata? = localCopy
     /** mutex to exclude concurrent execution of push & watch notification **/
     private val resourceChangeMutex = ReentrantLock()
     private var oldClusterResource: ClusterResource? = null
     private var _clusterResource: ClusterResource? = null
     private val clusterResource: ClusterResource?
         get() {
-            synchronized(this) {
+            return resourceChangeMutex.withLock {
                 if (_clusterResource == null
                     // create new cluster resource if editor has different resource (name, kind, etc. changed)
-                    || false == _clusterResource?.isSameResource(editorResource.get())) {
+                    || false == _clusterResource?.isSameResource(editorResource)
+                ) {
                     oldClusterResource = _clusterResource
                     oldClusterResource?.close()
-                    _clusterResource = createClusterResource(editorResource.get(), clients)
+                    _clusterResource = createClusterResource(editorResource, clients)
                 }
-                return _clusterResource
+                _clusterResource
             }
         }
 
@@ -195,7 +196,9 @@ open class ResourceEditor protected constructor(
     fun update() {
         try {
             val resource = createResource.invoke(editor, clients) ?: return
-            this.editorResource.set(resource)
+            resourceChangeMutex.withLock {
+                this.editorResource = resource
+            }
             update(resource, clusterResource, oldClusterResource)
         } catch (e: ResourceException) {
             showErrorNotification(e)
@@ -263,11 +266,6 @@ open class ResourceEditor protected constructor(
         }
     }
 
-    fun hasLocalChanges(): Boolean {
-        val resource = createResource.invoke(editor, clients) ?: return false
-        this.editorResource.set(resource)
-        return hasLocalChanges(resource)
-    }
     /**
      * Returns `true` if the given resource is dirty aka has modifications that were not pushed.
      *
@@ -275,7 +273,9 @@ open class ResourceEditor protected constructor(
      * @return true if the resource is dirty
      */
     private fun hasLocalChanges(resource: HasMetadata): Boolean {
-        return resource != this.localCopy.get()
+        return resourceChangeMutex.withLock {
+            resource != this.localCopy
+        }
     }
 
     private fun showErrorNotification(e: Throwable) {
@@ -295,16 +295,18 @@ open class ResourceEditor protected constructor(
              * set editor resource now,
              * watch change modification notification can get in before document was replaced
              */
-            this.editorResource.set(pulled)
-            this.localCopy.set(pulled)
+            this.editorResource = pulled
+            this.localCopy = pulled
             pulled
         }
         replaceDocument(pulledResource)
     }
 
     private fun replaceDocument(resource: HasMetadata) {
-        editorResource.set(resource)
-        localCopy.set(resource)
+        resourceChangeMutex.withLock {
+            editorResource = resource
+            localCopy = resource
+        }
         val document = documentProvider.invoke(editor)
         if (document != null) {
             executeWriteAction {
@@ -324,7 +326,9 @@ open class ResourceEditor protected constructor(
 
     fun isOutdated(): Boolean {
         val resource = createResource.invoke(editor, clients) ?: return false
-        editorResource.set(resource)
+        resourceChangeMutex.withLock {
+            this.editorResource = resource
+        }
         return clusterResource?.isOutdated(resource) ?: false
     }
 
@@ -334,7 +338,9 @@ open class ResourceEditor protected constructor(
     fun push() {
         try {
             val resource = createResource.invoke(editor, clients) ?: return
-            editorResource.set(resource)
+            resourceChangeMutex.withLock {
+                this.editorResource = resource
+            }
             push(resource, clusterResource)
         } catch (e: Exception) {
             showErrorNotification(e)
@@ -355,8 +361,8 @@ open class ResourceEditor protected constructor(
                  * set editor resource now,
                  * watch change modification notification can get in before document was replaced
                  */
-                this.editorResource.set(updated)
-                this.localCopy.set(updated)
+                this.editorResource = updated
+                this.localCopy = updated
                 updated
             }
             if (updatedResource != null) {
@@ -411,9 +417,7 @@ open class ResourceEditor protected constructor(
 
             private fun showNotifications() {
                 val pair = resourceChangeMutex.withLock {
-                    val resource = editorResource.get()
-                    val localCopy = localCopy.get()
-                    Pair(resource, localCopy)
+                    Pair(editorResource, localCopy)
                 }
                 val resource = pair.first
                 val localCopy = pair.second

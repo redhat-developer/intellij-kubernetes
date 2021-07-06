@@ -534,7 +534,7 @@ class ResourceEditorTest {
             .whenever(clusterResource).isDeleted()
         doReturn(true) // local copy is outdated
             .whenever(clusterResource).isOutdated(any())
-        editor.editorResource.set(GARGAMEL_WITH_LABEL) // editor document is modified, is GARGAMEL_WITH_LABEL
+        editor.editorResource = GARGAMEL_WITH_LABEL // editor document is modified, is GARGAMEL_WITH_LABEL
         editor.startWatch() // create cluster
         val listener = captureClusterResourceListener(clusterResource) // listener added to cluster
         assertThat(listener).isNotNull()
@@ -625,8 +625,7 @@ class ResourceEditorTest {
         psiDocumentManagerProvider,
         ideNotification
     ) {
-        public override val editorResource: AtomicReference<HasMetadata?>
-            get() = super.editorResource
+        public override var editorResource: HasMetadata? = super.editorResource
 
         override fun executeWriteAction(runnable: () -> Unit) {
             // dont execute in application thread pool
