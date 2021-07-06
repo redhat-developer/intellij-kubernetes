@@ -47,6 +47,9 @@ class PulledNotification(private val editor: FileEditor, private val project: Pr
                 }
             }"
         )
+        panel.createActionLabel("Ignore") {
+            editor.hideNotification(KEY_PANEL, project)
+        }
         return panel
     }
 }
