@@ -35,21 +35,8 @@ class PullAction: AnAction() {
         com.redhat.devtools.intellij.kubernetes.actions.run("Reloading...", true,
             Progressive {
                 try {
-                    val resourceEditor = ResourceEditor.get(editor, project)
-                    if (resourceEditor != null
-                        && resourceEditor.hasLocalChanges()
-                        && UIHelper.executeInUI(Supplier {
-                            Messages.showOkCancelDialog(
-                                "Loose local changes?",
-                                "Overwrite Editor",
-                                AllIcons.General.QuestionDialog
-                            ) == YES
-                        })
-                    ) {
-                        ResourceEditor.get(editor, project)?.pull()
-                    }
+                    ResourceEditor.get(editor, project)?.pull()
                 } catch (e: Exception) {
-                    ResourceEditor.get(editor, project)
                     Notification().error("Error Pulling", "Could not pull resource from cluster: ${e.message}")
                 }
             })

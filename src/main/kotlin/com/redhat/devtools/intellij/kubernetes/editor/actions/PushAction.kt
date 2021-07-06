@@ -35,21 +35,8 @@ class PushAction: AnAction() {
         com.redhat.devtools.intellij.kubernetes.actions.run("Pushing...", true,
             Progressive {
                 try {
-                    val resourceEditor = ResourceEditor.get(editor, project)
-                    if (resourceEditor != null
-                        && resourceEditor.existsOnCluster()
-                        && UIHelper.executeInUI(Supplier {
-                            Messages.showYesNoDialog(
-                                "Overwrite resource on cluster?",
-                                "Overwrite Cluster",
-                                AllIcons.General.QuestionDialog
-                            ) == YES
-                        })
-                    ) {
-                        ResourceEditor.get(editor, project)?.push()
-                    }
+                    ResourceEditor.get(editor, project)?.push()
                 } catch (e: Exception) {
-                    ResourceEditor.get(editor, project)
                     Notification().error("Error Pushing", "Could not push resource to cluster: ${e.message}")
                 }
             })
