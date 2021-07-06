@@ -41,7 +41,7 @@ class PulledNotification(private val editor: FileEditor, private val project: Pr
         panel.setText(
             "Pulled changed ${resource.kind} '${resource.metadata.name}' ${
                 if (resource.metadata.resourceVersion != null) {
-                    "in revision ${resource.metadata.resourceVersion}"
+                    "to revision ${resource.metadata.resourceVersion}"
                 } else {
                     ""
                 }
