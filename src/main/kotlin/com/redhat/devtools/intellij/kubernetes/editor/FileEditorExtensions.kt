@@ -18,21 +18,35 @@ import com.intellij.ui.EditorNotificationPanel
 import com.redhat.devtools.intellij.common.utils.UIHelper
 import javax.swing.JComponent
 
-fun FileEditor.showNotification(key: Key<JComponent>, panelFactory: () -> EditorNotificationPanel, project: Project) {
-    if (getUserData(key) != null) {
-        // already shown
-        hideNotification(key, project)
-    }
-    val panel = panelFactory.invoke()
+/**
+ * Shows in this [FileEditor] the notification that the given factory creates and stores it under the given key.
+ * An existing notification is removed beforehand.
+ *
+ * @param key that the notification is stored with
+ * @param notificationFactory that creates the notification that will be shown
+ * @param project that this editor belongs to
+ */
+fun FileEditor.showNotification(key: Key<JComponent>, notificationFactory: () -> EditorNotificationPanel, project: Project) {
     UIHelper.executeInUI {
+        if (getUserData(key) != null) {
+            // already shown, remove existing
+            hideNotification(key, project)
+        }
+        val panel = notificationFactory.invoke()
         FileEditorManager.getInstance(project).addTopComponent(this, panel)
         this.putUserData(key, panel)
     }
 }
 
+/**
+ * Hides a notification that exists in this [FileEditor] for the given key and [Project].
+ *
+ * @param key that the notification is stored with
+ * @param project that this editor belongs to
+ */
 fun FileEditor.hideNotification(key: Key<JComponent>, project: Project) {
-    val panel = this.getUserData(key) ?: return
     UIHelper.executeInUI {
+        val panel = this.getUserData(key) ?: return@executeInUI
         FileEditorManager.getInstance(project).removeTopComponent(this, panel)
         this.putUserData(key, null)
     }
