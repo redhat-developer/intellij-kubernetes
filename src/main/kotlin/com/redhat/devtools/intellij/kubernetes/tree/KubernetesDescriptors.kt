@@ -85,7 +85,7 @@ object KubernetesDescriptors {
 		model = model,
 		project = project
 	) {
-		override fun getIcon(element: KubernetesContext): Icon? {
+		override fun getIcon(element: KubernetesContext): Icon {
 			return IconLoader.getIcon("/icons/kubernetes-cluster.svg")
 		}
 	}
@@ -109,8 +109,8 @@ object KubernetesDescriptors {
 			return label
 		}
 
-		override fun getIcon(element: Namespace): Icon? {
-			return IconLoader.getIcon("/icons/project.png")
+		override fun getIcon(element: Namespace): Icon {
+			return IconLoader.getIcon("/icons/namespace.svg")
 		}
 	}
 
@@ -127,11 +127,11 @@ object KubernetesDescriptors {
 			return element.metadata.name
 		}
 
-		override fun getIcon(element: Pod): Icon? {
+		override fun getIcon(element: Pod): Icon {
 			return if (PodStatusUtil.isRunning(element)) {
-				IconLoader.getIcon("/icons/runningPod.svg")
+				IconLoader.getIcon("/icons/running-pod.svg")
 			} else {
-				IconLoader.getIcon("/icons/errorPod.svg")
+				IconLoader.getIcon("/icons/error-pod.svg")
 			}
 		}
 	}
@@ -182,7 +182,7 @@ object KubernetesDescriptors {
 		override fun create(
 			parent: NodeDescriptor<*>?, model: IResourceModel,
 			project: Project
-		): NodeDescriptor<Pod>? {
+		): NodeDescriptor<Pod> {
 			return PodContainersDescriptor(resource, parent, model, project)
 		}
 
@@ -206,7 +206,7 @@ object KubernetesDescriptors {
 
 	class PodIpDescriptorFactory(pod: Pod) : AbstractTreeStructureContribution.DescriptorFactory<Pod>(pod) {
 
-		override fun create(parent: NodeDescriptor<*>?, model: IResourceModel, project: Project): NodeDescriptor<Pod>? {
+		override fun create(parent: NodeDescriptor<*>?, model: IResourceModel, project: Project): NodeDescriptor<Pod> {
 			return PodIpDescriptor(resource, parent, model, project)
 		}
 
