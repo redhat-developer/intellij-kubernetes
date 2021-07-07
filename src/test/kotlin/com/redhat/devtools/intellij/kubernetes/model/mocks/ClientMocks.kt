@@ -13,6 +13,9 @@ package com.redhat.devtools.intellij.kubernetes.model.mocks
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.whenever
+import com.redhat.devtools.intellij.kubernetes.editor.ResourceFile
+import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.custom.GenericCustomResource
+import com.redhat.devtools.intellij.kubernetes.model.util.getApiVersion
 import io.fabric8.kubernetes.api.model.Context
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.NamedContext
@@ -22,17 +25,18 @@ import io.fabric8.kubernetes.api.model.ObjectMeta
 import io.fabric8.kubernetes.api.model.Pod
 import io.fabric8.kubernetes.api.model.PodList
 import io.fabric8.kubernetes.api.model.apiextensions.v1beta1.CustomResourceDefinition
+import io.fabric8.kubernetes.api.model.apiextensions.v1beta1.CustomResourceDefinitionList
 import io.fabric8.kubernetes.api.model.apiextensions.v1beta1.CustomResourceDefinitionNames
 import io.fabric8.kubernetes.api.model.apiextensions.v1beta1.CustomResourceDefinitionSpec
 import io.fabric8.kubernetes.api.model.apiextensions.v1beta1.CustomResourceDefinitionVersion
 import io.fabric8.kubernetes.client.Config
-import io.fabric8.kubernetes.client.NamespacedKubernetesClient
+import io.fabric8.kubernetes.client.KubernetesClient
+import io.fabric8.kubernetes.client.V1beta1ApiextensionAPIGroupDSL
+import io.fabric8.kubernetes.client.dsl.ApiextensionsAPIGroupDSL
 import io.fabric8.kubernetes.client.dsl.MixedOperation
 import io.fabric8.kubernetes.client.dsl.NonNamespaceOperation
 import io.fabric8.kubernetes.client.dsl.PodResource
 import io.fabric8.kubernetes.client.dsl.Resource
-import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.custom.GenericCustomResource
-import com.redhat.devtools.intellij.kubernetes.model.util.getApiVersion
 import org.mockito.ArgumentMatchers
 import java.net.URL
 
@@ -41,26 +45,33 @@ typealias NamespaceListOperation =
 
 object ClientMocks {
 
-    val NAMESPACE1 = resource<Namespace>("namespace1")
-    val NAMESPACE2 = resource<Namespace>("namespace2")
-    val NAMESPACE3 = resource<Namespace>("namespace3")
+    val NAMESPACE1 = resource<Namespace>("namespace1", null, "nsUid1", "v1", "1")
+    val NAMESPACE2 = resource<Namespace>("namespace2", null, "nsUid2","v1", "1")
+    val NAMESPACE3 = resource<Namespace>("namespace3", null, "nsUid3", "v1", "1")
 
-    val POD1 = resource<Pod>("pod1")
-    val POD2 = resource<Pod>("pod2")
-    val POD3 = resource<Pod>("pod3")
+    val POD1 = resource<Pod>("pod1", "namespace1", "podUid1", "v1", "1")
+    val POD2 = resource<Pod>("pod2", "namespace2", "podUid2", "v1", "1")
+    val POD3 = resource<Pod>("pod3", "namespace3", "podUid3", "v1", "1")
 
-    fun client(currentNamespace: String?, namespaces: Array<Namespace>, masterUrl: URL = URL("http://localhost"))
-            : NamespacedKubernetesClient {
+
+    fun client(
+        currentNamespace: String?,
+        namespaces: Array<Namespace>,
+        masterUrl: URL = URL("http://localhost"),
+        customResourceDefinitions: List<CustomResourceDefinition> = emptyList()
+    ): KubernetesClient {
         val namespacesMock = namespaceListOperation(namespaces)
         val config = mock<Config> {
             on { namespace } doReturn currentNamespace
         }
+        val apiExtensions = apiextensionsOperation(customResourceDefinitions)
 
         return mock {
             on { namespaces() } doReturn namespacesMock
             on { namespace } doReturn currentNamespace
             on { configuration } doReturn config
             on { getMasterUrl() } doReturn masterUrl
+            on { apiextensions() } doReturn apiExtensions
         }
     }
 
@@ -73,12 +84,21 @@ object ClientMocks {
         }
     }
 
-    fun inNamespace(client: NamespacedKubernetesClient): NamespacedKubernetesClient {
-        val namespaceClient = mock<NamespacedKubernetesClient>()
-        whenever(client.inNamespace(ArgumentMatchers.anyString()))
-            .doReturn(namespaceClient)
-        return namespaceClient
+    private fun apiextensionsOperation(definitions: List<CustomResourceDefinition>): ApiextensionsAPIGroupDSL {
+        val v1beta1CrdListOperation: CustomResourceDefinitionList = mock {
+            on { items } doReturn definitions
+        }
+        val v1beta1CrdsOperation = mock<MixedOperation<CustomResourceDefinition, CustomResourceDefinitionList, Resource<CustomResourceDefinition>>> {
+            on { list() } doReturn v1beta1CrdListOperation
+        }
+        val v1beta1Operation: V1beta1ApiextensionAPIGroupDSL = mock {
+            on { customResourceDefinitions() } doReturn v1beta1CrdsOperation
+        }
+        return mock {
+            on { v1beta1() } doReturn v1beta1Operation
+        }
     }
+
 
     fun inNamespace(mixedOp: MixedOperation<Pod, PodList, PodResource<Pod>>)
             : NonNamespaceOperation<Pod, PodList, PodResource<Pod>> {
@@ -89,7 +109,7 @@ object ClientMocks {
         return nonNamespaceOperation
     }
 
-    fun pods(client: NamespacedKubernetesClient)
+    fun pods(client: KubernetesClient)
             : MixedOperation<Pod, PodList, PodResource<Pod>> {
         val podsOp = mock<MixedOperation<Pod, PodList, PodResource<Pod>>>()
         whenever(client.pods())
@@ -119,11 +139,11 @@ object ClientMocks {
             .doReturn(returnedPods)
     }
 
-    fun withName(mixedOp: MixedOperation<Pod, PodList, PodResource<Pod>>, pod: Pod) {
+    fun withName(op: NonNamespaceOperation<Pod, PodList, PodResource<Pod>>, pod: Pod) {
         val podResource = mock<PodResource<Pod>>()
         whenever(podResource.get())
             .doReturn(pod)
-        whenever(mixedOp.withName(pod.metadata.name))
+        whenever(op.withName(pod.metadata.name))
             .doReturn(podResource)
     }
 
@@ -169,46 +189,55 @@ object ClientMocks {
     }
 
     fun customResourceDefinition(
-            name: String,
-            version: String,
-            group: String,
-            kind: String,
-            scope: String): CustomResourceDefinition {
+        name: String,
+        namespace: String,
+        uid: String,
+        apiVersion: String,
+        specVersion: String,
+        specGroup: String?,
+        specKind: String,
+        specScope: String): CustomResourceDefinition {
         return customResourceDefinition(
             name,
-            version,
-            listOf(version(version)),
-            group,
-            kind,
-            scope)
+            namespace,
+            uid,
+            apiVersion,
+            specVersion,
+            listOf(customResourceDefinitionVersion(specVersion)),
+            specGroup,
+            specKind,
+            specScope)
     }
 
     fun customResourceDefinition(
         name: String,
-        version: String,
-        versions: List<CustomResourceDefinitionVersion>,
-        group: String,
-        kind: String,
-        scope: String): CustomResourceDefinition {
+        namespace: String,
+        uid: String,
+        apiVersion: String,
+        specVersion: String,
+        specVersions: List<CustomResourceDefinitionVersion>,
+        specGroup: String?,
+        specKind: String,
+        specScope: String): CustomResourceDefinition {
         val names: CustomResourceDefinitionNames = mock {
-            on { mock.kind } doReturn kind
+            on { mock.kind } doReturn specKind
         }
         val spec = mock<CustomResourceDefinitionSpec> {
-            on { mock.version } doReturn version
-            on { mock.versions } doReturn versions
-            on { mock.group } doReturn group
+            on { mock.version } doReturn specVersion
+            on { mock.versions } doReturn specVersions
+            on { mock.group } doReturn specGroup
             on { mock.names } doReturn names
-            on { mock.scope } doReturn scope
+            on { mock.scope } doReturn specScope
         }
-        val definition = resource<CustomResourceDefinition>(name)
+        val definition = resource<CustomResourceDefinition>(name, namespace, uid, apiVersion)
         whenever(definition.spec)
             .doReturn(spec)
         return definition
     }
 
-    private fun version(name: String): CustomResourceDefinitionVersion {
+    fun customResourceDefinitionVersion(name: String): CustomResourceDefinitionVersion {
         return mock {
-            on { mock.name } doReturn name
+            on { getName() } doReturn name
         }
     }
 
@@ -216,11 +245,12 @@ object ClientMocks {
         name: String,
         namespace: String? = null,
         uid: String? = System.currentTimeMillis().toString(),
-        selfLink: String? = "/apis/${namespace}/$name"): T {
-        val metadata = objectMeta(name, namespace, uid, selfLink)
+        apiVersion: String,
+        resourceVersion: String? = System.currentTimeMillis().toString()): T {
+        val metadata = objectMeta(name, namespace, uid, resourceVersion)
         return mock {
             on { getMetadata() } doReturn metadata
-            on { getApiVersion() } doReturn getApiVersion(T::class.java)
+            on { getApiVersion() } doReturn apiVersion
             on { getKind() } doReturn T::class.java.simpleName
         }
     }
@@ -230,9 +260,9 @@ object ClientMocks {
         namespace: String,
         definition: CustomResourceDefinition,
         uid: String? = System.currentTimeMillis().toString(),
-        selfLink: String? = "/apis/$namespace/customresources/$name"
+        resourceVersion: String = System.currentTimeMillis().toString()
     ): GenericCustomResource {
-        val metadata = objectMeta(name, namespace, uid, selfLink)
+        val metadata = objectMeta(name, namespace, uid, resourceVersion)
         val apiVersion = getApiVersion(
             definition.spec.group,
             definition.spec.version) // TODO: deal with multiple versions
@@ -244,13 +274,17 @@ object ClientMocks {
         }
     }
 
-    fun objectMeta(name: String, namespace: String?, uid: String?, selfLink: String?): ObjectMeta {
+    fun objectMeta(
+        name: String,
+        namespace: String?,
+        uid: String?,
+        resourceVersion: String?
+    ): ObjectMeta {
         return mock {
             on { getName() } doReturn name
             on { getNamespace() } doReturn namespace
             on { getUid() } doReturn uid
-            on { getSelfLink() } doReturn selfLink
+            on { getResourceVersion() } doReturn resourceVersion
         }
     }
-
 }

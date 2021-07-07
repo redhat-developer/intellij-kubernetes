@@ -18,23 +18,19 @@ import com.nhaarman.mockitokotlin2.spy
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.whenever
 import io.fabric8.kubernetes.api.model.HasMetadata
-import io.fabric8.kubernetes.api.model.ListOptions
 import io.fabric8.kubernetes.api.model.Namespace
 import io.fabric8.kubernetes.api.model.Pod
 import io.fabric8.kubernetes.client.KubernetesClientException
 import io.fabric8.kubernetes.client.Watch
 import io.fabric8.kubernetes.client.Watcher
-import io.fabric8.kubernetes.client.dsl.Watchable
 import org.assertj.core.api.Assertions.assertThat
 import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.resource
 import com.redhat.devtools.intellij.kubernetes.model.resource.ResourceKind
 import org.junit.Before
 import org.junit.Test
 import java.util.concurrent.BlockingDeque
-import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.LinkedBlockingDeque
 import java.util.concurrent.TimeUnit
-import java.util.function.Supplier
 
 class ResourceWatchTest {
 
@@ -45,52 +41,49 @@ class ResourceWatchTest {
     private val replaceOperationState = OperationState()
     private val replaceOperation: (HasMetadata) -> Unit = { replaceOperationState.operation(it) }
     private val resourceWatch: TestableResourceWatch = spy(TestableResourceWatch(
-        addOperation = addOperation,
-        removeOperation = removeOperation,
-        replaceOperation = replaceOperation,
         watchOperations = LinkedBlockingDeque<ResourceWatch.WatchOperation<*>>(),
         watchOperationsRunner = mock()
     ))
+    private val watchListener = ResourceWatch.WatchListeners(addOperation, removeOperation, replaceOperation)
     private val podKind = ResourceKind.create(Pod::class.java)
-    private val watchable1 = WatchableFake()
+    private val podWatchOpProvider = WatchOperationProvider<Pod>()
     private val namespaceKind = ResourceKind.create(Namespace::class.java)
-    private val watchable2 = WatchableFake()
+    private val namespaceWatchOp = WatchOperationProvider<Namespace>()
     private val hasMetaKind1 = ResourceKind.create("v1", HasMetadata::class.java, "HasMetadata")
     private val hasMetaKind2 = ResourceKind.create("v2", HasMetadata::class.java, "HasMetadata")
 
     @Before
     fun before() {
-        resourceWatch.watch(podKind, Supplier { watchable1 })
-        resourceWatch.watch(namespaceKind, Supplier { watchable2 })
+        resourceWatch.watch(podKind, podWatchOpProvider::watch, watchListener)
+        resourceWatch.watch(namespaceKind, namespaceWatchOp::watch, watchListener)
     }
 
     @Test
-    fun `#watch() should call watchable#watch() on supplied watchable`() {
+    fun `#watch() should call operation#watch`() {
         // given
         // when watch supplier is added - in @Before
         // then
-        assertThat(watchable1.isWatchCalled()).isTrue()
+        assertThat(podWatchOpProvider.isWatchCalled()).isTrue()
     }
 
     @Test
     fun `#watch() should add watch`() {
         // given
         val kind: ResourceKind<Pod> = mock()
-        val watchable = WatchableFake()
         assertThat(resourceWatch.watches.keys).doesNotContain(kind)
         // when
-        resourceWatch.watch(kind, Supplier { watchable })
+        resourceWatch.watch(kind, podWatchOpProvider::watch, watchListener)
         // then
         assertThat(resourceWatch.watches.keys).contains(kind)
     }
 
     @Test
-    fun `#watch() should not add if supplier is null`() {
+    fun `#watch() should not add if operation is null`() {
         // given
         assertThat(resourceWatch.watches.keys).doesNotContain(hasMetaKind1)
         val sizeBeforeAdd = resourceWatch.watches.keys.size
         // when
-        resourceWatch.watch(hasMetaKind1, Supplier { null })
+        resourceWatch.watch(hasMetaKind1, WatchOperationProvider<HasMetadata>(null)::watch, watchListener)
         // then
         verify(resourceWatch.watches, never()).put(eq(hasMetaKind1), any())
         assertThat(resourceWatch.watches.keys.size).isEqualTo(sizeBeforeAdd)
@@ -99,41 +92,41 @@ class ResourceWatchTest {
     @Test
     fun `#watch() should not add if kind already exists`() {
         // given
-        val existing = WatchableFake().watch
+        val existing = WatchOperationProvider<Pod>().watch
         resourceWatch.watches[podKind] = existing
-        val new = WatchableFake()
+        val new = WatchOperationProvider<HasMetadata>()
         // when
-        resourceWatch.watch(podKind, Supplier { new })
+        resourceWatch.watch(podKind, new::watch, watchListener)
         // then
         val watch = resourceWatch.watches[podKind]
         assertThat(watch).isEqualTo(existing)
     }
 
     @Test
-    fun `#ignore() should close removed watch`() {
+    fun `#stopWatch() should close removed watch`() {
         // given
         // when starting 2nd time
         resourceWatch.stopWatch(podKind)
         // then
-        assertThat(watchable1.watch.isClosed()).isTrue()
+        assertThat(podWatchOpProvider.watch?.isClosed()).isTrue()
     }
 
     @Test
-    fun `#ignore() should not close remaining watches`() {
+    fun `#stopWatch() should not close remaining watches`() {
         // given
-        val notRemoved = WatchableFake()
-        resourceWatch.watch(hasMetaKind1, Supplier { notRemoved })
+        val notRemoved = WatchOperationProvider<HasMetadata>()
+        resourceWatch.watch(hasMetaKind1, notRemoved::watch, watchListener)
         // when starting 2nd time
         resourceWatch.stopWatch(podKind)
         // then
-        assertThat(notRemoved.watch.isClosed()).isFalse()
+        assertThat(notRemoved.watch?.isClosed()).isFalse()
     }
 
     @Test
-    fun `#ignore() should remove watch`() {
+    fun `#stopWatch() should remove watch`() {
         // given
         val toRemove = WatchFake()
-        resourceWatch.watch(hasMetaKind1, Supplier { WatchableFake(toRemove) })
+        resourceWatch.watch(hasMetaKind1, WatchOperationProvider<HasMetadata>(toRemove)::watch, watchListener)
         assertThat(resourceWatch.watches.values).contains(toRemove)
         // when starting 2nd time
         resourceWatch.stopWatch(hasMetaKind1)
@@ -142,18 +135,18 @@ class ResourceWatchTest {
     }
 
     @Test
-    fun `#ignoreAll() should continue ignoring if previous watchable throws`() {
-        // given watchable1 throws
+    fun `#stopWatchAll() should continue stopping if previous close throws`() {
+        // given watch throws
         val watch1 = spy(WatchFake())
         whenever(watch1.close()).thenThrow(KubernetesClientException::class.java)
-        val watchable1 = WatchableFake(watch1)
+        val watchOpProvider1 = WatchOperationProvider<HasMetadata>(watch1)
         val watch2 = spy(WatchFake())
-        val watchable2 = WatchableFake(watch2)
-        resourceWatch.watch(hasMetaKind1, Supplier { watchable1 })
-        resourceWatch.watch(hasMetaKind2, Supplier { watchable2 })
+        val watchOpProvider2 = WatchOperationProvider<Pod>(watch2)
+        resourceWatch.watch(hasMetaKind1, watchOpProvider1::watch, watchListener)
+        resourceWatch.watch(hasMetaKind2, watchOpProvider2::watch, watchListener)
         // when
         resourceWatch.stopWatchAll(listOf(hasMetaKind1, hasMetaKind2))
-        // then watchable2 was closed
+        // then watch was closed
         verify(watch1).close()
         verify(watch2).close()
     }
@@ -161,9 +154,9 @@ class ResourceWatchTest {
     @Test
     fun `#addOperation should get called if watch notifies ADDED`() {
         // given
-        val resource: HasMetadata = resource("some HasMetadata")
+        val resource: Pod = resource("some HasMetadata", "ns1", "somePodUid", "v1")
         // when
-        watchable1.watcher?.eventReceived(Watcher.Action.ADDED, resource)
+        podWatchOpProvider.watcher?.eventReceived(Watcher.Action.ADDED, resource)
         // then
         assertThat(addOperationState.wasInvokedWithResource(resource)).isTrue()
         assertThat(removeOperationState.wasInvoked()).isFalse()
@@ -172,9 +165,9 @@ class ResourceWatchTest {
     @Test
     fun `#removeOperation should get invoked if watch notifies REMOVED`() {
         // given
-        val resource: HasMetadata = resource("some HasMetadata")
+        val resource: Pod = resource("some HasMetadata", "ns1", "somePodUid", "v1")
         // when
-        watchable1.watcher?.eventReceived(Watcher.Action.DELETED, resource)
+        podWatchOpProvider.watcher?.eventReceived(Watcher.Action.DELETED, resource)
         // then
         assertThat(removeOperationState.wasInvokedWithResource(resource)).isTrue()
         assertThat(addOperationState.wasInvoked()).isFalse()
@@ -183,9 +176,9 @@ class ResourceWatchTest {
     @Test
     fun `should not invoke any operation if watch notifies action that is not ADD, REMOVE or MODIFIED`() {
         // given
-        val resource: HasMetadata = resource("some HasMetadata")
+        val resource: Pod = resource("some HasMetadata", "ns1", "somePodUid", "v1")
         // when
-        watchable1.watcher?.eventReceived(Watcher.Action.ERROR, resource)
+        podWatchOpProvider.watcher?.eventReceived(Watcher.Action.ERROR, resource)
         // then
         assertThat(removeOperationState.wasInvoked()).isFalse()
         assertThat(addOperationState.wasInvoked()).isFalse()
@@ -195,9 +188,9 @@ class ResourceWatchTest {
     @Test
     fun `#replaceOperation should get invoked if watch notifies MODIFIED`() {
         // given
-        val resource: HasMetadata = resource("some HasMetadata")
+        val resource: Pod = resource("some HasMetadata", "ns1", "somePodUid", "v1")
         // when
-        watchable1.watcher?.eventReceived(Watcher.Action.MODIFIED, resource)
+        podWatchOpProvider.watcher?.eventReceived(Watcher.Action.MODIFIED, resource)
         // then
         assertThat(removeOperationState.wasInvokedWithResource(resource)).isFalse()
         assertThat(addOperationState.wasInvoked()).isFalse()
@@ -210,24 +203,25 @@ class ResourceWatchTest {
         // when starting 2nd time
         resourceWatch.close()
         // then
-        assertThat(watchable1.watch.isClosed())
-        assertThat(watchable2.watch.isClosed())
+        assertThat(podWatchOpProvider.watch?.isClosed()).isTrue()
+        assertThat(namespaceWatchOp.watch?.isClosed()).isTrue()
     }
 
     class TestableResourceWatch(
-            addOperation: (HasMetadata) -> Unit,
-            removeOperation: (HasMetadata) -> Unit,
-            replaceOperation: (HasMetadata) -> Unit,
-            watchOperations: BlockingDeque<WatchOperation<*>>,
-            watchOperationsRunner: Runnable = mock()
-    ): ResourceWatch(addOperation, removeOperation, replaceOperation, watchOperations, watchOperationsRunner) {
-        public override val watches: ConcurrentHashMap<ResourceKind<*>, Watch?> = spy(super.watches)
+        watchOperations: BlockingDeque<WatchOperation<*>>,
+        watchOperationsRunner: Runnable = mock()
+    ): ResourceWatch<ResourceKind<out HasMetadata>>(watchOperations, watchOperationsRunner) {
+        public override val watches = spy(super.watches)
 
-        override fun watch(kind: ResourceKind<out HasMetadata>, supplier: Supplier<out Watchable<Watcher<in HasMetadata>>?>) {
-            super.watch(kind, supplier)
-            val watchOperation = watchOperations.pollFirst(10, TimeUnit.SECONDS)
+        override fun watch(
+            key: ResourceKind<out HasMetadata>,
+            watchOperation: (watcher: Watcher<in HasMetadata>) -> Watch?,
+            watchListeners: WatchListeners
+        ) {
+            super.watch(key, watchOperation, watchListeners)
+            val queuedOperation = watchOperations.pollFirst(10, TimeUnit.SECONDS)
             // run in sequence, not in separate thread
-            watchOperation?.run()
+            queuedOperation?.run()
         }
     }
 
@@ -247,21 +241,12 @@ class ResourceWatchTest {
         }
     }
 
-    private class WatchableFake (var watch: WatchFake = WatchFake()) : Watchable<Watcher<in HasMetadata>> {
+    private class WatchOperationProvider<T: HasMetadata>(var watch: WatchFake? = WatchFake()) {
+        var watcher: Watcher<in T>? = null
 
-        var watcher: Watcher<in HasMetadata>? = null
-
-        override fun watch(watcher: Watcher<in HasMetadata>?): Watch {
+        fun watch(watcher: Watcher<in T>?): Watch? {
             this.watcher = watcher
             return watch
-        }
-
-        override fun watch(options: ListOptions?, watcher: Watcher<in HasMetadata>?): Watch {
-            return watch(watcher)
-        }
-
-        override fun watch(resourceVersion: String?, watcher: Watcher<in HasMetadata>): Watch {
-            return watch(watcher)
         }
 
         fun isWatchCalled(): Boolean {

@@ -30,6 +30,8 @@
         ]]>
     </change-notes>
     <depends>com.intellij.modules.lang</depends>
+    <depends>org.jetbrains.plugins.yaml</depends>
+    <depends optional="true" config-file="plugin-json.xml">com.intellij.modules.json</depends>
 
     <extensions defaultExtensionNs="com.intellij">
         <toolWindow id="Kubernetes"
@@ -38,11 +40,13 @@
                     icon="/META-INF/pluginIcon13x13.svg"/>
         <applicationService serviceInterface="com.redhat.devtools.intellij.kubernetes.model.IResourceModel"
                             serviceImplementation="com.redhat.devtools.intellij.kubernetes.model.ResourceModel"/>
+        <nonProjectFileWritingAccessExtension implementation="com.redhat.devtools.intellij.common.editor.AllowNonProjectEditing" />
+        <postStartupActivity implementation="com.redhat.devtools.intellij.kubernetes.KubernetesPluginInitializer" />
     </extensions>
 
     <extensionPoints>
-        <extensionPoint name="resourceProvider"
-                        interface="com.redhat.devtools.intellij.kubernetes.model.resource.IResourcesProviderFactory"/>
+        <extensionPoint name="resourceOperators"
+                        interface="com.redhat.devtools.intellij.kubernetes.model.resource.IResourceOperatorFactory"/>
         <extensionPoint name="structureContribution"
                         interface="com.redhat.devtools.intellij.kubernetes.tree.ITreeStructureContributionFactory"/>
     </extensionPoints>
@@ -64,14 +68,29 @@
                     id="com.redhat.devtools.intellij.kubernetes.actions.UseProjectAction"
                     text="Use Project"
                     icon="AllIcons.Nodes.EmptyNode"/>
-            <action class="com.redhat.devtools.intellij.kubernetes.actions.RefreshAction"
-                    id="com.redhat.devtools.intellij.kubernetes.actions.RefreshAction"
-                    text="Refresh"
-                    icon="AllIcons.Actions.Refresh"/>
+            <action class="com.redhat.devtools.intellij.kubernetes.actions.EditResourceAction"
+                    id="com.redhat.devtools.intellij.kubernetes.actions.EditResourceAction"
+                    text="Edit..."
+                    icon="AllIcons.Actions.Edit"/>
             <action class="com.redhat.devtools.intellij.kubernetes.actions.DeleteResourceAction"
                     id="com.redhat.devtools.intellij.kubernetes.actions.DeleteResourceAction"
                     text="Delete"
                     icon="AllIcons.Actions.Close"/>
+            <action class="com.redhat.devtools.intellij.kubernetes.actions.RefreshAction"
+                    id="com.redhat.devtools.intellij.kubernetes.actions.RefreshAction"
+                    text="Refresh"
+                    icon="AllIcons.Actions.Refresh"/>
+        </group>
+
+        <group id="Kubernetes.Editor.Toolbar" class="com.intellij.openapi.actionSystem.DefaultActionGroup">
+            <action class="com.redhat.devtools.intellij.kubernetes.editor.actions.PushAction"
+                    id="com.redhat.devtools.intellij.kubernetes.editor.actions.PushAction"
+                    text="Push Editor to the Cluster"
+                    icon="/icons/upload.svg" />
+            <action class="com.redhat.devtools.intellij.kubernetes.editor.actions.PullAction"
+                    id="com.redhat.devtools.intellij.kubernetes.editor.actions.PullAction"
+                    text="Pull from Cluster to the Editor"
+                    icon="/icons/download.svg" />
         </group>
     </actions>
 

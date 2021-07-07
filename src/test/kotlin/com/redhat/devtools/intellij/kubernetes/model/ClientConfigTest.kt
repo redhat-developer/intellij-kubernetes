@@ -30,7 +30,6 @@ import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks
 import io.fabric8.kubernetes.api.model.ConfigBuilder
 import io.fabric8.kubernetes.client.internal.KubeConfigUtils
 import org.junit.Test
-import org.mockito.ArgumentCaptor
 
 class ClientConfigTest {
 

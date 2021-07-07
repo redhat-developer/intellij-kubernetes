@@ -10,27 +10,23 @@
  ******************************************************************************/
 package com.redhat.devtools.intellij.kubernetes.model.mocks
 
-import com.nhaarman.mockitokotlin2.any
-import com.nhaarman.mockitokotlin2.anyOrNull
-import com.nhaarman.mockitokotlin2.doReturn
-import com.nhaarman.mockitokotlin2.mock
+import com.nhaarman.mockitokotlin2.*
+import com.redhat.devtools.intellij.kubernetes.editor.ResourceFile
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.NamedContext
 import io.fabric8.kubernetes.api.model.Namespace
 import io.fabric8.kubernetes.client.Client
 import io.fabric8.kubernetes.client.KubernetesClient
-import io.fabric8.kubernetes.client.Watch
 import io.fabric8.kubernetes.client.Watcher
-import io.fabric8.kubernetes.client.dsl.Watchable
 import com.redhat.devtools.intellij.kubernetes.model.IModelChangeObservable
 import com.redhat.devtools.intellij.kubernetes.model.IResourceModel
 import com.redhat.devtools.intellij.kubernetes.model.context.IActiveContext
 import com.redhat.devtools.intellij.kubernetes.model.context.IContext
-import com.redhat.devtools.intellij.kubernetes.model.resource.INamespacedResourcesProvider
-import com.redhat.devtools.intellij.kubernetes.model.resource.INonNamespacedResourcesProvider
+import com.redhat.devtools.intellij.kubernetes.model.resource.INamespacedResourceOperator
+import com.redhat.devtools.intellij.kubernetes.model.resource.INonNamespacedResourceOperator
 import com.redhat.devtools.intellij.kubernetes.model.resource.ResourceKind
+import io.fabric8.kubernetes.client.Watch
 import org.mockito.Mockito
-import java.util.function.Supplier
 
 object Mocks {
 
@@ -68,34 +64,45 @@ object Mocks {
         }
     }
 
-    fun <T : HasMetadata, C: Client> namespacedResourceProvider(
+    inline fun <reified T : HasMetadata, C : Client> namespacedResourceOperator(
         kind: ResourceKind<T>,
         resources: Collection<T>,
         namespace: Namespace,
-        watchableSupplier: Supplier<Watchable<Watcher<T>>?> = Supplier { null })
-            : INamespacedResourcesProvider<T, C> {
+        crossinline watchOperation: (watcher: Watcher<in T>) -> Watch? = { null },
+        deleteSuccess: Boolean = true,
+        getReturnValue: T? = null
+    ): INamespacedResourceOperator<T, C> {
         return mock {
             Mockito.doReturn(namespace.metadata.name)
                 .`when`(mock).namespace
-            Mockito.doReturn(kind as Any?)
-                .`when`(mock).kind
-            Mockito.doReturn(resources)
-                .`when`(mock).allResources
-            Mockito.doReturn(watchableSupplier)
-                .`when`(mock).getWatchable()
+            on { this.kind } doReturn kind
+            on { allResources } doReturn resources
+            on { watch(any(), any()) } doAnswer { invocation ->
+                watchOperation.invoke(invocation.getArgument(0))
+            }
+            on { watchAll(any()) } doAnswer { invocation ->
+                watchOperation.invoke(invocation.getArgument(0))
+            }
+            on { delete(any()) } doReturn deleteSuccess
+            on { get(any()) } doReturn getReturnValue
         }
     }
 
-    fun <T : HasMetadata, C: Client> nonNamespacedResourceProvider(
+    inline fun <reified T : HasMetadata, C : Client> nonNamespacedResourceOperator(
         kind: ResourceKind<T>,
         resources: Collection<T>,
-        watchableSupplier: Supplier<Watchable<Watcher<T>>?> = Supplier { null },
-        deleteSuccess: Boolean = true)
-            : INonNamespacedResourcesProvider<T, C> {
+        crossinline watchOperation: (watcher: Watcher<in T>) -> Watch? = { null },
+        deleteSuccess: Boolean = true
+    ) : INonNamespacedResourceOperator<T, C> {
         return mock {
             on { this.kind } doReturn kind
             on { allResources } doReturn resources
-            on { getWatchable() } doReturn watchableSupplier
+            on { watch(any(), any()) } doAnswer { invocation ->
+                watchOperation.invoke(invocation.getArgument(0))
+            }
+            on { watchAll(any()) } doAnswer { invocation ->
+                watchOperation.invoke(invocation.getArgument(0))
+            }
             on { delete(any()) } doReturn deleteSuccess
         }
     }
@@ -103,4 +110,14 @@ object Mocks {
     fun resourceModel(): IResourceModel {
         return mock {}
     }
+
+    fun resourceFile(basePath: String): ResourceFile {
+        return mock {
+            on { getBasePath() } doReturn basePath
+            on { hasEqualBasePath(any()) } doAnswer {
+                    invocationOnMock -> basePath == (invocationOnMock.arguments[0] as? ResourceFile)?.getBasePath()
+            }
+        }
+    }
+
 }

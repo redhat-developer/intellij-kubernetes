@@ -12,73 +12,65 @@ package com.redhat.devtools.intellij.kubernetes.model.context
 
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.extensions.ExtensionPointName
-import com.redhat.devtools.intellij.kubernetes.model.Contexts
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.NamedContext
 import io.fabric8.kubernetes.api.model.apiextensions.v1beta1.CustomResourceDefinition
 import io.fabric8.kubernetes.api.model.apiextensions.v1beta1.CustomResourceDefinitionSpec
 import io.fabric8.kubernetes.client.KubernetesClient
 import io.fabric8.kubernetes.client.KubernetesClientException
-import io.fabric8.kubernetes.client.Watcher
-import io.fabric8.kubernetes.client.dsl.Watchable
 import com.redhat.devtools.intellij.kubernetes.model.IModelChangeObservable
 import com.redhat.devtools.intellij.kubernetes.model.Notification
 import com.redhat.devtools.intellij.kubernetes.model.ResourceWatch
+import com.redhat.devtools.intellij.kubernetes.model.ResourceWatch.WatchListeners
 import com.redhat.devtools.intellij.kubernetes.model.context.IActiveContext.ResourcesIn
 import com.redhat.devtools.intellij.kubernetes.model.context.IActiveContext.ResourcesIn.ANY_NAMESPACE
 import com.redhat.devtools.intellij.kubernetes.model.context.IActiveContext.ResourcesIn.CURRENT_NAMESPACE
 import com.redhat.devtools.intellij.kubernetes.model.context.IActiveContext.ResourcesIn.NO_NAMESPACE
-import com.redhat.devtools.intellij.kubernetes.model.resource.INamespacedResourcesProvider
-import com.redhat.devtools.intellij.kubernetes.model.resource.INonNamespacedResourcesProvider
-import com.redhat.devtools.intellij.kubernetes.model.resource.IResourcesProvider
-import com.redhat.devtools.intellij.kubernetes.model.resource.IResourcesProviderFactory
+import com.redhat.devtools.intellij.kubernetes.model.resource.INamespacedResourceOperator
+import com.redhat.devtools.intellij.kubernetes.model.resource.INonNamespacedResourceOperator
+import com.redhat.devtools.intellij.kubernetes.model.resource.IResourceOperator
+import com.redhat.devtools.intellij.kubernetes.model.resource.IResourceOperatorFactory
 import com.redhat.devtools.intellij.kubernetes.model.resource.ResourceKind
+import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.custom.CustomResourceScope
 import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.custom.GenericCustomResource
-import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.custom.NamespacedCustomResourcesProvider
-import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.custom.NonNamespacedCustomResourcesProvider
-import com.redhat.devtools.intellij.kubernetes.model.util.Clients
+import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.custom.NamespacedCustomResourceOperator
+import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.custom.NonNamespacedCustomResourceOperator
+import com.redhat.devtools.intellij.kubernetes.model.Clients
 import com.redhat.devtools.intellij.kubernetes.model.util.MultiResourceException
 import com.redhat.devtools.intellij.kubernetes.model.util.ResourceException
-import com.redhat.devtools.intellij.kubernetes.model.util.sameResource
+import com.redhat.devtools.intellij.kubernetes.model.util.isSameResource
 import com.redhat.devtools.intellij.kubernetes.model.util.setWillBeDeleted
 import com.redhat.devtools.intellij.kubernetes.model.util.toMessage
 import io.fabric8.kubernetes.client.Config
-import io.fabric8.kubernetes.client.internal.KubeConfigUtils
-import java.io.File
 import java.net.URL
-import java.util.function.Supplier
 
 abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
-        private val modelChange: IModelChangeObservable,
-        client: C,
-        context: NamedContext
+    private val modelChange: IModelChangeObservable,
+    private val clients: Clients<C>,
+    context: NamedContext
 ) : Context(context), IActiveContext<N, C> {
 
     override val active: Boolean = true
-    private val clients = Clients(client)
     override val masterUrl: URL
         get() {
             return clients.get().masterUrl
         }
-    private val extensionName: ExtensionPointName<IResourcesProviderFactory<HasMetadata, C, IResourcesProvider<HasMetadata>>> =
-            ExtensionPointName.create("com.redhat.devtools.intellij.kubernetes.resourceProvider")
+    private val extensionName: ExtensionPointName<IResourceOperatorFactory<HasMetadata, C, IResourceOperator<HasMetadata>>> =
+            ExtensionPointName.create("com.redhat.devtools.intellij.kubernetes.resourceOperators")
 
-    protected open val nonNamespacedProviders: MutableMap<ResourceKind<out HasMetadata>, INonNamespacedResourcesProvider<*, *>> by lazy {
-        getAllResourceProviders(INonNamespacedResourcesProvider::class.java)
+    protected open val nonNamespacedOperators: MutableMap<ResourceKind<out HasMetadata>, INonNamespacedResourceOperator<*, *>> by lazy {
+        getAllResourceOperators(INonNamespacedResourceOperator::class.java)
     }
-    protected open val namespacedProviders: MutableMap<ResourceKind<out HasMetadata>, INamespacedResourcesProvider<out HasMetadata, C>> by lazy {
+    protected open val namespacedOperators: MutableMap<ResourceKind<out HasMetadata>, INamespacedResourceOperator<out HasMetadata, C>> by lazy {
         @Suppress("UNCHECKED_CAST")
-        val providers = getAllResourceProviders(INamespacedResourcesProvider::class.java)
-                as MutableMap<ResourceKind<out HasMetadata>, INamespacedResourcesProvider<out HasMetadata, C>>
-        setCurrentNamespace(providers.values)
-        providers
+        val operators = getAllResourceOperators(INamespacedResourceOperator::class.java)
+                as MutableMap<ResourceKind<out HasMetadata>, INamespacedResourceOperator<out HasMetadata, C>>
+        setCurrentNamespace(operators.values)
+        operators
     }
 
-    protected open var watch: ResourceWatch = ResourceWatch(
-            addOperation = { add(it) },
-            removeOperation = { remove(it) },
-            replaceOperation = { replace(it) }
-    )
+    protected open var watch = ResourceWatch<ResourceKind<out HasMetadata>>()
+    protected open val watchListener = WatchListeners({ added(it) }, { removed(it) }, { replaced(it) })
 
     protected open val notification: Notification = Notification()
 
@@ -92,7 +84,7 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
         val stopped = stopWatch(currentNamespace)
         val configuration = clients.get().configuration
         setCurrentNamespace(namespace, configuration)
-        setCurrentNamespace(namespace, namespacedProviders.values)
+        setCurrentNamespace(namespace, namespacedOperators.values)
         watchAll(stopped)
         modelChange.fireCurrentNamespace(namespace)
         return true
@@ -102,24 +94,24 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
         configuration.namespace = namespace
     }
 
-    private fun setCurrentNamespace(providers: Collection<INamespacedResourcesProvider<*, *>>) {
+    private fun setCurrentNamespace(operators: Collection<INamespacedResourceOperator<*, *>>) {
         try {
             @Suppress("UNCHECKED_CAST")
-            val namespacesProvider: INonNamespacedResourcesProvider<N, C> = nonNamespacedProviders[getNamespacesKind()]
-                    as INonNamespacedResourcesProvider<N, C>
-            val namespace = getCurrentNamespace(namespacesProvider.allResources)
-            setCurrentNamespace(namespace?.metadata?.name, providers)
-            watch(namespacesProvider) // always watch namespaces
+            val namespacesOperator: INonNamespacedResourceOperator<N, C> = nonNamespacedOperators[getNamespacesKind()]
+                    as INonNamespacedResourceOperator<N, C>
+            val namespace = getCurrentNamespace(namespacesOperator.allResources)
+            setCurrentNamespace(namespace?.metadata?.name, operators)
+            watch(namespacesOperator) // always watch namespaces
         } catch (e: KubernetesClientException) {
-            logger<ActiveContext<*, *>>().info("Could not set current namespace to all non namespaced providers.", e)
+            logger<ActiveContext<*, *>>().info("Could not set current namespace to all non namespaced operators.", e)
         }
     }
 
-    private fun setCurrentNamespace(namespace: String?, providers: Collection<INamespacedResourcesProvider<*, *>>) {
+    private fun setCurrentNamespace(namespace: String?, operators: Collection<INamespacedResourceOperator<*, *>>) {
         if (namespace == null) {
             return
         }
-        providers.forEach { it.namespace = namespace }
+        operators.forEach { it.namespace = namespace }
     }
 
     override fun getCurrentNamespace(): String? {
@@ -129,7 +121,7 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
     }
 
     private fun getCurrentNamespace(namespaces: Collection<N>): N? {
-        var name: String? = clients.get().configuration.namespace
+        val name: String? = clients.get().configuration.namespace
         return find(name, namespaces)
     }
 
@@ -144,148 +136,137 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
 
     override fun isCurrentNamespace(resource: HasMetadata): Boolean {
         val current = getCurrentNamespace(getAllResources(getNamespacesKind(), NO_NAMESPACE)) ?: return false
-        return resource.sameResource(current as HasMetadata)
+        return resource.isSameResource(current as HasMetadata)
     }
 
     override fun <R: HasMetadata> getAllResources(kind: ResourceKind<R>, resourcesIn: ResourcesIn): Collection<R> {
         logger<ActiveContext<*,*>>().debug("Resources $kind requested.")
         synchronized(this) {
-            val provider = getProvider(kind, resourcesIn)
-            return provider?.allResources
+            val operator = getOperator(kind, resourcesIn)
+            return operator?.allResources
                 ?: emptyList()
         }
     }
 
-    private fun setProvider(
-		provider: IResourcesProvider<out HasMetadata>,
-		kind: ResourceKind<GenericCustomResource>,
-		resourcesIn: ResourcesIn
+    private fun setOperator(
+        operator: IResourceOperator<out HasMetadata>,
+        kind: ResourceKind<GenericCustomResource>,
+        resourcesIn: ResourcesIn
     ) {
         when (resourcesIn) {
             CURRENT_NAMESPACE ->
                 @Suppress("UNCHECKED_CAST")
-                namespacedProviders[kind] = provider as INamespacedResourcesProvider<out HasMetadata, C>
+                namespacedOperators[kind] = operator as INamespacedResourceOperator<out HasMetadata, C>
             ANY_NAMESPACE,
             NO_NAMESPACE ->
                 @Suppress("UNCHECKED_CAST")
-                nonNamespacedProviders[kind] = provider as INonNamespacedResourcesProvider<out HasMetadata, C>
+                nonNamespacedOperators[kind] = operator as INonNamespacedResourceOperator<out HasMetadata, C>
         }
     }
 
-    private fun <R: HasMetadata> getProvider(kind: ResourceKind<R>, resourcesIn: ResourcesIn): IResourcesProvider<R>? {
+    private fun <R: HasMetadata> getOperator(kind: ResourceKind<R>, resourcesIn: ResourcesIn): IResourceOperator<R>? {
         return when(resourcesIn) {
             CURRENT_NAMESPACE -> {
                 @Suppress("UNCHECKED_CAST")
-                namespacedProviders[kind] as IResourcesProvider<R>?
+                namespacedOperators[kind] as IResourceOperator<R>?
             }
             ANY_NAMESPACE,
             NO_NAMESPACE ->
                 @Suppress("UNCHECKED_CAST")
-                nonNamespacedProviders[kind] as IResourcesProvider<R>?
+                nonNamespacedOperators[kind] as IResourceOperator<R>?
         }
     }
 
-    private fun getProvider(definition: CustomResourceDefinition): IResourcesProvider<GenericCustomResource> {
+    private fun getOperator(definition: CustomResourceDefinition): IResourceOperator<GenericCustomResource> {
         val kind = ResourceKind.create(definition.spec)
         val resourcesIn = toResourcesIn(definition.spec)
         synchronized(this) {
-            var provider: IResourcesProvider<GenericCustomResource>? = getProvider(kind, resourcesIn)
-            if (provider == null) {
-                provider = createCustomResourcesProvider(definition, kind)
+            var operator: IResourceOperator<GenericCustomResource>? = getOperator(kind, resourcesIn)
+            if (operator == null) {
+                operator = createCustomResourcesOperator(definition, kind)
             }
-            return provider
+            return operator
         }
     }
 
     override fun getAllResources(definition: CustomResourceDefinition): Collection<GenericCustomResource> {
-        return getProvider(definition).allResources
+        return getOperator(definition).allResources
     }
 
-    private fun createCustomResourcesProvider(
+    private fun createCustomResourcesOperator(
             definition: CustomResourceDefinition,
             kind: ResourceKind<GenericCustomResource>)
-            : IResourcesProvider<GenericCustomResource> {
+            : IResourceOperator<GenericCustomResource> {
         synchronized(this) {
             val resourceIn = toResourcesIn(definition.spec)
-            val provider = createCustomResourcesProvider(definition, resourceIn)
-            setProvider(provider, kind, resourceIn)
-            return provider
+            val operator = createCustomResourcesOperator(definition, resourceIn)
+            setOperator(operator, kind, resourceIn)
+            return operator
         }
     }
 
-    protected open fun createCustomResourcesProvider(
+    protected open fun createCustomResourcesOperator(
             definition: CustomResourceDefinition,
             resourceIn: ResourcesIn)
-            : IResourcesProvider<GenericCustomResource> {
+            : IResourceOperator<GenericCustomResource> {
         return when(resourceIn) {
             CURRENT_NAMESPACE ->
-                NamespacedCustomResourcesProvider(
+                NamespacedCustomResourceOperator(
                     definition,
                     getCurrentNamespace(),
                     clients.get())
             ANY_NAMESPACE,
             NO_NAMESPACE ->
-                NonNamespacedCustomResourcesProvider(
+                NonNamespacedCustomResourceOperator(
                     definition,
                     clients.get())
         }
     }
 
-    private fun removeCustomResourceProvider(resource: CustomResourceDefinition) {
+    private fun removeCustomResourceOperator(resource: CustomResourceDefinition) {
         val kind = ResourceKind.create(resource.spec)
         watch.stopWatch(kind)
-        val providers = when (toResourcesIn(resource.spec)) {
-            CURRENT_NAMESPACE -> namespacedProviders
+        val operators = when (toResourcesIn(resource.spec)) {
+            CURRENT_NAMESPACE -> namespacedOperators
             ANY_NAMESPACE,
-            NO_NAMESPACE -> nonNamespacedProviders
+            NO_NAMESPACE -> nonNamespacedOperators
         }
-        providers.remove(kind)
+        operators.remove(kind)
     }
 
     private fun toResourcesIn(spec: CustomResourceDefinitionSpec): ResourcesIn {
         return when (spec.scope) {
-            "Cluster" -> NO_NAMESPACE
-            "Namespaced" -> CURRENT_NAMESPACE
+            CustomResourceScope.CLUSTER -> NO_NAMESPACE
+            CustomResourceScope.NAMESPACED -> CURRENT_NAMESPACE
             else -> throw IllegalArgumentException(
                     "Could not determine scope in spec for custom resource definition ${spec.names.kind}")
         }
     }
 
-    private fun toResourcesIn(resource: HasMetadata): ResourcesIn {
-        return when (resource.metadata.namespace) {
-            null -> ANY_NAMESPACE
-            else -> CURRENT_NAMESPACE
-        }
-    }
-
     override fun watch(kind: ResourceKind<out HasMetadata>) {
         logger<ActiveContext<*, *>>().debug("Watching $kind resources.")
-        watch(namespacedProviders[kind])
-        watch(nonNamespacedProviders[kind])
+        watch(namespacedOperators[kind])
+        watch(nonNamespacedOperators[kind])
     }
 
     override fun watch(definition: CustomResourceDefinition) {
-        watch(getProvider(definition))
+        watch(getOperator(definition))
     }
 
-    private fun watchAll(kinds: Collection<ResourceKind<out HasMetadata>>) {
-        val watchables = namespacedProviders.entries.toList()
+    private fun watchAll(kinds: Collection<Any>) {
+        val watchOperations = namespacedOperators.entries.toList()
             .filter { kinds.contains(it.key) }
-            .map { Pair(it.value.kind, it.value.getWatchable()) }
+            .map { Pair(it.value.kind, it.value::watchAll) }
 
-        @Suppress("UNCHECKED_CAST")
-        watch.watchAll(watchables
-                as Collection<Pair<ResourceKind<out HasMetadata>, Supplier<Watchable<Watcher<in HasMetadata>>?>>>)
+        watch.watchAll(watchOperations, watchListener)
     }
 
-    private fun watch(provider: IResourcesProvider<*>?) {
-        if (provider == null) {
+    private fun watch(operator: IResourceOperator<*>?) {
+        if (operator == null) {
             return
         }
 
-        @Suppress("UNCHECKED_CAST")
-        watch.watch(provider.kind, provider.getWatchable()
-                as Supplier<Watchable<Watcher<in HasMetadata>>?>)
+        watch.watch(operator.kind, operator::watchAll, watchListener)
     }
 
     override fun stopWatch(kind: ResourceKind<out HasMetadata>) {
@@ -295,7 +276,7 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
         // and therefore to repopulate the cache immediately.
         // Any resource operation that eventually happens while the watch is not active would cause the cache
         // to become out-of-sync and it would therefore return invalid resources when asked to do so
-        invalidateProviders(kind);
+        invalidateOperators(kind)
     }
 
     override fun stopWatch(definition: CustomResourceDefinition) {
@@ -309,12 +290,12 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
      *
      * @param namespace the namespace that the watchables should be stopped for
      */
-    private fun stopWatch(namespace: String?): Collection<ResourceKind<out HasMetadata>> {
+    private fun stopWatch(namespace: String?): Collection<Any> {
         logger<ActiveContext<*, *>>().debug("Stopping all watches for namespace $namespace.")
-        return watch.stopWatchAll(namespacedProviders(namespace).map { it.kind })
+        return watch.stopWatchAll(namespacedOperators(namespace).map { it.kind })
     }
 
-    override fun add(resource: HasMetadata): Boolean {
+    override fun added(resource: HasMetadata): Boolean {
         val added = when (resource) {
             is CustomResourceDefinition ->
                 addResource(resource)
@@ -328,11 +309,11 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
     }
 
     private fun addResource(resource: HasMetadata): Boolean {
-        // we need to add resource to both providers (ex. all pods & only namespaced pods)
+        // we need to add resource to both operators (ex. all pods & only namespaced pods)
         val kind = ResourceKind.create(resource)
-        val addedToNonNamespaced = addResource(resource, nonNamespacedProviders[kind])
+        val addedToNonNamespaced = addResource(resource, nonNamespacedOperators[kind])
         val addedToNamespaced = getCurrentNamespace() == resource.metadata.namespace
-                && addResource(resource, namespacedProviders[kind])
+                && addResource(resource, namespacedOperators[kind])
         return addedToNonNamespaced ||
                 addedToNamespaced
     }
@@ -340,19 +321,19 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
     private fun addResource(resource: CustomResourceDefinition): Boolean {
         val added = addResource(resource as HasMetadata)
         if (added) {
-            createCustomResourcesProvider(resource, ResourceKind.create(resource.spec))
+            createCustomResourcesOperator(resource, ResourceKind.create(resource.spec))
         }
         return added
     }
 
-    private fun addResource(resource: HasMetadata, provider: IResourcesProvider<out HasMetadata>?): Boolean {
-        if (provider == null) {
+    private fun addResource(resource: HasMetadata, operator: IResourceOperator<out HasMetadata>?): Boolean {
+        if (operator == null) {
             return false
         }
-        return provider.add(resource)
+        return operator.added(resource)
     }
 
-    override fun remove(resource: HasMetadata): Boolean {
+    override fun removed(resource: HasMetadata): Boolean {
         val removed = if (resource is CustomResourceDefinition) {
             removeResource(resource)
         } else {
@@ -366,10 +347,10 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
 
     private fun removeResource(resource: HasMetadata): Boolean {
         val kind = ResourceKind.create(resource)
-        // we need to remove resource from both providers
-        val removedNonNamespaced = removeResource(resource, nonNamespacedProviders[kind])
+        // we need to remove resource from both operators
+        val removedNonNamespaced = removeResource(resource, nonNamespacedOperators[kind])
         val removedNamespaced = (getCurrentNamespace() == resource.metadata.namespace) &&
-                removeResource(resource, namespacedProviders[kind])
+                removeResource(resource, namespacedOperators[kind])
         return removedNonNamespaced
                 || removedNamespaced
     }
@@ -377,31 +358,31 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
     private fun removeResource(definition: CustomResourceDefinition): Boolean {
         val removed = removeResource(definition as HasMetadata)
         if (removed) {
-            removeCustomResourceProvider(definition)
+            removeCustomResourceOperator(definition)
         }
         return removed
     }
 
-    private fun removeResource(resource: HasMetadata, provider: IResourcesProvider<out HasMetadata>?): Boolean {
-        if (provider == null) {
+    private fun removeResource(resource: HasMetadata, operator: IResourceOperator<out HasMetadata>?): Boolean {
+        if (operator == null) {
             return false
         }
-        return provider.remove(resource)
+        return operator.removed(resource)
     }
 
     override fun invalidate() {
-        logger<ActiveContext<*, *>>().debug("Invalidating all providers.")
-        namespacedProviders.values.forEach { it.invalidate() }
-        nonNamespacedProviders.values.forEach { it.invalidate() }
+        logger<ActiveContext<*, *>>().debug("Invalidating all operators.")
+        namespacedOperators.values.forEach { it.invalidate() }
+        nonNamespacedOperators.values.forEach { it.invalidate() }
         modelChange.fireModified(this)
     }
 
-    override fun replace(resource: HasMetadata): Boolean {
+    override fun replaced(resource: HasMetadata): Boolean {
         val replaced = when(resource) {
             is CustomResourceDefinition ->
-                replace(ResourceKind.create(resource.spec), resource)
+                replaced(ResourceKind.create(resource.spec), resource)
             else ->
-                replace(ResourceKind.create(resource), resource)
+                replaced(ResourceKind.create(resource), resource)
         }
         if (replaced) {
             modelChange.fireModified(resource)
@@ -409,33 +390,33 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
         return replaced
     }
 
-    private fun replace(kind: ResourceKind<out HasMetadata>, resource: HasMetadata): Boolean {
-        val replaceNamespaced = namespacedProviders[kind]?.replace(resource) ?: false
-        val replaceNonNamespaced = nonNamespacedProviders[kind]?.replace(resource) ?: false
+    private fun replaced(kind: ResourceKind<out HasMetadata>, resource: HasMetadata): Boolean {
+        val replaceNamespaced = namespacedOperators[kind]?.replaced(resource) ?: false
+        val replaceNonNamespaced = nonNamespacedOperators[kind]?.replaced(resource) ?: false
         return replaceNamespaced
                 || replaceNonNamespaced
     }
 
     override fun invalidate(kind: ResourceKind<*>) {
-        logger<ActiveContext<*, *>>().debug("Invalidating resource providers for $kind resources.")
-        invalidateProviders(kind)
+        logger<ActiveContext<*, *>>().debug("Invalidating resource operator for $kind resources.")
+        invalidateOperators(kind)
         modelChange.fireModified(kind)
     }
 
-    private fun invalidateProviders(kind: ResourceKind<*>) {
-        namespacedProviders[kind]?.invalidate()
-        nonNamespacedProviders[kind]?.invalidate()
+    private fun invalidateOperators(kind: ResourceKind<*>) {
+        namespacedOperators[kind]?.invalidate()
+        nonNamespacedOperators[kind]?.invalidate()
     }
 
-    protected open fun namespacedProviders(namespace: String?): List<INamespacedResourcesProvider<out HasMetadata, C>> {
-        return namespacedProviders.values
+    protected open fun namespacedOperators(namespace: String?): List<INamespacedResourceOperator<out HasMetadata, C>> {
+        return namespacedOperators.values
                 .filter { it.namespace == namespace }
     }
 
     override fun delete(resources: List<HasMetadata>) {
         val exceptions = resources
             .distinct()
-            .groupBy { Pair(ResourceKind.create(it), toResourcesIn(it)) }
+            .groupBy { Pair(ResourceKind.create(it), ResourcesIn.valueOf(it, getCurrentNamespace())) }
             .mapNotNull {
                 try {
                     delete(it.key.first, it.key.second, it.value)
@@ -445,15 +426,20 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
                 }
             }
         if (exceptions.isNotEmpty()) {
-            val resources = exceptions.flatMap { it.resources }
-            throw MultiResourceException("Could not delete resource(s) ${toMessage(resources, -1)}", exceptions)
+            val failedDelete = exceptions.flatMap { it.resources }
+            throw MultiResourceException("Could not delete resource(s) ${toMessage(failedDelete, -1)}", exceptions)
         }
     }
 
     private fun delete(kind: ResourceKind<out HasMetadata>, scope: ResourcesIn, resources: List<HasMetadata>) {
-        val provider = getProvider(kind, scope) ?: return
+        val operator = getOperator(kind, scope)
+        if (operator == null) {
+            logger<ActiveContext<*,*>>().warn("""Could not delete $kind resources: ${toMessage(resources, -1)}.
+                |No operator found for in scope $scope.""".trimMargin())
+            return
+        }
         try {
-            val deleted = provider.delete(resources)
+            val deleted = operator.delete(resources)
             if (deleted) {
                 resources.forEach { setWillBeDeleted(it) }
                 modelChange.fireModified(resources)
@@ -471,24 +457,24 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
         clients.close()
     }
 
-    private fun <P: IResourcesProvider<out HasMetadata>> getAllResourceProviders(type: Class<P>)
+    private fun <P: IResourceOperator<out HasMetadata>> getAllResourceOperators(type: Class<P>)
             : MutableMap<ResourceKind<out HasMetadata>, P> {
-        val providers = mutableMapOf<ResourceKind<out HasMetadata>, P>()
-        providers.putAll(
-                getInternalResourceProviders(clients)
+        val operators = mutableMapOf<ResourceKind<out HasMetadata>, P>()
+        operators.putAll(
+                getInternalResourceOperators(clients)
                         .filterIsInstance(type)
                         .associateBy { it.kind })
-        providers.putAll(
-                getExtensionResourceProviders(clients)
+        operators.putAll(
+                getExtensionResourceOperators(clients)
                         .filterIsInstance(type)
                         .associateBy { it.kind })
-        return providers
+        return operators
     }
 
-    protected abstract fun getInternalResourceProviders(supplier: Clients<C>): List<IResourcesProvider<out HasMetadata>>
+    protected abstract fun getInternalResourceOperators(clients: Clients<C>): List<IResourceOperator<out HasMetadata>>
 
-    protected open fun getExtensionResourceProviders(supplier: Clients<C>): List<IResourcesProvider<out HasMetadata>> {
+    protected open fun getExtensionResourceOperators(clients: Clients<C>): List<IResourceOperator<out HasMetadata>> {
         return extensionName.extensionList
-                .map { it.create(supplier) }
+                .map { it.create(clients) }
     }
 }

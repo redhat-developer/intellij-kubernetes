@@ -15,50 +15,94 @@ import io.fabric8.kubernetes.api.model.apiextensions.v1beta1.CustomResourceDefin
 import io.fabric8.kubernetes.api.model.apiextensions.v1beta1.CustomResourceDefinitionSpec
 import io.fabric8.kubernetes.client.dsl.base.CustomResourceDefinitionContext
 import io.fabric8.kubernetes.client.utils.KubernetesVersionPriority
+import io.fabric8.kubernetes.client.utils.Serialization
 import io.fabric8.kubernetes.model.annotation.Group
 import io.fabric8.kubernetes.model.annotation.Version
 import io.fabric8.kubernetes.model.util.Helper
 import java.util.stream.Collectors
 
 const val MARKER_WILL_BE_DELETED = "willBeDeleted"
+const val API_GROUP_VERSION_DELIMITER = '/'
 
 /**
- * returns {@code true} if the given resource have the same uid or same selfLink.
+ * returns `true` if the given resource has the same
+ * - kind
+ * - apiVersion
+ * - name
+ * - namespace
+ * regardless of other differences.
+ * This method allows to determine resource identity across instances regardless of updates (ex. resource version) applied by the server
  *
- * @see io.fabric8.kubernetes.api.model.ObjectMeta.getUid()
+ * @see io.fabric8.kubernetes.api.model.HasMetadata.getKind
+ * @see io.fabric8.kubernetes.api.model.HasMetadata.getApiVersion
+ * @see io.fabric8.kubernetes.api.model.ObjectMeta.name
+ * @see io.fabric8.kubernetes.api.model.ObjectMeta.name
  */
-fun HasMetadata.sameResource(resource: HasMetadata): Boolean {
-	return sameUid(resource)
-			|| sameSelfLink(resource)
+fun HasMetadata.isSameResource(resource: HasMetadata?): Boolean {
+	if (resource == null) {
+		return false
+	}
+	return isSameKind(resource)
+			&& isSameApiVersion(resource)
+			&& isSameName(resource)
+			&& isSameNamespace(resource)
+}
+
+fun HasMetadata.isSameApiVersion(resource: HasMetadata?): Boolean {
+	if (resource == null) {
+		return false
+	} else if (this.apiVersion == null
+		&& resource.apiVersion == null) {
+		return false
+	}
+	return apiVersion == resource.apiVersion
+}
+
+fun HasMetadata.isSameName(resource: HasMetadata?): Boolean {
+	if (resource == null) {
+		return false
+	} else if (this.metadata?.name == null
+		&& resource.metadata?.name == null) {
+		return true
+	}
+	return this.metadata?.name == resource.metadata?.name
+}
+
+fun HasMetadata.isSameNamespace(resource: HasMetadata?): Boolean {
+	if (resource == null) {
+		return false
+	} else if (this.metadata?.namespace == null
+		&& resource.metadata?.namespace == null) {
+		return true
+	}
+	return this.metadata?.namespace == resource.metadata?.namespace
+}
+
+fun HasMetadata.isSameKind(resource: HasMetadata?): Boolean {
+	if (resource == null) {
+		return false
+	} else if (this.kind == null
+		&& resource.kind == null) {
+		return true
+	}
+	return this.kind == resource.kind
 }
 
 /**
- * returns {@code true} if the given resource has the same uid as this resource. Returns {@code false} otherwise.
+ * Returns `true` if this resource is a newer version than the given resource.
+ * Returns `false` otherwise. If this resource has a `null` resourceVersion the result is always `false`.
+ * If the given resource has a `null` resourceVersion while this hasn't, it'll return `true`.
  *
- * @see io.fabric8.kubernetes.api.model.ObjectMeta.getUid()
+ * @see [io.fabric8.kubernetes.api.model.ObjectMeta.resourceVersion]
  */
-fun HasMetadata.sameUid(resource: HasMetadata): Boolean {
-	if (this.metadata?.uid == null
-		&& resource.metadata?.uid == null) {
+fun HasMetadata.isNewerVersionThan(resource: HasMetadata?): Boolean {
+	if (resource == null
+		|| !isSameResource(resource)) {
 		return false
 	}
-	return resource.metadata?.uid == this.metadata?.uid
-}
-
-/**
- * returns {@code true} if the given resource has the same selfLink as this resource. Returns {@code false} otherwise.
- * SelfLink will be deprecated in kubernetes 1.19 and removed in 1.21.
- * See <a href="https://github.com/kubernetes/enhancements/tree/master/keps/sig-api-machinery/1164-remove-selflink#risks-and-mitigations">KEP-1164: Deprecate and Remove SelfLink</a>
- * and <a href="https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.19/">Kubernetes API Overview, ObjectMeta v1 meta</a>
- *
- * @see io.fabric8.kubernetes.api.model.ObjectMeta.getSelfLink
- */
-fun HasMetadata.sameSelfLink(resource: HasMetadata): Boolean {
-	if (this.metadata?.selfLink == null
-		&& resource.metadata?.selfLink == null) {
-		return false
-	}
-	return this.metadata?.selfLink == resource.metadata?.selfLink
+	val thisVersion = this.metadata?.resourceVersion?.toIntOrNull() ?: return false
+	val thatVersion = resource.metadata?.resourceVersion?.toIntOrNull() ?: return true
+	return  thisVersion > thatVersion
 }
 
 /**
@@ -66,8 +110,8 @@ fun HasMetadata.sameSelfLink(resource: HasMetadata): Boolean {
  * The version is built of the apiGroup and apiVersion that are annotated in the HasMetadata subclasses.
  *
  * @see HasMetadata.getApiVersion
- * @see io.fabric8.kubernetes.model.annotation.ApiVersion (annotation)
- * @see io.fabric8.kubernetes.model.annotation.ApiGroup (annotation)
+ * @see io.fabric8.kubernetes.model.annotation.Version (annotation)
+ * @see io.fabric8.kubernetes.model.annotation.Group (annotation)
  */
 fun getApiVersion(clazz: Class<out HasMetadata>): String {
 	val apiVersion = Helper.getAnnotationValue(clazz, Version::class.java)
@@ -85,18 +129,100 @@ fun getApiVersion(clazz: Class<out HasMetadata>): String {
 
 /**
  * Returns the version for given apiGroup and apiVersion. Both values are concatenated and separated by '/'.
+ * If there is no apiGroup value, then only the apiVersion is returned.
  */
-fun getApiVersion(apiGroup: String, apiVersion: String) = "$apiGroup/$apiVersion"
+fun getApiVersion(apiGroup: String?, apiVersion: String): String {
+	return if (apiGroup != null) {
+		"$apiGroup$API_GROUP_VERSION_DELIMITER$apiVersion"
+	} else {
+		apiVersion
+	}
+}
 
-fun getVersion(spec: CustomResourceDefinitionSpec): String {
+/**
+ * Returns the apiGroup and apiVersion of the given [HasMetadata].
+ *
+ * @param resource the [HasMetadata] whose apiGroup and apiVersion should be returned
+ * @return the agiGroup and apiVersion of the given [HasMetadata]
+ *
+ * @see [io.fabric8.kubernetes.api.model.HasMetadata.getApiVersion]
+ */
+fun getApiGroupAndVersion(resource: HasMetadata): Pair<String?, String> {
+    val split = resource.apiVersion.split(API_GROUP_VERSION_DELIMITER)
+    return if (split.size == 1) {
+        Pair(null, split[0])
+    } else {
+        Pair(split[0], split[1])
+    }
+}
+
+/**
+ * Returns `true` if the given [HasMetadata] is matching the [CustomResourceDefinitionSpec]
+ * of the given [CustomResourceDefinition] in
+ * - group
+ * - version
+ * - kind
+ *
+ * @param resource the [HasMetadata] to check against the given definition
+ * @param definition the [CustomResourceDefinition] to check against the given resource
+ * @return true if the given resource is matching the given definition
+ *
+ * @see HasMetadata
+ * @see CustomResourceDefinition
+ */
+fun isMatchingSpec(resource: HasMetadata, definition: CustomResourceDefinition): Boolean {
+	val groupAndVersion = getApiGroupAndVersion(resource)
+	return isMatchingSpec(resource.kind, groupAndVersion.first, groupAndVersion.second, definition)
+}
+
+/**
+ * Returns `true` if the given [HasMetadata] is matching the given
+ * - kind
+ * - group
+ * - version
+ *
+ * @param kind the kind to check against the given definition
+ * @param apiGroup the apiGroup to check against the given definition
+ * @param apiVersion the apiVersion to check against the given definition
+ * @param definition the [CustomResourceDefinition] to check against the given resource
+ * @return true if the given resource is matching the given kind, apiGroup and apiVersion
+ *
+ * @see HasMetadata
+ * @see CustomResourceDefinition
+ */
+fun isMatchingSpec(kind: String, apiGroup: String?, apiVersion: String, definition: CustomResourceDefinition): Boolean {
+	return definition.spec.names.kind == kind
+			&& definition.spec.group == apiGroup
+			&& definition.spec.versions.find { it.name == apiVersion } != null
+}
+
+/**
+ * Returns the version for given [CustomResourceDefinitionSpec].
+ * The version with the highest priority is chosen if there are several available.
+ *
+ * @param spec the [CustomResourceDefinitionSpec] to get the version from
+ *
+ * @return the version for the given [CustomResourceDefinitionSpec]
+ */
+fun getHighestPriorityVersion(spec: CustomResourceDefinitionSpec): String {
 	val versions = spec.versions.map { it.name }
 	return KubernetesVersionPriority.highestPriority(versions) ?: spec.version
 }
 
+/**
+ * Returns a [CustomResourceDefinitionContext] for the given [CustomResourceDefinition].
+ * The version with the highest priority among the available ones is used.
+ *
+ * @param definition [CustomResourceDefinition] to create the context for
+ *
+ * @return the [CustomResourceDefinitionContext] for the given [CustomResourceDefinition]
+ *
+ * @see [getHighestPriorityVersion]
+ */
 fun createContext(definition: CustomResourceDefinition): CustomResourceDefinitionContext {
 	return CustomResourceDefinitionContext.Builder()
 		.withGroup(definition.spec.group)
-		.withVersion(getVersion(definition.spec)) // use version with highest priority
+		.withVersion(getHighestPriorityVersion(definition.spec)) // use version with highest priority
 		.withScope(definition.spec.scope)
 		.withName(definition.metadata.name)
 		.withPlural(definition.spec.names.plural)
@@ -153,7 +279,10 @@ fun toMessage(resource: HasMetadata, maxLength: Int): String {
  *		the last 3 characters are appended</li>
  * </ul>
  */
-fun trimWithEllipsis(value: String, length: Int): String {
+fun trimWithEllipsis(value: String?, length: Int): String? {
+	if (value == null) {
+		return null
+	}
 	return when {
 		length < 0
 				|| length >= value.length
@@ -165,3 +294,14 @@ fun trimWithEllipsis(value: String, length: Int): String {
 		else -> "${value.take(length - 6)}...${value.takeLast(3)}"
 	}
 }
+
+/**
+ * Returns an instance of the given type for the given json or yaml string.
+ *
+ * @param jsonYaml the string that should be unmarshalled
+ * @return the instance of the given type
+ */
+inline fun <reified T> createResource(jsonYaml: String): T {
+	return Serialization.unmarshal(jsonYaml, T::class.java)
+}
+

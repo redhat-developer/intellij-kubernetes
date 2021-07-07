@@ -11,6 +11,7 @@
 package com.redhat.devtools.intellij.kubernetes.model.context
 
 import com.nhaarman.mockitokotlin2.any
+import com.nhaarman.mockitokotlin2.argThat
 import com.nhaarman.mockitokotlin2.argumentCaptor
 import com.nhaarman.mockitokotlin2.atLeastOnce
 import com.nhaarman.mockitokotlin2.clearInvocations
@@ -30,7 +31,6 @@ import io.fabric8.kubernetes.api.model.Secret
 import io.fabric8.kubernetes.api.model.apiextensions.v1beta1.CustomResourceDefinition
 import io.fabric8.kubernetes.client.NamespacedKubernetesClient
 import io.fabric8.kubernetes.client.Watcher
-import io.fabric8.kubernetes.client.dsl.Watchable
 import org.assertj.core.api.Assertions.assertThat
 import com.redhat.devtools.intellij.kubernetes.model.ModelChangeObservable
 import com.redhat.devtools.intellij.kubernetes.model.Notification
@@ -46,22 +46,22 @@ import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.client
 import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.customResource
 import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.customResourceDefinition
 import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.resource
-import com.redhat.devtools.intellij.kubernetes.model.mocks.Mocks.namespacedResourceProvider
-import com.redhat.devtools.intellij.kubernetes.model.mocks.Mocks.nonNamespacedResourceProvider
-import com.redhat.devtools.intellij.kubernetes.model.resource.INamespacedResourcesProvider
-import com.redhat.devtools.intellij.kubernetes.model.resource.INonNamespacedResourcesProvider
-import com.redhat.devtools.intellij.kubernetes.model.resource.IResourcesProvider
+import com.redhat.devtools.intellij.kubernetes.model.mocks.Mocks.namespacedResourceOperator
+import com.redhat.devtools.intellij.kubernetes.model.mocks.Mocks.nonNamespacedResourceOperator
+import com.redhat.devtools.intellij.kubernetes.model.resource.INamespacedResourceOperator
+import com.redhat.devtools.intellij.kubernetes.model.resource.INonNamespacedResourceOperator
+import com.redhat.devtools.intellij.kubernetes.model.resource.IResourceOperator
 import com.redhat.devtools.intellij.kubernetes.model.resource.ResourceKind
-import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.AllPodsProvider
-import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.NamespacesProvider
-import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.NodesProvider
-import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.ServicesProvider
+import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.*
+import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.custom.CustomResourceScope
 import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.custom.GenericCustomResource
-import com.redhat.devtools.intellij.kubernetes.model.util.Clients
+import com.redhat.devtools.intellij.kubernetes.model.Clients
 import com.redhat.devtools.intellij.kubernetes.model.util.MultiResourceException
+import io.fabric8.kubernetes.client.KubernetesClient
+import io.fabric8.kubernetes.client.Watch
 import org.junit.Before
 import org.junit.Test
-import java.util.function.Supplier
+import org.mockito.ArgumentMatcher
 
 class KubernetesContextTest {
 
@@ -69,75 +69,97 @@ class KubernetesContextTest {
 
 	private val allNamespaces = arrayOf(NAMESPACE1, NAMESPACE2, NAMESPACE3)
 	private val currentNamespace = NAMESPACE2
-	private val client: NamespacedKubernetesClient = client(currentNamespace.metadata.name, allNamespaces)
+	private val clients: Clients<KubernetesClient> = Clients(client(currentNamespace.metadata.name, allNamespaces))
+	private val namespaceWatchOperation: (watcher: Watcher<in Namespace>) -> Watch? = { null }
 
-	private val namespaceWatchable: Watchable<Watcher<Namespace>> = mock()
-	private val namespacesWatchSupplier: Supplier<Watchable<Watcher<Namespace>>?> = Supplier { namespaceWatchable }
-	private val namespacesProvider = nonNamespacedResourceProvider<Namespace, NamespacedKubernetesClient>(
-			NamespacesProvider.KIND,
+	private val namespacesOperator = nonNamespacedResourceOperator<Namespace, NamespacedKubernetesClient>(
+			NamespacesOperator.KIND,
 			allNamespaces.toList(),
-			namespacesWatchSupplier)
+			namespaceWatchOperation)
 
-	private val nodesProvider = nonNamespacedResourceProvider<Node, NamespacedKubernetesClient>(
-			NodesProvider.KIND,
-			listOf(resource("node1"),
-					resource("node2"),
-					resource("node3")))
+	private val nodesOperator = nonNamespacedResourceOperator<Node, KubernetesClient>(
+			NodesOperator.KIND,
+			listOf(resource("node1", "ns1", "uid1", "v1"),
+					resource("node2", "ns1", "uid2", "v1"),
+					resource("node3", "ns1", "uid3", "v1")))
 
 	private val allPods = arrayOf(POD1, POD2, POD3)
-	private val allPodsProvider = nonNamespacedResourceProvider<Pod, NamespacedKubernetesClient>(
-			AllPodsProvider.KIND,
+	private val allPodsOperator = nonNamespacedResourceOperator<Pod, KubernetesClient>(
+			AllPodsOperator.KIND,
 			allPods.toList())
 
-	private val namespacedPodsProvider = namespacedResourceProvider<Pod, NamespacedKubernetesClient>(
-			AllPodsProvider.KIND,
+	private val namespacedPodsOperator = namespacedResourceOperator<Pod, KubernetesClient>(
+			NamespacedPodsOperator.KIND,
 			allPods.toList(),
 			currentNamespace)
 
-	private val hasMetadata1 = resource<HasMetadata>("hasMetadata1")
-	private val hasMetadata2 = resource<HasMetadata>("hasMetadata2")
-	private val hasMetadataProvider: INamespacedResourcesProvider<HasMetadata, NamespacedKubernetesClient> = namespacedResourceProvider(
+	private val hasMetadata1 = resource<HasMetadata>("hasMetadata1", "ns", "uid1", "v1")
+	private val hasMetadata2 = resource<HasMetadata>("hasMetadata2", "ns", "uid2", "v1")
+	private val hasMetadataOperator: INamespacedResourceOperator<HasMetadata, NamespacedKubernetesClient> = namespacedResourceOperator(
 			ResourceKind.create(HasMetadata::class.java),
 			setOf(hasMetadata1, hasMetadata2),
 			currentNamespace)
 
-	private val danglingSecretsProvider: INamespacedResourcesProvider<Secret, NamespacedKubernetesClient> = namespacedResourceProvider(
+	// operator that is not contained in list of operators known to the context
+	private val danglingSecretsOperator: INamespacedResourceOperator<Secret, NamespacedKubernetesClient> = namespacedResourceOperator(
 		ResourceKind.create(Secret::class.java),
-		setOf(resource("secret1")),
+		setOf(resource("secret1", "ns4", "uid1", "v1")),
 		currentNamespace)
 
+	private val crdKind = ResourceKind.create(CustomResourceDefinition::class.java)
 	private val namespacedDefinition = customResourceDefinition(
-		"namespaced crd","version1", "group1", "namespaced-crd", "Namespaced")
+		"namespaced crd",
+		"ns1",
+		"uid1",
+		crdKind.version,
+		"version1",
+		"group1",
+		"namespaced-crd",
+		CustomResourceScope.NAMESPACED)
 	private val clusterwideDefinition = customResourceDefinition(
-		"cluster crd", "version2", "group2", "cluster-crd", "Cluster")
-	private val customResourceDefinitionsProvider: INonNamespacedResourcesProvider<CustomResourceDefinition, NamespacedKubernetesClient> =
-		nonNamespacedResourceProvider(
-			ResourceKind.create(CustomResourceDefinition::class.java),
+		"cluster crd",
+		"ns2",
+		"uid2",
+		crdKind.version,
+		"version2",
+		"group2",
+		"cluster-crd",
+		CustomResourceScope.CLUSTER)
+	private val customResourceDefinitionsOperator: INonNamespacedResourceOperator<CustomResourceDefinition, NamespacedKubernetesClient> =
+		nonNamespacedResourceOperator(
+			crdKind,
 			listOf(namespacedDefinition, clusterwideDefinition))
 
-	private val namespacedCustomResource1 = customResource("genericCustomResource1", "namespace1", namespacedDefinition)
-	private val namespacedCustomResource2 = customResource("genericCustomResource2", "namespace1", namespacedDefinition)
-	private val watchable1: Watchable<Watcher<GenericCustomResource>> = mock()
-	private val watchableSupplier1: Supplier<Watchable<Watcher<GenericCustomResource>>?> = Supplier { watchable1 }
-	private val namespacedCustomResourcesProvider: INamespacedResourcesProvider<GenericCustomResource, NamespacedKubernetesClient> =
-			namespacedResourceProvider(
+	private val namespacedCustomResource1 = customResource(
+		"genericCustomResource1",
+		"namespace1",
+		namespacedDefinition)
+	private val namespacedCustomResource2 = customResource(
+		"genericCustomResource2",
+		"namespace1",
+		namespacedDefinition)
+
+	private val namespacedCustomResourceWatch = mock<Watch>()
+	private val namespacedCustomResourceWatchOp: (watcher: Watcher<in GenericCustomResource>) -> Watch? = { namespacedCustomResourceWatch }
+	private val namespacedCustomResourceOperator: INamespacedResourceOperator<GenericCustomResource, KubernetesClient> =
+			namespacedResourceOperator(
 					ResourceKind.create(namespacedDefinition.spec),
 					listOf(namespacedCustomResource1, namespacedCustomResource2),
 					currentNamespace,
-					watchableSupplier1)
-	private val nonNamespacedCustomResource1 = resource<GenericCustomResource>("genericCustomResource1", "smurfington")
-	private val watchable2: Watchable<Watcher<GenericCustomResource>> = mock()
-	private val watchableSupplier2: Supplier<Watchable<Watcher<GenericCustomResource>>?> = Supplier { watchable2 }
-	private val nonNamespacedCustomResourcesProvider: INonNamespacedResourcesProvider<GenericCustomResource, NamespacedKubernetesClient> =
-			nonNamespacedResourceProvider(
+					namespacedCustomResourceWatchOp)
+	private val nonNamespacedCustomResource = resource<GenericCustomResource>(
+		"genericCustomResource1",
+		"smurfington",
+		"uid",
+		"v1")
+	private val nonNamespacedCustomResourceWatchOp: (watcher: Watcher<in GenericCustomResource>) -> Watch? = { null }
+	private val nonNamespacedCustomResourcesOperator: INonNamespacedResourceOperator<GenericCustomResource, KubernetesClient> =
+			nonNamespacedResourceOperator(
 					ResourceKind.create(GenericCustomResource::class.java),
-					listOf(nonNamespacedCustomResource1),
-					watchableSupplier2)
+					listOf(nonNamespacedCustomResource),
+					nonNamespacedCustomResourceWatchOp)
 
-	private val watchable3: Watchable<Watcher<in HasMetadata>> = mock()
-	private val watchableSupplier3: () -> Watchable<Watcher<in HasMetadata>>? = { watchable3 }
-
-	private val resourceWatch: ResourceWatch = mock()
+	private val resourceWatch: ResourceWatch<ResourceKind<out HasMetadata>> = mock()
 	private val notification: Notification = mock()
 
 	private lateinit var context: TestableKubernetesContext
@@ -148,31 +170,30 @@ class KubernetesContextTest {
 	}
 
 	private fun createContext(): TestableKubernetesContext {
-		val internalResourcesProviders = mutableListOf(
-				namespacesProvider,
-				nodesProvider,
-				namespacedPodsProvider,
-				allPodsProvider,
-				customResourceDefinitionsProvider)
-		val extensionResourceProviders = mutableListOf(
-				hasMetadataProvider)
+		val internalResourcesOperators = mutableListOf(
+				namespacesOperator,
+				nodesOperator,
+				namespacedPodsOperator,
+				allPodsOperator,
+				customResourceDefinitionsOperator)
+		val extensionResourceOperators = mutableListOf(
+				hasMetadataOperator)
 		return spy(TestableKubernetesContext(
 				modelChange,
-				this@KubernetesContextTest.client,
-				internalResourcesProviders,
-				extensionResourceProviders,
-				Pair(namespacedCustomResourcesProvider, nonNamespacedCustomResourcesProvider),
+				this@KubernetesContextTest.clients,
+				internalResourcesOperators,
+				extensionResourceOperators,
+				Pair(namespacedCustomResourceOperator, nonNamespacedCustomResourcesOperator),
 				resourceWatch,
 				notification)
 		)
 	}
 
 	@Test
-	fun `#setCurrentNamespace should remove all namespaced providers`() {
+	fun `#setCurrentNamespace should remove all namespaced operators`() {
 		// given
-		val captor =
-				argumentCaptor<List<ResourceKind<out HasMetadata>>>()
-		val toRemove = context.namespacedProviders
+		val captor = argumentCaptor<List<ResourceKind<out HasMetadata>>>()
+		val toRemove = context.namespacedOperators
 				.map { it.value.kind }
 				.toTypedArray()
 		// when
@@ -183,61 +204,58 @@ class KubernetesContextTest {
 	}
 
 	@Test
-	fun `#setCurrentNamespace should watch all namespaced providers that it stopped before`() {
+	fun `#setCurrentNamespace should watch all namespaced operators that it stopped before`() {
 		// given
 		val captor =
-			argumentCaptor<Collection<Pair<ResourceKind<out HasMetadata>, Supplier<Watchable<Watcher<in HasMetadata>>?>>>>()
-		val removed: Collection<ResourceKind<out HasMetadata>> =
-			context.namespacedProviders.values
+			argumentCaptor<Collection<Pair<ResourceKind<out HasMetadata>, (Watcher<in HasMetadata>) -> Watch?>>>()
+		val stopped: Collection<ResourceKind<out HasMetadata>> =
+			context.namespacedOperators.values
 				.map { it.kind }
-		whenever(context.watch.stopWatchAll(any()))
-			.doReturn(removed)
-		@Suppress("UNCHECKED_CAST", "UNCHECKED_CAST")
-		val reWatched: Array<Pair<ResourceKind<out HasMetadata>, Supplier<Watchable<Watcher<in HasMetadata>>?>>> =
-			context.namespacedProviders.values
-				.filter { removed.contains(it.kind) }
-				.map { Pair(it.kind, it.getWatchable()) }
-				.toTypedArray() as Array<Pair<ResourceKind<out HasMetadata>, Supplier<Watchable<Watcher<in HasMetadata>>?>>>
-		// when
-		context.setCurrentNamespace(NAMESPACE1.metadata.name)
-		// then
-		verify(context.watch).watchAll(captor.capture())
-		assertThat(captor.firstValue).containsOnly(*reWatched)
-	}
 
-	@Test
-	fun `#setCurrentNamespace should NOT watch provider that is not contained it stopped`() {
-		// given
-		val captor =
-			argumentCaptor<Collection<Pair<ResourceKind<out HasMetadata>, Supplier<Watchable<Watcher<in HasMetadata>>?>>>>()
-		val stopped: Collection<ResourceKind<*>> = listOf(danglingSecretsProvider.kind)
 		whenever(context.watch.stopWatchAll(any()))
 			.thenReturn(stopped)
 		// when
 		context.setCurrentNamespace(NAMESPACE1.metadata.name)
 		// then
-		verify(context.watch).watchAll(captor.capture())
+		verify(context.watch).watchAll(captor.capture(), any())
+		assertThat(captor.firstValue).isNotEmpty
+		val reWatched = captor.firstValue.map { it.first }
+		assertThat(reWatched).containsOnly(*stopped.toTypedArray())
+	}
+
+	@Test
+	fun `#setCurrentNamespace should NOT watch operator that was stopped if it is not contained in list of known operators`() {
+		// given
+		val captor =
+			argumentCaptor<Collection<Pair<ResourceKind<out HasMetadata>, (Watcher<in HasMetadata>) -> Watch?>>>()
+		val stopped: Collection<ResourceKind<*>> = listOf(danglingSecretsOperator.kind)
+		whenever(context.watch.stopWatchAll(any()))
+			.thenReturn(stopped)
+		// when
+		context.setCurrentNamespace(NAMESPACE1.metadata.name)
+		// then
+		verify(context.watch).watchAll(captor.capture(), any())
 		assertThat(captor.firstValue).isEmpty()
 	}
 
 	@Test
-	fun `#setCurrentNamespace should not invalidate nonnamespaced resource providers`() {
+	fun `#setCurrentNamespace should not invalidate non-namespaced resource operators`() {
 		// given
 		val namespace = NAMESPACE1.metadata.name
 		// when
 		context.setCurrentNamespace(namespace)
 		// then
-		verify(namespacesProvider, never()).invalidate()
+		verify(namespacesOperator, never()).invalidate()
 	}
 
 	@Test
-	fun `#setCurrentNamespace should not invalidate namespaced resource providers if it didn't change`() {
+	fun `#setCurrentNamespace should not invalidate namespaced resource operators if it didn't change`() {
 		// given
 		val namespace = currentNamespace.metadata.name
 		// when
 		context.setCurrentNamespace(namespace)
 		// then
-		verify(namespacedPodsProvider, never()).invalidate()
+		verify(namespacedPodsOperator, never()).invalidate()
 	}
 
 	@Test
@@ -255,23 +273,23 @@ class KubernetesContextTest {
 		// when
 		context.setCurrentNamespace(NAMESPACE1.metadata.name)
 		// then
-		verify(client.configuration).namespace = NAMESPACE1.metadata.name
+		verify(clients.get().configuration).namespace = NAMESPACE1.metadata.name
 	}
 
 	@Test
 	fun `#getCurrentNamespace should retrieve current namespace in client`() {
 		// given
-		clearInvocations(client.configuration) // clear invocation when constructing context
+		clearInvocations(clients.get().configuration) // clear invocation when constructing context
 		// when
 		context.getCurrentNamespace()
 		// then
-		verify(client.configuration).namespace
+		verify(clients.get().configuration).namespace
 	}
 
 	@Test
 	fun `#getCurrentNamespace should use null if no namespace set in client`() {
 		// given
-		whenever(client.configuration.namespace)
+		whenever(clients.get().configuration.namespace)
 				.thenReturn(null)
 		// when
 		val namespace = context.getCurrentNamespace()
@@ -282,7 +300,7 @@ class KubernetesContextTest {
 	@Test
 	fun `#getCurrentNamespace should return null if current namespace is set but doesnt exist`() {
 		// given
-		whenever(client.configuration.namespace)
+		whenever(clients.get().configuration.namespace)
 				.thenReturn("inexistent")
 
 		// when
@@ -311,102 +329,109 @@ class KubernetesContextTest {
 	}
 
 	@Test
-	fun `#getResources should get all resources in provider for given resource type in correct ResourcesIn type`() {
+	fun `#getResources should get all resources in operator for given resource type in correct ResourcesIn type`() {
 		// given
 		// when
-		context.getAllResources(NodesProvider.KIND, ResourcesIn.NO_NAMESPACE)
+		context.getAllResources(NodesOperator.KIND, ResourcesIn.NO_NAMESPACE)
 		// then
-		verify(nodesProvider).allResources
+		verify(nodesOperator).allResources
 	}
 
 	@Test
-	fun `#getResources should not get all resources in provider for given resource type in wrong ResourcesIn type`() {
+	fun `#getResources should not get all resources in operator for given resource type in wrong ResourcesIn type`() {
 		// given
 		// when
 		// there are no namespaces in current namespace
-		context.getAllResources(NamespacesProvider.KIND, ResourcesIn.CURRENT_NAMESPACE)
+		context.getAllResources(NamespacesOperator.KIND, ResourcesIn.CURRENT_NAMESPACE)
 		// then
-		verify(nodesProvider, never()).allResources
+		verify(nodesOperator, never()).allResources
 	}
 
 	@Test
-	fun `#getResources should return empty list if there's no provider for given resource type in given ResourceIn type`() {
+	fun `#getResources should return empty list if there's no operator for given resource type in given ResourceIn type`() {
 		// given
 		// when
-		// namespace provider exists but for ResourceIn.NO_NAMESPACE
-		val resources = context.getAllResources(NamespacesProvider.KIND, ResourcesIn.CURRENT_NAMESPACE)
+		// namespace operator exists but for ResourceIn.NO_NAMESPACE
+		val resources = context.getAllResources(NamespacesOperator.KIND, ResourcesIn.CURRENT_NAMESPACE)
 		// then
 		assertThat(resources).isEmpty()
 	}
 
 	@Test
-	fun `#getResources should return empty list if there's no provider of given resource type in given ResourceIn type`() {
+	fun `#getResources should return empty list if there's no operator of given resource type in given ResourceIn type`() {
 		// given
 		// when
-		// services provider was not registered to context, it doesn't exist in context
-		val services = context.getAllResources(ServicesProvider.KIND, ResourcesIn.CURRENT_NAMESPACE)
+		// services operator was not registered to context, it doesn't exist in context
+		val services = context.getAllResources(ServicesOperator.KIND, ResourcesIn.CURRENT_NAMESPACE)
 		// then
 		assertThat(services).isEmpty()
 	}
 
 	@Test
-	fun `#getCustomResources should query CustomResourceProvider`() {
+	fun `#getCustomResources should query CustomResourceOperator`() {
 		// given
 		// when
 		context.getAllResources(namespacedDefinition)
 		// then
-		verify(namespacedCustomResourcesProvider).allResources
+		verify(namespacedCustomResourceOperator).allResources
 	}
 
 	@Test
-	fun `#getCustomResources should create CustomResourceProvider once and reuse it`() {
+	fun `#getCustomResources should create CustomResourceOperator once and reuse it`() {
 		// given
 		// when
 		context.getAllResources(namespacedDefinition)
 		context.getAllResources(namespacedDefinition)
 		// then
-		verify(context, times(1)).createCustomResourcesProvider(eq(namespacedDefinition), any())
+		verify(context, times(1)).createCustomResourcesOperator(eq(namespacedDefinition), any())
 	}
 
 	@Test
-	fun `#getCustomResources should create CustomResourceProvider for each unique definition`() {
+	fun `#getCustomResources should create CustomResourceOperator for each unique definition`() {
 		// given
 		// when
 		context.getAllResources(namespacedDefinition)
 		context.getAllResources(clusterwideDefinition)
 		// then
-		verify(context, times(1)).createCustomResourcesProvider(eq(namespacedDefinition), any())
-		verify(context, times(1)).createCustomResourcesProvider(eq(clusterwideDefinition), any())
+		verify(context, times(1)).createCustomResourcesOperator(eq(namespacedDefinition), any())
+		verify(context, times(1)).createCustomResourcesOperator(eq(clusterwideDefinition), any())
 	}
 
 	@Test(expected = IllegalArgumentException::class)
 	fun `#getCustomResources should throw if scope is unknown`() {
 		// given
 		val bogusScope = customResourceDefinition(
-				"bogus scope","version1", "group1", "bogus-scope-crd", "Bogus")
+				"bogus scope",
+			"ns1",
+			"uid",
+			"v1",
+			"version1",
+			"group1",
+			"bogus-scope-crd",
+			"Bogus")
 		// when
 		context.getAllResources(bogusScope)
 		// then
 	}
 
 	@Test
-	fun `#delete should ask provider to delete`() {
+	fun `#delete should call operator#delete`() {
 		// given
 		val toDelete = listOf(POD2)
 		// when
 		context.delete(toDelete)
 		// then
-		verify(allPodsProvider).delete(toDelete)
+		verify(namespacedPodsOperator).delete(toDelete)
 	}
 
 	@Test
-	fun `#delete should not ask any provider to delete if there is no provider for it`() {
+	fun `#delete should not call operator#delete if there is no operator for it`() {
 		// given
-		val toDelete = listOf(resource<HasMetadata>("lord sith"))
+		val toDelete = listOf(resource<HasMetadata>("lord sith", "ns1", "uid", "v1"))
 		// when
 		context.delete(toDelete)
 		// then
-		verify(allPodsProvider, never()).delete(toDelete)
+		verify(namespacedPodsOperator, never()).delete(toDelete)
 	}
 
 	@Test
@@ -416,25 +441,25 @@ class KubernetesContextTest {
 		// when
 		context.delete(toDelete)
 		// then
-		verify(allPodsProvider, times(1)).delete(eq(listOf(POD2)))
+		verify(namespacedPodsOperator, times(1)).delete(eq(listOf(POD2)))
 	}
 
 	@Test
-	fun `#delete should delete in 2 separate providers if resources of 2 kinds are given`() {
+	fun `#delete should delete in 2 separate operators if resources of 2 kinds are given`() {
 		// given
 		val toDelete = listOf(POD2, NAMESPACE2)
 		// when
 		context.delete(toDelete)
 		// then
-		verify(allPodsProvider, times(1)).delete(eq(listOf(POD2)))
-		verify(namespacesProvider, times(1)).delete(eq(listOf(NAMESPACE2)))
+		verify(namespacedPodsOperator, times(1)).delete(eq(listOf(POD2)))
+		verify(namespacesOperator, times(1)).delete(eq(listOf(NAMESPACE2)))
 	}
 
 	@Test
 	fun `#delete should fire if resource was deleted`() {
 		// given
 		val toDelete = listOf(POD2)
-		whenever(allPodsProvider.delete(any()))
+		whenever(allPodsOperator.delete(any()))
 				.thenReturn(true)
 		// when
 		context.delete(toDelete)
@@ -457,7 +482,7 @@ class KubernetesContextTest {
 	fun `#delete should throw if resource was NOT deleted`() {
 		// given
 		val toDelete = listOf(POD2)
-		whenever(allPodsProvider.delete(any()))
+		whenever(namespacedPodsOperator.delete(any()))
 			.thenReturn(false)
 		// when
 		context.delete(toDelete)
@@ -466,10 +491,10 @@ class KubernetesContextTest {
 	}
 
 	@Test
-	fun `#delete should throw for provider that failed, not successful ones`() {
+	fun `#delete should throw for operator that failed, not successful ones`() {
 		// given
 		val toDelete = listOf(POD2, NAMESPACE2)
-		whenever(allPodsProvider.delete(any()))
+		whenever(namespacedPodsOperator.delete(any()))
 			.thenReturn(false)
 		// when
 		val ex = try {
@@ -488,7 +513,7 @@ class KubernetesContextTest {
 	fun `#delete should NOT fire if resource was NOT deleted`() {
 		// given
 		val toDelete = listOf(POD2)
-		whenever(allPodsProvider.delete(any()))
+		whenever(namespacedPodsOperator.delete(any()))
 			.thenReturn(false)
 		// when
 		try {
@@ -501,60 +526,81 @@ class KubernetesContextTest {
 	}
 
 	@Test
-	fun `#watch(kind) should watch watchable provided by namespaced resource provider`() {
+	fun `#watch(kind) should call watch on namespaced resource operator`() {
 		// given
-		givenCustomResourceProvider(namespacedDefinition,
-				customResourceDefinitionsProvider,
-				namespacedCustomResourcesProvider)
-		val watch = context.watch
-		clearInvocations(watch)
+		// create custom resource operator
+		givenCustomResourceOperatorInContext(namespacedDefinition,
+				customResourceDefinitionsOperator,
+				namespacedCustomResourceOperator)
+		// trigger watch on namespaces
+		context.namespacedOperators
+		clearInvocations(context.watch)
 		// when
-		context.watch(ResourceKind.create(namespacedDefinition))
+		context.watch(ResourceKind.create(namespacedDefinition.spec))
 		// then
 		@Suppress("UNCHECKED_CAST")
-		verify(context.watch, times(1)).watch(namespacedCustomResourcesProvider.kind, watchableSupplier1
-				as Supplier<Watchable<Watcher<in HasMetadata>>?>)
+		verify(context.watch).watch(
+			eq(namespacedCustomResourceOperator.kind),
+			argThat(ArgumentMatcher { function ->
+				// cannot compare functions directly, mockito creates proxies,
+				// identical kotlin lambdas may not be equal
+				// kotlin method references are KFunction, lambdas are KClassImpl
+				function.invoke(mock()) ==
+						namespacedCustomResourceWatchOp.invoke(mock())
+			}),
+			any())
 	}
 
 	@Test
-	fun `#watch(kind) should watch watchable provided by non-namespaced resource provider`() {
+	fun `#watch(kind) should call watch on non-namespaced resource operator`() {
 		// given
-		givenCustomResourceProvider(clusterwideDefinition,
-				customResourceDefinitionsProvider,
-				nonNamespacedCustomResourcesProvider)
+		// create custom resource operator
+		givenCustomResourceOperatorInContext(clusterwideDefinition,
+				customResourceDefinitionsOperator,
+				nonNamespacedCustomResourcesOperator)
+		// trigger watch on namespaces
+		context.namespacedOperators
+		clearInvocations(context.watch)
 		// when
-		context.watch(ResourceKind.create(clusterwideDefinition))
+		context.watch(ResourceKind.create(clusterwideDefinition.spec))
 		// then
-		@Suppress("UNCHECKED_CAST")
-		verify(context.watch, times(1)).watch(nonNamespacedCustomResourcesProvider.kind, watchableSupplier2
-				as Supplier<Watchable<Watcher<in HasMetadata>>?>)
+		verify(context.watch).watch(
+			eq(nonNamespacedCustomResourcesOperator.kind),
+			argThat(ArgumentMatcher { function ->
+				// cannot compare functions directly, mockito creates proxies,
+				// identical kotlin lambdas may not be equal
+				// kotlin method references are KFunction, lambdas are KClassImpl
+				function.invoke(mock()) ==
+						nonNamespacedCustomResourceWatchOp.invoke(mock())
+			}),
+			any())
 	}
 
 	@Test
-	fun `#watch(definition) should create custom resource provider if none exists yet`() {
+	fun `#watch(definition) should create custom resource operator if none exists yet`() {
 		// given
-		givenCustomResourceProvider(clusterwideDefinition,
-			customResourceDefinitionsProvider,
-			null) // no resource provider for definition
+		givenCustomResourceOperatorInContext(clusterwideDefinition,
+			customResourceDefinitionsOperator,
+			null) // no resource operator for definition
 		// when
 		context.watch(clusterwideDefinition)
 		// then
-		verify(context, times(1)).createCustomResourcesProvider(
+		verify(context, times(1)).createCustomResourcesOperator(
 			eq(clusterwideDefinition),
 			any()
 		)
 	}
 
 	@Test
-	fun `#watch(definition) should NOT create custom resource provider if already exists`() {
+	fun `#watch(definition) should NOT create custom resource operator if already exists`() {
 		// given
-		givenCustomResourceProvider(clusterwideDefinition,
-			customResourceDefinitionsProvider,
-			nonNamespacedCustomResourcesProvider)
+		givenCustomResourceOperatorInContext(clusterwideDefinition,
+			customResourceDefinitionsOperator,
+			nonNamespacedCustomResourcesOperator)
 		// when
 		context.watch(clusterwideDefinition)
 		// then
-		verify(context, never()).createCustomResourcesProvider(
+		verify(context, never()).createCustomResourcesOperator(
 			eq(clusterwideDefinition),
 			any()
 		)
@@ -564,31 +610,31 @@ class KubernetesContextTest {
 	fun `#stopWatch(kind) should stop watch`() {
 		// given
 		// when
-		context.stopWatch(NamespacesProvider.KIND)
+		context.stopWatch(NamespacesOperator.KIND)
 		// then
-		verify(resourceWatch, times(1)).stopWatch(NamespacesProvider.KIND)
+		verify(resourceWatch, times(1)).stopWatch(NamespacesOperator.KIND)
 	}
 
 	@Test
-	fun `#stopWatch(kind) should clear providers`() {
+	fun `#stopWatch(kind) should clear operators`() {
 		// given
 		// when
-		context.stopWatch(NamespacesProvider.KIND)
+		context.stopWatch(NamespacesOperator.KIND)
 		// then
-		verify(namespacesProvider, times(1)).invalidate()
+		verify(namespacesOperator, times(1)).invalidate()
 	}
 
 	@Test
-	fun `#stopWatch(kind) should NOT notify of changes in provider`() {
+	fun `#stopWatch(kind) should NOT notify of changes in operator`() {
 		// given
 		// when
-		context.stopWatch(NamespacesProvider.KIND)
+		context.stopWatch(NamespacesOperator.KIND)
 		// then
 		// dont notify invalidation change because this would cause UI to reload
 		// and therefore to repopulate the cache immediately.
 		// Any resource operation that eventually happens while the watch is not active would cause the cache
 		// to become out-of-sync and it would therefore return invalid resources when asked to do so
-		verify(modelChange, never()).fireModified(NamespacesProvider.KIND)
+		verify(modelChange, never()).fireModified(NamespacesOperator.KIND)
 	}
 
 	@Test
@@ -603,345 +649,345 @@ class KubernetesContextTest {
 	}
 
 	@Test
-	fun `#add(namespace) should add to namespaces provider but not to pods provider`() {
+	fun `#added(namespace) should add to namespaces operator but not to pods operator`() {
 		// given
-		val namespace = resource<Namespace>("papa smurf namespace")
+		val namespace = resource<Namespace>("papa smurf namespace", "ns1", "someNamespaceUid", "v1")
 		// when
-		context.add(namespace)
+		context.added(namespace)
 		// then
-		verify(namespacesProvider).add(namespace)
-		verify(namespacedPodsProvider, never()).add(namespace)
+		verify(namespacesOperator).added(namespace)
+		verify(namespacedPodsOperator, never()).added(namespace)
 	}
 
 	@Test
-	fun `#add(pod) should add pod in current namespace to pods provider`() {
+	fun `#added(pod) should add pod in current namespace to pods operator`() {
 		// given
-		val pod = resource<Pod>("pod", currentNamespace.metadata.name)
+		val pod = resource<Pod>("pod", currentNamespace.metadata.name, "somePodUid", "v1")
 		// when
-		context.add(pod)
+		context.added(pod)
 		// then
-		verify(namespacedPodsProvider).add(pod)
+		verify(namespacedPodsOperator).added(pod)
 	}
 
 	@Test
-	fun `#add(pod) should add pod to allPods provider`() {
+	fun `#added(pod) should add pod to allPods operator`() {
 		// given
-		val pod = resource<Pod>("pod", "gargamel namespace")
+		val pod = resource<Pod>("pod", "gargamel namespace", "gargamelUid", "v1")
 		// when
-		context.add(pod)
+		context.added(pod)
 		// then
-		verify(allPodsProvider).add(pod)
+		verify(allPodsOperator).added(pod)
 	}
 
 	@Test
-	fun `#add(pod) should not add pod of non-current namespace to namespacedPods provider`() {
+	fun `#added(pod) should not add pod of non-current namespace to namespacedPods operator`() {
 		// given
-		val pod = resource<Pod>("pod", "gargamel namespace")
+		val pod = resource<Pod>("pod", "gargamel namespace", "gargamelUid", "v1")
 		// when
-		context.add(pod)
+		context.added(pod)
 		// then
-		verify(namespacedPodsProvider, never()).add(pod)
+		verify(namespacedPodsOperator, never()).added(pod)
 	}
 
 	@Test
-	fun `#add(pod) should return true if pod was added to pods provider`() {
+	fun `#added(pod) should return true if pod was added to pods operator`() {
 		// given
-		val pod = resource<Pod>("pod", currentNamespace.metadata.name)
-		whenever(namespacedPodsProvider.add(pod))
+		val pod = resource<Pod>("pod", currentNamespace.metadata.name, "somePodUid", "v1")
+		whenever(namespacedPodsOperator.added(pod))
 			.thenReturn(true)
 
 		// when
-		val added = context.add(pod)
+		val added = context.added(pod)
 		// then
 		assertThat(added).isTrue()
 	}
 
 	@Test
-	fun `#add(namespace) should return true if namespace was added to namespace provider`() {
+	fun `#added(namespace) should return true if namespace was added to namespace operator`() {
 		// given
-		val namespace = resource<Namespace>("pod")
-		whenever(namespacesProvider.add(namespace))
+		val namespace = resource<Namespace>("pod", null, "someNamespaceUid", "v1")
+		whenever(namespacesOperator.added(namespace))
 			.thenReturn(true)
 		// when
-		val added = context.add(namespace)
+		val added = context.added(namespace)
 		// then
 		assertThat(added).isTrue()
 	}
 
 	@Test
-	fun `#add(pod) should return false if pod was not added to pods provider`() {
+	fun `#added(pod) should return false if pod was not added to pods operator`() {
 		// given
-		val pod = resource<Pod>("pod")
-		whenever(namespacedPodsProvider.add(pod))
+		val pod = resource<Pod>("pod", "ns1", "somePodUid", "v1")
+		whenever(namespacedPodsOperator.added(pod))
 			.thenReturn(false)
 		// when
-		val added = context.add(pod)
+		val added = context.added(pod)
 		// then
 		assertThat(added).isFalse()
 	}
 
 	@Test
-	fun `#add(pod) should fire if provider added pod`() {
+	fun `#added(pod) should fire if operator added pod`() {
 		// given
-		val pod = resource<Pod>("gargamel", currentNamespace.metadata.name)
-		whenever(namespacedPodsProvider.add(pod))
+		val pod = resource<Pod>("gargamel", currentNamespace.metadata.name, "gargamelUid", "v1")
+		whenever(namespacedPodsOperator.added(pod))
 			.thenReturn(true)
 		// when
-		context.add(pod)
+		context.added(pod)
 		// then
 		verify(modelChange).fireAdded(pod)
 	}
 
 	@Test
-	fun `#add(pod) should not fire if provider did not add pod`() {
+	fun `#added(pod) should not fire if operator did not add pod`() {
 		// given
-		val pod = resource<Pod>("gargamel")
-		whenever(namespacedPodsProvider.add(pod))
+		val pod = resource<Pod>("gargamel", "ns1", "gargamelUid", "v1")
+		whenever(namespacedPodsOperator.added(pod))
 			.thenReturn(false)
 		// when
-		context.add(pod)
+		context.added(pod)
 		// then
 		verify(modelChange, never()).fireAdded(pod)
 	}
 
 	@Test
-	fun `#add(CustomResourceDefinition) should create namespaced custom resources provider if definition was added`() {
+	fun `#added(CustomResourceDefinition) should create namespaced custom resources operator if definition was added`() {
 		// given
 		val currentNamespace = currentNamespace.metadata.name
 		setNamespaceForResource(currentNamespace, namespacedDefinition)
-		whenever(customResourceDefinitionsProvider.add(namespacedDefinition))
+		whenever(customResourceDefinitionsOperator.added(namespacedDefinition))
 				.doReturn(true)
 		clearInvocations(context)
 		// when
-		context.add(namespacedDefinition)
+		context.added(namespacedDefinition)
 		// then
 		verify(context)
-				.createCustomResourcesProvider(
+				.createCustomResourcesOperator(
 						eq(namespacedDefinition),
 						eq(ResourcesIn.CURRENT_NAMESPACE))
 	}
 
 	@Test
-	fun `#add(CustomResourceDefinition) should create clusterwide custom resources provider if definition was added`() {
+	fun `#added(CustomResourceDefinition) should create clusterwide custom resources operator if definition was added`() {
 		// given
-		whenever(customResourceDefinitionsProvider.add(clusterwideDefinition))
+		whenever(customResourceDefinitionsOperator.added(clusterwideDefinition))
 				.doReturn(true)
 		// when
-		context.add(clusterwideDefinition)
+		context.added(clusterwideDefinition)
 		// then
 		verify(context, times(1))
-				.createCustomResourcesProvider(
+				.createCustomResourcesOperator(
 						eq(clusterwideDefinition),
 						eq(ResourcesIn.NO_NAMESPACE))
 	}
 
 	@Test
-	fun `#add(CustomResourceDefinition) should NOT create custom resources provider if definition was NOT added`() {
+	fun `#added(CustomResourceDefinition) should NOT create custom resources operator if definition was NOT added`() {
 		// given
-		whenever(namespacedCustomResourcesProvider.add(clusterwideDefinition))
+		whenever(namespacedCustomResourceOperator.added(clusterwideDefinition))
 				.doReturn(false)
 		// when
-		context.add(clusterwideDefinition)
+		context.added(clusterwideDefinition)
 		// then
-		verify(context, never()).createCustomResourcesProvider(eq(clusterwideDefinition), any())
+		verify(context, never()).createCustomResourcesOperator(eq(clusterwideDefinition), any())
 	}
 
 	@Test
-	fun `#remove(pod) should remove pod from pods provider but not from namespace provider`() {
+	fun `#removed(pod) should remove pod from pods operator but not from namespace operator`() {
 		// given
-		val pod = resource<Pod>("pod", currentNamespace.metadata.name)
+		val pod = resource<Pod>("pod", currentNamespace.metadata.name, "somePodUid", "v1")
 		// when
-		context.remove(pod)
+		context.removed(pod)
 		// then
-		verify(namespacedPodsProvider).remove(pod)
-		verify(namespacesProvider, never()).remove(pod)
+		verify(namespacedPodsOperator).removed(pod)
+		verify(namespacesOperator, never()).removed(pod)
 	}
 
 	@Test
-	fun `#remove(pod) should remove pod in current namespace from allPods && namespacedPods provider`() {
+	fun `#removed(pod) should remove pod in current namespace from allPods && namespacedPods operator`() {
 		// given
-		val pod = resource<Pod>("pod", currentNamespace.metadata.name)
+		val pod = resource<Pod>("pod", currentNamespace.metadata.name, "somePodUid", "v1")
 		// when
-		context.remove(pod)
+		context.removed(pod)
 		// then
-		verify(namespacedPodsProvider).remove(pod)
-		verify(allPodsProvider).remove(pod)
+		verify(namespacedPodsOperator).removed(pod)
+		verify(allPodsOperator).removed(pod)
 	}
 
 	@Test
-	fun `#remove(pod) should remove pod in non-current namespace from allPods provider but not from namespacedPods provider`() {
+	fun `#removed(pod) should remove pod in non-current namespace from allPods operator but not from namespacedPods operator`() {
 		// given
-		val pod = resource<Pod>("pod", "42")
+		val pod = resource<Pod>("pod", "42", "somePodUid", "v1")
 		// when
-		context.remove(pod)
+		context.removed(pod)
 		// then
-		verify(namespacedPodsProvider, never()).remove(pod)
-		verify(allPodsProvider).remove(pod)
+		verify(namespacedPodsOperator, never()).removed(pod)
+		verify(allPodsOperator).removed(pod)
 	}
 
 	@Test
-	fun `#remove(namespace) should remove from namespaces provider but not from pods provider`() {
+	fun `#removed(namespace) should remove from namespaces operator but not from pods operator`() {
 		// given
 		val namespace = NAMESPACE1
 		// when
-		context.remove(namespace)
+		context.removed(namespace)
 		// then
-		verify(namespacesProvider).remove(namespace)
-		verify(namespacedPodsProvider, never()).remove(namespace)
+		verify(namespacesOperator).removed(namespace)
+		verify(namespacedPodsOperator, never()).removed(namespace)
 	}
 
 	@Test
-	fun `#remove(pod) should fire if provider removed pod`() {
+	fun `#removed(pod) should fire if operator removed pod`() {
 		// given
-		val pod = resource<Pod>("gargamel", currentNamespace.metadata.name)
-		whenever(namespacedPodsProvider.remove(pod))
+		val pod = resource<Pod>("gargamel", currentNamespace.metadata.name, "gargamelUid", "v1")
+		whenever(namespacedPodsOperator.removed(pod))
 			.thenReturn(true)
 		// when
-		context.remove(pod)
+		context.removed(pod)
 		// then
 		verify(modelChange).fireRemoved(pod)
 	}
 
 	@Test
-	fun `#remove(pod) should not fire if provider did not remove pod`() {
+	fun `#removed(pod) should not fire if operator did not remove pod`() {
 		// given
-		val pod = resource<Pod>("gargamel")
-		whenever(namespacedPodsProvider.remove(pod))
+		val pod = resource<Pod>("gargamel", "ns1", "gargamelUid", "v1")
+		whenever(namespacedPodsOperator.removed(pod))
 			.thenReturn(false)
 		// when
-		context.remove(pod)
+		context.removed(pod)
 		// then
 		verify(modelChange, never()).fireRemoved(pod)
 	}
 
 	@Test
-	fun `#remove(CustomResourceDefinition) should remove clusterwide custom resource provider when definition is removed`() {
+	fun `#removed(CustomResourceDefinition) should remove clusterwide custom resource operator when definition is removed`() {
 		// given
-		givenCustomResourceProvider(clusterwideDefinition,
-				customResourceDefinitionsProvider,
-				nonNamespacedCustomResourcesProvider)
+		givenCustomResourceOperatorInContext(clusterwideDefinition,
+				customResourceDefinitionsOperator,
+				nonNamespacedCustomResourcesOperator)
 		// when
-		context.remove(clusterwideDefinition)
+		context.removed(clusterwideDefinition)
 		// then
-		assertThat(context.nonNamespacedProviders)
-				.doesNotContainValue(nonNamespacedCustomResourcesProvider)
+		assertThat(context.nonNamespacedOperators)
+				.doesNotContainValue(nonNamespacedCustomResourcesOperator)
 	}
 
 	@Test
-	fun `#remove(CustomResourceDefinition) should stop watch when definition is removed `() {
+	fun `#removed(CustomResourceDefinition) should stop watch when definition is removed `() {
 		// given
-		givenCustomResourceProvider(clusterwideDefinition,
-				customResourceDefinitionsProvider,
-				nonNamespacedCustomResourcesProvider)
+		givenCustomResourceOperatorInContext(clusterwideDefinition,
+				customResourceDefinitionsOperator,
+				nonNamespacedCustomResourcesOperator)
 		clearInvocations(resourceWatch)
 		// when
-		context.remove(clusterwideDefinition)
+		context.removed(clusterwideDefinition)
 		// then
-		verify(resourceWatch).stopWatch(nonNamespacedCustomResourcesProvider.kind)
+		verify(resourceWatch).stopWatch(nonNamespacedCustomResourcesOperator.kind)
 	}
 
 	@Test
-	fun `#remove(CustomResourceDefinition) should remove namespaced custom resource provider when definition is removed`() {
+	fun `#removed(CustomResourceDefinition) should remove namespaced custom resource operator when definition is removed`() {
 		// given
-		givenCustomResourceProvider(namespacedDefinition,
-				customResourceDefinitionsProvider,
-				namespacedCustomResourcesProvider)
+		givenCustomResourceOperatorInContext(namespacedDefinition,
+				customResourceDefinitionsOperator,
+				namespacedCustomResourceOperator)
 		// when
-		context.remove(namespacedDefinition)
+		context.removed(namespacedDefinition)
 		// then
-		assertThat(context.namespacedProviders)
-				.doesNotContainValue(namespacedCustomResourcesProvider)
+		assertThat(context.namespacedOperators)
+				.doesNotContainValue(namespacedCustomResourceOperator)
 	}
 
 	@Test
-	fun `#remove(CustomResourceDefinition) should NOT remove namespaced custom resource provider when definition is NOT removed`() {
+	fun `#removed(CustomResourceDefinition) should NOT remove namespaced custom resource operator when definition is NOT removed`() {
 		// given
-		givenCustomResourceProvider(clusterwideDefinition,
-				customResourceDefinitionsProvider,
-				namespacedCustomResourcesProvider)
-		whenever(customResourceDefinitionsProvider.remove(clusterwideDefinition))
+		givenCustomResourceOperatorInContext(clusterwideDefinition,
+				customResourceDefinitionsOperator,
+				namespacedCustomResourceOperator)
+		whenever(customResourceDefinitionsOperator.removed(clusterwideDefinition))
 				.doReturn(false) // was not removed
 		// when
-		context.remove(clusterwideDefinition)
+		context.removed(clusterwideDefinition)
 		// then
-		assertThat(context.namespacedProviders)
-				.containsValue(namespacedCustomResourcesProvider)
+		assertThat(context.namespacedOperators)
+				.containsValue(namespacedCustomResourceOperator)
 	}
 
 	@Test
-	fun `#invalidate() should invalidate all resource providers`() {
+	fun `#invalidate() should invalidate all resource operators`() {
 		// given
 		// when
 		context.invalidate()
 		// then
-		verify(namespacesProvider).invalidate()
-		verify(namespacedPodsProvider).invalidate()
+		verify(namespacesOperator).invalidate()
+		verify(namespacedPodsOperator).invalidate()
 	}
 
 	@Test
-	fun `#invalidate(kind) should invalidate resource provider for this kind`() {
+	fun `#invalidate(kind) should invalidate resource operator for this kind`() {
 		// given
 		// when
-		context.invalidate(namespacedPodsProvider.kind)
+		context.invalidate(namespacedPodsOperator.kind)
 		// then
-		verify(namespacesProvider, never()).invalidate()
-		verify(namespacedPodsProvider).invalidate()
+		verify(namespacesOperator, never()).invalidate()
+		verify(namespacedPodsOperator).invalidate()
 	}
 
 	@Test
-	fun `#replace(resource) should replace in namespaced resource provider`() {
+	fun `#replace(resource) should replace in namespaced resource operator`() {
 		// given
 		val pod = allPods[0]
 		// when
-		context.replace(pod)
+		context.replaced(pod)
 		// then
-		verify(namespacesProvider, never()).replace(pod)
-		verify(namespacedPodsProvider).replace(pod)
+		verify(namespacesOperator, never()).replaced(pod)
+		verify(namespacedPodsOperator).replaced(pod)
 	}
 
 	@Test
-	fun `#replace(resource) should replace in non-namespaced resource provider`() {
+	fun `#replace(resource) should replace in non-namespaced resource operator`() {
 		// given
 		val namespace = allNamespaces[0]
 		// when
-		context.replace(namespace)
+		context.replaced(namespace)
 		// then
-		verify(namespacesProvider).replace(namespace)
-		verify(namespacedPodsProvider, never()).replace(namespace)
+		verify(namespacesOperator).replaced(namespace)
+		verify(namespacedPodsOperator, never()).replaced(namespace)
 	}
 
 	@Test
-	fun `#replace(customResource) should replace in custom resource provider`() {
+	fun `#replaced(customResource) should replace in custom resource operator`() {
 		// given
-		givenCustomResourceProvider(namespacedDefinition,
-				customResourceDefinitionsProvider,
-				namespacedCustomResourcesProvider)
+		givenCustomResourceOperatorInContext(namespacedDefinition,
+				customResourceDefinitionsOperator,
+				namespacedCustomResourceOperator)
 		// when
-		context.replace(namespacedCustomResource1)
+		context.replaced(namespacedCustomResource1)
 		// then
-		verify(namespacedCustomResourcesProvider).replace(namespacedCustomResource1)
+		verify(namespacedCustomResourceOperator).replaced(namespacedCustomResource1)
 	}
 
 	@Test
-	fun `#replace(pod) should fire if provider replaced pod`() {
+	fun `#replaced(pod) should fire if operator replaced pod`() {
 		// given
-		val pod = resource<Pod>("gargamel")
-		whenever(namespacedPodsProvider.replace(pod))
+		val pod = resource<Pod>("gargamel", "ns1", "gargamelUid", "v1")
+		whenever(namespacedPodsOperator.replaced(pod))
 			.thenReturn(true)
 		// when
-		context.replace(pod)
+		context.replaced(pod)
 		// then
 		verify(modelChange).fireModified(pod)
 	}
 
 	@Test
-	fun `#replace(pod) should not fire if provider did NOT replace pod`() {
+	fun `#replaced(pod) should not fire if operator did NOT replace pod`() {
 		// given
-		val pod = resource<Pod>("gargamel")
-		whenever(namespacedPodsProvider.replace(pod))
+		val pod = resource<Pod>("gargamel", "ns1", "gargamelUid", "v1")
+		whenever(namespacedPodsOperator.replaced(pod))
 			.thenReturn(false)
 		// when
-		context.replace(pod)
+		context.replaced(pod)
 		// then
 		verify(modelChange, never()).fireModified(pod)
 	}
@@ -952,29 +998,29 @@ class KubernetesContextTest {
 		// when
 		context.close()
 		// then
-		verify(client).close()
+		verify(clients.get()).close()
 	}
 
-	private fun givenCustomResourceProvider(
-			definition: CustomResourceDefinition,
-			definitionProvider: IResourcesProvider<CustomResourceDefinition>,
-			resourceProvider: IResourcesProvider<GenericCustomResource>?) {
-		whenever(definitionProvider.remove(definition))
+	private fun givenCustomResourceOperatorInContext(
+		definition: CustomResourceDefinition,
+		definitionOperator: IResourceOperator<CustomResourceDefinition>,
+		resourceOperator: IResourceOperator<GenericCustomResource>?) {
+		whenever(definitionOperator.removed(definition))
 			.doReturn(true)
 
 		val kind = ResourceKind.create(definition.spec)
-		if (resourceProvider != null) {
-			whenever(resourceProvider.kind)
+		if (resourceOperator != null) {
+			whenever(resourceOperator.kind)
 				.doReturn(kind)
 		}
-		if (resourceProvider is INamespacedResourcesProvider<*, *>) {
+		if (resourceOperator is INamespacedResourceOperator<*, *>) {
 			@Suppress("UNCHECKED_CAST")
-			context.namespacedProviders[kind] =
-				resourceProvider as INamespacedResourcesProvider<*, NamespacedKubernetesClient>
-		} else if (resourceProvider is INonNamespacedResourcesProvider<*, *>) {
+			context.namespacedOperators[kind] =
+				resourceOperator as INamespacedResourceOperator<*, KubernetesClient>
+		} else if (resourceOperator is INonNamespacedResourceOperator<*, *>) {
 			@Suppress("UNCHECKED_CAST")
-			context.nonNamespacedProviders[kind] =
-				resourceProvider as INonNamespacedResourcesProvider<*, NamespacedKubernetesClient>
+			context.nonNamespacedOperators[kind] =
+				resourceOperator as INonNamespacedResourceOperator<*, KubernetesClient>
 		}
 	}
 
@@ -984,49 +1030,49 @@ class KubernetesContextTest {
 	}
 
 	class TestableKubernetesContext(
-		observable: ModelChangeObservable,
-		client: NamespacedKubernetesClient,
-		private val internalResourceProviders: List<IResourcesProvider<out HasMetadata>>,
-		private val extensionResourcesProviders: List<IResourcesProvider<out HasMetadata>>,
-		private val customResourcesProviders: Pair<
-					INamespacedResourcesProvider<GenericCustomResource, NamespacedKubernetesClient>,
-					INonNamespacedResourcesProvider<GenericCustomResource, NamespacedKubernetesClient>>,
-		public override var watch: ResourceWatch,
-		override val notification: Notification)
-		: KubernetesContext(observable, client, mock()) {
+        observable: ModelChangeObservable,
+        clients: Clients<KubernetesClient>,
+        private val internalResourceOperators: List<IResourceOperator<out HasMetadata>>,
+        private val extensionResourceOperators: List<IResourceOperator<out HasMetadata>>,
+        private val customResourcesOperators: Pair<
+					INamespacedResourceOperator<GenericCustomResource, KubernetesClient>,
+					INonNamespacedResourceOperator<GenericCustomResource, KubernetesClient>>,
+        public override var watch: ResourceWatch<ResourceKind<out HasMetadata>>,
+        override val notification: Notification)
+		: KubernetesContext(observable, clients, mock()) {
 
-		public override val namespacedProviders
-				: MutableMap<ResourceKind<out HasMetadata>, INamespacedResourcesProvider<*, NamespacedKubernetesClient>>
+		public override val namespacedOperators
+				: MutableMap<ResourceKind<out HasMetadata>, INamespacedResourceOperator<out HasMetadata, KubernetesClient>>
 			get() {
-				return super.namespacedProviders
+				return super.namespacedOperators
 			}
 
-		public override val nonNamespacedProviders
-				: MutableMap<ResourceKind<out HasMetadata>, INonNamespacedResourcesProvider<*, *>>
+		public override val nonNamespacedOperators
+				: MutableMap<ResourceKind<out HasMetadata>, INonNamespacedResourceOperator<*, *>>
 			get() {
-				return super.nonNamespacedProviders
+				return super.nonNamespacedOperators
 			}
 
-		override fun getInternalResourceProviders(supplier: Clients<NamespacedKubernetesClient>)
-				: List<IResourcesProvider<out HasMetadata>> {
-			return internalResourceProviders
+		override fun getInternalResourceOperators(clients: Clients<KubernetesClient>)
+				: List<IResourceOperator<out HasMetadata>> {
+			return internalResourceOperators
 		}
 
-		override fun getExtensionResourceProviders(supplier: Clients<NamespacedKubernetesClient>)
-				: List<IResourcesProvider<out HasMetadata>> {
-			return extensionResourcesProviders
+		override fun getExtensionResourceOperators(clients: Clients<KubernetesClient>)
+				: List<IResourceOperator<out HasMetadata>> {
+			return extensionResourceOperators
 		}
 
-		public override fun createCustomResourcesProvider(
+		public override fun createCustomResourcesOperator(
 			definition: CustomResourceDefinition,
 			resourceIn: ResourcesIn)
-				: IResourcesProvider<GenericCustomResource> {
+				: IResourceOperator<GenericCustomResource> {
 			return when(resourceIn) {
 				ResourcesIn.CURRENT_NAMESPACE ->
-					customResourcesProviders.first
+					customResourcesOperators.first
 				ResourcesIn.NO_NAMESPACE,
 				ResourcesIn.ANY_NAMESPACE ->
-					customResourcesProviders.second
+					customResourcesOperators.second
 			}
 		}
 

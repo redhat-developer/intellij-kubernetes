@@ -12,6 +12,7 @@ package com.redhat.devtools.intellij.kubernetes.tree
 
 import com.intellij.ide.projectView.PresentationData
 import com.intellij.ide.util.treeView.NodeDescriptor
+import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.IconLoader
 import com.intellij.ui.SimpleTextAttributes
 import io.fabric8.kubernetes.api.model.ConfigMap
@@ -35,7 +36,7 @@ import io.fabric8.kubernetes.api.model.storage.StorageClass
 import com.redhat.devtools.intellij.kubernetes.model.IResourceModel
 import com.redhat.devtools.intellij.kubernetes.model.context.KubernetesContext
 import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.custom.GenericCustomResource
-import com.redhat.devtools.intellij.kubernetes.model.util.getVersion
+import com.redhat.devtools.intellij.kubernetes.model.util.getHighestPriorityVersion
 import com.redhat.devtools.intellij.kubernetes.tree.AbstractTreeStructureContribution.DescriptorFactory
 import com.redhat.devtools.intellij.kubernetes.tree.TreeStructure.ResourceDescriptor
 import com.redhat.devtools.intellij.kubernetes.tree.TreeStructure.ResourcePropertyDescriptor
@@ -44,14 +45,14 @@ import javax.swing.Icon
 
 object KubernetesDescriptors {
 
-	fun createDescriptor(element: Any, parent: NodeDescriptor<*>?, model: IResourceModel): NodeDescriptor<*>? {
+	fun createDescriptor(element: Any, parent: NodeDescriptor<*>?, model: IResourceModel, project: Project): NodeDescriptor<*>? {
 		return when (element) {
-			is DescriptorFactory<*> -> element.create(parent, model)
+			is DescriptorFactory<*> -> element.create(parent, model, project)
 
-			is KubernetesContext -> KubernetesContextDescriptor(element, model)
-			is Namespace -> NamespaceDescriptor(element, parent, model)
-			is Node -> ResourceDescriptor(element, parent, model)
-			is Pod -> PodDescriptor(element, parent, model)
+			is KubernetesContext -> KubernetesContextDescriptor(element, model, project)
+			is Namespace -> NamespaceDescriptor(element, parent, model, project)
+			is Node -> ResourceDescriptor(element, parent, model, project)
+			is Pod -> PodDescriptor(element, parent, model, project)
 
 			is Deployment,
 			is StatefulSet,
@@ -67,34 +68,38 @@ object KubernetesDescriptors {
 			is ConfigMap,
 			is Secret,
 			is GenericCustomResource ->
-				ResourceDescriptor(element as HasMetadata, parent, model)
+				ResourceDescriptor(element as HasMetadata, parent, model, project)
 			is CustomResourceDefinition ->
-				CustomResourceDefinitionDescriptor(element, parent, model)
+				CustomResourceDefinitionDescriptor(element, parent, model, project)
 			else ->
 				null
 		}
 	}
 
 	private class KubernetesContextDescriptor(
-			element: KubernetesContext,
-			model: IResourceModel)
-		: TreeStructure.ContextDescriptor<KubernetesContext>(
-			context = element,
-			model = model
+		element: KubernetesContext,
+		model: IResourceModel,
+		project: Project
+	) : TreeStructure.ContextDescriptor<KubernetesContext>(
+		context = element,
+		model = model,
+		project = project
 	) {
-		override fun getIcon(element: KubernetesContext): Icon? {
+		override fun getIcon(element: KubernetesContext): Icon {
 			return IconLoader.getIcon("/icons/kubernetes-cluster.svg")
 		}
 	}
 
 	private class NamespaceDescriptor(
-			element: Namespace,
-			parent: NodeDescriptor<*>?,
-			model: IResourceModel)
-		: ResourceDescriptor<Namespace>(
-			element,
-			parent,
-			model
+		element: Namespace,
+		parent: NodeDescriptor<*>?,
+		model: IResourceModel,
+		project: Project
+	) : ResourceDescriptor<Namespace>(
+		element,
+		parent,
+		model,
+		project
 	) {
 		override fun getLabel(element: Namespace): String {
 			var label = element.metadata.name
@@ -104,38 +109,43 @@ object KubernetesDescriptors {
 			return label
 		}
 
-		override fun getIcon(element: Namespace): Icon? {
-			return IconLoader.getIcon("/icons/project.png")
+		override fun getIcon(element: Namespace): Icon {
+			return IconLoader.getIcon("/icons/namespace.svg")
 		}
 	}
 
-	private class PodDescriptor(pod: Pod, parent: NodeDescriptor<*>?, model: IResourceModel)
-		: ResourceDescriptor<Pod>(
-			pod,
-			parent,
-			model
+	private class PodDescriptor(
+		pod: Pod, parent: NodeDescriptor<*>?, model: IResourceModel,
+		project: Project
+	) : ResourceDescriptor<Pod>(
+		pod,
+		parent,
+		model,
+		project
 	) {
 		override fun getLabel(element: Pod): String {
 			return element.metadata.name
 		}
 
-		override fun getIcon(element: Pod): Icon? {
+		override fun getIcon(element: Pod): Icon {
 			return if (PodStatusUtil.isRunning(element)) {
-				IconLoader.getIcon("/icons/runningPod.svg")
+				IconLoader.getIcon("/icons/running-pod.svg")
 			} else {
-				IconLoader.getIcon("/icons/errorPod.svg")
+				IconLoader.getIcon("/icons/error-pod.svg")
 			}
 		}
 	}
 
 	private class CustomResourceDefinitionDescriptor(
-			definition: CustomResourceDefinition,
-			parent: NodeDescriptor<*>?,
-			model: IResourceModel)
-		: ResourceDescriptor<CustomResourceDefinition>(
-			definition,
-			parent,
-			model
+		definition: CustomResourceDefinition,
+		parent: NodeDescriptor<*>?,
+		model: IResourceModel,
+		project: Project
+	) : ResourceDescriptor<CustomResourceDefinition>(
+		definition,
+		parent,
+		model,
+		project
 	) {
 		override fun getLabel(element: CustomResourceDefinition): String {
 			return when {
@@ -149,7 +159,7 @@ object KubernetesDescriptors {
 				return
 			}
 			presentation.addText(getLabel(element!!), SimpleTextAttributes.REGULAR_ATTRIBUTES)
-			presentation.addText(" (${element!!.spec.group}/${getVersion(element!!.spec)})", SimpleTextAttributes.GRAYED_SMALL_ATTRIBUTES)
+			presentation.addText(" (${element!!.spec.group}/${getHighestPriorityVersion(element!!.spec)})", SimpleTextAttributes.GRAYED_SMALL_ATTRIBUTES)
 		}
 
 		override fun watchResources() {
@@ -169,15 +179,21 @@ object KubernetesDescriptors {
 
 	class PodContainersDescriptorFactory(pod: Pod) : AbstractTreeStructureContribution.DescriptorFactory<Pod>(pod) {
 
-		override fun create(parent: NodeDescriptor<*>?, model: IResourceModel): NodeDescriptor<Pod>? {
-			return PodContainersDescriptor(resource, parent, model)
+		override fun create(
+			parent: NodeDescriptor<*>?, model: IResourceModel,
+			project: Project
+		): NodeDescriptor<Pod> {
+			return PodContainersDescriptor(resource, parent, model, project)
 		}
 
-		private class PodContainersDescriptor(element: Pod, parent: NodeDescriptor<*>?, model: IResourceModel)
-			: ResourcePropertyDescriptor<Pod>(
-				element,
-				parent,
-				model
+		private class PodContainersDescriptor(
+			element: Pod, parent: NodeDescriptor<*>?, model: IResourceModel,
+			project: Project
+		) : ResourcePropertyDescriptor<Pod>(
+			element,
+			parent,
+			model,
+			project
 		) {
 			override fun getLabel(element: Pod): String {
 				val total = PodStatusUtil.getContainerStatus(element).size
@@ -190,16 +206,22 @@ object KubernetesDescriptors {
 
 	class PodIpDescriptorFactory(pod: Pod) : AbstractTreeStructureContribution.DescriptorFactory<Pod>(pod) {
 
-		override fun create(parent: NodeDescriptor<*>?, model: IResourceModel): NodeDescriptor<Pod>? {
-			return PodIpDescriptor(resource, parent, model)
+		override fun create(parent: NodeDescriptor<*>?, model: IResourceModel, project: Project): NodeDescriptor<Pod> {
+			return PodIpDescriptor(resource, parent, model, project)
 		}
 
-		private class PodIpDescriptor(element: Pod, parent: NodeDescriptor<*>?, model: IResourceModel)
-			: ResourcePropertyDescriptor<Pod>(
+		private class PodIpDescriptor(
+			element: Pod,
+			parent: NodeDescriptor<*>?,
+			model: IResourceModel,
+			project: Project
+		) :
+			ResourcePropertyDescriptor<Pod>(
 				element,
 				parent,
-				model
-		) {
+				model,
+				project
+			) {
 			override fun getLabel(element: Pod): String {
 				return element.status?.podIP ?: "<No IP>"
 			}
@@ -220,19 +242,21 @@ object KubernetesDescriptors {
 		: DescriptorFactory<R>(resource) {
 
 
-		override fun create(parent: NodeDescriptor<*>?, model: IResourceModel): NodeDescriptor<R>? {
-			return ConfigMapDataDescriptor(key, resource, parent, model)
+		override fun create(parent: NodeDescriptor<*>?, model: IResourceModel, project: Project): NodeDescriptor<R> {
+			return ConfigMapDataDescriptor(key, resource, parent, model, project)
 		}
 
 		private class ConfigMapDataDescriptor<R : HasMetadata>(
-				private val key: String,
-				element: R,
-				parent: NodeDescriptor<*>?,
-				model: IResourceModel
+			private val key: String,
+			element: R,
+			parent: NodeDescriptor<*>?,
+			model: IResourceModel,
+			project: Project
 		) : ResourcePropertyDescriptor<R>(
-				element,
-				parent,
-				model
+			element,
+			parent,
+			model,
+			project
 		) {
 			override fun getLabel(element: R): String {
 				return key
@@ -243,18 +267,21 @@ object KubernetesDescriptors {
 	private class EmptyDataDescriptorFactory<R : HasMetadata>(resource: R)
 		: AbstractTreeStructureContribution.DescriptorFactory<R>(resource) {
 
-		override fun create(parent: NodeDescriptor<*>?, model: IResourceModel): NodeDescriptor<R>? {
-			return ConfigMapDataDescriptor(resource, parent, model)
+		override fun create(parent: NodeDescriptor<*>?, model: IResourceModel,
+							project: Project): NodeDescriptor<R> {
+			return ConfigMapDataDescriptor(resource, parent, model, project)
 		}
 
 		private class ConfigMapDataDescriptor<R : HasMetadata>(
-				element: R,
-				parent: NodeDescriptor<*>?,
-				model: IResourceModel
+			element: R,
+			parent: NodeDescriptor<*>?,
+			model: IResourceModel,
+			project: Project
 		) : ResourcePropertyDescriptor<R>(
-				element,
-				parent,
-				model
+			element,
+			parent,
+			model,
+			project
 		) {
 			override fun getLabel(element: R): String {
 				return "no data entries"

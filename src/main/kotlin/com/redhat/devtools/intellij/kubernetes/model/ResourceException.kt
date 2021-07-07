@@ -10,4 +10,4 @@
  ******************************************************************************/
 package com.redhat.devtools.intellij.kubernetes.model
 
-class ResourceException(message: String, exception: Exception): RuntimeException(message, exception)
+class ResourceException(message: String?, exception: Throwable? = null): RuntimeException(message, exception)

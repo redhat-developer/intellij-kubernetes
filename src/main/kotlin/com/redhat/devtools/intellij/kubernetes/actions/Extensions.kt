@@ -16,10 +16,15 @@ import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.progress.ProgressManager
 import com.intellij.openapi.progress.Progressive
 import com.intellij.openapi.progress.Task
+import com.intellij.openapi.project.Project
 import com.redhat.devtools.intellij.kubernetes.model.IResourceModel
 import org.jetbrains.annotations.NotNull
 import javax.swing.tree.DefaultMutableTreeNode
 import com.redhat.devtools.intellij.kubernetes.tree.TreeStructure.Descriptor
+import java.awt.event.MouseAdapter
+import java.awt.event.MouseEvent
+import java.awt.event.MouseListener
+import javax.swing.JTree
 
 fun AnAction.getResourceModel(): IResourceModel? {
     return ServiceManager.getService(IResourceModel::class.java)
@@ -47,13 +52,28 @@ inline fun <reified T> Any.getElement(): T? {
     }
 }
 
-fun AnAction.run(title: String, canBeCancelled: Boolean, runnable: Progressive) {
+fun JTree.addDoubleClickListener(listener: MouseListener) {
+    this.addMouseListener(object: MouseAdapter() {
+        override fun mouseClicked(event: MouseEvent) {
+            if (event.source !is JTree
+                || 2 != event.clickCount) {
+                return
+            }
+            listener.mouseClicked(event)
+        }
+    })
+}
+
+fun run(title: String, canBeCancelled: Boolean, runnable: Progressive) {
+    run(title, null, canBeCancelled, runnable)
+}
+
+fun run(title: String, project: Project?, canBeCancelled: Boolean, runnable: Progressive) {
     ProgressManager.getInstance().run(object :
-        Task.Backgroundable(null, title, canBeCancelled){
+        Task.Backgroundable(project, title, canBeCancelled){
 
         override fun run(@NotNull progress: ProgressIndicator) {
             runnable.run(progress)
         }
     })
-
 }

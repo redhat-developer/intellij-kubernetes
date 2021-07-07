@@ -29,7 +29,6 @@ import org.assertj.core.api.Assertions.assertThat
 import com.redhat.devtools.intellij.kubernetes.model.context.IActiveContext
 import com.redhat.devtools.intellij.kubernetes.model.context.IActiveContext.ResourcesIn
 import com.redhat.devtools.intellij.kubernetes.model.context.IContext
-import com.redhat.devtools.intellij.kubernetes.model.context.create
 import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.POD1
 import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.POD2
 import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.POD3
@@ -39,14 +38,14 @@ import com.redhat.devtools.intellij.kubernetes.model.mocks.Mocks.activeContext
 import com.redhat.devtools.intellij.kubernetes.model.mocks.Mocks.context
 import com.redhat.devtools.intellij.kubernetes.model.mocks.Mocks.contextFactory
 import com.redhat.devtools.intellij.kubernetes.model.resource.ResourceKind
-import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.NamespacedPodsProvider
+import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.NamespacedPodsOperator
 import org.junit.Test
 import java.util.function.Predicate
 
 class ResourceModelTest {
 
     private val observable: IModelChangeObservable = mock()
-    private val namespace: Namespace = resource("papa smurf")
+    private val namespace: Namespace = resource("papa smurf", null, "papaUid", "v1")
     private val activeContext: IActiveContext<HasMetadata, KubernetesClient> = activeContext(namespace, mock())
     private val contextFactory: (IModelChangeObservable, NamedContext?) -> IActiveContext<HasMetadata, KubernetesClient> =
             contextFactory(activeContext)
@@ -72,18 +71,18 @@ class ResourceModelTest {
     fun `#getResources(kind, CURRENT_NAMESPACE) should call context#getResources(kind, CURRENT_NAMESPACE)`() {
         // given
         // when
-        model.getAllResources(NamespacedPodsProvider.KIND, ResourcesIn.CURRENT_NAMESPACE)
+        model.getAllResources(NamespacedPodsOperator.KIND, ResourcesIn.CURRENT_NAMESPACE)
         // then
-        verify(activeContext).getAllResources(NamespacedPodsProvider.KIND, ResourcesIn.CURRENT_NAMESPACE)
+        verify(activeContext).getAllResources(NamespacedPodsOperator.KIND, ResourcesIn.CURRENT_NAMESPACE)
     }
 
     @Test
     fun `#getResources(kind, NO_NAMESPACE) should call context#getResources(kind, NO_NAMESPACE)`() {
         // given
         // when
-        model.getAllResources(NamespacedPodsProvider.KIND, ResourcesIn.NO_NAMESPACE)
+        model.getAllResources(NamespacedPodsOperator.KIND, ResourcesIn.NO_NAMESPACE)
         // then
-        verify(activeContext).getAllResources(NamespacedPodsProvider.KIND, ResourcesIn.NO_NAMESPACE)
+        verify(activeContext).getAllResources(NamespacedPodsOperator.KIND, ResourcesIn.NO_NAMESPACE)
     }
 
     @Test
@@ -96,7 +95,7 @@ class ResourceModelTest {
                         POD2,
                         POD3))
         // when
-        model.getAllResources(NamespacedPodsProvider.KIND, ResourcesIn.NO_NAMESPACE, filter)
+        model.getAllResources(NamespacedPodsOperator.KIND, ResourcesIn.NO_NAMESPACE, filter)
         // then
         verify(filter, times(3)).test(any())
     }
@@ -177,9 +176,9 @@ class ResourceModelTest {
     fun `#invalidate(kind) should call context#invalidate(class)`() {
         // given
         // when
-        model.invalidate(NamespacedPodsProvider.KIND)
+        model.invalidate(NamespacedPodsOperator.KIND)
         // then
-        verify(activeContext).invalidate(NamespacedPodsProvider.KIND)
+        verify(activeContext).invalidate(NamespacedPodsOperator.KIND)
     }
 
     @Test
@@ -189,7 +188,7 @@ class ResourceModelTest {
         // when
         model.invalidate(resource)
         // then
-        verify(activeContext).replace(resource)
+        verify(activeContext).replaced(resource)
     }
 
     @Test

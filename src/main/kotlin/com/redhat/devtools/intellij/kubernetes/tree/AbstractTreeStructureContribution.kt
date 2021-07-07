@@ -11,6 +11,7 @@
 package com.redhat.devtools.intellij.kubernetes.tree
 
 import com.intellij.ide.util.treeView.NodeDescriptor
+import com.intellij.openapi.project.Project
 import com.intellij.ui.tree.LeafState
 import io.fabric8.kubernetes.api.model.HasMetadata
 import com.redhat.devtools.intellij.kubernetes.model.IResourceModel
@@ -69,6 +70,6 @@ abstract class AbstractTreeStructureContribution(override val model: IResourceMo
     }
 
     abstract class DescriptorFactory<R : HasMetadata>(protected val resource: R) {
-        abstract fun create(parent: NodeDescriptor<*>?, model: IResourceModel): NodeDescriptor<R>?
+        abstract fun create(parent: NodeDescriptor<*>?, model: IResourceModel, project: Project): NodeDescriptor<R>?
     }
 }

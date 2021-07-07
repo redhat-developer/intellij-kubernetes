@@ -19,6 +19,7 @@ import io.fabric8.kubernetes.client.KubernetesClientException
 import io.fabric8.openshift.client.NamespacedOpenShiftClient
 import io.fabric8.openshift.client.OpenShiftNotAvailableException
 import com.redhat.devtools.intellij.kubernetes.model.IModelChangeObservable
+import com.redhat.devtools.intellij.kubernetes.model.Clients
 
 fun create(
 	observable: IModelChangeObservable,
@@ -30,7 +31,7 @@ fun create(
 		val osClient = k8Client.adapt(NamespacedOpenShiftClient::class.java)
 		return OpenShiftContext(
 			observable,
-			osClient,
+			Clients(osClient),
 			context
 		)
 	} catch (e: RuntimeException) {
@@ -39,7 +40,7 @@ fun create(
 			is OpenShiftNotAvailableException ->
 				return KubernetesContext(
 					observable,
-					k8Client,
+					Clients(k8Client),
 					context
 				)
 			else -> throw e

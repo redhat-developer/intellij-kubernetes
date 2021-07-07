@@ -11,15 +11,16 @@
 package com.redhat.devtools.intellij.kubernetes.model
 
 import com.intellij.openapi.diagnostic.logger
-import io.fabric8.kubernetes.api.model.HasMetadata
-import io.fabric8.kubernetes.api.model.apiextensions.v1beta1.CustomResourceDefinition
-import io.fabric8.kubernetes.client.KubernetesClient
-import io.fabric8.kubernetes.client.KubernetesClientException
 import com.redhat.devtools.intellij.kubernetes.model.context.IActiveContext
 import com.redhat.devtools.intellij.kubernetes.model.context.IActiveContext.ResourcesIn
 import com.redhat.devtools.intellij.kubernetes.model.context.IContext
 import com.redhat.devtools.intellij.kubernetes.model.context.create
 import com.redhat.devtools.intellij.kubernetes.model.resource.ResourceKind
+import com.redhat.devtools.intellij.kubernetes.model.util.isNotFound
+import io.fabric8.kubernetes.api.model.HasMetadata
+import io.fabric8.kubernetes.api.model.apiextensions.v1beta1.CustomResourceDefinition
+import io.fabric8.kubernetes.client.KubernetesClient
+import io.fabric8.kubernetes.client.KubernetesClientException
 import java.util.function.Predicate
 
 interface IResourceModel {
@@ -45,10 +46,10 @@ interface IResourceModel {
  *
  * <h3>WARNING<h3>: no argument constructor required because this class is instantiated by IJ ServiceManager
  *
- * @see https://github.com/redhat-developer/intellij-kubernetes/issues/180
- * @see KubernetesToolWindowFactory#createTree
- * @see Extensions#getResourceModel
- * @see ServiceManager#getService
+ * @see [issue 180](https://github.com/redhat-developer/intellij-kubernetes/issues/180)
+ * @see [com.redhat.devtools.intellij.kubernetes.KubernetesToolWindowFactory.createTree]
+ * @see [com.redhat.devtools.intellij.kubernetes.actions.getResourceModel]
+ * @see [com.intellij.openapi.components.ServiceManager.getService]
  */
 open class ResourceModel : IResourceModel {
 
@@ -118,7 +119,7 @@ open class ResourceModel : IResourceModel {
                 resources.filter { filter.test(it) }
             }
         } catch (e: KubernetesClientException) {
-            if (isNotFound(e)) {
+            if (e.isNotFound()) {
                 return emptyList()
             }
             throw ResourceException("Could not get ${kind.kind}s for server ${contexts.current?.masterUrl}", e)
@@ -154,7 +155,7 @@ open class ResourceModel : IResourceModel {
             is ResourceModel -> invalidate()
             is IActiveContext<*, *> -> invalidate(element)
             is ResourceKind<*> -> invalidate(element)
-            is HasMetadata -> replace(element)
+            is HasMetadata -> replaced(element)
         }
     }
 
@@ -173,16 +174,11 @@ open class ResourceModel : IResourceModel {
         contexts.current?.invalidate(kind)
     }
 
-    private fun replace(resource: HasMetadata) {
-        contexts.current?.replace(resource)
+    private fun replaced(resource: HasMetadata) {
+        contexts.current?.replaced(resource)
     }
 
     override fun delete(resources: List<HasMetadata>) {
         contexts.current?.delete(resources)
     }
-
-    private fun isNotFound(e: KubernetesClientException): Boolean {
-        return e.code == 404
-    }
-
 }

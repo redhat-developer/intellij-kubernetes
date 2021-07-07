@@ -19,8 +19,8 @@ import org.junit.Test
 
 class ModelChangeObservableTest {
 
-    private val observable = ModelChangeObservable()
-    private val resource = resource<Namespace>("smurfette namespace")
+    private val observable = TestableModelChangeObservable()
+    private val resource = resource<Namespace>("smurfette namespace", null, "smurfetteUid", "v1")
     private val listener = object: IResourceChangeListener {
 
         var currentNamespace: String? = null
@@ -48,6 +48,31 @@ class ModelChangeObservableTest {
     @Before
     fun before() {
         observable.addListener(listener)
+    }
+
+    @Test
+    fun `#addListener should not add the same listener twice`() {
+        // given
+        assertThat(observable.listeners.contains(listener)).isTrue()
+        val sizeBeforeAdd = observable.listeners.size
+        // when
+        observable.addListener(listener)
+        // then
+        assertThat(observable.listeners.size).isEqualTo(sizeBeforeAdd)
+        assertThat(observable.listeners.contains(listener)).isTrue()
+    }
+
+    @Test
+    fun `#addListener should not add listener that is not contained yet`() {
+        // given
+        assertThat(observable.listeners.contains(listener)).isTrue()
+        val sizeBeforeAdd = observable.listeners.size
+        val newListener = object: IResourceChangeListener {}
+        // when
+        observable.addListener(newListener)
+        // then
+        assertThat(observable.listeners.size).isEqualTo(sizeBeforeAdd + 1)
+        assertThat(observable.listeners.contains(newListener)).isTrue()
     }
 
     @Test
@@ -96,6 +121,10 @@ class ModelChangeObservableTest {
         assertThat(listener.addedResources).isEmpty()
         assertThat(listener.modifiedResources).isEmpty()
         assertThat(listener.currentNamespace).isEqualTo(resource.metadata.name)
+    }
+
+    class TestableModelChangeObservable: ModelChangeObservable() {
+        public override val listeners = mutableListOf<IResourceChangeListener>()
     }
 
 }

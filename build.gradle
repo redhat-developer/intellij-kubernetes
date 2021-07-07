@@ -32,10 +32,6 @@ tasks.withType(Test) {
 }
 
 dependencies {
-    integrationTestImplementation("com.intellij.remoterobot:remote-robot:$remoteRobotVersion")
-    integrationTestImplementation("com.intellij.remoterobot:remote-fixtures:$fixturesVersion")
-    integrationTestImplementation 'org.junit.jupiter:junit-jupiter-api:5.3.1'
-    integrationTestRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.3.1'
     implementation(
             "com.redhat.devtools.intellij:intellij-common:1.0.0",
             "io.fabric8:kubernetes-client:5.0.2",
@@ -45,10 +41,18 @@ dependencies {
             "org.apache.commons:commons-lang3:3.10"
     )
     testImplementation(
-            "org.assertj:assertj-core:3.17.1",
-            "org.mockito:mockito-inline:3.5.13",
+            "org.assertj:assertj-core:3.19.0",
+            "org.mockito:mockito-inline:3.9.0",
             "com.nhaarman.mockitokotlin2:mockito-kotlin:2.2.0",
             "org.jetbrains.kotlin:kotlin-test-junit"
+    )
+    integrationTestImplementation(
+            "com.intellij.remoterobot:remote-robot:$remoteRobotVersion",
+            "com.intellij.remoterobot:remote-fixtures:$fixturesVersion",
+            "org.junit.jupiter:junit-jupiter-api:5.3.1"
+    )
+    integrationTestRuntimeOnly(
+            "org.junit.jupiter:junit-jupiter-engine:5.3.1"
     )
 }
 
@@ -92,6 +96,7 @@ intellij {
     version ideaVersion //for a full list of Jetbrains IDEA releases please see https://www.jetbrains.com/intellij-repository/releases
     pluginName 'Kubernetes by Red Hat'
     updateSinceUntilBuild false
+    plugins 'yaml'
 }
 
 patchPluginXml {
@@ -110,6 +115,80 @@ runIdeForUiTests {
 
 integrationTest {
     useJUnitPlatform()
+}
+
+task generateSchemas {
+    final LATEST_VERSION_SCHEMA = "v1.20.5"
+    final SCHEMA_BASEURL = "https://raw.githubusercontent.com/kubernetes/kubernetes"
+    final SCHEMA_DIR = "src/main/resources/schemas/"
+    final K8S_DIR = "k8s.io"
+
+    doLast {
+        def schemaVersion = getProjectProperty("schemaVersion", LATEST_VERSION_SCHEMA)
+        def url = "${SCHEMA_BASEURL}/${schemaVersion}/api/openapi-spec/swagger.json"
+        def destination = "${SCHEMA_DIR}/${K8S_DIR}"
+        file("${projectDir}/${destination}").deleteDir()
+
+        println("Generating schemas ${schemaVersion} from openapi at ${url} \ninto ${SCHEMA_DIR}")
+        /*
+         * openapi2jsonschema -o src/main/resources/schemas/k8s.io --kubernetes --expanded --stand-alone --strict https://raw.githubusercontent.com/kubernetes/kubernetes/v1.20.5/api/openapi-spec/swagger.json
+         */
+        def process = exec {
+            executable 'openapi2jsonschema'
+            args '-o', destination, "--kubernetes", "--expanded", "--stand-alone", "--strict", url
+        }
+        if (isSuccess(process.exitValue)) {
+            createIndexFile("${projectDir}/${destination}")
+        } else {
+            println(colorize("yellow",
+                    """Generating schema failed. Please make sure that you have 'openapi2jsonschema' installed.
+                    Make sure you have python installed and then run 'pip install openapi2jsonschema'.
+                    Further info is available at https://pypi.org/project/openapi2jsonschema/"""))
+        }
+    }
+
+    ext.createIndexFile = { destination ->
+        def indexFilename = "index.txt"
+        def index = file("${destination}/${indexFilename}")
+        index.createNewFile()
+        files { file("${destination}").listFiles() }
+                .filter { file ->
+                    !file.name.endsWith(indexFilename) ||
+                            !file.name.endsWith("all.json") ||
+                            !file.name.endsWith("_definitions.json") ||
+                            !file.name.contains(".v")
+                }
+                .each { file ->
+                    index.text += "${file.name}\n"
+                }
+        return index
+    }
+
+    ext.isSuccess = { exitValue ->
+        return exitValue == 0
+    }
+}
+
+private def getProjectProperty(String key, String defaultValue) {
+    def value = defaultValue
+    if (project.hasProperty(key)) {
+        schemaVersion = project.getProperty(key)
+    }
+    return value;
+}
+
+private colorize(String color, String message) {
+    final colors = [
+            black: 30,
+            red: 31,
+            green: 32,
+            yellow: 33,
+            blue: 34,
+            magenta: 35,
+            cyan: 36,
+            white: 37
+    ]
+    return new String((char) 27) + "[${colors[color]}m${message}" + new String((char) 27) + "[0m"
 }
 
 repositories {

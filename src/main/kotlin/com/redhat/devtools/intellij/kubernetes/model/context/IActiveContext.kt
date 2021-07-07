@@ -23,7 +23,16 @@ interface IActiveContext<N: HasMetadata, C: KubernetesClient>: IContext {
      * The scope in which resources may exist.
      */
     enum class ResourcesIn {
-        CURRENT_NAMESPACE, ANY_NAMESPACE, NO_NAMESPACE
+        CURRENT_NAMESPACE, ANY_NAMESPACE, NO_NAMESPACE;
+
+        companion object {
+            fun valueOf(resource: HasMetadata, currentNamespace: String?): ResourcesIn {
+                return when (resource.metadata.namespace) {
+                    currentNamespace -> CURRENT_NAMESPACE
+                    else -> ANY_NAMESPACE
+                }
+            }
+        }
     }
 
     /**
@@ -76,34 +85,34 @@ interface IActiveContext<N: HasMetadata, C: KubernetesClient>: IContext {
      * @param definition the definition that specifies the kind of custom resources
      * @return all resources of the requested kind
      *
-     * @see CustomResourceDefinition
-     * @see CustomResourceDefinitionSpec
+     * @see [io.fabric8.kubernetes.api.model.apiextensions.v1beta1.CustomResourceDefinition]
+     * @see [io.fabric8.kubernetes.api.model.apiextensions.v1beta1.CustomResourceDefinitionSpec]
      */
     fun getAllResources(definition: CustomResourceDefinition): Collection<GenericCustomResource>
 
     /**
-     * Watches resources of the given resource kind
+     * Watches all resources of the given resource kind
      *
      * @param kind the kind of resources to ignore
      */
     fun watch(kind: ResourceKind<out HasMetadata>)
 
     /**
-     * Watches resources of the kind specified by the given custom resource definition
+     * Watches all resources of the kind specified by the given custom resource definition
      *
      * @param definition the custom resource definition that specifies the custom resources to watch
      */
     fun watch(definition: CustomResourceDefinition)
 
     /**
-     * Ignores (stops watching) resources of the given resource kind
+     * Stops watching resources of the given resource kind
      *
      * @param kind the kind of resources to ignore
      */
     fun stopWatch(kind: ResourceKind<out HasMetadata>)
 
     /**
-     * Ignores (stops watching) resources of the kind specified by the given custom resource definition
+     * Stops watching resources of the kind specified by the given custom resource definition
      *
      * @param definition the custom resource definition that specifies the custom resources to watch
      *
@@ -118,15 +127,16 @@ interface IActiveContext<N: HasMetadata, C: KubernetesClient>: IContext {
      * @param resource the resource to add
      * @return true if the resource was added
      */
-    fun add(resource: HasMetadata): Boolean
+    fun added(resource: HasMetadata): Boolean
 
     /**
+     * Notifies this context that the given resource was removed on the cluster.
      * Removes the given resource from this context.
      *
      * @param resource the resource to remove
      * @return true if the resource was removed
      */
-    fun remove(resource: HasMetadata): Boolean
+    fun removed(resource: HasMetadata): Boolean
 
     /**
      * Removes all resources of the given kind in (the cache of) this context.
@@ -142,12 +152,15 @@ interface IActiveContext<N: HasMetadata, C: KubernetesClient>: IContext {
     fun invalidate()
 
     /**
-     * Replaces any existing resource with the given new version.
+     * Notifies the context that the given resource was replaced in the cluster.
+     * Replaces the resource with the given new version if it exists.
+     * Does nothing otherwiese.
+     *
      *
      * @param resource the new (version) of the resource
      * @return true if the resource was replaced
      */
-    fun replace(resource: HasMetadata): Boolean
+    fun replaced(resource: HasMetadata): Boolean
 
     /**
      * Closes and disposes this context.
