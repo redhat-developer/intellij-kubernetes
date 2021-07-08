@@ -11,6 +11,15 @@
     <change-notes>
         <![CDATA[
         <p></p>
+        <h3>0.2.0</h3>
+        <ul>
+            <li><a href="https://github.com/redhat-developer/intellij-kubernetes/issues/175">Should be able to edit resources</a></li>
+            <li><a href="https://github.com/redhat-developer/intellij-kubernetes/issues/132">Should stop watching resources when tree node is collapsed</a></li>
+            <li><a href="https://github.com/redhat-developer/intellij-kubernetes/issues/180">Error when opening new plugin version</a></li>
+            <li><a href="https://github.com/redhat-developer/intellij-kubernetes/issues/181">Switch project/namespace command not showing up</a></li>
+            <li><a href="https://github.com/redhat-developer/intellij-kubernetes/issues/185">Too many dependencies in the zip file</a></li>
+            <li><a href="https://github.com/redhat-developer/intellij-kubernetes/issues/168">Update kubernetes client to 5.0.2</a></li>
+        </ul>
         <h3>0.1.6</h3>
         <ul>
             <li><a href="https://github.com/redhat-developer/intellij-kubernetes/issues/193">"Use Project/Namespace" & "Set as Current Cluster" should alter kubeconfig</a></li>

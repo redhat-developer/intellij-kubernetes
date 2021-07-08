@@ -36,8 +36,50 @@ Pods also unveil their IP address and the number of running out of the total num
 
 ![img.png](images/pod.png)
 
+#### Edit Resources
+You can edit any resource that is listed in the resource tree.
+Either double click it or pick "Edit..." in the context menu. A Yaml editor opens up and allows you to edit the resource.
+
+![editor](images/editor.png)
+
+The editor allows you to push or pull the resource to or from the cluster. 
+The toolbar holds corresponding actions.
+
+![editor toolbar](images/editor-toolbar.png)
+
+The editor provides schema validation for the basic kubernetes types.
+
+![editor schema](images/editor-schema.png)
+
+The editor keeps track of your changes, and the ones on the cluster.
+Changing the yaml will prompt you to push your changes to the cluster.
+Keep editing to the point where you are ready to update the cluster. 
+Then either hit "Push" in the notification or use the push action in the toolbar.
+Pushing updates the resource on the cluster so that it reflects your changes.
+
+![editor push](images/editor-push.png)
+
+The editor will also notify you of changes that happened on the cluster. 
+If you didn't change anything in the editor yet, the new version is pulled automatically.
+
+![editor pulled](images/editor-pulled.png)
+
+Competing changes in your editor and on the cluster get notified with 2 options: 
+You can overwrite the cluster by pushing the editor to the cluster.
+Alternatively you can replace your local version with the one on the cluster and pull it.
+
+![editor pull or push](images/editor-pull-push.png)
+
+#### Create Resources
+You currently cannot start from scratch and create a new resource. There's an easy workaround though:
+Start by editing an existing resource. Once in the editor you can simply paste the yaml for your new resource.
+The editor will then prompt you to push it to the cluster and create a new resource.
+
+![editor push create new](images/editor-push-new.png)
+
+
 #### Delete Resources
-Any resource that is listed may be deleted via the context menu.
+You may delete any resource that is listed in the resource tree by choosing "Delete" in the context menu.
 
 
 **NOTE:** This plugin is in Preview mode. The plugin support for Kubernetes or OpenShift clusters is strictly experimental - assumptions may break, commands and behavior may change!
