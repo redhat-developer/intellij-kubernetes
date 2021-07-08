@@ -36,7 +36,7 @@ Pods also unveil their IP address and the number of running out of the total num
 
 ![img.png](images/pod.png)
 
-#### Edit Resources
+### Edit Resources
 You can edit any resource that is listed in the resource tree.
 Either double click it or pick "Edit..." in the context menu. A Yaml editor opens up and allows you to edit the resource.
 
