@@ -11,7 +11,7 @@
     <change-notes>
         <![CDATA[
         <p></p>
-        <h3>0.2.0</h3>
+        <h3>0.2.1</h3>
         <ul>
             <li><a href="https://github.com/redhat-developer/intellij-kubernetes/issues/175">Should be able to edit resources</a></li>
             <li><a href="https://github.com/redhat-developer/intellij-kubernetes/issues/132">Should stop watching resources when tree node is collapsed</a></li>
@@ -41,6 +41,7 @@
     <depends>com.intellij.modules.lang</depends>
     <depends>org.jetbrains.plugins.yaml</depends>
     <depends optional="true" config-file="plugin-json.xml">com.intellij.modules.json</depends>
+    <depends optional="true">org.jetbrains.plugins.terminal</depends>
 
     <extensions defaultExtensionNs="com.intellij">
         <toolWindow id="Kubernetes"
