@@ -40,4 +40,8 @@ public class IdeStatusBarFixture extends CommonContainerFixture {
     public ComponentFixture ideErrorsIcon() {
         return find(ComponentFixture.class, byXpath("//div[@class='IdeErrorsIcon']"));
     }
+
+    public ComponentFixture withIconAndArrows(String accessiblename){
+        return find(ComponentFixture.class, byXpath("//div[@accessiblename='" + accessiblename + "' and @class='WithIconAndArrows']"));
+    }
 }

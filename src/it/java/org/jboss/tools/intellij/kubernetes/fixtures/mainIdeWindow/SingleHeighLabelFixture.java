@@ -20,17 +20,18 @@ import org.jetbrains.annotations.NotNull;
 
 import static com.intellij.remoterobot.search.locators.Locators.byXpath;
 
+
 /**
  * @author olkornii@redhat.com
  */
-@DefaultXpath(by = "InternalDecorator type", xpath = "//div[@accessiblename='Kubernetes Tool Window' and @class='InternalDecorator']")
-@FixtureName(name = "Kubernetes Tool Window")
-public class KubernetesToolsFixture extends CommonContainerFixture {
-    public KubernetesToolsFixture(@NotNull RemoteRobot remoteRobot, @NotNull RemoteComponent remoteComponent) {
+@DefaultXpath(by = "SingleHeightLabel type", xpath = "//div[@class='SingleHeightLabel']")
+@FixtureName(name = "Single Height Label")
+public class SingleHeighLabelFixture extends CommonContainerFixture {
+    public SingleHeighLabelFixture(@NotNull RemoteRobot remoteRobot, @NotNull RemoteComponent remoteComponent) {
         super(remoteRobot, remoteComponent);
     }
 
-    public ComponentFixture getKubernetesViewTree() {
-        return find(ComponentFixture.class, byXpath("//div[@class='Tree']"));
+    public void close(){
+        find(ComponentFixture.class, byXpath("//div[@accessiblename='Close. Alt-Click to Close Others' and @class='InplaceButton']")).click();
     }
 }

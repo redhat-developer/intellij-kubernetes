@@ -16,21 +16,29 @@ import com.intellij.remoterobot.fixtures.CommonContainerFixture;
 import com.intellij.remoterobot.fixtures.ComponentFixture;
 import com.intellij.remoterobot.fixtures.DefaultXpath;
 import com.intellij.remoterobot.fixtures.FixtureName;
+import com.intellij.remoterobot.fixtures.dataExtractor.RemoteText;
 import org.jetbrains.annotations.NotNull;
+
+import java.util.List;
 
 import static com.intellij.remoterobot.search.locators.Locators.byXpath;
 
 /**
  * @author olkornii@redhat.com
  */
-@DefaultXpath(by = "InternalDecorator type", xpath = "//div[@accessiblename='Kubernetes Tool Window' and @class='InternalDecorator']")
-@FixtureName(name = "Kubernetes Tool Window")
-public class KubernetesToolsFixture extends CommonContainerFixture {
-    public KubernetesToolsFixture(@NotNull RemoteRobot remoteRobot, @NotNull RemoteComponent remoteComponent) {
+@DefaultXpath(by = "EditorsSplitters type", xpath = "//div[@class='EditorsSplitters']")
+@FixtureName(name = "Editors Splitters")
+public class EditorsSplittersFixture extends CommonContainerFixture {
+    public EditorsSplittersFixture(@NotNull RemoteRobot remoteRobot, @NotNull RemoteComponent remoteComponent) {
         super(remoteRobot, remoteComponent);
     }
 
-    public ComponentFixture getKubernetesViewTree() {
-        return find(ComponentFixture.class, byXpath("//div[@class='Tree']"));
+    public ComponentFixture getEditorTextFixture(String editorTitle){
+        return find(ComponentFixture.class, byXpath("//div[@accessiblename='Editor for " + editorTitle + "' and @class='EditorComponentImpl']"));
+    }
+
+    public void closeEditor(String editorTitle){
+        SingleHeighLabelFixture myLabel = find(SingleHeighLabelFixture.class, byXpath("//div[@accessiblename='" + editorTitle + "' and @class='SingleHeightLabel']"));
+        myLabel.close();
     }
 }
