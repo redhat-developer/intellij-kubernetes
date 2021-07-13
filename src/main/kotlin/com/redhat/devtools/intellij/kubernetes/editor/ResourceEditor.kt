@@ -45,7 +45,6 @@ import com.redhat.devtools.intellij.kubernetes.model.util.trimWithEllipsis
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.client.KubernetesClient
 import io.fabric8.kubernetes.client.utils.Serialization
-import java.util.concurrent.atomic.AtomicReference
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
 
@@ -53,7 +52,7 @@ import kotlin.concurrent.withLock
  * An adapter for [FileEditor] instances that allows to push or load the editor content to/from a remote cluster.
  */
 open class ResourceEditor protected constructor(
-    localCopy: HasMetadata?,
+    private var localCopy: HasMetadata?,
     private val editor: FileEditor,
     private val project: Project,
     private val clients: Clients<out KubernetesClient>,
@@ -167,7 +166,6 @@ open class ResourceEditor protected constructor(
         }
     }
 
-    private var localCopy: HasMetadata? = localCopy
     protected open var editorResource: HasMetadata? = localCopy
     /** mutex to exclude concurrent execution of push & watch notification **/
     private val resourceChangeMutex = ReentrantLock()
@@ -304,8 +302,8 @@ open class ResourceEditor protected constructor(
 
     private fun replaceDocument(resource: HasMetadata) {
         resourceChangeMutex.withLock {
-            editorResource = resource
-            localCopy = resource
+            this.editorResource = resource
+            this.localCopy = resource
         }
         val document = documentProvider.invoke(editor)
         if (document != null) {
@@ -417,16 +415,14 @@ open class ResourceEditor protected constructor(
 
             private fun showNotifications() {
                 val pair = resourceChangeMutex.withLock {
-                    Pair(editorResource, localCopy)
+                    val sameResource = editorResource?.isSameResource(localCopy) ?: false
+                    Pair(sameResource, editorResource)
                 }
-                val resource = pair.first
-                val localCopy = pair.second
-                val sameResource = resource?.isSameResource(localCopy) ?: false
-                if (sameResource
-                    && resource != null
-                    && clusterResource != null
+                if (clusterResource != null
+                    && pair.first
+                    && pair.second != null
                 ) {
-                    showNotifications(resource, clusterResource!!)
+                    showNotifications(pair.second!!, clusterResource!!)
                 }
             }
         }
