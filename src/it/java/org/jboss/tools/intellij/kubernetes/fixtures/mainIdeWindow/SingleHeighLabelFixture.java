@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2020 Red Hat, Inc.
+ * Copyright (c) 2021 Red Hat, Inc.
  * Distributed under license by Red Hat, Inc. All rights reserved.
  * This program is made available under the terms of the
  * Eclipse Public License v2.0 which accompanies this distribution,
@@ -8,7 +8,7 @@
  * Contributors:
  * Red Hat, Inc. - initial API and implementation
  ******************************************************************************/
-package org.jboss.tools.intellij.kubernetes.fixtures.quarkus;
+package org.jboss.tools.intellij.kubernetes.fixtures.mainIdeWindow;
 
 import com.intellij.remoterobot.RemoteRobot;
 import com.intellij.remoterobot.data.RemoteComponent;
@@ -18,23 +18,20 @@ import com.intellij.remoterobot.fixtures.DefaultXpath;
 import com.intellij.remoterobot.fixtures.FixtureName;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.List;
-
 import static com.intellij.remoterobot.search.locators.Locators.byXpath;
 
+
 /**
- * Downloading Options dialog fixture
- *
- * @author zcervink@redhat.com
+ * @author olkornii@redhat.com
  */
-@DefaultXpath(by = "MyDialog type", xpath = "//div[@accessiblename='Downloading Options' and @class='MyDialog']")
-@FixtureName(name = "Dialog")
-public class DownloadingOptionsDialogFixture extends CommonContainerFixture {
-    public DownloadingOptionsDialogFixture(@NotNull RemoteRobot remoteRobot, @NotNull RemoteComponent remoteComponent) {
+@DefaultXpath(by = "SingleHeightLabel type", xpath = "//div[@class='SingleHeightLabel']")
+@FixtureName(name = "Single Height Label")
+public class SingleHeighLabelFixture extends CommonContainerFixture {
+    public SingleHeighLabelFixture(@NotNull RemoteRobot remoteRobot, @NotNull RemoteComponent remoteComponent) {
         super(remoteRobot, remoteComponent);
     }
 
-    public ComponentFixture filesToDownload() {
-        return find(ComponentFixture.class, byXpath("//div[@accessiblename='Files to download:' and @class='CheckBoxList']"));
+    public void close(){
+        find(ComponentFixture.class, byXpath("//div[@accessiblename='Close. Alt-Click to Close Others' and @class='InplaceButton']")).click();
     }
 }

@@ -8,12 +8,11 @@
  * Contributors:
  * Red Hat, Inc. - initial API and implementation
  ******************************************************************************/
-package org.jboss.tools.intellij.kubernetes.fixtures.mainIdeWindow;
+package org.jboss.tools.intellij.kubernetes.fixtures.menus;
 
 import com.intellij.remoterobot.RemoteRobot;
 import com.intellij.remoterobot.data.RemoteComponent;
 import com.intellij.remoterobot.fixtures.CommonContainerFixture;
-import com.intellij.remoterobot.fixtures.ComponentFixture;
 import com.intellij.remoterobot.fixtures.DefaultXpath;
 import com.intellij.remoterobot.fixtures.FixtureName;
 import org.jetbrains.annotations.NotNull;
@@ -23,14 +22,15 @@ import static com.intellij.remoterobot.search.locators.Locators.byXpath;
 /**
  * @author olkornii@redhat.com
  */
-@DefaultXpath(by = "InternalDecorator type", xpath = "//div[@accessiblename='Kubernetes Tool Window' and @class='InternalDecorator']")
-@FixtureName(name = "Kubernetes Tool Window")
-public class KubernetesToolsFixture extends CommonContainerFixture {
-    public KubernetesToolsFixture(@NotNull RemoteRobot remoteRobot, @NotNull RemoteComponent remoteComponent) {
+@DefaultXpath(by = "MyMenu type", xpath = "//div[@class='MyMenu']")
+@FixtureName(name = "My Menu")
+public class RightClickMenu extends CommonContainerFixture {
+    public RightClickMenu(@NotNull RemoteRobot remoteRobot, @NotNull RemoteComponent remoteComponent) {
         super(remoteRobot, remoteComponent);
     }
 
-    public ComponentFixture getKubernetesViewTree() {
-        return find(ComponentFixture.class, byXpath("//div[@class='Tree']"));
+    public void select(String selectedItem){
+        find(RightClickMenu.class, byXpath("//div[@accessiblename='" + selectedItem + "' and @class='ActionMenuItem']")).click();
     }
 }
+

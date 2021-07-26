@@ -8,7 +8,7 @@
  * Contributors:
  * Red Hat, Inc. - initial API and implementation
  ******************************************************************************/
-package org.jboss.tools.intellij.kubernetes.fixtures.mainIdeWindow;
+package org.jboss.tools.intellij.kubernetes.fixtures.menus;
 
 import com.intellij.remoterobot.RemoteRobot;
 import com.intellij.remoterobot.data.RemoteComponent;
@@ -23,14 +23,19 @@ import static com.intellij.remoterobot.search.locators.Locators.byXpath;
 /**
  * @author olkornii@redhat.com
  */
-@DefaultXpath(by = "InternalDecorator type", xpath = "//div[@accessiblename='Kubernetes Tool Window' and @class='InternalDecorator']")
-@FixtureName(name = "Kubernetes Tool Window")
-public class KubernetesToolsFixture extends CommonContainerFixture {
-    public KubernetesToolsFixture(@NotNull RemoteRobot remoteRobot, @NotNull RemoteComponent remoteComponent) {
+@DefaultXpath(by = "ActionToolbar type", xpath = "//div[@myactiongroup=' (null)']")
+@FixtureName(name = "Action Toolbar Impl")
+public class ActionToolbarMenu extends CommonContainerFixture {
+    public ActionToolbarMenu(@NotNull RemoteRobot remoteRobot, @NotNull RemoteComponent remoteComponent) {
         super(remoteRobot, remoteComponent);
     }
 
-    public ComponentFixture getKubernetesViewTree() {
-        return find(ComponentFixture.class, byXpath("//div[@class='Tree']"));
+    public void PushToCluster(){
+        find(ComponentFixture.class, byXpath("//div[@myicon='upload.svg']")).click();
+    }
+
+    public void LoadFromCluster(){
+        find(ComponentFixture.class, byXpath("//div[@myicon='download.svg']")).click();
     }
 }
+
