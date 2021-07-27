@@ -33,6 +33,7 @@ import static com.intellij.remoterobot.stepsProcessing.StepWorkerKt.step;
 import static com.intellij.remoterobot.utils.RepeatUtilsKt.waitFor;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.awt.event.KeyEvent;
 import java.time.Duration;
 import java.util.List;
 
@@ -138,6 +139,97 @@ public class BasicTests {
 
             assertTrue(labelExist);
         });
+    }
+
+    @Test
+    public void createResourceByEdit() {
+        step("create Resource", () -> {
+            openNodesList();
+
+            RemoteText selectedResource = getResourceByIdInParent("Nodes", 0);
+            selectedResource.doubleClick();
+
+            EditorsSplittersFixture editorSplitter = robot.find(EditorsSplittersFixture.class);
+            String editorTitle = selectedResource.getText() + ".yml";
+            Keyboard myKeyboard = new Keyboard(robot);
+            String newEditorTitle = newClusterName + ".yml";
+
+            findResourceNamePosition(editorSplitter, editorTitle, myKeyboard);
+
+            myKeyboard.backspace();
+            myKeyboard.enterText("\"" + newClusterName + "\"");
+
+            ActionToolbarMenu toolbarMenu = robot.find(ActionToolbarMenu.class);
+            toolbarMenu.PushToCluster();
+
+            waitFor(Duration.ofSeconds(15), Duration.ofSeconds(1), "New cluster was not been created.", () -> isClusterCreated(newClusterName)); // wait 15 seconds for Nodes load
+
+            editorSplitter.closeEditor(newEditorTitle); // close editor
+            hideClusterContent();
+        });
+
+        step("delete Resource", () -> {
+            openNodesList();
+
+            kubernetesViewTree.findText(newClusterName).click(MouseButton.RIGHT_BUTTON);
+            RightClickMenu rightClickMenu = robot.find(RightClickMenu.class);
+            rightClickMenu.select("Delete"); // delete the resource
+
+            waitFor(Duration.ofSeconds(15), Duration.ofSeconds(1), "Delete dialog did not appear.", BasicTests::acceptDeleteDialog);
+            waitFor(Duration.ofSeconds(15), Duration.ofSeconds(1), "New cluster was not been deleted.", () -> isClusterDeleted(newClusterName));
+
+            hideClusterContent();
+        });
+    }
+
+    private static void findResourceNamePosition(EditorsSplittersFixture editorSplitter, String editorTitle, Keyboard myKeyboard){
+        myKeyboard.hotKey(KeyEvent.VK_CONTROL, KeyEvent.VK_F);
+        robot.find(ComponentFixture.class, byXpath("//div[@class='SearchTextArea']")).click();
+        myKeyboard.enterText(" name:");
+
+
+        ComponentFixture textFixture = editorSplitter.getEditorTextFixture(editorTitle);
+        List<RemoteText> remoteText = textFixture.findAllText();
+
+        int nameId = 0;
+        for (RemoteText actual_remote_text : remoteText){
+            if ("name".equals(actual_remote_text.getText())){
+                break;
+            }
+            nameId++;
+        }
+
+        RemoteText namePlace = remoteText.get(nameId+3); // +1 because we need the next one, +1 because between every 2 real elements is space, +1 because here is the ":"
+        namePlace.doubleClick(); // set the cursor
+    }
+
+    private static boolean acceptDeleteDialog(){
+        try {
+            robot.find(ComponentFixture.class, byXpath("//div[@text='Yes']")).click();
+            return true;
+        } catch (WaitForConditionTimeoutException e) {
+            return false;
+        }
+    }
+
+    private static boolean isClusterCreated(String clusterName){
+        List<RemoteText> kubernetesToolsText = kubernetesViewTree.findAllText();
+        for (RemoteText findNewCluster : kubernetesToolsText){
+            if (clusterName.equals(findNewCluster.getText())){
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static boolean isClusterDeleted(String clusterName){
+        List<RemoteText> kubernetesToolsText = kubernetesViewTree.findAllText();
+        for (RemoteText findNewCluster : kubernetesToolsText){
+            if (clusterName.equals(findNewCluster.getText())){
+                return false;
+            }
+        }
+        return true;
     }
 
     private static boolean isSchemaSet(String schemaName){
