@@ -84,13 +84,12 @@ open class ResourceEditor protected constructor(
     private val psiDocumentManagerProvider: (Project) -> PsiDocumentManager = { PsiDocumentManager.getInstance(project) },
     // for mocking purposes
     private val ideNotification: Notification = Notification(),
-private val documentReplaced: AtomicBoolean = AtomicBoolean(false)
+    private val documentReplaced: AtomicBoolean = AtomicBoolean(false)
 
 ) {
     companion object {
         private val KEY_RESOURCE_EDITOR = Key<ResourceEditor>(ResourceEditor::class.java.name)
         private val KEY_TOOLBAR = Key<ActionToolbar>(ActionToolbar::class.java.name)
-        private const val COMMIT_WAITING_TIME_MS: Long = 5000
 
         /**
          * Opens a new editor for the given [HasMetadata] and [Project].
@@ -190,9 +189,9 @@ private val documentReplaced: AtomicBoolean = AtomicBoolean(false)
         }
 
     /**
-     * Updates this editors notifications and title.
+     * Updates this editor notifications and title. Does nothing if is called right after [replaceDocument].
      *
-     * @see [FileEditor.isValid]
+     * @see [replaceDocument]
      */
     fun update() {
         try {
@@ -311,13 +310,15 @@ private val documentReplaced: AtomicBoolean = AtomicBoolean(false)
             pulled
         }
         replaceDocument(pulledResource)
+        pulledNotification.show(pulledResource)
     }
 
     private fun replaceDocument(resource: HasMetadata) {
-        val document = documentProvider.invoke(editor)
-        if (document != null) {
+        val document = documentProvider.invoke(editor) ?: return
+        val jsonYaml = Serialization.asYaml(resource)
+        if (document.text != jsonYaml) {
             executeWriteAction {
-                document.replaceString(0, document.textLength - 1, Serialization.asYaml(resource))
+                document.replaceString(0, document.textLength - 1, jsonYaml)
                 documentReplaced.set(true)
                 val psiDocumentManager = psiDocumentManagerProvider.invoke(project)
                 psiDocumentManager.commitDocument(document)
@@ -376,6 +377,7 @@ private val documentReplaced: AtomicBoolean = AtomicBoolean(false)
             }
             if (updatedResource != null) {
                 replaceDocument(updatedResource)
+                pulledNotification.show(updatedResource)
             }
         } catch (e: ResourceException) {
             logger<ResourceEditor>().warn(e)
@@ -414,6 +416,7 @@ private val documentReplaced: AtomicBoolean = AtomicBoolean(false)
     private fun onResourceChanged(): ModelChangeObservable.IResourceChangeListener {
         return object : ModelChangeObservable.IResourceChangeListener {
             override fun added(added: Any) {
+                // ignore
             }
 
             override fun removed(removed: Any) {
