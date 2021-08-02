@@ -18,6 +18,7 @@ import com.intellij.psi.PsiDocumentManager
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.argWhere
 import com.nhaarman.mockitokotlin2.atLeastOnce
+import com.nhaarman.mockitokotlin2.clearInvocations
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.doThrow
 import com.nhaarman.mockitokotlin2.mock
@@ -48,6 +49,7 @@ import io.fabric8.kubernetes.client.KubernetesClientException
 import io.fabric8.kubernetes.client.utils.Serialization
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test
+import org.mockito.verification.VerificationMode
 
 class ResourceEditorTest {
 
@@ -126,7 +128,10 @@ class ResourceEditorTest {
     private val pulledNotification: PulledNotification = mock()
     private val deletedNotification: DeletedNotification = mock()
     private val errorNotification: ErrorNotification = mock()
-    private val document: Document = mock()
+    private val document: Document = mock<Document>().apply {
+        doReturn("")
+            .whenever(this).getText()
+    }
     private val documentProvider: (FileEditor) -> Document? = { document }
     private val psiDocumentManager: PsiDocumentManager = mock()
     private val psiDocumentManagerProvider: (Project) -> PsiDocumentManager = { psiDocumentManager }
@@ -357,6 +362,76 @@ class ResourceEditorTest {
     }
 
     @Test
+    fun `#update after a #pull should do nothing bcs it was triggered by #replaceDocument (replace triggers editor transaction listener and thus #update)`() {
+        // given
+        doReturn(GARGAMELv2)
+            .whenever(clusterResource).get(any())
+        editor.pull()
+        clearAllNotificationInvocations()
+        // when
+        editor.update()
+        // then
+        verifyShowAllNotifications(never())
+    }
+
+    @Test
+    fun `#pull should replace document`() {
+        // given
+        doReturn(GARGAMELv2)
+            .whenever(clusterResource).get(any())
+        // when
+        editor.pull()
+        // then
+        verify(document).replaceString(0, document.textLength - 1, Serialization.asYaml(GARGAMELv2))
+    }
+
+    @Test
+    fun `#pull should NOT replace document if resource is equal`() {
+        // given
+        doReturn(GARGAMELv2)
+            .whenever(clusterResource).push(any())
+        doReturn(Serialization.asYaml(GARGAMELv2))
+            .whenever(document).getText()
+        // when
+        editor.pull()
+        // then
+        verify(document, never()).replaceString(any(), any(), any())
+    }
+
+    @Test
+    fun `#pull should NOT replace document if resource differs by a newline`() {
+        // given
+        doReturn(GARGAMELv2)
+            .whenever(clusterResource).push(any())
+        doReturn(Serialization.asYaml(GARGAMELv2) + "\n")
+            .whenever(document).getText()
+        // when
+        editor.pull()
+        // then
+        verify(document, never()).replaceString(any(), any(), any())
+    }
+
+    @Test
+    fun `#pull should show pulled notification`() {
+        // given
+        doReturn(GARGAMELv2)
+            .whenever(clusterResource).get(any())
+        // when
+        editor.pull()
+        // then
+        verify(pulledNotification).show(GARGAMELv2)
+    }
+
+    @Test
+    fun `#pull should hide all notifications`() {
+        // given
+        // when
+        editor.pull()
+        // then
+        verifyHideAllNotifications()
+    }
+
+    @Test
     fun `#push should push resource to cluster`() {
         // given
         doReturn(true)
@@ -380,6 +455,19 @@ class ResourceEditorTest {
         editor.push()
         // then
         verify(document).replaceString(0, document.textLength - 1, Serialization.asYaml(GARGAMELv2))
+    }
+
+    @Test
+    fun `#push should show pulled notification`() {
+        // given
+        doReturn(GARGAMEL)
+            .whenever(createResource).invoke(any(), any())
+        doReturn(GARGAMELv2)
+            .whenever(clusterResource).push(any())
+        // when
+        editor.push()
+        // then
+        verify(pulledNotification).show(GARGAMELv2)
     }
 
     @Test
@@ -587,6 +675,22 @@ class ResourceEditorTest {
         verify(deletedNotification).hide()
         verify(pushNotification).hide()
         verify(pulledNotification).hide()
+    }
+
+    private fun verifyShowAllNotifications(mode: VerificationMode = times(1)) {
+        verify(errorNotification, mode).show(any(), any<String>())
+        verify(pullNotification, mode).show(any())
+        verify(deletedNotification, mode).show(any())
+        verify(pushNotification, mode).show()
+        verify(pulledNotification, mode).show(any())
+    }
+
+    private fun clearAllNotificationInvocations() {
+        clearInvocations(errorNotification)
+        clearInvocations(pullNotification)
+        clearInvocations(deletedNotification)
+        clearInvocations(pushNotification)
+        clearInvocations(pulledNotification)
     }
 
     private class TestableResourceEditor(
