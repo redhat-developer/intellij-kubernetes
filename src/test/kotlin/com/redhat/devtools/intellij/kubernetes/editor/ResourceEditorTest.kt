@@ -48,7 +48,6 @@ import io.fabric8.kubernetes.client.KubernetesClientException
 import io.fabric8.kubernetes.client.utils.Serialization
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test
-import java.util.concurrent.atomic.AtomicReference
 
 class ResourceEditorTest {
 
@@ -341,7 +340,7 @@ class ResourceEditorTest {
         // when
         editor.update()
         // then
-        verify(document).setText(Serialization.asYaml(GARGAMEL))
+        verify(document).replaceString(0, document.textLength - 1, Serialization.asYaml(GARGAMEL))
     }
 
     @Test
@@ -371,7 +370,7 @@ class ResourceEditorTest {
     }
 
     @Test
-    fun `#push should set text of document`() {
+    fun `#push should replace text of document`() {
         // given
         doReturn(GARGAMEL)
             .whenever(createResource).invoke(any(), any())
@@ -380,7 +379,7 @@ class ResourceEditorTest {
         // when
         editor.push()
         // then
-        verify(document).setText(Serialization.asYaml(GARGAMELv2))
+        verify(document).replaceString(0, document.textLength - 1, Serialization.asYaml(GARGAMELv2))
     }
 
     @Test
@@ -477,7 +476,7 @@ class ResourceEditorTest {
         // when
         editor.pull()
         // then
-        verify(document).setText(Serialization.asYaml(GARGAMELv2))
+        verify(document).replaceString(0, document.textLength - 1, Serialization.asYaml(GARGAMELv2))
     }
 
     @Test
@@ -559,7 +558,7 @@ class ResourceEditorTest {
         // when
         listener!!.modified(GARGAMEL)
         // then
-        verify(document).setText(Serialization.asYaml(GARGAMELv2))
+        verify(document).replaceString(0, document.textLength - 1, Serialization.asYaml(GARGAMELv2))
         verify(pulledNotification).show(any())
     }
 

@@ -15,7 +15,7 @@ import com.intellij.openapi.actionSystem.ActionManager
 import com.intellij.openapi.actionSystem.ActionPlaces
 import com.intellij.openapi.actionSystem.ActionToolbar
 import com.intellij.openapi.actionSystem.impl.ActionToolbarImpl
-import com.intellij.openapi.application.WriteAction
+import com.intellij.openapi.command.WriteCommandAction
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.editor.Document
 import com.intellij.openapi.fileEditor.FileEditor
@@ -26,7 +26,6 @@ import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.PsiDocumentManager
 import com.intellij.ui.AppUIUtil
 import com.intellij.util.ui.JBEmptyBorder
-import com.redhat.devtools.intellij.common.utils.UIHelper
 import com.redhat.devtools.intellij.kubernetes.editor.notification.DeletedNotification
 import com.redhat.devtools.intellij.kubernetes.editor.notification.ErrorNotification
 import com.redhat.devtools.intellij.kubernetes.editor.notification.PullNotification
@@ -45,6 +44,7 @@ import com.redhat.devtools.intellij.kubernetes.model.util.trimWithEllipsis
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.client.KubernetesClient
 import io.fabric8.kubernetes.client.utils.Serialization
+import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
 
@@ -83,11 +83,14 @@ open class ResourceEditor protected constructor(
     // for mocking purposes
     private val psiDocumentManagerProvider: (Project) -> PsiDocumentManager = { PsiDocumentManager.getInstance(project) },
     // for mocking purposes
-    private val ideNotification: Notification = Notification()
+    private val ideNotification: Notification = Notification(),
+private val documentReplaced: AtomicBoolean = AtomicBoolean(false)
+
 ) {
     companion object {
         private val KEY_RESOURCE_EDITOR = Key<ResourceEditor>(ResourceEditor::class.java.name)
         private val KEY_TOOLBAR = Key<ActionToolbar>(ActionToolbar::class.java.name)
+        private const val COMMIT_WAITING_TIME_MS: Long = 5000
 
         /**
          * Opens a new editor for the given [HasMetadata] and [Project].
@@ -193,6 +196,12 @@ open class ResourceEditor protected constructor(
      */
     fun update() {
         try {
+            if (documentReplaced.compareAndSet(true, false)) {
+                /**
+                 * update triggered by [replaceDocument]
+                 **/
+                return
+            }
             val resource = createResource.invoke(editor, clients) ?: return
             resourceChangeMutex.withLock {
                 this.editorResource = resource
@@ -218,8 +227,8 @@ open class ResourceEditor protected constructor(
     private fun renameEditor(resource: HasMetadata, editor: FileEditor) {
         val file = createFileForVirtual.invoke(editor.file) ?: return
         val newFile = createFileForResource.invoke(resource)
-            if (!file.hasEqualBasePath(newFile)) {
-            file.rename(resource)
+        if (!file.hasEqualBasePath(newFile)) {
+            executeWriteAction { file.rename(resource) }
         }
     }
 
@@ -257,6 +266,10 @@ open class ResourceEditor protected constructor(
         if (resourceOnCluster != null) {
             if (!hasLocalChanges(resource)) {
                 replaceDocument(resourceOnCluster)
+                resourceChangeMutex.withLock {
+                    this.editorResource = resource
+                    this.localCopy = resource
+                }
                 pulledNotification.show(resourceOnCluster)
             } else {
                 pullNotification.show(resourceOnCluster)
@@ -301,15 +314,13 @@ open class ResourceEditor protected constructor(
     }
 
     private fun replaceDocument(resource: HasMetadata) {
-        resourceChangeMutex.withLock {
-            this.editorResource = resource
-            this.localCopy = resource
-        }
         val document = documentProvider.invoke(editor)
         if (document != null) {
             executeWriteAction {
-                document.setText(Serialization.asYaml(resource))
-                psiDocumentManagerProvider.invoke(project).commitDocument(document)
+                document.replaceString(0, document.textLength - 1, Serialization.asYaml(resource))
+                documentReplaced.set(true)
+                val psiDocumentManager = psiDocumentManagerProvider.invoke(project)
+                psiDocumentManager.commitDocument(document)
             }
         }
     }
@@ -446,9 +457,7 @@ open class ResourceEditor protected constructor(
     }
 
     protected open fun executeWriteAction(runnable: () -> Unit) {
-        UIHelper.executeInUI {
-            WriteAction.compute<Unit, Exception>(runnable)
-        }
+        WriteCommandAction.runWriteCommandAction(project, runnable)
     }
 }
 
