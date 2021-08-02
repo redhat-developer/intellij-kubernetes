@@ -269,7 +269,6 @@ open class ResourceEditor protected constructor(
                     this.editorResource = resource
                     this.localCopy = resource
                 }
-                pulledNotification.show(resourceOnCluster)
             } else {
                 pullNotification.show(resourceOnCluster)
             }
@@ -310,18 +309,21 @@ open class ResourceEditor protected constructor(
             pulled
         }
         replaceDocument(pulledResource)
-        pulledNotification.show(pulledResource)
     }
 
-    private fun replaceDocument(resource: HasMetadata) {
+    private fun replaceDocument(resource: HasMetadata?) {
+        if (resource == null) {
+            return
+        }
         val document = documentProvider.invoke(editor) ?: return
-        val jsonYaml = Serialization.asYaml(resource)
-        if (document.text != jsonYaml) {
+        val jsonYaml = Serialization.asYaml(resource).trim()
+        if (document.text.trim() != jsonYaml) {
             executeWriteAction {
                 document.replaceString(0, document.textLength - 1, jsonYaml)
                 documentReplaced.set(true)
                 val psiDocumentManager = psiDocumentManagerProvider.invoke(project)
                 psiDocumentManager.commitDocument(document)
+                pulledNotification.show(resource)
             }
         }
     }
@@ -368,17 +370,14 @@ open class ResourceEditor protected constructor(
             val updatedResource = resourceChangeMutex.withLock {
                 val updated = clusterResource.push(resource)
                 /**
-                 * set editor resource now,
-                 * watch change modification notification can get in before document was replaced
+                 * set editor resource now using lock,
+                 * resource watch change modification notification can get in before document was replaced
                  */
                 this.editorResource = updated
                 this.localCopy = updated
                 updated
             }
-            if (updatedResource != null) {
-                replaceDocument(updatedResource)
-                pulledNotification.show(updatedResource)
-            }
+            replaceDocument(updatedResource)
         } catch (e: ResourceException) {
             logger<ResourceEditor>().warn(e)
             ideNotification.error(
