@@ -16,6 +16,7 @@ import io.fabric8.kubernetes.api.model.HasMetadata
 import com.redhat.devtools.intellij.kubernetes.model.util.hasDeletionTimestamp
 import com.redhat.devtools.intellij.kubernetes.editor.ResourceEditor
 import com.redhat.devtools.intellij.kubernetes.model.Notification
+import com.redhat.devtools.intellij.kubernetes.telemetry.TelemetryService
 import javax.swing.tree.TreePath
 
 class EditResourceAction: StructureTreeAction() {

@@ -15,12 +15,15 @@ import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.progress.Progressive
 import com.intellij.openapi.ui.Messages
 import com.redhat.devtools.intellij.common.actions.StructureTreeAction
-import io.fabric8.kubernetes.api.model.HasMetadata
 import com.redhat.devtools.intellij.kubernetes.model.Notification
 import com.redhat.devtools.intellij.kubernetes.model.util.MultiResourceException
 import com.redhat.devtools.intellij.kubernetes.model.util.hasDeletionTimestamp
 import com.redhat.devtools.intellij.kubernetes.model.util.toMessage
+import com.redhat.devtools.intellij.kubernetes.telemetry.TelemetryService
+import com.redhat.devtools.intellij.kubernetes.telemetry.TelemetryService.PROP_RESOURCE_KIND
+import com.redhat.devtools.intellij.kubernetes.telemetry.TelemetryService.getKinds
 import com.redhat.devtools.intellij.kubernetes.tree.ResourceWatchController
+import io.fabric8.kubernetes.api.model.HasMetadata
 import javax.swing.tree.TreePath
 
 class DeleteResourceAction: StructureTreeAction() {
@@ -32,18 +35,22 @@ class DeleteResourceAction: StructureTreeAction() {
     override fun actionPerformed(event: AnActionEvent?, path: Array<out TreePath>?, selected: Array<out Any>?) {
         val model = getResourceModel() ?: return
         val toDelete = selected?.map { it.getDescriptor()?.element as HasMetadata} ?: return
-        if(!userConfirmed(toDelete)) {
+        if (!userConfirmed(toDelete)) {
             return
         }
         run("Deleting...", true,
             Progressive {
+                val telemetry = TelemetryService.instance.action("delete resource")
+                    .property(PROP_RESOURCE_KIND, getKinds(toDelete))
                 try {
                     model.delete(toDelete)
                     Notification().info("Resources Deleted", toMessage(toDelete, 30))
+                    telemetry.success().send()
                 } catch (e: MultiResourceException) {
                     val resources = e.causes.flatMap { it.resources }
                     Notification().error("Could not delete resource(s)", toMessage(resources, 30))
                     logger<ResourceWatchController>().warn("Could not delete resources.", e)
+                    telemetry.error(e).send()
                 }
             })
     }

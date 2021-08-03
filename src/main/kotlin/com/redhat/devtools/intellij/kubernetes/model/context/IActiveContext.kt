@@ -10,6 +10,7 @@
  ******************************************************************************/
 package com.redhat.devtools.intellij.kubernetes.model.context
 
+import com.redhat.devtools.intellij.common.kubernetes.ClusterInfo
 import com.redhat.devtools.intellij.kubernetes.model.resource.ResourceKind
 import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.custom.GenericCustomResource
 import io.fabric8.kubernetes.api.model.HasMetadata
@@ -39,6 +40,11 @@ interface IActiveContext<N: HasMetadata, C: KubernetesClient>: IContext {
      * The master url for this context. This is the url of the cluster for this context.
      */
     val masterUrl: URL
+
+    /**
+     * The version of the cluster for this context
+     */
+    val version: ClusterInfo
 
     /**
      * Returns {@code true} if this context is an OpenShift context. This is true for context with an OpenShift cluster.

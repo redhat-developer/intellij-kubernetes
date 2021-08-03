@@ -10,18 +10,16 @@
  ******************************************************************************/
 package com.redhat.devtools.intellij.kubernetes.editor.actions
 
-import com.intellij.icons.AllIcons
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.CommonDataKeys
 import com.intellij.openapi.progress.Progressive
-import com.intellij.openapi.ui.Messages.YES
-import com.redhat.devtools.intellij.common.utils.UIHelper
 import com.redhat.devtools.intellij.kubernetes.editor.ResourceEditor
 import com.redhat.devtools.intellij.kubernetes.editor.util.getFileEditor
 import com.redhat.devtools.intellij.kubernetes.model.Notification
-import com.intellij.openapi.ui.Messages
-import java.util.function.Supplier
+import com.redhat.devtools.intellij.kubernetes.telemetry.TelemetryService
+import com.redhat.devtools.intellij.kubernetes.telemetry.TelemetryService.NAME_PREFIX_EDITOR
+import com.redhat.devtools.intellij.kubernetes.telemetry.TelemetryService.reportResource
 
 class PullAction: AnAction() {
 
@@ -32,13 +30,18 @@ class PullAction: AnAction() {
     override fun actionPerformed(e: AnActionEvent) {
         val project = e.dataContext.getData(CommonDataKeys.PROJECT) ?: return
         val editor = getFileEditor(project)
+        val telemetry = TelemetryService.instance.action(NAME_PREFIX_EDITOR + "pull")
         com.redhat.devtools.intellij.kubernetes.actions.run("Reloading...", true,
             Progressive {
                 try {
-                    ResourceEditor.get(editor, project)?.pull()
+                    val editor = ResourceEditor.get(editor, project) ?: return@Progressive
+                    editor.pull()
+                    reportResource(editor.localCopy, telemetry)
                 } catch (e: Exception) {
                     Notification().error("Error Pulling", "Could not pull resource from cluster: ${e.message}")
+                    telemetry.error(e).send()
                 }
             })
     }
+
 }

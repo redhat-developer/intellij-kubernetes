@@ -15,6 +15,8 @@ import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.progress.Progressive
 import com.redhat.devtools.intellij.common.actions.StructureTreeAction
 import com.redhat.devtools.intellij.kubernetes.model.context.IContext
+import com.redhat.devtools.intellij.kubernetes.telemetry.TelemetryService
+import com.redhat.devtools.intellij.kubernetes.telemetry.TelemetryService.NAME_PREFIX_CONTEXT
 import com.redhat.devtools.intellij.kubernetes.tree.ResourceWatchController
 import javax.swing.tree.TreePath
 
@@ -22,14 +24,18 @@ class SetAsCurrentClusterAction: StructureTreeAction(IContext::class.java) {
 
     override fun actionPerformed(event: AnActionEvent?, path: TreePath?, selectedNode: Any?) {
         val context: IContext = selectedNode?.getElement() ?: return
+        val telemetry = TelemetryService.instance
+            .action(NAME_PREFIX_CONTEXT + "switch")
         run("Setting $context as current cluster...", true,
             Progressive {
                 try {
                     getResourceModel()?.setCurrentContext(context)
+                    telemetry.success().send()
                 } catch (e: Exception) {
                     logger<ResourceWatchController>().warn(
                         "Could not set current context to ${context.context.name}.", e
                     )
+                    telemetry.error(e).send()
                 }
             })
     }

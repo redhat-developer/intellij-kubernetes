@@ -14,7 +14,12 @@ import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.progress.Progressive
 import com.redhat.devtools.intellij.common.actions.StructureTreeAction
+import com.redhat.devtools.intellij.kubernetes.telemetry.TelemetryService
+import com.redhat.devtools.intellij.kubernetes.telemetry.TelemetryService.PROP_RESOURCE_KIND
+import com.redhat.devtools.intellij.kubernetes.telemetry.TelemetryService.getKind
+import com.redhat.devtools.intellij.kubernetes.telemetry.TelemetryService.reportResource
 import com.redhat.devtools.intellij.kubernetes.tree.ResourceWatchController
+import io.fabric8.kubernetes.api.model.HasMetadata
 import javax.swing.tree.TreePath
 
 class RefreshAction : StructureTreeAction(Any::class.java) {
@@ -23,10 +28,13 @@ class RefreshAction : StructureTreeAction(Any::class.java) {
 		val descriptor = selectedNode?.getDescriptor() ?: return
 		run("Refreshing $selectedNode...", true,
 			Progressive {
+				val telemetry = TelemetryService.instance.action("refresh resource")
 				try {
 					descriptor.invalidate()
+					reportResource(descriptor.element as HasMetadata?, telemetry)
 				} catch (e: Exception) {
 					logger<ResourceWatchController>().warn("Could not refresh $descriptor resources.", e)
+					telemetry.error(e).send()
 				}
 			})
 	}

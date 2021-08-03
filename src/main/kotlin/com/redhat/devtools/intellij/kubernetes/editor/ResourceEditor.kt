@@ -41,6 +41,9 @@ import com.redhat.devtools.intellij.kubernetes.model.ResourceException
 import com.redhat.devtools.intellij.kubernetes.model.createClients
 import com.redhat.devtools.intellij.kubernetes.model.util.isSameResource
 import com.redhat.devtools.intellij.kubernetes.model.util.trimWithEllipsis
+import com.redhat.devtools.intellij.kubernetes.telemetry.TelemetryService
+import com.redhat.devtools.intellij.kubernetes.telemetry.TelemetryService.NAME_PREFIX_EDITOR
+import com.redhat.devtools.intellij.kubernetes.telemetry.TelemetryService.reportResource
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.client.KubernetesClient
 import io.fabric8.kubernetes.client.utils.Serialization
@@ -52,7 +55,7 @@ import kotlin.concurrent.withLock
  * An adapter for [FileEditor] instances that allows to push or load the editor content to/from a remote cluster.
  */
 open class ResourceEditor protected constructor(
-    private var localCopy: HasMetadata?,
+    var localCopy: HasMetadata?,
     private val editor: FileEditor,
     private val project: Project,
     private val clients: Clients<out KubernetesClient>,
@@ -104,8 +107,7 @@ open class ResourceEditor protected constructor(
                 .openFile(file, true, true)
                 .getOrNull(0)
                 ?: return null
-            val clients = createClients(ClientConfig {}) ?: return null
-            return create(resource, editor, project, clients)
+            return get(editor, project)
         }
 
         /**
@@ -125,12 +127,15 @@ open class ResourceEditor protected constructor(
         }
 
         private fun create(editor: FileEditor, project: Project): ResourceEditor? {
+            val telemetry = TelemetryService.instance.action(NAME_PREFIX_EDITOR + "open")
             try {
                 val clients = createClients(ClientConfig {}) ?: return null
                 val resource = EditorResourceFactory.create(editor, clients) ?: return null
+                reportResource(resource, telemetry)
                 return create(resource, editor, project, clients)
             } catch(e: ResourceException) {
                 ErrorNotification(editor, project).show(e.message ?: "", e.cause?.message)
+                telemetry.error(e).send()
                 return null
             }
         }
@@ -168,7 +173,7 @@ open class ResourceEditor protected constructor(
         }
     }
 
-    protected open var editorResource: HasMetadata? = localCopy
+    open var editorResource: HasMetadata? = localCopy
     /** mutex to exclude concurrent execution of push & watch notification **/
     private val resourceChangeMutex = ReentrantLock()
     private var oldClusterResource: ClusterResource? = null

@@ -12,6 +12,8 @@ package com.redhat.devtools.intellij.kubernetes.model.context
 
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.extensions.ExtensionPointName
+import com.redhat.devtools.intellij.common.kubernetes.ClusterHelper
+import com.redhat.devtools.intellij.common.kubernetes.ClusterInfo
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.NamedContext
 import io.fabric8.kubernetes.api.model.apiextensions.v1beta1.CustomResourceDefinition
@@ -55,6 +57,10 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
         get() {
             return clients.get().masterUrl
         }
+    override val version: ClusterInfo by lazy {
+        ClusterHelper.getClusterInfo(clients.get())
+    }
+
     private val extensionName: ExtensionPointName<IResourceOperatorFactory<HasMetadata, C, IResourceOperator<HasMetadata>>> =
             ExtensionPointName.create("com.redhat.devtools.intellij.kubernetes.resourceOperators")
 
