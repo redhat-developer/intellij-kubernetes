@@ -2,7 +2,9 @@ pluginManagement {
     plugins {
         id "org.jetbrains.kotlin.jvm" version "${kotlinVersion}"
         id "kotlin-gradle-plugin" version "${kotlinVersion}"
-        id "kotlin-stdlib-jdk8" version "${kotlinVersion}"
+        id "kotlin-stdlib" version "${kotlinVersion}"
+        id "kotlin-stdlib-common" version "${kotlinVersion}"
+        id "kotlin-reflect" version "${kotlinVersion}"
         id "kotlin-test-junit" version "${kotlinVersion}"
         id "org.jetbrains.intellij" version "${intellijPluginVersion}"
     }
