@@ -1,6 +1,55 @@
+buildscript {
+    /**
+     * Returns sinceBuild for a given IC- version.
+     *
+     * Supported cases:
+     * (1) Year and Version -- (a) IC-2017.3, (b) 2017.2.4, (c) 2018.1
+     * (2) Build ID -- (a) IU-163.7890, (b) 171.1234
+     * (3) Named Snapshots -- (a) LATEST-EAP-SNAPSHOT, (b) LATEST-TRUNK-SNAPSHOT
+     *
+     * Taken and adapted from https://github.com/rhdunn/xquery-intellij-plugin/blob/master/build.gradle#L1-L47
+     */
+    ext.getSinceIdeaBuild = { version ->
+        // (1) Year and Version
+        def since = version =~ /([A-Z]+-)?20([0-9][0-9])\.([1-3])(\.[0-9]+)?$/
+        if (since.matches()) {
+            return "${since.group(2)}${since.group(3)}"
+        }
+        // (2) Build ID
+        since = version =~ /([A-Z]+-)?([0-9][0-9][0-9])\.[0-9]+?$/
+        if (since.matches()) {
+            return since.group(2)
+        }
+        // (3) Named Snapshots
+        def repositoryPath = "https://www.jetbrains.com/intellij-repository/snapshots/com/jetbrains/intellij/idea/BUILD"
+        def build = new File("$projectDir/build/BUILD-${version}.txt")
+        if (!build.exists()) {
+            build.parentFile.mkdirs()
+            println "Downloading build version file '$repositoryPath/$version/BUILD-${version}.txt' to '${build.absolutePath}'"
+            new URL("$repositoryPath/$version/BUILD-${version}.txt").withInputStream { input ->
+                build.withOutputStream { output -> (output << input).close() }
+            }
+        }
+        return build.readLines()[0].split('\\.')[0]
+    }
+
+    ext.ideaVersion = ideaVersion
+    ext.sinceIdeaBuild = getSinceIdeaBuild(ext.ideaVersion).toInteger()
+
+    if (ext.sinceIdeaBuild >= 203) {
+        ext.kotlinVersion = kotlinVersionIdea203
+        ext.kotlinStdlib = kotlinStdlibIdea203
+        ext.java_version = "11"
+    } else {
+        ext.kotlinVersion = kotlinVersion
+        ext.kotlinStdlib = kotlinStdlib
+        ext.java_version = "1.8"
+    }
+}
+
 plugins {
-    id "org.jetbrains.intellij"
-    id "org.jetbrains.kotlin.jvm"
+    id "org.jetbrains.intellij" version "${intellijPluginVersion}"
+    id "org.jetbrains.kotlin.jvm" version "${kotlinVersion}"
     id "idea"
 }
 
@@ -30,11 +79,12 @@ tasks.withType(Test) {
 
 dependencies {
     implementation(
-            "com.redhat.devtools.intellij:intellij-common:1.0.0",
-            "io.fabric8:kubernetes-client:5.0.2",
-            "io.fabric8:kubernetes-model:5.0.2",
-            "io.fabric8:kubernetes-model-common:5.0.2",
-            "io.fabric8:openshift-client:5.0.2",
+            "org.jetbrains.kotlin:${kotlinStdlib}:${kotlinVersion}",
+            "com.redhat.devtools.intellij:intellij-common:${intellijCommonVersion}",
+            "io.fabric8:kubernetes-client:${kubernetesClientVersion}",
+            "io.fabric8:kubernetes-model:${kubernetesClientVersion}",
+            "io.fabric8:kubernetes-model-common:${kubernetesClientVersion}",
+            "io.fabric8:openshift-client:${kubernetesClientVersion}",
             "org.apache.commons:commons-lang3:3.10"
     )
     testImplementation(
@@ -44,8 +94,12 @@ dependencies {
             "org.jetbrains.kotlin:kotlin-test-junit"
     )
     integrationTestImplementation(
-            "com.intellij.remoterobot:remote-robot:$remoteRobotVersion",
+            "com.intellij.remoterobot:remote-robot:${remoteRobotVersion}",
+            "com.intellij.remoterobot:remote-fixtures:${fixturesVersion}",
             "org.junit.jupiter:junit-jupiter-api:5.3.1"
+    )
+    integrationTestRuntimeOnly(
+            "org.junit.jupiter:junit-jupiter-engine:5.3.1"
     )
 }
 
@@ -170,7 +224,7 @@ private def getProjectProperty(String key, String defaultValue) {
     return value;
 }
 
-private colorize(String color, String message) {
+private def colorize(String color, String message) {
     final colors = [
             black: 30,
             red: 31,
