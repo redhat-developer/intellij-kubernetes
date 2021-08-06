@@ -11,6 +11,10 @@
     <change-notes>
         <![CDATA[
         <p></p>
+        <h3>0.2.2</h3>
+        <ul>
+            <li><a href="https://github.com/redhat-developer/intellij-kubernetes/issues/236">IDE Error: commitDocument() left PSI inconsistent</a></li>
+        </ul>
         <h3>0.2.1</h3>
         <ul>
             <li><a href="https://github.com/redhat-developer/intellij-kubernetes/issues/175">Should be able to edit resources</a></li>
