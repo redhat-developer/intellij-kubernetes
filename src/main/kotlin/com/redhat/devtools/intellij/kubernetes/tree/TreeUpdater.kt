@@ -69,7 +69,7 @@ class TreeUpdater<Structure: AbstractTreeStructure>(
     }
 
     private fun invalidatePath(pathSupplier: () -> TreePath?) {
-        treeModel.invoker.runOrInvokeLater {
+        treeModel.invoker.invokeLater {
             val path = pathSupplier()
             if (path != null) {
                 if (path.lastPathComponent == treeModel.root) {
