@@ -1,40 +1,13 @@
 buildscript {
-    /**
-     * Returns sinceBuild for a given IC- version.
-     *
-     * Supported cases:
-     * (1) Year and Version -- (a) IC-2017.3, (b) 2017.2.4, (c) 2018.1
-     * (2) Build ID -- (a) IU-163.7890, (b) 171.1234
-     * (3) Named Snapshots -- (a) LATEST-EAP-SNAPSHOT, (b) LATEST-TRUNK-SNAPSHOT
-     *
-     * Taken and adapted from https://github.com/rhdunn/xquery-intellij-plugin/blob/master/build.gradle#L1-L47
-     */
-    ext.getSinceIdeaBuild = { version ->
-        // (1) Year and Version
-        def since = version =~ /([A-Z]+-)?20([0-9][0-9])\.([1-3])(\.[0-9]+)?$/
-        if (since.matches()) {
-            return "${since.group(2)}${since.group(3)}"
-        }
-        // (2) Build ID
-        since = version =~ /([A-Z]+-)?([0-9][0-9][0-9])\.[0-9]+?$/
-        if (since.matches()) {
-            return since.group(2)
-        }
-        // (3) Named Snapshots
-        def repositoryPath = "https://www.jetbrains.com/intellij-repository/snapshots/com/jetbrains/intellij/idea/BUILD"
-        def build = new File("$projectDir/build/BUILD-${version}.txt")
-        if (!build.exists()) {
-            build.parentFile.mkdirs()
-            println "Downloading build version file '$repositoryPath/$version/BUILD-${version}.txt' to '${build.absolutePath}'"
-            new URL("$repositoryPath/$version/BUILD-${version}.txt").withInputStream { input ->
-                build.withOutputStream { output -> (output << input).close() }
-            }
-        }
-        return build.readLines()[0].split('\\.')[0]
-    }
-
     ext.ideaVersion = ideaVersion
-    ext.sinceIdeaBuild = getSinceIdeaBuild(ext.ideaVersion).toInteger()
+    /*
+     * for more complex conversion ideaVersion -> sinceIdeaBuild
+     * see https://github.com/rhdunn/xquery-intellij-plugin/blob/master/build.gradle#L1-L47
+     */
+    def since = ideaVersion =~ /IC-20([0-9][0-9])\.([1-3])(\.[0-9]+)?$/
+    if (since.matches()) {
+        ext.sinceIdeaBuild = "${since.group(1)}${since.group(2)}".toInteger()
+    }
 
     if (ext.sinceIdeaBuild >= 203) {
         ext.kotlinVersion = kotlinVersionIdea203
