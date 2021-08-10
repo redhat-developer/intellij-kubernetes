@@ -86,7 +86,7 @@ object KubernetesDescriptors {
 		project = project
 	) {
 		override fun getIcon(element: KubernetesContext): Icon {
-			return IconLoader.getIcon("/icons/kubernetes-cluster.svg")
+			return IconLoader.getIcon("/icons/kubernetes-cluster.svg", javaClass)
 		}
 	}
 
@@ -110,7 +110,7 @@ object KubernetesDescriptors {
 		}
 
 		override fun getIcon(element: Namespace): Icon {
-			return IconLoader.getIcon("/icons/namespace.svg")
+			return IconLoader.getIcon("/icons/namespace.svg", javaClass)
 		}
 	}
 
@@ -129,9 +129,9 @@ object KubernetesDescriptors {
 
 		override fun getIcon(element: Pod): Icon {
 			return if (PodStatusUtil.isRunning(element)) {
-				IconLoader.getIcon("/icons/running-pod.svg")
+				IconLoader.getIcon("/icons/running-pod.svg", javaClass)
 			} else {
-				IconLoader.getIcon("/icons/error-pod.svg")
+				IconLoader.getIcon("/icons/error-pod.svg", javaClass)
 			}
 		}
 	}
