@@ -162,7 +162,7 @@ open class TreeStructure(
         }
 
         override fun getIcon(element: C): Icon? {
-            return IconLoader.getIcon("/icons/kubernetes-cluster.svg")
+            return IconLoader.getIcon("/icons/kubernetes-cluster.svg", javaClass)
         }
     }
 

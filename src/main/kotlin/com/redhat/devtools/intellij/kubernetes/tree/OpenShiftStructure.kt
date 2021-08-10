@@ -168,7 +168,7 @@ class OpenShiftStructure(model: IResourceModel): AbstractTreeStructureContributi
         project = project
     ) {
         override fun getIcon(element: OpenShiftContext): Icon? {
-            return IconLoader.getIcon("/icons/openshift-cluster.svg")
+            return IconLoader.getIcon("/icons/openshift-cluster.svg", javaClass)
         }
     }
 
