@@ -32,6 +32,11 @@ public class ActionToolbarMenu extends CommonContainerFixture {
 
     public void PushToCluster(){
         find(ComponentFixture.class, byXpath("//div[@myicon='upload.svg']")).click();
+        try {
+            Thread.sleep(5000); // sleep for 5 seconds, cluster need some time to create pods
+        } catch (InterruptedException e) { // w/o sleep it can crash the whole cluster
+            e.printStackTrace();
+        }
     }
 
     public void LoadFromCluster(){

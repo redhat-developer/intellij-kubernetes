@@ -50,4 +50,12 @@ public class IdeFatalErrorsDialogFixture extends CommonContainerFixture {
     public ComponentFixture nextExceptionButton() {
         return find(ComponentFixture.class, byXpath("//div[@accessiblename='Next' and @class='ActionButton']"));
     }
+
+    public void clearAll() {
+        find(ComponentFixture.class, byXpath("//div[@accessiblename='Clear all' and @class='JButton' and @text='Clear all']")).click();
+    }
+
+    public void close() {
+        find(ComponentFixture.class, byXpath("//div[@accessiblename='Close' and @class='JButton' and @text='Close']")).click();
+    }
 }
