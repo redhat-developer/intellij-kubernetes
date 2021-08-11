@@ -19,7 +19,6 @@ import org.jboss.tools.intellij.kubernetes.fixtures.menus.ActionToolbarMenu;
 
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
