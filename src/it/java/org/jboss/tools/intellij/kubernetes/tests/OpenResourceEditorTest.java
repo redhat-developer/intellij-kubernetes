@@ -23,7 +23,6 @@ import java.time.Duration;
 
 import static com.intellij.remoterobot.search.locators.Locators.byXpath;
 import static com.intellij.remoterobot.utils.RepeatUtilsKt.waitFor;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 
 /**
  * @author olkornii@redhat.com

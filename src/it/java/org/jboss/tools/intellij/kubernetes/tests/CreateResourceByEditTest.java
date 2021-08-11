@@ -20,13 +20,15 @@ import org.jboss.tools.intellij.kubernetes.fixtures.mainIdeWindow.EditorsSplitte
 import org.jboss.tools.intellij.kubernetes.fixtures.menus.ActionToolbarMenu;
 import org.jboss.tools.intellij.kubernetes.fixtures.menus.RightClickMenu;
 
+import java.awt.*;
+import java.awt.datatransfer.Clipboard;
+import java.awt.datatransfer.StringSelection;
 import java.awt.event.KeyEvent;
 import java.time.Duration;
 import java.util.List;
 
 import static com.intellij.remoterobot.search.locators.Locators.byXpath;
 import static com.intellij.remoterobot.utils.RepeatUtilsKt.waitFor;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 
 /**
  * @author olkornii@redhat.com
@@ -45,10 +47,14 @@ public class CreateResourceByEditTest extends AbstractKubernetesTest{
         Keyboard myKeyboard = new Keyboard(robot);
         String newEditorTitle = newResourceName + ".yml";
 
-        findResourceNamePosition(robot, editorSplitter, editorTitle, myKeyboard);
+        Clipboard clipboard = getSystemClipboard();
+        String text = "\"" + newResourceName + "\"";
+        clipboard.setContents(new StringSelection(text), null);
 
-        myKeyboard.backspace();
-        myKeyboard.enterText("\"" + newResourceName + "\"");
+        RemoteText namePlace = findResourceNamePosition(robot, editorSplitter, editorTitle, myKeyboard);
+        namePlace.click(MouseButton.RIGHT_BUTTON);
+        RightClickMenu rightClickMenu = robot.find(RightClickMenu.class);
+        rightClickMenu.select("Paste");
 
         ActionToolbarMenu toolbarMenu = robot.find(ActionToolbarMenu.class);
         toolbarMenu.PushToCluster();
@@ -70,7 +76,7 @@ public class CreateResourceByEditTest extends AbstractKubernetesTest{
         hideClusterContent(kubernetesViewTree);
     }
 
-    private static void findResourceNamePosition(RemoteRobot robot, EditorsSplittersFixture editorSplitter, String editorTitle, Keyboard myKeyboard){
+    private static RemoteText findResourceNamePosition(RemoteRobot robot, EditorsSplittersFixture editorSplitter, String editorTitle, Keyboard myKeyboard){
         myKeyboard.hotKey(KeyEvent.VK_CONTROL, KeyEvent.VK_F);
         robot.find(ComponentFixture.class, byXpath("//div[@class='SearchTextArea']")).click();
         myKeyboard.enterText(" name:");
@@ -89,6 +95,8 @@ public class CreateResourceByEditTest extends AbstractKubernetesTest{
 
         RemoteText namePlace = remoteText.get(nameId+3); // +1 because we need the next one, +1 because between every 2 real elements is space, +1 because here is the ":"
         namePlace.doubleClick(); // set the cursor
+
+        return namePlace;
     }
 
     private static boolean acceptDeleteDialog(RemoteRobot robot){
@@ -98,5 +106,13 @@ public class CreateResourceByEditTest extends AbstractKubernetesTest{
         } catch (WaitForConditionTimeoutException e) {
             return false;
         }
+    }
+
+    private static Clipboard getSystemClipboard()
+    {
+        Toolkit defaultToolkit = Toolkit.getDefaultToolkit();
+        Clipboard systemClipboard = defaultToolkit.getSystemClipboard();
+
+        return systemClipboard;
     }
 }

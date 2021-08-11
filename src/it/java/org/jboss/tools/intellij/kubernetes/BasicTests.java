@@ -34,7 +34,7 @@ import java.util.List;
  *
  * @author olkornii@redhat.com
  */
-public class BasicTests {
+public class BasicTests extends AbstractKubernetesTest{
 
     private static RemoteRobot robot;
     private static ComponentFixture kubernetesViewTree;
@@ -72,6 +72,14 @@ public class BasicTests {
 
         step("delete Resource", () -> CreateResourceByEditTest.deleteResource(robot, kubernetesViewTree));
     }
+
+    private static final String newResourceName = "newresourcename2";
+
+    @Test
+    public void createAnotherResourceTypeByEdit() {
+        step("create another type of Resource", () -> CreateAnotherTypeResourceByEditTest.createAnotherTypeResourceByEdit(robot, kubernetesViewTree));
+    }
+
 
     private static void createEmptyProject(){
         final WelcomeFrameDialogFixture welcomeFrameDialogFixture = robot.find(WelcomeFrameDialogFixture.class);
