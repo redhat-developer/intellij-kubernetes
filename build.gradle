@@ -113,19 +113,19 @@ test {
 }
 
 intellij {
-    version ideaVersion //for a full list of Jetbrains IDEA releases please see https://www.jetbrains.com/intellij-repository/releases
-    pluginName 'Kubernetes by Red Hat'
-    updateSinceUntilBuild false
-    plugins 'yaml'
+    version = ideaVersion //for a full list of Jetbrains IDEA releases please see https://www.jetbrains.com/intellij-repository/releases
+    pluginName = 'Kubernetes by Red Hat'
+    plugins = ['yaml']
+    updateSinceUntilBuild = false
 }
 
 patchPluginXml {
-    sinceBuild sinceIdeaBuild
+    sinceBuild = "${sinceIdeaBuild}"
 }
 
 publishPlugin {
-    token    jetBrainsToken
-    channels jetBrainsChannel
+    token = jetBrainsToken
+    channels = [jetBrainsChannel]
 }
 
 runIdeForUiTests {
