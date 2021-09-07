@@ -18,13 +18,18 @@ import org.jboss.tools.intellij.kubernetes.fixtures.dialogs.NewProjectDialogFixt
 import org.jboss.tools.intellij.kubernetes.fixtures.dialogs.WelcomeFrameDialogFixture;
 import org.jboss.tools.intellij.kubernetes.fixtures.mainIdeWindow.KubernetesToolsFixture;
 import org.jboss.tools.intellij.kubernetes.fixtures.mainIdeWindow.ToolWindowsPaneFixture;
-import org.jboss.tools.intellij.kubernetes.tests.*;
 import org.jboss.tools.intellij.kubernetes.utils.GlobalUtils;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import static com.intellij.remoterobot.stepsProcessing.StepWorkerKt.step;
 import static com.intellij.remoterobot.utils.RepeatUtilsKt.waitFor;
+
+import org.jboss.tools.intellij.kubernetes.tests.ClusterConnectedTest;
+import org.jboss.tools.intellij.kubernetes.tests.CreateResourceByEditTest;
+import org.jboss.tools.intellij.kubernetes.tests.OpenResourceEditorTest;
+import org.jboss.tools.intellij.kubernetes.tests.EditResourceTest;
+import org.jboss.tools.intellij.kubernetes.tests.CreateAnotherTypeResourceByEditTest;
 
 import java.time.Duration;
 import java.util.List;
@@ -34,7 +39,7 @@ import java.util.List;
  *
  * @author olkornii@redhat.com
  */
-public class BasicTests{
+public class BasicTests {
 
     private static RemoteRobot robot;
     private static ComponentFixture kubernetesViewTree;
