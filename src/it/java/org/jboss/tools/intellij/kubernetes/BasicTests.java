@@ -34,7 +34,7 @@ import java.util.List;
  *
  * @author olkornii@redhat.com
  */
-public class BasicTests extends AbstractKubernetesTest{
+public class BasicTests{
 
     private static RemoteRobot robot;
     private static ComponentFixture kubernetesViewTree;
