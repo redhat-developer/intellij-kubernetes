@@ -67,7 +67,7 @@ class ResourceEditorTest {
     // need real resources, not mocks - #equals used to track changes
     private val GARGAMEL_WITH_LABEL = PodBuilder(GARGAMEL)
         .editMetadata()
-        .withLabels(mapOf(Pair("hat", "none")))
+        .withLabels<String, String>(mapOf(Pair("hat", "none")))
         .endMetadata()
         .build()
     // need real resources, not mocks - #equals used to track changes

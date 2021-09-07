@@ -14,7 +14,7 @@ import com.redhat.devtools.intellij.kubernetes.model.resource.NamespacedOperatio
 import com.redhat.devtools.intellij.kubernetes.model.resource.NamespacedResourceOperator
 import com.redhat.devtools.intellij.kubernetes.model.resource.ResourceKind
 import com.redhat.devtools.intellij.kubernetes.model.Clients
-import io.fabric8.kubernetes.api.model.batch.Job
+import io.fabric8.kubernetes.api.model.batch.v1.Job
 import io.fabric8.kubernetes.client.BatchAPIGroupClient
 import io.fabric8.kubernetes.client.KubernetesClient
 
@@ -28,6 +28,6 @@ class JobsOperator(clients: Clients<out KubernetesClient>)
     override val kind = KIND
 
     override fun getOperation(): NamespacedOperation<Job>? {
-        return client.jobs()
+        return client.v1().jobs()
     }
 }
