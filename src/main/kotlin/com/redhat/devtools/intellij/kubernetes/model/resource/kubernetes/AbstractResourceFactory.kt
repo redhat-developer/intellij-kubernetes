@@ -65,7 +65,7 @@ abstract class AbstractResourceFactory<T : HasMetadata> {
             .withResourceVersion(metadata[RESOURCE_VERSION] as? String?)
             .withSelfLink(metadata[SELF_LINK] as? String?)
             .withUid(metadata[UID] as? String?)
-            .withLabels(metadata[LABELS] as? Map<String, String>?)
+            .withLabels<String, String>(metadata[LABELS] as? Map<String, String>?)
             .build()
     }
 
@@ -78,7 +78,7 @@ abstract class AbstractResourceFactory<T : HasMetadata> {
             .withResourceVersion(metadata.get(RESOURCE_VERSION)?.asText())
             .withSelfLink(metadata.get(SELF_LINK)?.asText())
             .withUid(metadata.get(UID)?.asText())
-            .withLabels(Serialization.jsonMapper().convertValue(
+            .withLabels<String, String>(Serialization.jsonMapper().convertValue(
                     metadata.get(LABELS), object : TypeReference<Map<String, String>>() {})
             )
             .build()

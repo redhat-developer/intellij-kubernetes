@@ -23,7 +23,7 @@ import io.fabric8.kubernetes.api.model.apiextensions.v1beta1.CustomResourceDefin
 import io.fabric8.kubernetes.api.model.apps.DaemonSet
 import io.fabric8.kubernetes.api.model.apps.Deployment
 import io.fabric8.kubernetes.api.model.apps.StatefulSet
-import io.fabric8.kubernetes.api.model.discovery.Endpoint
+import io.fabric8.kubernetes.api.model.discovery.v1beta1.Endpoint
 import io.fabric8.kubernetes.api.model.storage.StorageClass
 import com.redhat.devtools.intellij.kubernetes.model.IResourceModel
 import com.redhat.devtools.intellij.kubernetes.model.ResourceException
