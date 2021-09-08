@@ -78,8 +78,6 @@ public class BasicTests {
         step("delete Resource", () -> CreateResourceByEditTest.deleteResource(robot, kubernetesViewTree));
     }
 
-    private static final String newResourceName = "newresourcename2";
-
     @Test
     public void createAnotherResourceTypeByEdit() {
         step("create another type of Resource", () -> CreateAnotherTypeResourceByEditTest.createAnotherTypeResourceByEdit(robot, kubernetesViewTree));
