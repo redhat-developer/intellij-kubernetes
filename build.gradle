@@ -123,6 +123,10 @@ patchPluginXml {
     sinceBuild = "${sinceIdeaBuild}"
 }
 
+runPluginVerifier {
+    ideVersions = [ideaVersion]
+}
+
 publishPlugin {
     token = jetBrainsToken
     channels = [jetBrainsChannel]
