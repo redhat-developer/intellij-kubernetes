@@ -56,6 +56,8 @@
                             serviceImplementation="com.redhat.devtools.intellij.kubernetes.model.ResourceModel"/>
         <nonProjectFileWritingAccessExtension implementation="com.redhat.devtools.intellij.common.editor.AllowNonProjectEditing" />
         <postStartupActivity implementation="com.redhat.devtools.intellij.kubernetes.KubernetesPluginInitializer" />
+        <!-- >= IC-2020.3 -->
+        <notificationGroup displayType="BALLOON" id="Kubernetes Notification Group" isLogByDefault="true"/>
     </extensions>
 
     <extensionPoints>
