@@ -11,26 +11,27 @@
 package com.redhat.devtools.intellij.kubernetes.model
 
 import com.intellij.notification.NotificationDisplayType
-import com.intellij.notification.NotificationGroup
 import com.intellij.notification.NotificationType
+import com.redhat.devtools.intellij.common.notification.NotificationGroupFactory
 
 class Notification {
 
 	companion object {
-		private val NOTIFICATION_GROUP = NotificationGroup(
-			"Kubernetes Notification Group",
-			NotificationDisplayType.BALLOON,
-			true
-		)
+		private val NOTIFICATION_GROUP = NotificationGroupFactory.create(
+			"Kubernetes Notification Group", NotificationDisplayType.BALLOON, true)
 	}
 
 	fun error(title: String, content: String) {
-		NOTIFICATION_GROUP.createNotification(title, content, NotificationType.ERROR, null)
+		NOTIFICATION_GROUP
+			.createNotification(content, NotificationType.ERROR)
+			.apply { setTitle(title) }
 			.notify(null)
 	}
 
 	fun info(title: String, content: String) {
-		NOTIFICATION_GROUP.createNotification(title, content, NotificationType.INFORMATION, null)
+		NOTIFICATION_GROUP
+			.createNotification(content, NotificationType.INFORMATION)
+			.apply { setTitle(title) }
 			.notify(null)
 	}
 
