@@ -18,9 +18,8 @@ import com.intellij.remoterobot.fixtures.DefaultXpath;
 import com.intellij.remoterobot.fixtures.FixtureName;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.List;
-
 import static com.intellij.remoterobot.search.locators.Locators.byXpath;
+import static com.redhat.devtools.intellij.commonUiTestLibrary.utils.labels.ButtonLabels.clearAllLabel;
 
 /**
  * IDE Fatal Errors dialog fixture
@@ -34,28 +33,14 @@ public class IdeFatalErrorsDialogFixture extends CommonContainerFixture {
         super(remoteRobot, remoteComponent);
     }
 
-    public ComponentFixture numberOfExcetionsJBLabel() {
-        List<ComponentFixture> allJBLabels = findAll(ComponentFixture.class, byXpath("//div[@class='JBLabel']"));
-        return allJBLabels.get(0);
+    /**
+     * Click on the 'Clear all' button
+     */
+    public void clearAll() {
+        button(clearAllLabel).click();
     }
 
     public ComponentFixture exceptionDescriptionJTextArea() {
         return find(ComponentFixture.class, byXpath("//div[@class='JTextArea']"));
-    }
-
-    public ComponentFixture previousExceptionButton() {
-        return find(ComponentFixture.class, byXpath("//div[@accessiblename='Previous' and @class='ActionButton'"));
-    }
-
-    public ComponentFixture nextExceptionButton() {
-        return find(ComponentFixture.class, byXpath("//div[@accessiblename='Next' and @class='ActionButton']"));
-    }
-
-    public void clearAll() {
-        find(ComponentFixture.class, byXpath("//div[@accessiblename='Clear all' and @class='JButton' and @text='Clear all']")).click();
-    }
-
-    public void close() {
-        find(ComponentFixture.class, byXpath("//div[@accessiblename='Close' and @class='JButton' and @text='Close']")).click();
     }
 }

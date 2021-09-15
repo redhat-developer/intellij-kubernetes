@@ -38,6 +38,7 @@ sourceSets {
 }
 
 task integrationTest(type: Test) {
+    useJUnitPlatform()
     description = 'Runs the integration tests.'
     group = 'verification'
     testClassesDirs = sourceSets.integrationTest.output.classesDirs
@@ -67,12 +68,8 @@ dependencies {
             "org.jetbrains.kotlin:kotlin-test-junit"
     )
     integrationTestImplementation(
-            "com.intellij.remoterobot:remote-robot:${remoteRobotVersion}",
-            "com.intellij.remoterobot:remote-fixtures:${fixturesVersion}",
-            "org.junit.jupiter:junit-jupiter-api:5.3.1"
-    )
-    integrationTestRuntimeOnly(
-            "org.junit.jupiter:junit-jupiter-engine:5.3.1"
+            "com.redhat.devtools.intellij:intellij-common:1.1.0",
+            "com.redhat.devtools.intellij:intellij-common-ui-test-library:0.0.2"
     )
 }
 
@@ -133,12 +130,7 @@ publishPlugin {
 }
 
 runIdeForUiTests {
-    systemProperty "robot-server.port", "8082" // default port 8080
-    systemProperties['com.redhat.devtools.intellij.telemetry.mode'] = 'debug'
-}
-
-integrationTest {
-    useJUnitPlatform()
+    systemProperty "robot-server.port", System.getProperty("robot-server.port")
 }
 
 task generateSchemas {
@@ -216,8 +208,14 @@ private def colorize(String color, String message) {
 }
 
 repositories {
-    mavenLocal()
+//    mavenLocal() // uncomment for testing with local maven
     mavenCentral()
+    maven {
+        url 'https://repository.jboss.org/nexus/content/repositories/snapshots'
+    }
+    maven {
+        url 'https://repository.jboss.org/nexus/content/groups/public'
+    }
     maven {
         url 'https://repository.jboss.org'
     }
