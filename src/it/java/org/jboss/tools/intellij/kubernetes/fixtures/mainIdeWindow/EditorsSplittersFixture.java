@@ -16,10 +16,7 @@ import com.intellij.remoterobot.fixtures.CommonContainerFixture;
 import com.intellij.remoterobot.fixtures.ComponentFixture;
 import com.intellij.remoterobot.fixtures.DefaultXpath;
 import com.intellij.remoterobot.fixtures.FixtureName;
-import com.intellij.remoterobot.fixtures.dataExtractor.RemoteText;
 import org.jetbrains.annotations.NotNull;
-
-import java.util.List;
 
 import static com.intellij.remoterobot.search.locators.Locators.byXpath;
 
@@ -33,12 +30,12 @@ public class EditorsSplittersFixture extends CommonContainerFixture {
         super(remoteRobot, remoteComponent);
     }
 
-    public ComponentFixture getEditorTextFixture(String editorTitle){
-        return find(ComponentFixture.class, byXpath("//div[@accessiblename='Editor for " + editorTitle + "' and @class='EditorComponentImpl']"));
+    public ComponentFixture getEditorTextFixture(String fileName){
+        return find(ComponentFixture.class, byXpath("//div[@accessiblename='Editor for " + fileName + "' and @class='EditorComponentImpl']"));
     }
 
-    public void closeEditor(String editorTitle){
-        SingleHeighLabelFixture myLabel = find(SingleHeighLabelFixture.class, byXpath("//div[@accessiblename='" + editorTitle + "' and @class='SingleHeightLabel']"));
+    public void closeEditor(String fileName){
+        SingleHeighLabelFixture myLabel = find(SingleHeighLabelFixture.class, byXpath("//div[@accessiblename='" + fileName + "' and @class='SingleHeightLabel']"));
         myLabel.close();
     }
 }

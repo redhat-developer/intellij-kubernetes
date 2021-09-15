@@ -46,7 +46,7 @@ public class OpenResourceEditorTest extends AbstractKubernetesTest{
 
     private static boolean isEditorOpened(RemoteRobot robot, String editorTitle){
         try {
-            robot.find(EditorsSplittersFixture.class, byXpath("//div[@accessiblename='Editor for " + editorTitle + "' and @class='EditorComponentImpl']"));
+            robot.find(ComponentFixture.class, byXpath("//div[@accessiblename='Editor for " + editorTitle + "' and @class='EditorComponentImpl']"));
         } catch (WaitForConditionTimeoutException e) {
             return false;
         }

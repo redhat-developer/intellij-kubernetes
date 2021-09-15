@@ -14,10 +14,9 @@ import com.intellij.remoterobot.RemoteRobot;
 import com.intellij.remoterobot.fixtures.ComponentFixture;
 import com.intellij.remoterobot.fixtures.dataExtractor.RemoteText;
 import com.intellij.remoterobot.utils.WaitForConditionTimeoutException;
+import com.redhat.devtools.intellij.commonUiTestLibrary.fixtures.dialogs.errors.IdeFatalErrorsDialog;
 import org.assertj.swing.core.MouseButton;
-import org.jboss.tools.intellij.kubernetes.fixtures.dialogs.IdeFatalErrorsDialogFixture;
 import org.jboss.tools.intellij.kubernetes.fixtures.mainIdeWindow.IdeStatusBarFixture;
-import org.junit.jupiter.api.BeforeAll;
 
 import java.time.Duration;
 import java.util.List;
@@ -137,7 +136,7 @@ public abstract class AbstractKubernetesTest {
         } catch (WaitForConditionTimeoutException e) {
             return true;
         }
-        IdeFatalErrorsDialogFixture ideErrorsDialog = robot.find(IdeFatalErrorsDialogFixture.class);
+        IdeFatalErrorsDialog ideErrorsDialog = robot.find(IdeFatalErrorsDialog.class);
         ideErrorsDialog.clearAll();
         return true;
     }

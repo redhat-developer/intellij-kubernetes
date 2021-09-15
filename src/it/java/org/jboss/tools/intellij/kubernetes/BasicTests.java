@@ -14,11 +14,15 @@ import com.intellij.remoterobot.RemoteRobot;
 import com.intellij.remoterobot.fixtures.ComponentFixture;
 import com.intellij.remoterobot.fixtures.dataExtractor.RemoteText;
 import com.intellij.remoterobot.utils.WaitForConditionTimeoutException;
-import org.jboss.tools.intellij.kubernetes.fixtures.dialogs.NewProjectDialogFixture;
-import org.jboss.tools.intellij.kubernetes.fixtures.dialogs.WelcomeFrameDialogFixture;
+import com.redhat.devtools.intellij.commonUiTestLibrary.UITestRunner;
+import com.redhat.devtools.intellij.commonUiTestLibrary.fixtures.dialogs.FlatWelcomeFrame;
+import com.redhat.devtools.intellij.commonUiTestLibrary.fixtures.dialogs.information.TipDialog;
+import com.redhat.devtools.intellij.commonUiTestLibrary.fixtures.dialogs.projectManipulation.NewProjectDialog;
+import com.redhat.devtools.intellij.commonUiTestLibrary.fixtures.mainIdeWindow.ideStatusBar.IdeStatusBar;
+import com.redhat.devtools.intellij.commonUiTestLibrary.fixtures.mainIdeWindow.toolWindowsPane.ToolWindowsPane;
+import org.jboss.tools.intellij.kubernetes.fixtures.dialogs.ProjectStructureDialog;
 import org.jboss.tools.intellij.kubernetes.fixtures.mainIdeWindow.KubernetesToolsFixture;
-import org.jboss.tools.intellij.kubernetes.fixtures.mainIdeWindow.ToolWindowsPaneFixture;
-import org.jboss.tools.intellij.kubernetes.utils.GlobalUtils;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
@@ -45,15 +49,18 @@ public class BasicTests {
     private static ComponentFixture kubernetesViewTree;
 
     @BeforeAll
-    public static void connect() throws InterruptedException {
-        GlobalUtils.waitUntilIntelliJStarts(8082);
-        robot = GlobalUtils.getRemoteRobotConnection(8082);
-        GlobalUtils.clearTheWorkspace(robot);
+    public static void connect() {
+        robot = UITestRunner.runIde(UITestRunner.IdeaVersion.V_2020_2, 8580);
         createEmptyProject();
         openKubernetesTab();
         KubernetesToolsFixture kubernetesToolsFixture = robot.find(KubernetesToolsFixture.class);
         kubernetesViewTree = kubernetesToolsFixture.getKubernetesViewTree();
         waitFor(Duration.ofSeconds(15), Duration.ofSeconds(1), "Kubernetes Tree View is not available.", BasicTests::isKubernetesViewTreeAvailable);
+    }
+
+    @AfterAll
+    public static void closeIde() {
+        UITestRunner.closeIde();
     }
 
     @Test
@@ -85,27 +92,29 @@ public class BasicTests {
 
 
     private static void createEmptyProject(){
-        final WelcomeFrameDialogFixture welcomeFrameDialogFixture = robot.find(WelcomeFrameDialogFixture.class);
-        welcomeFrameDialogFixture.createNewProjectLink().click();
-        final NewProjectDialogFixture newProjectDialogFixture = welcomeFrameDialogFixture.find(NewProjectDialogFixture.class, Duration.ofSeconds(20));
-        newProjectDialogFixture.projectTypeJBList().findText("Empty Project").click();
-        newProjectDialogFixture.button("Next").click();
-        newProjectDialogFixture.button("Finish").click();
-        GlobalUtils.waitUntilTheProjectImportIsComplete(robot);
-        GlobalUtils.cancelProjectStructureDialogIfItAppears(robot);
-        GlobalUtils.closeTheTipOfTheDayDialogIfItAppears(robot);
-        GlobalUtils.waitUntilAllTheBgTasksFinish(robot);
+        final FlatWelcomeFrame flatWelcomeFrame = robot.find(FlatWelcomeFrame.class);
+        flatWelcomeFrame.createNewProject();
+        final NewProjectDialog newProjectDialogFixture = flatWelcomeFrame.find(NewProjectDialog.class, Duration.ofSeconds(20));
+        newProjectDialogFixture.selectNewProjectType("Empty Project");
+        newProjectDialogFixture.next();
+        newProjectDialogFixture.finish();
+
+        final IdeStatusBar ideStatusBar = robot.find(IdeStatusBar.class);
+        ideStatusBar.waitUntilProjectImportIsComplete();
+        TipDialog.closeTipDialogIfItAppears(robot);
+        ProjectStructureDialog.cancelProjectStructureDialogIfItAppears(robot);
+        ideStatusBar.waitUntilAllBgTasksFinish();
     }
 
     private static void openKubernetesTab(){
-        final ToolWindowsPaneFixture toolWindowsPaneFixture = robot.find(ToolWindowsPaneFixture.class);
-        waitFor(Duration.ofSeconds(10), Duration.ofSeconds(1), "The 'Kubernetes' stripe button is not available.", () -> isStripeButtonAvailable(toolWindowsPaneFixture, "Kubernetes"));
-        toolWindowsPaneFixture.stripeButton("Kubernetes").click();
+        final ToolWindowsPane toolWindowsPane = robot.find(ToolWindowsPane.class);
+        waitFor(Duration.ofSeconds(10), Duration.ofSeconds(1), "The 'Kubernetes' stripe button is not available.", () -> isStripeButtonAvailable(toolWindowsPane, "Kubernetes"));
+        toolWindowsPane.stripeButton("Kubernetes").click();
     }
 
-    private static boolean isStripeButtonAvailable(ToolWindowsPaneFixture toolWindowsPaneFixture, String label) { // loading...
+    private static boolean isStripeButtonAvailable(ToolWindowsPane toolWindowsPane, String label) { // loading...
         try {
-            toolWindowsPaneFixture.stripeButton(label);
+            toolWindowsPane.stripeButton(label);
         } catch (WaitForConditionTimeoutException e) {
             return false;
         }
