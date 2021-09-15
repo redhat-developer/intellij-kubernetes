@@ -69,7 +69,7 @@ dependencies {
     )
     integrationTestImplementation(
             "com.redhat.devtools.intellij:intellij-common:1.1.0",
-            "com.redhat.devtools.intellij:intellij-common-ui-test-library:0.0.2"
+            "com.redhat.devtools.intellij:intellij-common-ui-test-library:0.0.2",
     )
 }
 
@@ -210,12 +210,6 @@ private def colorize(String color, String message) {
 repositories {
 //    mavenLocal() // uncomment for testing with local maven
     mavenCentral()
-    maven {
-        url 'https://repository.jboss.org/nexus/content/repositories/snapshots'
-    }
-    maven {
-        url 'https://repository.jboss.org/nexus/content/groups/public'
-    }
     maven {
         url 'https://repository.jboss.org'
     }
