@@ -12,7 +12,7 @@ package com.redhat.devtools.intellij.kubernetes.model
 
 import com.intellij.notification.NotificationDisplayType
 import com.intellij.notification.NotificationType
-import com.redhat.devtools.intellij.common.notification.NotificationGroupFactory
+import com.redhat.devtools.intellij.common.compat.NotificationGroupFactory
 
 class Notification {
 
