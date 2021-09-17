@@ -11,6 +11,12 @@
     <change-notes>
         <![CDATA[
         <p></p>
+        <h3>0.2.3</h3>
+        <ul>
+            <li><a href="https://github.com/redhat-developer/intellij-kubernetes/issues/258">InvalidPathException: Illegal char <:> at index 16: \Repository Diff: application.yml </a>
+            <li><a href="https://github.com/redhat-developer/intellij-kubernetes/issues/249">Replace API usage scheduled for removal in IC-2021.3</a></li>
+            <li><a href="https://github.com/redhat-developer/intellij-kubernetes/issues/262">use kubernetes-client 5.7.2</a></li>
+        </ul>
         <h3>0.2.2</h3>
         <ul>
             <li><a href="https://github.com/redhat-developer/intellij-kubernetes/issues/236">IDE Error: commitDocument() left PSI inconsistent</a></li>
