@@ -208,7 +208,7 @@ private def colorize(String color, String message) {
 }
 
 repositories {
-//    mavenLocal() // uncomment for testing with local maven
+    mavenLocal()
     mavenCentral()
     maven {
         url 'https://repository.jboss.org'
