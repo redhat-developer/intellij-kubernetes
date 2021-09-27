@@ -10,9 +10,9 @@
  ******************************************************************************/
 package com.redhat.devtools.intellij.kubernetes.editor
 
-import com.intellij.openapi.util.io.FileUtil
 import com.intellij.openapi.util.io.FileUtilRt
 import com.intellij.openapi.vfs.VirtualFile
+import com.intellij.openapi.vfs.VirtualFileSystem
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.doAnswer
 import com.nhaarman.mockitokotlin2.doReturn
@@ -133,8 +133,26 @@ class ResourceFileTest {
     @Test
     fun `#isResourceFile(virtualFile) should return false for file with wrong extension`() {
         // given
-        val nonResourceFile = ResourceFile.TEMP_FOLDER.resolve(
-            "princess-leia.txt")
+        val nonResourceFile = ResourceFile.TEMP_FOLDER.resolve("princess-leia.txt")
+        // when
+        val isNotResourceFile = ResourceFile.isResourceFile(nonResourceFile)
+        // then
+        assertThat(isNotResourceFile).isFalse()
+    }
+
+    /**
+     * @see [InvalidPathException: Illegal char <:> at index 16: \Repository Diff: application.yml](https://github.com/redhat-developer/intellij-kubernetes/issues/258)
+     */
+    @Test
+    fun `#isResourceFile(virtualFile) should return false if file has not file protocol`() {
+        // given
+        val fileSystem: VirtualFileSystem = mock {
+            on { getProtocol() } doReturn "Repository Diff:"
+        }
+        val nonResourceFile: VirtualFile = mock {
+            on { url } doReturn "\\Repository Diff: application.yml"
+            on { getFileSystem() } doReturn fileSystem
+        }
         // when
         val isNotResourceFile = ResourceFile.isResourceFile(nonResourceFile)
         // then
