@@ -10,15 +10,14 @@
  ******************************************************************************/
 package com.redhat.devtools.intellij.kubernetes.editor
 
-import com.intellij.diff.util.DiffUtil
 import com.intellij.openapi.application.ReadAction
 import com.intellij.openapi.application.WriteAction
 import com.intellij.openapi.util.io.FileUtil
 import com.intellij.openapi.util.io.FileUtilRt
+import com.intellij.openapi.vfs.LocalFileSystem
 import com.intellij.openapi.vfs.VfsUtil
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.util.ui.EdtInvocationManager
-import com.intellij.util.ui.UIUtil
 import com.redhat.devtools.intellij.common.editor.AllowNonProjectEditing
 import com.redhat.devtools.intellij.common.utils.UIHelper
 import io.fabric8.kubernetes.api.model.HasMetadata
@@ -27,8 +26,6 @@ import io.fabric8.kubernetes.client.utils.Serialization
 import io.fabric8.openshift.api.model.Project
 import org.apache.commons.io.FileUtils
 import org.jetbrains.yaml.YAMLFileType
-import java.io.File
-import java.io.IOException
 import java.nio.charset.StandardCharsets
 import java.nio.file.Files
 import java.nio.file.Path
@@ -74,7 +71,8 @@ open class ResourceFile protected constructor(
          * @return true if this class can handle the given file
          */
         fun isResourceFile(file: VirtualFile?): Boolean {
-            if (file == null) {
+            if (file == null
+                || !isLocalFile(file)) {
                 return false
             }
             return isResourceFile(VfsUtil.virtualToIoFile(file).toPath())
@@ -117,6 +115,9 @@ open class ResourceFile protected constructor(
             return "$name.$EXTENSION"
         }
 
+        private fun isLocalFile(file: VirtualFile): Boolean {
+            return LocalFileSystem.PROTOCOL == file.fileSystem.protocol
+        }
     }
 
     protected open val virtualFile: VirtualFile?
@@ -209,11 +210,11 @@ open class ResourceFile protected constructor(
     }
 
     /**
-     * Returns the filename without the the addendum that was added to make the given filename unique.
+     * Returns the filename without the addendum that was added to make the given filename unique.
      * Returns the filename as is if it has no addendum.
      * ex. jedi-sword(2).yml where (2) is the suffix that was added so that the filename is unique.
      *
-     * @param filename the filename that should be striped of a unique suffix
+     * @param filename the filename that should be stripped of a unique suffix
      * @return the filename without the unique suffix if it exists
      *
      * @see [addAddendum]
