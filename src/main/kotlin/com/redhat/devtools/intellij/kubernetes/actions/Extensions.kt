@@ -11,23 +11,23 @@
 package com.redhat.devtools.intellij.kubernetes.actions
 
 import com.intellij.openapi.actionSystem.AnAction
-import com.intellij.openapi.components.ServiceManager
+import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.progress.ProgressManager
 import com.intellij.openapi.progress.Progressive
 import com.intellij.openapi.progress.Task
 import com.intellij.openapi.project.Project
 import com.redhat.devtools.intellij.kubernetes.model.IResourceModel
-import org.jetbrains.annotations.NotNull
-import javax.swing.tree.DefaultMutableTreeNode
 import com.redhat.devtools.intellij.kubernetes.tree.TreeStructure.Descriptor
+import org.jetbrains.annotations.NotNull
 import java.awt.event.MouseAdapter
 import java.awt.event.MouseEvent
 import java.awt.event.MouseListener
 import javax.swing.JTree
+import javax.swing.tree.DefaultMutableTreeNode
 
 fun AnAction.getResourceModel(): IResourceModel? {
-    return ServiceManager.getService(IResourceModel::class.java)
+    return ApplicationManager.getApplication().getService(IResourceModel::class.java)
 }
 
 fun Any.getDescriptor(): Descriptor<*>? {
