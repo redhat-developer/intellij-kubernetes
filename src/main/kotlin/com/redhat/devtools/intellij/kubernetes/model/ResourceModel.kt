@@ -49,7 +49,6 @@ interface IResourceModel {
  * @see [issue 180](https://github.com/redhat-developer/intellij-kubernetes/issues/180)
  * @see [com.redhat.devtools.intellij.kubernetes.KubernetesToolWindowFactory.createTree]
  * @see [com.redhat.devtools.intellij.kubernetes.actions.getResourceModel]
- * @see [com.intellij.openapi.components.ServiceManager.getService]
  */
 open class ResourceModel : IResourceModel {
 
