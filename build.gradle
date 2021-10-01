@@ -135,6 +135,7 @@ publishPlugin {
 
 runIdeForUiTests {
     systemProperty "robot-server.port", System.getProperty("robot-server.port")
+    systemProperties['com.redhat.devtools.intellij.telemetry.mode'] = 'debug'
 }
 
 task generateSchemas {
