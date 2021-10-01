@@ -40,7 +40,6 @@ import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks
 import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.POD2
 import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.POD3
 import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.client
-import com.redhat.devtools.intellij.kubernetes.model.mocks.Mocks.resourceFile
 import com.redhat.devtools.intellij.kubernetes.model.Clients
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.PodBuilder
@@ -100,11 +99,6 @@ class ResourceEditorTest {
             doReturn(resourceFile)
                 .whenever(this).invoke(any())
         }
-    private val createResourceFileForResource: (resource: HasMetadata?) -> ResourceFile? =
-        mock<(file: HasMetadata?) -> ResourceFile?>().apply {
-            doReturn(resourceFile)
-                .whenever(this).invoke(any())
-        }
 
     private val project: Project = mock()
     private val clients: Clients<KubernetesClient> =
@@ -146,7 +140,6 @@ class ResourceEditorTest {
             createResource,
             createClusterResource,
             createResourceFileForVirtual,
-            createResourceFileForResource,
             pushNotification,
             pullNotification,
             pulledNotification,
@@ -203,42 +196,6 @@ class ResourceEditorTest {
         // then
         verify(errorNotification).show("resource error", "client error")
         verifyHideAllNotifications()
-    }
-
-    @Test
-    fun `#update should rename file if resource in editor has different name`() {
-        // given editor resource is AZRAEL
-        doReturn(AZRAEL)
-            .whenever(createResource).invoke(any(), any())
-        // editor resource is GARGAMEL
-        val editorFile: ResourceFile = resourceFile(GARGAMEL.metadata.name)
-        doReturn(editorFile)
-            .whenever(createResourceFileForVirtual).invoke(any())
-        val resourceFile: ResourceFile = resourceFile(AZRAEL.metadata.name)
-        doReturn(resourceFile)
-            .whenever(createResourceFileForResource).invoke(any())
-        // when
-        editor.update()
-        // then rename to AZRAEL
-        verify(editorFile).rename(AZRAEL)
-    }
-
-    @Test
-    fun `#update should NOT rename file if resource in editor and file have same name`() {
-        // given editor resource is GARGAMEL
-        doReturn(GARGAMEL)
-            .whenever(createResource).invoke(any(), any())
-        // editor resource is GARGAMEL
-        val editorFile: ResourceFile = resourceFile(GARGAMEL.metadata.name)
-        doReturn(editorFile)
-            .whenever(createResourceFileForVirtual).invoke(any())
-        val resourceFile: ResourceFile = resourceFile(GARGAMEL.metadata.name)
-        doReturn(resourceFile)
-            .whenever(createResourceFileForResource).invoke(any())
-        // when
-        editor.update()
-        // then dont rename because same name
-        verify(editorFile, never()).rename(any())
     }
 
     @Test
@@ -701,7 +658,6 @@ class ResourceEditorTest {
         resourceFactory: (editor: FileEditor, clients: Clients<out KubernetesClient>) -> HasMetadata?,
         createClusterResource: (HasMetadata, Clients<out KubernetesClient>) -> ClusterResource,
         resourceFileForVirtual: (file: VirtualFile?) -> ResourceFile?,
-        resourceFileForResource: (resource: HasMetadata) -> ResourceFile?,
         pushNotification: PushNotification,
         pullNotification: PullNotification,
         pulledNotification: PulledNotification,
@@ -718,7 +674,6 @@ class ResourceEditorTest {
         resourceFactory,
         createClusterResource,
         resourceFileForVirtual,
-        resourceFileForResource,
         pushNotification,
         pullNotification,
         pulledNotification,
@@ -728,7 +683,7 @@ class ResourceEditorTest {
         psiDocumentManagerProvider,
         ideNotification
     ) {
-        public override var editorResource: HasMetadata? = super.editorResource
+        override var editorResource: HasMetadata? = super.editorResource
 
         override fun executeWriteAction(runnable: () -> Unit) {
             // dont execute in application thread pool
