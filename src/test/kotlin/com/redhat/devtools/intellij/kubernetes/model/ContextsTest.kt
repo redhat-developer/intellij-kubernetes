@@ -329,5 +329,9 @@ class ContextsTest {
 		public override fun refresh() {
 			super.refresh()
 		}
+
+		override fun reportTelemetry(context: IActiveContext<out HasMetadata, out KubernetesClient>) {
+			// prevent telemetry reporting
+		}
 	}
 }

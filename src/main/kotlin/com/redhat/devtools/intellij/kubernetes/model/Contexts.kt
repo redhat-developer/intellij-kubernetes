@@ -10,12 +10,19 @@
  ******************************************************************************/
 package com.redhat.devtools.intellij.kubernetes.model
 
-import io.fabric8.kubernetes.api.model.HasMetadata
-import io.fabric8.kubernetes.api.model.NamedContext
-import io.fabric8.kubernetes.client.KubernetesClient
+import com.intellij.openapi.diagnostic.logger
+import com.redhat.devtools.intellij.common.utils.ExecHelper
 import com.redhat.devtools.intellij.kubernetes.model.context.Context
 import com.redhat.devtools.intellij.kubernetes.model.context.IActiveContext
 import com.redhat.devtools.intellij.kubernetes.model.context.IContext
+import com.redhat.devtools.intellij.kubernetes.telemetry.TelemetryService
+import com.redhat.devtools.intellij.kubernetes.telemetry.TelemetryService.NAME_PREFIX_CONTEXT
+import com.redhat.devtools.intellij.kubernetes.telemetry.TelemetryService.PROP_IS_OPENSHIFT
+import com.redhat.devtools.intellij.kubernetes.telemetry.TelemetryService.PROP_KUBERNETES_VERSION
+import com.redhat.devtools.intellij.kubernetes.telemetry.TelemetryService.PROP_OPENSHIFT_VERSION
+import io.fabric8.kubernetes.api.model.HasMetadata
+import io.fabric8.kubernetes.api.model.NamedContext
+import io.fabric8.kubernetes.client.KubernetesClient
 
 interface IContexts {
 	val current: IActiveContext<out HasMetadata, out KubernetesClient>?
@@ -112,7 +119,28 @@ open class Contexts(
 	}
 
 	private fun create(namedContext: NamedContext): IActiveContext<out HasMetadata, out KubernetesClient> {
-		return factory(modelObservable, namedContext)
+		val context = factory(modelObservable, namedContext)
+		reportTelemetry(context)
+		return context
+	}
+
+	open protected fun reportTelemetry(context: IActiveContext<out HasMetadata, out KubernetesClient>) {
+		ExecHelper.submit {
+			val telemetry = TelemetryService.instance.action(NAME_PREFIX_CONTEXT + "use")
+				.property(PROP_IS_OPENSHIFT, context.isOpenShift().toString())
+			try {
+				telemetry
+					.property(PROP_KUBERNETES_VERSION, context.version.kubernetesVersion)
+					.property(PROP_OPENSHIFT_VERSION, context.version.openshiftVersion)
+					.send()
+			} catch (e: RuntimeException) {
+				telemetry
+					.property(PROP_KUBERNETES_VERSION, "error retrieving")
+					.property(PROP_OPENSHIFT_VERSION, "error retrieving")
+					.send()
+				logger<Contexts>().warn("Could not report context/cluster versions", e)
+			}
+		}
 	}
 
 	private fun replaceContext(activeContext: IActiveContext<*, *>, all: MutableList<IContext>) {

@@ -112,8 +112,12 @@ test {
 intellij {
     version = ideaVersion //for a full list of Jetbrains IDEA releases please see https://www.jetbrains.com/intellij-repository/releases
     pluginName = 'Kubernetes by Red Hat'
-    plugins = ['yaml']
+    plugins = ['yaml', 'com.redhat.devtools.intellij.telemetry:0.0.2.18' ]
     updateSinceUntilBuild = false
+}
+
+runIde {
+    systemProperties['com.redhat.devtools.intellij.telemetry.mode'] = 'debug'
 }
 
 patchPluginXml {
@@ -131,6 +135,7 @@ publishPlugin {
 
 runIdeForUiTests {
     systemProperty "robot-server.port", System.getProperty("robot-server.port")
+    systemProperties['com.redhat.devtools.intellij.telemetry.mode'] = 'debug'
 }
 
 task generateSchemas {

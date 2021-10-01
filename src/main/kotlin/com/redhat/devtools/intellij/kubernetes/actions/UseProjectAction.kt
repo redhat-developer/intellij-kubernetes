@@ -13,8 +13,10 @@ package com.redhat.devtools.intellij.kubernetes.actions
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.progress.Progressive
-import io.fabric8.openshift.api.model.Project
+import com.redhat.devtools.intellij.kubernetes.telemetry.TelemetryService
+import com.redhat.devtools.intellij.kubernetes.telemetry.TelemetryService.NAME_PREFIX_NAMESPACE
 import com.redhat.devtools.intellij.kubernetes.tree.ResourceWatchController
+import io.fabric8.openshift.api.model.Project
 import javax.swing.tree.TreePath
 
 class UseProjectAction : UseResourceAction<Project>(Project::class.java) {
@@ -23,14 +25,18 @@ class UseProjectAction : UseResourceAction<Project>(Project::class.java) {
 		val project: Project = selectedNode?.getElement() ?: return
 		val name = project.metadata.name
 		val model = getResourceModel() ?: return
+		val telemetry = TelemetryService.instance
+			.action(NAME_PREFIX_NAMESPACE + "switch")
 		run("Using project $name...", true,
 			Progressive {
 				try {
 					model.setCurrentNamespace(name)
+					telemetry.success().send()
 				} catch (e: Exception) {
 					logger<ResourceWatchController>().warn(
 						"Could not use namespace $name.", e
 					)
+					telemetry.error(e).send()
 				}
 			})
 	}
