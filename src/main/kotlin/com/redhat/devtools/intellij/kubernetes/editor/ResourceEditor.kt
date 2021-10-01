@@ -69,9 +69,6 @@ open class ResourceEditor protected constructor(
     private val createFileForVirtual: (file: VirtualFile?) -> ResourceFile? =
         ResourceFile.Factory::create,
     // for mocking purposes
-    private val createFileForResource: (resource: HasMetadata) -> ResourceFile? =
-        ResourceFile.Factory::create,
-    // for mocking purposes
     private val pushNotification: PushNotification = PushNotification(editor, project),
     // for mocking purposes
     private val pullNotification: PullNotification = PullNotification(editor, project),
@@ -210,30 +207,18 @@ open class ResourceEditor protected constructor(
             resourceChangeMutex.withLock {
                 this.editorResource = resource
             }
-            update(resource, clusterResource, oldClusterResource)
+            update(resource, clusterResource)
         } catch (e: ResourceException) {
             showErrorNotification(e)
         }
     }
 
-    private fun update(resource: HasMetadata?, clusterResource: ClusterResource?, oldClusterResource: ClusterResource?) {
+    private fun update(resource: HasMetadata?, clusterResource: ClusterResource?) {
         if (resource == null
             || clusterResource == null) {
             return
         }
-        if (clusterResource != oldClusterResource) {
-            // new cluster resource was created, resource has thus changed
-            renameEditor(resource, editor)
-        }
         showNotifications(resource, clusterResource)
-    }
-
-    private fun renameEditor(resource: HasMetadata, editor: FileEditor) {
-        val file = createFileForVirtual.invoke(editor.file) ?: return
-        val newFile = createFileForResource.invoke(resource)
-        if (!file.hasEqualBasePath(newFile)) {
-            executeWriteAction { file.rename(resource) }
-        }
     }
 
     private fun showNotifications(

@@ -95,7 +95,7 @@ open class ResourceFile protected constructor(
          * @param resource the resource that the file for should be returned for
          * @return the path for the given resource
          */
-        private fun getPathFor(resource: HasMetadata): Path {
+        fun getPathFor(resource: HasMetadata): Path {
             val name = getFilenameFor(resource)
             return Paths.get(TEMP_FOLDER.toString(), name)
         }

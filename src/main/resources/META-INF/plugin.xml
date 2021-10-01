@@ -50,9 +50,9 @@
     </change-notes>
     <depends>com.intellij.modules.lang</depends>
     <depends>org.jetbrains.plugins.yaml</depends>
-    <depends>com.redhat.devtools.intellij.telemetry</depends>
     <depends optional="true" config-file="plugin-json.xml">com.intellij.modules.json</depends>
     <depends optional="true">org.jetbrains.plugins.terminal</depends>
+    <depends>com.redhat.devtools.intellij.telemetry</depends>
 
     <extensions defaultExtensionNs="com.intellij">
         <toolWindow id="Kubernetes"
@@ -65,6 +65,7 @@
         <postStartupActivity implementation="com.redhat.devtools.intellij.kubernetes.KubernetesPluginInitializer" />
         <!-- >= IC-2020.3 -->
         <notificationGroup displayType="BALLOON" id="Kubernetes Notification Group" isLogByDefault="true"/>
+        <editorTabTitleProvider implementation="com.redhat.devtools.intellij.kubernetes.editor.KubernetesEditorTabTitleProvider"/>
     </extensions>
 
     <extensionPoints>
