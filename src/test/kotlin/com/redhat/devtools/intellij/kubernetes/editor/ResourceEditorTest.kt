@@ -13,6 +13,7 @@ package com.redhat.devtools.intellij.kubernetes.editor
 import com.intellij.openapi.editor.Document
 import com.intellij.openapi.fileEditor.FileEditor
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.util.io.FileUtilRt
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.PsiDocumentManager
 import com.nhaarman.mockitokotlin2.any
@@ -663,6 +664,34 @@ class ResourceEditorTest {
         clearInvocations(deletedNotification)
         clearInvocations(pushNotification)
         clearInvocations(pulledNotification)
+    }
+
+    @Test
+    fun `#getTitle should filename without extension if file is temporary file`() {
+        // given
+        doReturn(true)
+            .whenever(resourceFile).isTemporaryFile()
+        doReturn("anakin.skywalker")
+            .whenever(virtualFile).name
+        val filenameWithoutExtension = FileUtilRt.getNameWithoutExtension(virtualFile.name)
+        // when
+        val title = editor.getTitle()
+        // then
+        assertThat(title).isEqualTo(filenameWithoutExtension)
+    }
+
+    @Test
+    fun `#getTitle should filename with extension if file is NOT temporary file`() {
+        // given
+        doReturn(false)
+            .whenever(resourceFile).isTemporaryFile()
+        doReturn("luke.skywalker")
+            .whenever(virtualFile).name
+        val filename = virtualFile.name
+        // when
+        val title = editor.getTitle()
+        // then
+        assertThat(title).isEqualTo(filename)
     }
 
     private class TestableResourceEditor(

@@ -30,6 +30,10 @@ fun getProjectAndEditor(file: VirtualFile): ProjectAndEditor? {
         .firstOrNull()
 }
 
+fun getFile(document: Document): VirtualFile? {
+    return FileDocumentManager.getInstance().getFile(document)
+}
+
 fun getResourceFile(document: Document): VirtualFile? {
     val file = FileDocumentManager.getInstance().getFile(document)
     if (!ResourceFile.isResourceFile(file)) {
@@ -39,12 +43,7 @@ fun getResourceFile(document: Document): VirtualFile? {
 }
 
 fun getFileEditor(project: Project): FileEditor? {
-    val editor = FileEditorManager.getInstance(project).selectedEditor ?: return null
-    return if (!ResourceFile.isResourceFile(editor.file)) {
-        return null
-    } else {
-        editor
-    }
+    return FileEditorManager.getInstance(project).selectedEditor ?: return null
 }
 
 fun getDocument(editor: FileEditor): Document? {
