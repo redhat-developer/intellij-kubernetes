@@ -22,6 +22,7 @@ import com.intellij.openapi.fileEditor.FileEditor
 import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Key
+import com.intellij.openapi.util.io.FileUtilRt
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.PsiDocumentManager
 import com.intellij.ui.AppUIUtil
@@ -32,6 +33,7 @@ import com.redhat.devtools.intellij.kubernetes.editor.notification.PullNotificat
 import com.redhat.devtools.intellij.kubernetes.editor.notification.PulledNotification
 import com.redhat.devtools.intellij.kubernetes.editor.notification.PushNotification
 import com.redhat.devtools.intellij.kubernetes.editor.util.getDocument
+import com.redhat.devtools.intellij.kubernetes.editor.util.getFile
 import com.redhat.devtools.intellij.kubernetes.model.ClientConfig
 import com.redhat.devtools.intellij.kubernetes.model.Clients
 import com.redhat.devtools.intellij.kubernetes.model.ClusterResource
@@ -115,12 +117,19 @@ open class ResourceEditor protected constructor(
          */
         fun get(editor: FileEditor?, project: Project?): ResourceEditor? {
             if (editor == null
-                || !isResourceEditor(editor)
                 || project == null) {
                 return null
             }
-            return editor.getUserData(KEY_RESOURCE_EDITOR)
-                ?: create(editor, project)
+
+            val resourceEditor = editor.getUserData(KEY_RESOURCE_EDITOR)
+            if (resourceEditor != null) {
+                return resourceEditor
+            }
+            val document = getDocument(editor) ?: return null
+            if (!ResourceFile.isResourceFile(getFile(document))) {
+                return null
+            }
+            return create(editor, project)
         }
 
         private fun create(editor: FileEditor, project: Project): ResourceEditor? {
@@ -164,13 +173,19 @@ open class ResourceEditor protected constructor(
                 FileEditorManager.getInstance(project).addTopComponent(editor, editorToolbar)
             }
         }
-
-        private fun isResourceEditor(editor: FileEditor?): Boolean {
-            return ResourceFile.isResourceFile(editor?.file)
-        }
     }
 
     open var editorResource: HasMetadata? = localCopy
+        get() {
+            resourceChangeMutex.withLock {
+                return field
+            }
+        }
+        set(resource) {
+            resourceChangeMutex.withLock {
+                field = resource
+            }
+        }
     /** mutex to exclude concurrent execution of push & watch notification **/
     private val resourceChangeMutex = ReentrantLock()
     private var oldClusterResource: ClusterResource? = null
@@ -204,9 +219,7 @@ open class ResourceEditor protected constructor(
                 return
             }
             val resource = createResource.invoke(editor, clients) ?: return
-            resourceChangeMutex.withLock {
-                this.editorResource = resource
-            }
+            this.editorResource = resource
             update(resource, clusterResource)
         } catch (e: ResourceException) {
             showErrorNotification(e)
@@ -328,9 +341,7 @@ open class ResourceEditor protected constructor(
 
     fun isOutdated(): Boolean {
         val resource = createResource.invoke(editor, clients) ?: return false
-        resourceChangeMutex.withLock {
-            this.editorResource = resource
-        }
+        this.editorResource = resource
         return clusterResource?.isOutdated(resource) ?: false
     }
 
@@ -340,9 +351,7 @@ open class ResourceEditor protected constructor(
     fun push() {
         try {
             val resource = createResource.invoke(editor, clients) ?: return
-            resourceChangeMutex.withLock {
-                this.editorResource = resource
-            }
+            this.editorResource = resource
             push(resource, clusterResource)
         } catch (e: Exception) {
             showErrorNotification(e)
@@ -433,6 +442,14 @@ open class ResourceEditor protected constructor(
 
     fun close() {
         clusterResource?.close()
+        deleteTemporaryFile()
+    }
+
+    private fun deleteTemporaryFile() {
+        val file = createFileForVirtual(editor.file)
+        if (true == file?.isTemporaryFile()) {
+            file.delete()
+        }
     }
 
     /**
@@ -446,6 +463,15 @@ open class ResourceEditor protected constructor(
             return
         }
         createFileForVirtual(file)?.enableNonProjectFileEditing()
+    }
+
+    fun getTitle(): String? {
+        val file = editor.file ?: return null
+        return if (true == createFileForVirtual(file)?.isTemporaryFile()) {
+            FileUtilRt.getNameWithoutExtension(file.name)
+        } else {
+            file.name
+        }
     }
 
     protected open fun executeWriteAction(runnable: () -> Unit) {

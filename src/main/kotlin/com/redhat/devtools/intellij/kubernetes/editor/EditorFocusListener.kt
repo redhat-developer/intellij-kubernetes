@@ -27,12 +27,7 @@ class EditorFocusListener(private val project: Project) : FileEditorManagerListe
     }
 
     override fun fileClosed(source: FileEditorManager, file: VirtualFile) {
-        ResourceFile.create(file)?.delete()
-    }
-
-    override fun beforeFileClosed(source: FileEditorManager, file: VirtualFile) {
-        ResourceEditor.get(source.getSelectedEditor(file), source.project)
-            ?.close()
+        ResourceEditor.get(source.getSelectedEditor(file), source.project)?.close()
     }
 
     private fun handleSelectionGained(editor: FileEditor?, project: Project) {
