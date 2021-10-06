@@ -13,7 +13,6 @@ package com.redhat.devtools.intellij.kubernetes.editor
 import com.intellij.openapi.editor.Document
 import com.intellij.openapi.fileEditor.FileEditor
 import com.intellij.openapi.project.Project
-import com.intellij.openapi.util.io.FileUtilRt
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.PsiDocumentManager
 import com.nhaarman.mockitokotlin2.any
@@ -31,8 +30,9 @@ import com.nhaarman.mockitokotlin2.whenever
 import com.redhat.devtools.intellij.kubernetes.editor.notification.DeletedNotification
 import com.redhat.devtools.intellij.kubernetes.editor.notification.ErrorNotification
 import com.redhat.devtools.intellij.kubernetes.editor.notification.PullNotification
-import com.redhat.devtools.intellij.kubernetes.editor.notification.PushNotification
 import com.redhat.devtools.intellij.kubernetes.editor.notification.PulledNotification
+import com.redhat.devtools.intellij.kubernetes.editor.notification.PushNotification
+import com.redhat.devtools.intellij.kubernetes.model.Clients
 import com.redhat.devtools.intellij.kubernetes.model.ClusterResource
 import com.redhat.devtools.intellij.kubernetes.model.ModelChangeObservable
 import com.redhat.devtools.intellij.kubernetes.model.Notification
@@ -41,7 +41,6 @@ import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks
 import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.POD2
 import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.POD3
 import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.client
-import com.redhat.devtools.intellij.kubernetes.model.Clients
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.PodBuilder
 import io.fabric8.kubernetes.client.KubernetesClient
@@ -652,21 +651,19 @@ class ResourceEditorTest {
     }
 
     @Test
-    fun `#getTitle should filename without extension if file is temporary file`() {
+    fun `#getTitle should return resourcename@namespace if file is temporary file`() {
         // given
         doReturn(true)
             .whenever(resourceFile).isTemporaryFile()
-        doReturn("anakin.skywalker")
-            .whenever(virtualFile).name
-        val filenameWithoutExtension = FileUtilRt.getNameWithoutExtension(virtualFile.name)
+        val resource = localCopy
         // when
         val title = editor.getTitle()
         // then
-        assertThat(title).isEqualTo(filenameWithoutExtension)
+        assertThat(title).isEqualTo("${resource.metadata.name}@${resource.metadata.namespace}")
     }
 
     @Test
-    fun `#getTitle should filename with extension if file is NOT temporary file`() {
+    fun `#getTitle should return filename if file is NOT temporary file`() {
         // given
         doReturn(false)
             .whenever(resourceFile).isTemporaryFile()

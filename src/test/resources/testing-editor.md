@@ -3,23 +3,35 @@
 
 -> editor has corresponding schema selected (bottom right combo "Schema:")
 
-**Editor title is <resource-name>@<namespace-name>.yml**
+**Editor title is <resource-name>@<namespace-name>**
 1. "Edit..." namespaced resource (ex. Pod)
 
--> editor title is matching pattern <resource-name>@<namespace-name>.yml
+-> editor title is matching pattern <resource-name>@<namespace-name>
 
-**Editor renames file to <resource-name>@<namespace-name>(1).yml if name already used**
-1. "Edit..." resource
-1. "Edit..." other resource
-1. editor 1: Ctrl + A, Ctrl + C
-1. editor 2: Ctrl + v
-
--> editor has title matching pattern <resource-name>@<namespace-name>(1).yml
-
-**Editor title is <resource-name>.yml**
+**Editor title is <resource-name>**
 1. "Edit..." non namespaced resource (ex. Namespace)
 
--> editor title is matching pattern <resource-name>.yml
+-> editor title is matching pattern <resource-name>
+
+**Editor title is <filename>**
+1. File > Open & pick local yaml/json file 
+
+-> editor title displays the filename
+
+**Editor title is not changed, normal behaviour**
+1. File > Open & pick local xml-file OR yml file with non-kubernetes content (ex. helloworld.yml)
+```
+---
+- name: This is a hello-world example
+  hosts: ansibleclient01.local
+  tasks:
+   - name: Create a file called '/tmp/testfile.txt' with the content 'hello world'.
+     copy:
+     content: hello worldn
+     dest: /tmp/testfile.txt
+```
+
+-> editor title displays the filename (= default), there's no action toolbar (for pushing/pulling from/to cluster)
 
 **Irrelevant change, no notification**
 1. "Edit..." resource

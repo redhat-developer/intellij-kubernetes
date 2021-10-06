@@ -22,7 +22,6 @@ import com.intellij.openapi.fileEditor.FileEditor
 import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Key
-import com.intellij.openapi.util.io.FileUtilRt
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.PsiDocumentManager
 import com.intellij.ui.AppUIUtil
@@ -47,6 +46,7 @@ import com.redhat.devtools.intellij.kubernetes.telemetry.TelemetryService
 import com.redhat.devtools.intellij.kubernetes.telemetry.TelemetryService.NAME_PREFIX_EDITOR
 import com.redhat.devtools.intellij.kubernetes.telemetry.TelemetryService.reportResource
 import io.fabric8.kubernetes.api.model.HasMetadata
+import io.fabric8.kubernetes.api.model.Namespace
 import io.fabric8.kubernetes.client.KubernetesClient
 import io.fabric8.kubernetes.client.utils.Serialization
 import java.util.concurrent.atomic.AtomicBoolean
@@ -68,7 +68,7 @@ open class ResourceEditor protected constructor(
     private val createClusterResource: (resource: HasMetadata, clients: Clients<out KubernetesClient>) -> ClusterResource =
         { resource, clients -> ClusterResource(resource, clients) },
     // for mocking purposes
-    private val createFileForVirtual: (file: VirtualFile?) -> ResourceFile? =
+    private val createResourceFileForVirtual: (file: VirtualFile?) -> ResourceFile? =
         ResourceFile.Factory::create,
     // for mocking purposes
     private val pushNotification: PushNotification = PushNotification(editor, project),
@@ -446,7 +446,7 @@ open class ResourceEditor protected constructor(
     }
 
     private fun deleteTemporaryFile() {
-        val file = createFileForVirtual(editor.file)
+        val file = createResourceFileForVirtual(editor.file)
         if (true == file?.isTemporaryFile()) {
             file.delete()
         }
@@ -462,15 +462,34 @@ open class ResourceEditor protected constructor(
         if (file == null) {
             return
         }
-        createFileForVirtual(file)?.enableNonProjectFileEditing()
+        createResourceFileForVirtual(file)?.enableNonProjectFileEditing()
     }
 
     fun getTitle(): String? {
         val file = editor.file ?: return null
-        return if (true == createFileForVirtual(file)?.isTemporaryFile()) {
-            FileUtilRt.getNameWithoutExtension(file.name)
+        return if (true == createResourceFileForVirtual(file)?.isTemporaryFile()) {
+            val resource = editorResource ?: return ""
+            getTitleFor(resource)
         } else {
-            file.name
+            getTitleFor(file)
+        }
+    }
+
+    private fun getTitleFor(file: VirtualFile): String? {
+        return file.name
+    }
+
+    private fun getTitleFor(resource: HasMetadata): String {
+        return when (resource) {
+            is Namespace,
+            is io.fabric8.openshift.api.model.Project -> resource.metadata.name
+            else -> {
+                if (resource.metadata.namespace != null) {
+                    "${resource.metadata.name}@${resource.metadata.namespace}"
+                } else {
+                    resource.metadata.name
+                }
+            }
         }
     }
 
