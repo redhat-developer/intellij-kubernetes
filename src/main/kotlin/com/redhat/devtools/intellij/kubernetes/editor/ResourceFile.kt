@@ -14,25 +14,21 @@ import com.intellij.json.JsonFileType
 import com.intellij.openapi.application.ReadAction
 import com.intellij.openapi.application.WriteAction
 import com.intellij.openapi.diagnostic.logger
+import com.intellij.openapi.fileTypes.FileType
 import com.intellij.openapi.fileTypes.FileTypeRegistry
 import com.intellij.openapi.util.io.FileUtil
+import com.intellij.openapi.util.io.FileUtilRt
 import com.intellij.openapi.vfs.VfsUtil
 import com.intellij.openapi.vfs.VirtualFile
-import com.intellij.util.PathUtil
-import com.intellij.util.io.exists
 import com.intellij.util.ui.EdtInvocationManager
 import com.redhat.devtools.intellij.common.editor.AllowNonProjectEditing
 import com.redhat.devtools.intellij.common.utils.UIHelper
 import com.redhat.devtools.intellij.kubernetes.model.Notification
-import com.redhat.devtools.intellij.kubernetes.model.util.addAddendum
 import com.redhat.devtools.intellij.kubernetes.model.util.createResource
-import com.redhat.devtools.intellij.kubernetes.model.util.removeAddendum
 import com.redhat.devtools.intellij.kubernetes.model.util.trimWithEllipsis
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.KubernetesResource
-import io.fabric8.kubernetes.api.model.Namespace
 import io.fabric8.kubernetes.client.utils.Serialization
-import io.fabric8.openshift.api.model.Project
 import org.apache.commons.io.FileUtils
 import org.apache.commons.io.IOUtils
 import org.jetbrains.yaml.YAMLFileType
@@ -52,11 +48,11 @@ open class ResourceFile protected constructor(
         const val EXTENSION = YAMLFileType.DEFAULT_EXTENSION
 
         @JvmStatic
-        val TEMP_FOLDER: Path = Paths.get(FileUtil.resolveShortWindowsName(FileUtil.getTempDirectory()), "intellij-kubernetes")
+        val TEMP_FOLDER: Path = Paths.get(FileUtil.resolveShortWindowsName(FileUtil.getTempDirectory()))
 
         @JvmStatic
         fun create(resource: HasMetadata): ResourceFile? {
-            val virtualFile = createVirtualFile(getPathFor(resource)) ?: return null
+            val virtualFile = createTemporaryFile(resource) ?: return null
             return ResourceFile(virtualFile)
         }
 
@@ -69,51 +65,15 @@ open class ResourceFile protected constructor(
             return ResourceFile(virtualFile)
         }
 
-        @JvmStatic
-        fun create(path: Path): ResourceFile? {
-            return create(createVirtualFile(path))
-        }
-
-        private fun createVirtualFile(path: Path): VirtualFile? {
-            var filePath = path
+        private fun createTemporaryFile(resource: HasMetadata): VirtualFile? {
             return try {
-                if (filePath.exists()) {
-                    filePath = addAddendum(path)
-                }
-                Files.createDirectories(filePath.parent)
-                Files.createFile(filePath)
-                VfsUtil.findFile(filePath, true)
+                val file = FileUtilRt.createTempFile(resource.metadata.name, ".$EXTENSION")
+                VfsUtil.findFileByIoFile(file, true)
             } catch(e: IOException) {
-                logger<ResourceFile>().warn("Could not create file $path")
-                Notification().error("Could not open editor", "Could not create file $path: ${trimWithEllipsis(e.message, 50)}")
+                logger<ResourceFile>().warn("Could not create file: ${e.message}", e)
+                Notification().error("Could create file", "Could not create file for resource ${resource.metadata.name}: ${trimWithEllipsis(e.message, 50)}")
                 null
             }
-        }
-
-        /**
-         * Returns a path for the given resource. The path used is a folder intellij-kubernetes in the system temp folder.
-         *
-         * @param resource the resource that the file for should be returned for
-         * @return the path for the given resource
-         */
-        private fun getPathFor(resource: HasMetadata): Path {
-            val name = getFilenameFor(resource)
-            return Paths.get(TEMP_FOLDER.toString(), name)
-        }
-
-        private fun getFilenameFor(resource: HasMetadata): String {
-            val name = when (resource) {
-                is Namespace,
-                is Project -> resource.metadata.name
-                else -> {
-                    if (resource.metadata.namespace != null) {
-                        "${resource.metadata.name}@${resource.metadata.namespace}"
-                    } else {
-                        resource.metadata.name
-                    }
-                }
-            }
-            return "$name.$EXTENSION"
         }
 
         /**
@@ -144,8 +104,9 @@ open class ResourceFile protected constructor(
                     || JsonFileType.INSTANCE == type
         }
 
-        fun getFileType(file: VirtualFile) =
-            FileTypeRegistry.getInstance().getFileTypeByExtension(file.extension!!)
+        fun getFileType(file: VirtualFile): FileType {
+            return FileTypeRegistry.getInstance().getFileTypeByFile(file)
+        }
 
         private fun isKubernetesResource(file: VirtualFile): Boolean {
             val jsonYaml = IOUtils.toString(file.inputStream, Charset.defaultCharset())
@@ -192,17 +153,6 @@ open class ResourceFile protected constructor(
         executeWriteAction {
             virtualFile.delete(this)
         }
-    }
-
-    fun hasEqualBasePath(file: ResourceFile?): Boolean {
-        if (file == null) {
-            return false
-        }
-        return getBasePath() == file.getBasePath()
-    }
-
-    fun getBasePath(): String {
-        return removeAddendum(PathUtil.getFileName(virtualFile.path))
     }
 
     fun isTemporaryFile(): Boolean {

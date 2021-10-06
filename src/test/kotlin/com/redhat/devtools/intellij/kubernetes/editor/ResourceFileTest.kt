@@ -12,8 +12,8 @@ package com.redhat.devtools.intellij.kubernetes.editor
 
 import com.intellij.openapi.fileTypes.FileType
 import com.intellij.openapi.fileTypes.PlainTextFileType
-import com.intellij.openapi.util.io.FileUtilRt
 import com.intellij.openapi.vfs.VirtualFile
+import com.intellij.util.SystemProperties
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.eq
@@ -27,6 +27,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.jetbrains.yaml.YAMLFileType
 import org.junit.Test
 import java.io.ByteArrayInputStream
+import java.io.File
 import java.io.InputStream
 import java.nio.charset.Charset
 import java.nio.file.Path
@@ -84,7 +85,7 @@ spec:
     }
 
     @Test
-    fun `#create(virtualFile) should return null for file that has no kubernetes yal`() {
+    fun `#create(virtualFile) should return null for file that has no kubernetes yaml`() {
         // given
         val filePath = ResourceFile.TEMP_FOLDER.resolve("darth-vader.doc")
         val virtualFile: VirtualFile = createVirtualFile(filePath,
@@ -97,7 +98,7 @@ spec:
     }
 
     @Test
-    fun `#isResourceFile(virtualFile) should return true for yaml file on local filesystem with kube resource`() {
+    fun `#isResourceFile(virtualFile) should return true for yaml file on local filesystem with kube yaml`() {
         // given
         val factory = createResourceFileFactoryMock(YAMLFileType.YML)
         // when
@@ -157,38 +158,34 @@ spec:
         assertThat(isResourceFile).isFalse()
     }
 
+    @Test
+    fun `#isTemporaryFile() should return true for file in tmp folder`() {
+        // given
+        // when
+        val isTemporary = resourceFile.isTemporaryFile()
+        // then
+        assertThat(isTemporary).isTrue()
+    }
+
+    @Test
+    fun `#isTemporaryFile() should return false for file that's NOT in tmp folder`() {
+        // given
+        val virtualFileMock: VirtualFile = createVirtualFile(
+            File(SystemProperties.getUserHome()).toPath().resolve("test.txt"),
+            true,
+            ByteArrayInputStream(job.toByteArray(Charset.defaultCharset())))
+        val resourceFile = spy(TestableResourceFile(virtualFileMock))
+        // when
+        val isTemporary = resourceFile.isTemporaryFile()
+        // then
+        assertThat(isTemporary).isFalse()
+    }
+
     private fun createResourceFileFactoryMock(fileType: FileType): ResourceFile.Factory {
         val factory = spy(ResourceFile)
         doReturn(fileType)
             .whenever(factory).getFileType(any())
         return factory
-    }
-
-    @Test
-    fun `#hasEqualBasePath(ResourceFile) should return true if other file has same path`() {
-        // given
-        val equalBasePath = TestableResourceFile(virtualFileMock)
-        // when
-        val samePath = resourceFile.hasEqualBasePath(equalBasePath)
-        // then
-        assertThat(samePath).isTrue()
-    }
-
-    @Test
-    fun `#hasEqualBasePath(ResourceFile) should return true if other file has same path with addendum`() {
-        // given
-        val name = FileUtilRt.getNameWithoutExtension(path.toString())
-        val suffix = FileUtilRt.getExtension(path.toString())
-        val path = path.parent.resolve("$name(3).$suffix")
-        val virtualFile = createVirtualFile(
-            path,
-            true,
-            ByteArrayInputStream(job.toByteArray(Charset.defaultCharset())))
-        val withAddendum = TestableResourceFile(virtualFile)
-        // when
-        val isEqualBasePath = resourceFile.hasEqualBasePath(withAddendum)
-        // then
-        assertThat(isEqualBasePath).isTrue()
     }
 
     @Test
