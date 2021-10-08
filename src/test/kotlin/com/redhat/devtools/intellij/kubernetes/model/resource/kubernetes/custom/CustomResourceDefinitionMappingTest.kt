@@ -138,6 +138,6 @@ class CustomResourceDefinitionMappingTest {
         // when
         CustomResourceDefinitionMapping.getDefinitions(client)
         // then
-        verify(client.apiextensions().v1beta1().customResourceDefinitions().list()).items
+        verify(client.apiextensions().v1().customResourceDefinitions().list()).items
     }
 }

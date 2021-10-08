@@ -11,8 +11,8 @@
 package com.redhat.devtools.intellij.kubernetes.model.util
 
 import io.fabric8.kubernetes.api.model.HasMetadata
-import io.fabric8.kubernetes.api.model.apiextensions.v1beta1.CustomResourceDefinition
-import io.fabric8.kubernetes.api.model.apiextensions.v1beta1.CustomResourceDefinitionSpec
+import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinition
+import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinitionSpec
 import io.fabric8.kubernetes.client.dsl.base.CustomResourceDefinitionContext
 import io.fabric8.kubernetes.client.utils.KubernetesVersionPriority
 import io.fabric8.kubernetes.client.utils.Serialization
@@ -204,9 +204,9 @@ fun isMatchingSpec(kind: String, apiGroup: String?, apiVersion: String, definiti
  *
  * @return the version for the given [CustomResourceDefinitionSpec]
  */
-fun getHighestPriorityVersion(spec: CustomResourceDefinitionSpec): String {
+fun getHighestPriorityVersion(spec: CustomResourceDefinitionSpec): String? {
 	val versions = spec.versions.map { it.name }
-	return KubernetesVersionPriority.highestPriority(versions) ?: spec.version
+	return KubernetesVersionPriority.highestPriority(versions)
 }
 
 /**

@@ -28,7 +28,7 @@ import io.fabric8.kubernetes.api.model.Namespace
 import io.fabric8.kubernetes.api.model.Node
 import io.fabric8.kubernetes.api.model.Pod
 import io.fabric8.kubernetes.api.model.Secret
-import io.fabric8.kubernetes.api.model.apiextensions.v1beta1.CustomResourceDefinition
+import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinition
 import io.fabric8.kubernetes.client.NamespacedKubernetesClient
 import io.fabric8.kubernetes.client.Watcher
 import org.assertj.core.api.Assertions.assertThat

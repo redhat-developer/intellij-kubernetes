@@ -10,7 +10,7 @@
  ******************************************************************************/
 package com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.custom
 
-import io.fabric8.kubernetes.api.model.apiextensions.v1beta1.CustomResourceDefinition
+import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinition
 import io.fabric8.kubernetes.client.KubernetesClient
 import io.fabric8.kubernetes.client.dsl.base.CustomResourceDefinitionContext
 import io.fabric8.kubernetes.client.dsl.internal.RawCustomResourceOperationsImpl

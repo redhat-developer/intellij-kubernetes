@@ -14,7 +14,7 @@ import com.redhat.devtools.intellij.kubernetes.model.resource.NonNamespacedOpera
 import com.redhat.devtools.intellij.kubernetes.model.resource.NonNamespacedResourceOperator
 import com.redhat.devtools.intellij.kubernetes.model.resource.ResourceKind
 import com.redhat.devtools.intellij.kubernetes.model.Clients
-import io.fabric8.kubernetes.api.model.apiextensions.v1beta1.CustomResourceDefinition
+import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinition
 import io.fabric8.kubernetes.client.KubernetesClient
 
 class CustomResourceDefinitionsOperator(clients: Clients<out KubernetesClient>)
@@ -27,6 +27,6 @@ class CustomResourceDefinitionsOperator(clients: Clients<out KubernetesClient>)
     override val kind = KIND
 
     override fun getOperation(): NonNamespacedOperation<CustomResourceDefinition>? {
-        return client.apiextensions().v1beta1().customResourceDefinitions()
+        return client.apiextensions().v1().customResourceDefinitions()
     }
 }

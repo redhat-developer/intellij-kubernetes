@@ -13,7 +13,7 @@ package com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.custom
 import com.redhat.devtools.intellij.kubernetes.model.resource.IResourceOperator
 import com.redhat.devtools.intellij.kubernetes.model.util.createResource
 import io.fabric8.kubernetes.api.model.HasMetadata
-import io.fabric8.kubernetes.api.model.apiextensions.v1beta1.CustomResourceDefinition
+import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinition
 import io.fabric8.kubernetes.client.KubernetesClient
 
 object CustomResourceOperatorFactory {
