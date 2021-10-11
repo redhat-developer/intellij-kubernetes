@@ -14,6 +14,7 @@ import io.fabric8.kubernetes.client.AppsAPIGroupClient
 import io.fabric8.kubernetes.client.BatchAPIGroupClient
 import io.fabric8.kubernetes.client.Client
 import io.fabric8.kubernetes.client.ExtensionsAPIGroupClient
+import io.fabric8.kubernetes.client.NetworkAPIGroupClient
 import io.fabric8.kubernetes.client.StorageAPIGroupClient
 import io.fabric8.openshift.client.OpenShiftClient
 import java.util.concurrent.ConcurrentHashMap
@@ -42,8 +43,8 @@ class Clients<C: Client>(private val client: C) {
         return get(StorageAPIGroupClient::class.java)
     }
 
-    fun getExtensions(): ExtensionsAPIGroupClient {
-        return get(ExtensionsAPIGroupClient::class.java)
+    fun getNetworking(): NetworkAPIGroupClient {
+        return get(NetworkAPIGroupClient::class.java)
     }
 
     fun <T: Client> get(type: Class<T>): T {
