@@ -10,6 +10,7 @@
  ******************************************************************************/
 package com.redhat.devtools.intellij.kubernetes.model.util
 
+import com.intellij.openapi.diagnostic.logger
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinition
 import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinitionSpec
@@ -206,7 +207,12 @@ fun isMatchingSpec(kind: String, apiGroup: String?, apiVersion: String, definiti
  */
 fun getHighestPriorityVersion(spec: CustomResourceDefinitionSpec): String? {
 	val versions = spec.versions.map { it.name }
-	return KubernetesVersionPriority.highestPriority(versions)
+	val version = KubernetesVersionPriority.highestPriority(versions)
+	if (version == null) {
+		logger<CustomResourceDefinitionSpec>().warn(
+			"Could not find version with highest priority in ${spec.group}/${spec.names.kind}.")
+	}
+	return version
 }
 
 /**
