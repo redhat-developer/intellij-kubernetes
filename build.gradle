@@ -139,7 +139,7 @@ runIdeForUiTests {
 }
 
 task generateSchemas {
-    final LATEST_VERSION_SCHEMA = "v1.20.5"
+    final LATEST_VERSION_SCHEMA = "v1.22.0"
     final SCHEMA_BASEURL = "https://raw.githubusercontent.com/kubernetes/kubernetes"
     final SCHEMA_DIR = "src/main/resources/schemas/"
     final K8S_DIR = "k8s.io"

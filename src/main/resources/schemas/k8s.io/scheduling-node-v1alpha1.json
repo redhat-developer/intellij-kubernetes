@@ -12,7 +12,8 @@
       "type": [
         "object",
         "null"
-      ]
+      ],
+      "x-kubernetes-map-type": "atomic"
     },
     "tolerations": {
       "description": "tolerations are appended (excluding duplicates) to pods running with this RuntimeClass during admission, effectively unioning the set of nodes tolerated by the pod and the RuntimeClass.",

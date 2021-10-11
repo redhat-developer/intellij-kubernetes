@@ -165,6 +165,13 @@
                         "null"
                       ]
                     },
+                    "subresource": {
+                      "description": "Subresource is the name of the subresource used to update that object, or empty string if the object was updated through the main resource. The value of this field is used to distinguish between managers, even if they share the same name. For example, a status update will be distinct from a regular update using the same manager name. Note that the APIVersion field is not related to the Subresource field and it always corresponds to the version of the main resource.",
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
                     "time": {
                       "description": "Time is a wrapper around time.Time which supports correct marshaling to YAML and JSON.  Wrappers are provided for many of the factory methods that the time package offers.",
                       "format": "date-time",
@@ -245,6 +252,7 @@
                     "object",
                     "null"
                   ],
+                  "x-kubernetes-map-type": "atomic",
                   "additionalProperties": false
                 },
                 "type": [
@@ -367,6 +375,7 @@
                           "object",
                           "null"
                         ],
+                        "x-kubernetes-map-type": "atomic",
                         "additionalProperties": false
                       }
                     },
@@ -377,6 +386,7 @@
                       "object",
                       "null"
                     ],
+                    "x-kubernetes-map-type": "atomic",
                     "additionalProperties": false
                   },
                   "type": [
@@ -464,6 +474,7 @@
                           "object",
                           "null"
                         ],
+                        "x-kubernetes-map-type": "atomic",
                         "additionalProperties": false
                       }
                     },
@@ -474,6 +485,7 @@
                       "object",
                       "null"
                     ],
+                    "x-kubernetes-map-type": "atomic",
                     "additionalProperties": false
                   },
                   "type": [
@@ -487,7 +499,7 @@
                     "description": "EndpointPort is a tuple that describes a single port.",
                     "properties": {
                       "appProtocol": {
-                        "description": "The application protocol for this port. This field follows standard Kubernetes label syntax. Un-prefixed names are reserved for IANA standard service names (as per RFC-6335 and http://www.iana.org/assignments/service-names). Non-standard protocols should use prefixed names such as mycompany.com/my-custom-protocol. This is a beta field that is guarded by the ServiceAppProtocol feature gate and enabled by default.",
+                        "description": "The application protocol for this port. This field follows standard Kubernetes label syntax. Un-prefixed names are reserved for IANA standard service names (as per RFC-6335 and http://www.iana.org/assignments/service-names). Non-standard protocols should use prefixed names such as mycompany.com/my-custom-protocol.",
                         "type": [
                           "string",
                           "null"
@@ -520,6 +532,7 @@
                       "object",
                       "null"
                     ],
+                    "x-kubernetes-map-type": "atomic",
                     "additionalProperties": false
                   },
                   "type": [

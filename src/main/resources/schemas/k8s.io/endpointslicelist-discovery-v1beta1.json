@@ -77,6 +77,41 @@
                   ],
                   "additionalProperties": false
                 },
+                "hints": {
+                  "description": "EndpointHints provides hints describing how an endpoint should be consumed.",
+                  "properties": {
+                    "forZones": {
+                      "description": "forZones indicates the zone(s) this endpoint should be consumed by to enable topology aware routing. May contain a maximum of 8 entries.",
+                      "items": {
+                        "description": "ForZone provides information about which zones should consume this endpoint.",
+                        "properties": {
+                          "name": {
+                            "description": "name represents the name of the zone.",
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "name"
+                        ],
+                        "type": [
+                          "object",
+                          "null"
+                        ],
+                        "additionalProperties": false
+                      },
+                      "type": [
+                        "array",
+                        "null"
+                      ],
+                      "x-kubernetes-list-type": "atomic"
+                    }
+                  },
+                  "type": [
+                    "object",
+                    "null"
+                  ],
+                  "additionalProperties": false
+                },
                 "hostname": {
                   "description": "hostname of this endpoint. This field may be used by consumers of endpoints to distinguish endpoints from each other (e.g. in DNS names). Multiple endpoints which use the same hostname should be considered fungible (e.g. multiple A values in DNS). Must be lowercase and pass DNS Label (RFC 1123) validation.",
                   "type": [
@@ -148,6 +183,7 @@
                     "object",
                     "null"
                   ],
+                  "x-kubernetes-map-type": "atomic",
                   "additionalProperties": false
                 },
                 "topology": {
@@ -315,6 +351,13 @@
                         "null"
                       ]
                     },
+                    "subresource": {
+                      "description": "Subresource is the name of the subresource used to update that object, or empty string if the object was updated through the main resource. The value of this field is used to distinguish between managers, even if they share the same name. For example, a status update will be distinct from a regular update using the same manager name. Note that the APIVersion field is not related to the Subresource field and it always corresponds to the version of the main resource.",
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
                     "time": {
                       "description": "Time is a wrapper around time.Time which supports correct marshaling to YAML and JSON.  Wrappers are provided for many of the factory methods that the time package offers.",
                       "format": "date-time",
@@ -395,6 +438,7 @@
                     "object",
                     "null"
                   ],
+                  "x-kubernetes-map-type": "atomic",
                   "additionalProperties": false
                 },
                 "type": [

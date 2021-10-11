@@ -127,11 +127,6 @@
       "version": "v1beta1"
     },
     {
-      "group": "batch",
-      "kind": "WatchEvent",
-      "version": "v2alpha1"
-    },
-    {
       "group": "certificates.k8s.io",
       "kind": "WatchEvent",
       "version": "v1"
@@ -154,7 +149,7 @@
     {
       "group": "discovery.k8s.io",
       "kind": "WatchEvent",
-      "version": "v1alpha1"
+      "version": "v1"
     },
     {
       "group": "discovery.k8s.io",
@@ -220,6 +215,11 @@
       "group": "node.k8s.io",
       "kind": "WatchEvent",
       "version": "v1beta1"
+    },
+    {
+      "group": "policy",
+      "kind": "WatchEvent",
+      "version": "v1"
     },
     {
       "group": "policy",

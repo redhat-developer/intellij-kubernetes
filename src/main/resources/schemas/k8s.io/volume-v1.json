@@ -168,6 +168,7 @@
             "object",
             "null"
           ],
+          "x-kubernetes-map-type": "atomic",
           "additionalProperties": false
         },
         "user": {
@@ -219,6 +220,7 @@
             "object",
             "null"
           ],
+          "x-kubernetes-map-type": "atomic",
           "additionalProperties": false
         },
         "volumeID": {
@@ -333,6 +335,7 @@
             "object",
             "null"
           ],
+          "x-kubernetes-map-type": "atomic",
           "additionalProperties": false
         },
         "readOnly": {
@@ -403,6 +406,7 @@
                   "object",
                   "null"
                 ],
+                "x-kubernetes-map-type": "atomic",
                 "additionalProperties": false
               },
               "mode": {
@@ -455,6 +459,7 @@
                   "object",
                   "null"
                 ],
+                "x-kubernetes-map-type": "atomic",
                 "additionalProperties": false
               }
             },
@@ -515,13 +520,6 @@
     "ephemeral": {
       "description": "Represents an ephemeral volume that is handled by a normal storage driver.",
       "properties": {
-        "readOnly": {
-          "description": "Specifies a read-only configuration for the volume. Defaults to false (read/write).",
-          "type": [
-            "boolean",
-            "null"
-          ]
-        },
         "volumeClaimTemplate": {
           "description": "PersistentVolumeClaimTemplate is used to produce PersistentVolumeClaim objects as part of an EphemeralVolumeSource.",
           "properties": {
@@ -654,6 +652,13 @@
                           "null"
                         ]
                       },
+                      "subresource": {
+                        "description": "Subresource is the name of the subresource used to update that object, or empty string if the object was updated through the main resource. The value of this field is used to distinguish between managers, even if they share the same name. For example, a status update will be distinct from a regular update using the same manager name. Note that the APIVersion field is not related to the Subresource field and it always corresponds to the version of the main resource.",
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
                       "time": {
                         "description": "Time is a wrapper around time.Time which supports correct marshaling to YAML and JSON.  Wrappers are provided for many of the factory methods that the time package offers.",
                         "format": "date-time",
@@ -734,6 +739,7 @@
                       "object",
                       "null"
                     ],
+                    "x-kubernetes-map-type": "atomic",
                     "additionalProperties": false
                   },
                   "type": [
@@ -814,6 +820,37 @@
                     "object",
                     "null"
                   ],
+                  "x-kubernetes-map-type": "atomic",
+                  "additionalProperties": false
+                },
+                "dataSourceRef": {
+                  "description": "TypedLocalObjectReference contains enough information to let you locate the typed referenced object inside the same namespace.",
+                  "properties": {
+                    "apiGroup": {
+                      "description": "APIGroup is the group for the resource being referenced. If APIGroup is not specified, the specified Kind must be in the core API group. For any other third-party types, APIGroup is required.",
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "kind": {
+                      "description": "Kind is the type of resource being referenced",
+                      "type": "string"
+                    },
+                    "name": {
+                      "description": "Name is the name of resource being referenced",
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "kind",
+                    "name"
+                  ],
+                  "type": [
+                    "object",
+                    "null"
+                  ],
+                  "x-kubernetes-map-type": "atomic",
                   "additionalProperties": false
                 },
                 "resources": {
@@ -836,7 +873,7 @@
                           }
                         ]
                       },
-                      "description": "Limits describes the maximum amount of compute resources allowed. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/",
+                      "description": "Limits describes the maximum amount of compute resources allowed. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/",
                       "type": [
                         "object",
                         "null"
@@ -859,7 +896,7 @@
                           }
                         ]
                       },
-                      "description": "Requests describes the minimum amount of compute resources required. If Requests is omitted for a container, it defaults to Limits if that is explicitly specified, otherwise to an implementation-defined value. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/",
+                      "description": "Requests describes the minimum amount of compute resources required. If Requests is omitted for a container, it defaults to Limits if that is explicitly specified, otherwise to an implementation-defined value. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/",
                       "type": [
                         "object",
                         "null"
@@ -1089,6 +1126,7 @@
             "object",
             "null"
           ],
+          "x-kubernetes-map-type": "atomic",
           "additionalProperties": false
         }
       },
@@ -1330,6 +1368,7 @@
             "object",
             "null"
           ],
+          "x-kubernetes-map-type": "atomic",
           "additionalProperties": false
         },
         "targetPortal": {
@@ -1570,6 +1609,7 @@
                             "object",
                             "null"
                           ],
+                          "x-kubernetes-map-type": "atomic",
                           "additionalProperties": false
                         },
                         "mode": {
@@ -1622,6 +1662,7 @@
                             "object",
                             "null"
                           ],
+                          "x-kubernetes-map-type": "atomic",
                           "additionalProperties": false
                         }
                       },
@@ -1868,6 +1909,7 @@
             "object",
             "null"
           ],
+          "x-kubernetes-map-type": "atomic",
           "additionalProperties": false
         },
         "user": {
@@ -1928,6 +1970,7 @@
             }
           },
           "type": "object",
+          "x-kubernetes-map-type": "atomic",
           "additionalProperties": false
         },
         "sslEnabled": {
@@ -2075,6 +2118,7 @@
             "object",
             "null"
           ],
+          "x-kubernetes-map-type": "atomic",
           "additionalProperties": false
         },
         "volumeName": {

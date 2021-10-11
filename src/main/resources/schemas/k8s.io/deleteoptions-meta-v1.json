@@ -29,12 +29,11 @@
         "autoscaling/v2beta2",
         "batch/v1",
         "batch/v1beta1",
-        "batch/v2alpha1",
         "certificates.k8s.io/v1",
         "certificates.k8s.io/v1beta1",
         "coordination.k8s.io/v1",
         "coordination.k8s.io/v1beta1",
-        "discovery.k8s.io/v1alpha1",
+        "discovery.k8s.io/v1",
         "discovery.k8s.io/v1beta1",
         "events.k8s.io/v1",
         "events.k8s.io/v1beta1",
@@ -48,6 +47,7 @@
         "node.k8s.io/v1",
         "node.k8s.io/v1alpha1",
         "node.k8s.io/v1beta1",
+        "policy/v1",
         "policy/v1beta1",
         "rbac.authorization.k8s.io/v1",
         "rbac.authorization.k8s.io/v1alpha1",
@@ -238,11 +238,6 @@
       "version": "v1beta1"
     },
     {
-      "group": "batch",
-      "kind": "DeleteOptions",
-      "version": "v2alpha1"
-    },
-    {
       "group": "certificates.k8s.io",
       "kind": "DeleteOptions",
       "version": "v1"
@@ -265,7 +260,7 @@
     {
       "group": "discovery.k8s.io",
       "kind": "DeleteOptions",
-      "version": "v1alpha1"
+      "version": "v1"
     },
     {
       "group": "discovery.k8s.io",
@@ -331,6 +326,11 @@
       "group": "node.k8s.io",
       "kind": "DeleteOptions",
       "version": "v1beta1"
+    },
+    {
+      "group": "policy",
+      "kind": "DeleteOptions",
+      "version": "v1"
     },
     {
       "group": "policy",

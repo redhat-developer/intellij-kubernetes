@@ -95,6 +95,7 @@
               }
             },
             "type": "object",
+            "x-kubernetes-map-type": "atomic",
             "additionalProperties": false
           },
           "weight": {
@@ -215,6 +216,7 @@
               "object",
               "null"
             ],
+            "x-kubernetes-map-type": "atomic",
             "additionalProperties": false
           },
           "type": "array"
@@ -227,6 +229,7 @@
         "object",
         "null"
       ],
+      "x-kubernetes-map-type": "atomic",
       "additionalProperties": false
     }
   },

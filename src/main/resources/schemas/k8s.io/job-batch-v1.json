@@ -150,6 +150,13 @@
                   "null"
                 ]
               },
+              "subresource": {
+                "description": "Subresource is the name of the subresource used to update that object, or empty string if the object was updated through the main resource. The value of this field is used to distinguish between managers, even if they share the same name. For example, a status update will be distinct from a regular update using the same manager name. Note that the APIVersion field is not related to the Subresource field and it always corresponds to the version of the main resource.",
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
               "time": {
                 "description": "Time is a wrapper around time.Time which supports correct marshaling to YAML and JSON.  Wrappers are provided for many of the factory methods that the time package offers.",
                 "format": "date-time",
@@ -230,6 +237,7 @@
               "object",
               "null"
             ],
+            "x-kubernetes-map-type": "atomic",
             "additionalProperties": false
           },
           "type": [
@@ -271,7 +279,7 @@
       "description": "JobSpec describes how the job execution will look like.",
       "properties": {
         "activeDeadlineSeconds": {
-          "description": "Specifies the duration in seconds relative to the startTime that the job may be active before the system tries to terminate it; value must be positive integer",
+          "description": "Specifies the duration in seconds relative to the startTime that the job may be continuously active before the system tries to terminate it; value must be positive integer. If a Job is suspended (at creation or through an update), this timer will effectively be stopped and reset when the Job is resumed again.",
           "format": "int64",
           "type": [
             "integer",
@@ -283,6 +291,13 @@
           "format": "int32",
           "type": [
             "integer",
+            "null"
+          ]
+        },
+        "completionMode": {
+          "description": "CompletionMode specifies how Pod completions are tracked. It can be `NonIndexed` (default) or `Indexed`.\n\n`NonIndexed` means that the Job is considered complete when there have been .spec.completions successfully completed Pods. Each Pod completion is homologous to each other.\n\n`Indexed` means that the Pods of a Job get an associated completion index from 0 to (.spec.completions - 1), available in the annotation batch.kubernetes.io/job-completion-index. The Job is considered complete when there is one successfully completed Pod for each index. When value is `Indexed`, .spec.completions must be specified and `.spec.parallelism` must be less than or equal to 10^5. In addition, The Pod name takes the form `$(job-name)-$(index)-$(random-string)`, the Pod hostname takes the form `$(job-name)-$(index)`.\n\nThis field is beta-level. More completion modes can be added in the future. If the Job controller observes a mode that it doesn't recognize, the controller skips updates for the Job.",
+          "type": [
+            "string",
             "null"
           ]
         },
@@ -376,6 +391,13 @@
           ],
           "x-kubernetes-map-type": "atomic",
           "additionalProperties": false
+        },
+        "suspend": {
+          "description": "Suspend specifies whether the Job controller should create Pods or not. If a Job is created with suspend set to true, no Pods are created by the Job controller. If a Job is suspended after creation (i.e. the flag goes from false to true), the Job controller will delete all active Pods associated with this Job. Users must design their workload to gracefully handle this. Suspending a Job will reset the StartTime field of the Job, effectively resetting the ActiveDeadlineSeconds timer too. Defaults to false.\n\nThis field is beta-level, gated by SuspendJob feature flag (enabled by default).",
+          "type": [
+            "boolean",
+            "null"
+          ]
         },
         "template": {
           "description": "PodTemplateSpec describes the data a pod should have when created from a template",
@@ -509,6 +531,13 @@
                           "null"
                         ]
                       },
+                      "subresource": {
+                        "description": "Subresource is the name of the subresource used to update that object, or empty string if the object was updated through the main resource. The value of this field is used to distinguish between managers, even if they share the same name. For example, a status update will be distinct from a regular update using the same manager name. Note that the APIVersion field is not related to the Subresource field and it always corresponds to the version of the main resource.",
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
                       "time": {
                         "description": "Time is a wrapper around time.Time which supports correct marshaling to YAML and JSON.  Wrappers are provided for many of the factory methods that the time package offers.",
                         "format": "date-time",
@@ -589,6 +618,7 @@
                       "object",
                       "null"
                     ],
+                    "x-kubernetes-map-type": "atomic",
                     "additionalProperties": false
                   },
                   "type": [
@@ -737,6 +767,7 @@
                                   }
                                 },
                                 "type": "object",
+                                "x-kubernetes-map-type": "atomic",
                                 "additionalProperties": false
                               },
                               "weight": {
@@ -857,6 +888,7 @@
                                   "object",
                                   "null"
                                 ],
+                                "x-kubernetes-map-type": "atomic",
                                 "additionalProperties": false
                               },
                               "type": "array"
@@ -869,6 +901,7 @@
                             "object",
                             "null"
                           ],
+                          "x-kubernetes-map-type": "atomic",
                           "additionalProperties": false
                         }
                       },
@@ -957,8 +990,76 @@
                                     "x-kubernetes-map-type": "atomic",
                                     "additionalProperties": false
                                   },
+                                  "namespaceSelector": {
+                                    "description": "A label selector is a label query over a set of resources. The result of matchLabels and matchExpressions are ANDed. An empty label selector matches all objects. A null label selector matches no objects.",
+                                    "properties": {
+                                      "matchExpressions": {
+                                        "description": "matchExpressions is a list of label selector requirements. The requirements are ANDed.",
+                                        "items": {
+                                          "description": "A label selector requirement is a selector that contains values, a key, and an operator that relates the key and values.",
+                                          "properties": {
+                                            "key": {
+                                              "description": "key is the label key that the selector applies to.",
+                                              "type": "string",
+                                              "x-kubernetes-patch-merge-key": "key",
+                                              "x-kubernetes-patch-strategy": "merge"
+                                            },
+                                            "operator": {
+                                              "description": "operator represents a key's relationship to a set of values. Valid operators are In, NotIn, Exists and DoesNotExist.",
+                                              "type": "string"
+                                            },
+                                            "values": {
+                                              "description": "values is an array of string values. If the operator is In or NotIn, the values array must be non-empty. If the operator is Exists or DoesNotExist, the values array must be empty. This array is replaced during a strategic merge patch.",
+                                              "items": {
+                                                "type": [
+                                                  "string",
+                                                  "null"
+                                                ]
+                                              },
+                                              "type": [
+                                                "array",
+                                                "null"
+                                              ]
+                                            }
+                                          },
+                                          "required": [
+                                            "key",
+                                            "operator"
+                                          ],
+                                          "type": [
+                                            "object",
+                                            "null"
+                                          ],
+                                          "additionalProperties": false
+                                        },
+                                        "type": [
+                                          "array",
+                                          "null"
+                                        ]
+                                      },
+                                      "matchLabels": {
+                                        "additionalProperties": {
+                                          "type": [
+                                            "string",
+                                            "null"
+                                          ]
+                                        },
+                                        "description": "matchLabels is a map of {key,value} pairs. A single {key,value} in the matchLabels map is equivalent to an element of matchExpressions, whose key field is \"key\", the operator is \"In\", and the values array contains only \"value\". The requirements are ANDed.",
+                                        "type": [
+                                          "object",
+                                          "null"
+                                        ]
+                                      }
+                                    },
+                                    "type": [
+                                      "object",
+                                      "null"
+                                    ],
+                                    "x-kubernetes-map-type": "atomic",
+                                    "additionalProperties": false
+                                  },
                                   "namespaces": {
-                                    "description": "namespaces specifies which namespaces the labelSelector applies to (matches against); null or empty list means \"this pod's namespace\"",
+                                    "description": "namespaces specifies a static list of namespace names that the term applies to. The term is applied to the union of the namespaces listed in this field and the ones selected by namespaceSelector. null or empty namespaces list and null namespaceSelector means \"this pod's namespace\"",
                                     "items": {
                                       "type": [
                                         "string",
@@ -1075,8 +1176,76 @@
                                 "x-kubernetes-map-type": "atomic",
                                 "additionalProperties": false
                               },
+                              "namespaceSelector": {
+                                "description": "A label selector is a label query over a set of resources. The result of matchLabels and matchExpressions are ANDed. An empty label selector matches all objects. A null label selector matches no objects.",
+                                "properties": {
+                                  "matchExpressions": {
+                                    "description": "matchExpressions is a list of label selector requirements. The requirements are ANDed.",
+                                    "items": {
+                                      "description": "A label selector requirement is a selector that contains values, a key, and an operator that relates the key and values.",
+                                      "properties": {
+                                        "key": {
+                                          "description": "key is the label key that the selector applies to.",
+                                          "type": "string",
+                                          "x-kubernetes-patch-merge-key": "key",
+                                          "x-kubernetes-patch-strategy": "merge"
+                                        },
+                                        "operator": {
+                                          "description": "operator represents a key's relationship to a set of values. Valid operators are In, NotIn, Exists and DoesNotExist.",
+                                          "type": "string"
+                                        },
+                                        "values": {
+                                          "description": "values is an array of string values. If the operator is In or NotIn, the values array must be non-empty. If the operator is Exists or DoesNotExist, the values array must be empty. This array is replaced during a strategic merge patch.",
+                                          "items": {
+                                            "type": [
+                                              "string",
+                                              "null"
+                                            ]
+                                          },
+                                          "type": [
+                                            "array",
+                                            "null"
+                                          ]
+                                        }
+                                      },
+                                      "required": [
+                                        "key",
+                                        "operator"
+                                      ],
+                                      "type": [
+                                        "object",
+                                        "null"
+                                      ],
+                                      "additionalProperties": false
+                                    },
+                                    "type": [
+                                      "array",
+                                      "null"
+                                    ]
+                                  },
+                                  "matchLabels": {
+                                    "additionalProperties": {
+                                      "type": [
+                                        "string",
+                                        "null"
+                                      ]
+                                    },
+                                    "description": "matchLabels is a map of {key,value} pairs. A single {key,value} in the matchLabels map is equivalent to an element of matchExpressions, whose key field is \"key\", the operator is \"In\", and the values array contains only \"value\". The requirements are ANDed.",
+                                    "type": [
+                                      "object",
+                                      "null"
+                                    ]
+                                  }
+                                },
+                                "type": [
+                                  "object",
+                                  "null"
+                                ],
+                                "x-kubernetes-map-type": "atomic",
+                                "additionalProperties": false
+                              },
                               "namespaces": {
-                                "description": "namespaces specifies which namespaces the labelSelector applies to (matches against); null or empty list means \"this pod's namespace\"",
+                                "description": "namespaces specifies a static list of namespace names that the term applies to. The term is applied to the union of the namespaces listed in this field and the ones selected by namespaceSelector. null or empty namespaces list and null namespaceSelector means \"this pod's namespace\"",
                                 "items": {
                                   "type": [
                                     "string",
@@ -1193,8 +1362,76 @@
                                     "x-kubernetes-map-type": "atomic",
                                     "additionalProperties": false
                                   },
+                                  "namespaceSelector": {
+                                    "description": "A label selector is a label query over a set of resources. The result of matchLabels and matchExpressions are ANDed. An empty label selector matches all objects. A null label selector matches no objects.",
+                                    "properties": {
+                                      "matchExpressions": {
+                                        "description": "matchExpressions is a list of label selector requirements. The requirements are ANDed.",
+                                        "items": {
+                                          "description": "A label selector requirement is a selector that contains values, a key, and an operator that relates the key and values.",
+                                          "properties": {
+                                            "key": {
+                                              "description": "key is the label key that the selector applies to.",
+                                              "type": "string",
+                                              "x-kubernetes-patch-merge-key": "key",
+                                              "x-kubernetes-patch-strategy": "merge"
+                                            },
+                                            "operator": {
+                                              "description": "operator represents a key's relationship to a set of values. Valid operators are In, NotIn, Exists and DoesNotExist.",
+                                              "type": "string"
+                                            },
+                                            "values": {
+                                              "description": "values is an array of string values. If the operator is In or NotIn, the values array must be non-empty. If the operator is Exists or DoesNotExist, the values array must be empty. This array is replaced during a strategic merge patch.",
+                                              "items": {
+                                                "type": [
+                                                  "string",
+                                                  "null"
+                                                ]
+                                              },
+                                              "type": [
+                                                "array",
+                                                "null"
+                                              ]
+                                            }
+                                          },
+                                          "required": [
+                                            "key",
+                                            "operator"
+                                          ],
+                                          "type": [
+                                            "object",
+                                            "null"
+                                          ],
+                                          "additionalProperties": false
+                                        },
+                                        "type": [
+                                          "array",
+                                          "null"
+                                        ]
+                                      },
+                                      "matchLabels": {
+                                        "additionalProperties": {
+                                          "type": [
+                                            "string",
+                                            "null"
+                                          ]
+                                        },
+                                        "description": "matchLabels is a map of {key,value} pairs. A single {key,value} in the matchLabels map is equivalent to an element of matchExpressions, whose key field is \"key\", the operator is \"In\", and the values array contains only \"value\". The requirements are ANDed.",
+                                        "type": [
+                                          "object",
+                                          "null"
+                                        ]
+                                      }
+                                    },
+                                    "type": [
+                                      "object",
+                                      "null"
+                                    ],
+                                    "x-kubernetes-map-type": "atomic",
+                                    "additionalProperties": false
+                                  },
                                   "namespaces": {
-                                    "description": "namespaces specifies which namespaces the labelSelector applies to (matches against); null or empty list means \"this pod's namespace\"",
+                                    "description": "namespaces specifies a static list of namespace names that the term applies to. The term is applied to the union of the namespaces listed in this field and the ones selected by namespaceSelector. null or empty namespaces list and null namespaceSelector means \"this pod's namespace\"",
                                     "items": {
                                       "type": [
                                         "string",
@@ -1311,8 +1548,76 @@
                                 "x-kubernetes-map-type": "atomic",
                                 "additionalProperties": false
                               },
+                              "namespaceSelector": {
+                                "description": "A label selector is a label query over a set of resources. The result of matchLabels and matchExpressions are ANDed. An empty label selector matches all objects. A null label selector matches no objects.",
+                                "properties": {
+                                  "matchExpressions": {
+                                    "description": "matchExpressions is a list of label selector requirements. The requirements are ANDed.",
+                                    "items": {
+                                      "description": "A label selector requirement is a selector that contains values, a key, and an operator that relates the key and values.",
+                                      "properties": {
+                                        "key": {
+                                          "description": "key is the label key that the selector applies to.",
+                                          "type": "string",
+                                          "x-kubernetes-patch-merge-key": "key",
+                                          "x-kubernetes-patch-strategy": "merge"
+                                        },
+                                        "operator": {
+                                          "description": "operator represents a key's relationship to a set of values. Valid operators are In, NotIn, Exists and DoesNotExist.",
+                                          "type": "string"
+                                        },
+                                        "values": {
+                                          "description": "values is an array of string values. If the operator is In or NotIn, the values array must be non-empty. If the operator is Exists or DoesNotExist, the values array must be empty. This array is replaced during a strategic merge patch.",
+                                          "items": {
+                                            "type": [
+                                              "string",
+                                              "null"
+                                            ]
+                                          },
+                                          "type": [
+                                            "array",
+                                            "null"
+                                          ]
+                                        }
+                                      },
+                                      "required": [
+                                        "key",
+                                        "operator"
+                                      ],
+                                      "type": [
+                                        "object",
+                                        "null"
+                                      ],
+                                      "additionalProperties": false
+                                    },
+                                    "type": [
+                                      "array",
+                                      "null"
+                                    ]
+                                  },
+                                  "matchLabels": {
+                                    "additionalProperties": {
+                                      "type": [
+                                        "string",
+                                        "null"
+                                      ]
+                                    },
+                                    "description": "matchLabels is a map of {key,value} pairs. A single {key,value} in the matchLabels map is equivalent to an element of matchExpressions, whose key field is \"key\", the operator is \"In\", and the values array contains only \"value\". The requirements are ANDed.",
+                                    "type": [
+                                      "object",
+                                      "null"
+                                    ]
+                                  }
+                                },
+                                "type": [
+                                  "object",
+                                  "null"
+                                ],
+                                "x-kubernetes-map-type": "atomic",
+                                "additionalProperties": false
+                              },
                               "namespaces": {
-                                "description": "namespaces specifies which namespaces the labelSelector applies to (matches against); null or empty list means \"this pod's namespace\"",
+                                "description": "namespaces specifies a static list of namespace names that the term applies to. The term is applied to the union of the namespaces listed in this field and the ones selected by namespaceSelector. null or empty namespaces list and null namespaceSelector means \"this pod's namespace\"",
                                 "items": {
                                   "type": [
                                     "string",
@@ -1370,7 +1675,7 @@
                     "description": "A single application container that you want to run within a pod.",
                     "properties": {
                       "args": {
-                        "description": "Arguments to the entrypoint. The docker image's CMD is used if this is not provided. Variable references $(VAR_NAME) are expanded using the container's environment. If a variable cannot be resolved, the reference in the input string will be unchanged. The $(VAR_NAME) syntax can be escaped with a double $$, ie: $$(VAR_NAME). Escaped references will never be expanded, regardless of whether the variable exists or not. Cannot be updated. More info: https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/#running-a-command-in-a-shell",
+                        "description": "Arguments to the entrypoint. The docker image's CMD is used if this is not provided. Variable references $(VAR_NAME) are expanded using the container's environment. If a variable cannot be resolved, the reference in the input string will be unchanged. Double $$ are reduced to a single $, which allows for escaping the $(VAR_NAME) syntax: i.e. \"$$(VAR_NAME)\" will produce the string literal \"$(VAR_NAME)\". Escaped references will never be expanded, regardless of whether the variable exists or not. Cannot be updated. More info: https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/#running-a-command-in-a-shell",
                         "items": {
                           "type": [
                             "string",
@@ -1383,7 +1688,7 @@
                         ]
                       },
                       "command": {
-                        "description": "Entrypoint array. Not executed within a shell. The docker image's ENTRYPOINT is used if this is not provided. Variable references $(VAR_NAME) are expanded using the container's environment. If a variable cannot be resolved, the reference in the input string will be unchanged. The $(VAR_NAME) syntax can be escaped with a double $$, ie: $$(VAR_NAME). Escaped references will never be expanded, regardless of whether the variable exists or not. Cannot be updated. More info: https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/#running-a-command-in-a-shell",
+                        "description": "Entrypoint array. Not executed within a shell. The docker image's ENTRYPOINT is used if this is not provided. Variable references $(VAR_NAME) are expanded using the container's environment. If a variable cannot be resolved, the reference in the input string will be unchanged. Double $$ are reduced to a single $, which allows for escaping the $(VAR_NAME) syntax: i.e. \"$$(VAR_NAME)\" will produce the string literal \"$(VAR_NAME)\". Escaped references will never be expanded, regardless of whether the variable exists or not. Cannot be updated. More info: https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/#running-a-command-in-a-shell",
                         "items": {
                           "type": [
                             "string",
@@ -1405,7 +1710,7 @@
                               "type": "string"
                             },
                             "value": {
-                              "description": "Variable references $(VAR_NAME) are expanded using the previous defined environment variables in the container and any service environment variables. If a variable cannot be resolved, the reference in the input string will be unchanged. The $(VAR_NAME) syntax can be escaped with a double $$, ie: $$(VAR_NAME). Escaped references will never be expanded, regardless of whether the variable exists or not. Defaults to \"\".",
+                              "description": "Variable references $(VAR_NAME) are expanded using the previously defined environment variables in the container and any service environment variables. If a variable cannot be resolved, the reference in the input string will be unchanged. Double $$ are reduced to a single $, which allows for escaping the $(VAR_NAME) syntax: i.e. \"$$(VAR_NAME)\" will produce the string literal \"$(VAR_NAME)\". Escaped references will never be expanded, regardless of whether the variable exists or not. Defaults to \"\".",
                               "type": [
                                 "string",
                                 "null"
@@ -1443,6 +1748,7 @@
                                     "object",
                                     "null"
                                   ],
+                                  "x-kubernetes-map-type": "atomic",
                                   "additionalProperties": false
                                 },
                                 "fieldRef": {
@@ -1467,6 +1773,7 @@
                                     "object",
                                     "null"
                                   ],
+                                  "x-kubernetes-map-type": "atomic",
                                   "additionalProperties": false
                                 },
                                 "resourceFieldRef": {
@@ -1507,6 +1814,7 @@
                                     "object",
                                     "null"
                                   ],
+                                  "x-kubernetes-map-type": "atomic",
                                   "additionalProperties": false
                                 },
                                 "secretKeyRef": {
@@ -1538,6 +1846,7 @@
                                     "object",
                                     "null"
                                   ],
+                                  "x-kubernetes-map-type": "atomic",
                                   "additionalProperties": false
                                 }
                               },
@@ -2129,6 +2438,14 @@
                             ],
                             "additionalProperties": false
                           },
+                          "terminationGracePeriodSeconds": {
+                            "description": "Optional duration in seconds the pod needs to terminate gracefully upon probe failure. The grace period is the duration in seconds after the processes running in the pod are sent a termination signal and the time when the processes are forcibly halted with a kill signal. Set this value longer than the expected cleanup time for your process. If this value is nil, the pod's terminationGracePeriodSeconds will be used. Otherwise, this value overrides the value provided by the pod spec. Value must be non-negative integer. The value zero indicates stop immediately via the kill signal (no opportunity to shut down). This is a beta field and requires enabling ProbeTerminationGracePeriod feature gate. Minimum value is 1. spec.terminationGracePeriodSeconds is used if unset.",
+                            "format": "int64",
+                            "type": [
+                              "integer",
+                              "null"
+                            ]
+                          },
                           "timeoutSeconds": {
                             "description": "Number of seconds after which the probe times out. Defaults to 1 second. Minimum value is 1. More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes",
                             "format": "int32",
@@ -2382,6 +2699,14 @@
                             ],
                             "additionalProperties": false
                           },
+                          "terminationGracePeriodSeconds": {
+                            "description": "Optional duration in seconds the pod needs to terminate gracefully upon probe failure. The grace period is the duration in seconds after the processes running in the pod are sent a termination signal and the time when the processes are forcibly halted with a kill signal. Set this value longer than the expected cleanup time for your process. If this value is nil, the pod's terminationGracePeriodSeconds will be used. Otherwise, this value overrides the value provided by the pod spec. Value must be non-negative integer. The value zero indicates stop immediately via the kill signal (no opportunity to shut down). This is a beta field and requires enabling ProbeTerminationGracePeriod feature gate. Minimum value is 1. spec.terminationGracePeriodSeconds is used if unset.",
+                            "format": "int64",
+                            "type": [
+                              "integer",
+                              "null"
+                            ]
+                          },
                           "timeoutSeconds": {
                             "description": "Number of seconds after which the probe times out. Defaults to 1 second. Minimum value is 1. More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes",
                             "format": "int32",
@@ -2417,7 +2742,7 @@
                                 }
                               ]
                             },
-                            "description": "Limits describes the maximum amount of compute resources allowed. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/",
+                            "description": "Limits describes the maximum amount of compute resources allowed. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/",
                             "type": [
                               "object",
                               "null"
@@ -2440,7 +2765,7 @@
                                 }
                               ]
                             },
-                            "description": "Requests describes the minimum amount of compute resources required. If Requests is omitted for a container, it defaults to Limits if that is explicitly specified, otherwise to an implementation-defined value. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/",
+                            "description": "Requests describes the minimum amount of compute resources required. If Requests is omitted for a container, it defaults to Limits if that is explicitly specified, otherwise to an implementation-defined value. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/",
                             "type": [
                               "object",
                               "null"
@@ -2627,6 +2952,13 @@
                                 "description": "GMSACredentialSpecName is the name of the GMSA credential spec to use.",
                                 "type": [
                                   "string",
+                                  "null"
+                                ]
+                              },
+                              "hostProcess": {
+                                "description": "HostProcess determines if a container should be run as a 'Host Process' container. This field is alpha-level and will only be honored by components that enable the WindowsHostProcessContainers feature flag. Setting this field without the feature flag will result in errors when validating the Pod. All of a Pod's containers must have the same effective HostProcess value (it is not allowed to have a mix of HostProcess containers and non-HostProcess containers).  In addition, if HostProcess is true then HostNetwork must also be set to true.",
+                                "type": [
+                                  "boolean",
                                   "null"
                                 ]
                               },
@@ -2823,6 +3155,14 @@
                               "null"
                             ],
                             "additionalProperties": false
+                          },
+                          "terminationGracePeriodSeconds": {
+                            "description": "Optional duration in seconds the pod needs to terminate gracefully upon probe failure. The grace period is the duration in seconds after the processes running in the pod are sent a termination signal and the time when the processes are forcibly halted with a kill signal. Set this value longer than the expected cleanup time for your process. If this value is nil, the pod's terminationGracePeriodSeconds will be used. Otherwise, this value overrides the value provided by the pod spec. Value must be non-negative integer. The value zero indicates stop immediately via the kill signal (no opportunity to shut down). This is a beta field and requires enabling ProbeTerminationGracePeriod feature gate. Minimum value is 1. spec.terminationGracePeriodSeconds is used if unset.",
+                            "format": "int64",
+                            "type": [
+                              "integer",
+                              "null"
+                            ]
                           },
                           "timeoutSeconds": {
                             "description": "Number of seconds after which the probe times out. Defaults to 1 second. Minimum value is 1. More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes",
@@ -3071,7 +3411,7 @@
                     "description": "An EphemeralContainer is a container that may be added temporarily to an existing pod for user-initiated activities such as debugging. Ephemeral containers have no resource or scheduling guarantees, and they will not be restarted when they exit or when a pod is removed or restarted. If an ephemeral container causes a pod to exceed its resource allocation, the pod may be evicted. Ephemeral containers may not be added by directly updating the pod spec. They must be added via the pod's ephemeralcontainers subresource, and they will appear in the pod spec once added. This is an alpha feature enabled by the EphemeralContainers feature flag.",
                     "properties": {
                       "args": {
-                        "description": "Arguments to the entrypoint. The docker image's CMD is used if this is not provided. Variable references $(VAR_NAME) are expanded using the container's environment. If a variable cannot be resolved, the reference in the input string will be unchanged. The $(VAR_NAME) syntax can be escaped with a double $$, ie: $$(VAR_NAME). Escaped references will never be expanded, regardless of whether the variable exists or not. Cannot be updated. More info: https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/#running-a-command-in-a-shell",
+                        "description": "Arguments to the entrypoint. The docker image's CMD is used if this is not provided. Variable references $(VAR_NAME) are expanded using the container's environment. If a variable cannot be resolved, the reference in the input string will be unchanged. Double $$ are reduced to a single $, which allows for escaping the $(VAR_NAME) syntax: i.e. \"$$(VAR_NAME)\" will produce the string literal \"$(VAR_NAME)\". Escaped references will never be expanded, regardless of whether the variable exists or not. Cannot be updated. More info: https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/#running-a-command-in-a-shell",
                         "items": {
                           "type": [
                             "string",
@@ -3084,7 +3424,7 @@
                         ]
                       },
                       "command": {
-                        "description": "Entrypoint array. Not executed within a shell. The docker image's ENTRYPOINT is used if this is not provided. Variable references $(VAR_NAME) are expanded using the container's environment. If a variable cannot be resolved, the reference in the input string will be unchanged. The $(VAR_NAME) syntax can be escaped with a double $$, ie: $$(VAR_NAME). Escaped references will never be expanded, regardless of whether the variable exists or not. Cannot be updated. More info: https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/#running-a-command-in-a-shell",
+                        "description": "Entrypoint array. Not executed within a shell. The docker image's ENTRYPOINT is used if this is not provided. Variable references $(VAR_NAME) are expanded using the container's environment. If a variable cannot be resolved, the reference in the input string will be unchanged. Double $$ are reduced to a single $, which allows for escaping the $(VAR_NAME) syntax: i.e. \"$$(VAR_NAME)\" will produce the string literal \"$(VAR_NAME)\". Escaped references will never be expanded, regardless of whether the variable exists or not. Cannot be updated. More info: https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/#running-a-command-in-a-shell",
                         "items": {
                           "type": [
                             "string",
@@ -3106,7 +3446,7 @@
                               "type": "string"
                             },
                             "value": {
-                              "description": "Variable references $(VAR_NAME) are expanded using the previous defined environment variables in the container and any service environment variables. If a variable cannot be resolved, the reference in the input string will be unchanged. The $(VAR_NAME) syntax can be escaped with a double $$, ie: $$(VAR_NAME). Escaped references will never be expanded, regardless of whether the variable exists or not. Defaults to \"\".",
+                              "description": "Variable references $(VAR_NAME) are expanded using the previously defined environment variables in the container and any service environment variables. If a variable cannot be resolved, the reference in the input string will be unchanged. Double $$ are reduced to a single $, which allows for escaping the $(VAR_NAME) syntax: i.e. \"$$(VAR_NAME)\" will produce the string literal \"$(VAR_NAME)\". Escaped references will never be expanded, regardless of whether the variable exists or not. Defaults to \"\".",
                               "type": [
                                 "string",
                                 "null"
@@ -3144,6 +3484,7 @@
                                     "object",
                                     "null"
                                   ],
+                                  "x-kubernetes-map-type": "atomic",
                                   "additionalProperties": false
                                 },
                                 "fieldRef": {
@@ -3168,6 +3509,7 @@
                                     "object",
                                     "null"
                                   ],
+                                  "x-kubernetes-map-type": "atomic",
                                   "additionalProperties": false
                                 },
                                 "resourceFieldRef": {
@@ -3208,6 +3550,7 @@
                                     "object",
                                     "null"
                                   ],
+                                  "x-kubernetes-map-type": "atomic",
                                   "additionalProperties": false
                                 },
                                 "secretKeyRef": {
@@ -3239,6 +3582,7 @@
                                     "object",
                                     "null"
                                   ],
+                                  "x-kubernetes-map-type": "atomic",
                                   "additionalProperties": false
                                 }
                               },
@@ -3830,6 +4174,14 @@
                             ],
                             "additionalProperties": false
                           },
+                          "terminationGracePeriodSeconds": {
+                            "description": "Optional duration in seconds the pod needs to terminate gracefully upon probe failure. The grace period is the duration in seconds after the processes running in the pod are sent a termination signal and the time when the processes are forcibly halted with a kill signal. Set this value longer than the expected cleanup time for your process. If this value is nil, the pod's terminationGracePeriodSeconds will be used. Otherwise, this value overrides the value provided by the pod spec. Value must be non-negative integer. The value zero indicates stop immediately via the kill signal (no opportunity to shut down). This is a beta field and requires enabling ProbeTerminationGracePeriod feature gate. Minimum value is 1. spec.terminationGracePeriodSeconds is used if unset.",
+                            "format": "int64",
+                            "type": [
+                              "integer",
+                              "null"
+                            ]
+                          },
                           "timeoutSeconds": {
                             "description": "Number of seconds after which the probe times out. Defaults to 1 second. Minimum value is 1. More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes",
                             "format": "int32",
@@ -4076,6 +4428,14 @@
                             ],
                             "additionalProperties": false
                           },
+                          "terminationGracePeriodSeconds": {
+                            "description": "Optional duration in seconds the pod needs to terminate gracefully upon probe failure. The grace period is the duration in seconds after the processes running in the pod are sent a termination signal and the time when the processes are forcibly halted with a kill signal. Set this value longer than the expected cleanup time for your process. If this value is nil, the pod's terminationGracePeriodSeconds will be used. Otherwise, this value overrides the value provided by the pod spec. Value must be non-negative integer. The value zero indicates stop immediately via the kill signal (no opportunity to shut down). This is a beta field and requires enabling ProbeTerminationGracePeriod feature gate. Minimum value is 1. spec.terminationGracePeriodSeconds is used if unset.",
+                            "format": "int64",
+                            "type": [
+                              "integer",
+                              "null"
+                            ]
+                          },
                           "timeoutSeconds": {
                             "description": "Number of seconds after which the probe times out. Defaults to 1 second. Minimum value is 1. More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes",
                             "format": "int32",
@@ -4111,7 +4471,7 @@
                                 }
                               ]
                             },
-                            "description": "Limits describes the maximum amount of compute resources allowed. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/",
+                            "description": "Limits describes the maximum amount of compute resources allowed. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/",
                             "type": [
                               "object",
                               "null"
@@ -4134,7 +4494,7 @@
                                 }
                               ]
                             },
-                            "description": "Requests describes the minimum amount of compute resources required. If Requests is omitted for a container, it defaults to Limits if that is explicitly specified, otherwise to an implementation-defined value. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/",
+                            "description": "Requests describes the minimum amount of compute resources required. If Requests is omitted for a container, it defaults to Limits if that is explicitly specified, otherwise to an implementation-defined value. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/",
                             "type": [
                               "object",
                               "null"
@@ -4321,6 +4681,13 @@
                                 "description": "GMSACredentialSpecName is the name of the GMSA credential spec to use.",
                                 "type": [
                                   "string",
+                                  "null"
+                                ]
+                              },
+                              "hostProcess": {
+                                "description": "HostProcess determines if a container should be run as a 'Host Process' container. This field is alpha-level and will only be honored by components that enable the WindowsHostProcessContainers feature flag. Setting this field without the feature flag will result in errors when validating the Pod. All of a Pod's containers must have the same effective HostProcess value (it is not allowed to have a mix of HostProcess containers and non-HostProcess containers).  In addition, if HostProcess is true then HostNetwork must also be set to true.",
+                                "type": [
+                                  "boolean",
                                   "null"
                                 ]
                               },
@@ -4517,6 +4884,14 @@
                               "null"
                             ],
                             "additionalProperties": false
+                          },
+                          "terminationGracePeriodSeconds": {
+                            "description": "Optional duration in seconds the pod needs to terminate gracefully upon probe failure. The grace period is the duration in seconds after the processes running in the pod are sent a termination signal and the time when the processes are forcibly halted with a kill signal. Set this value longer than the expected cleanup time for your process. If this value is nil, the pod's terminationGracePeriodSeconds will be used. Otherwise, this value overrides the value provided by the pod spec. Value must be non-negative integer. The value zero indicates stop immediately via the kill signal (no opportunity to shut down). This is a beta field and requires enabling ProbeTerminationGracePeriod feature gate. Minimum value is 1. spec.terminationGracePeriodSeconds is used if unset.",
+                            "format": "int64",
+                            "type": [
+                              "integer",
+                              "null"
+                            ]
                           },
                           "timeoutSeconds": {
                             "description": "Number of seconds after which the probe times out. Defaults to 1 second. Minimum value is 1. More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes",
@@ -4773,6 +5148,7 @@
                       "object",
                       "null"
                     ],
+                    "x-kubernetes-map-type": "atomic",
                     "additionalProperties": false
                   },
                   "type": [
@@ -4788,7 +5164,7 @@
                     "description": "A single application container that you want to run within a pod.",
                     "properties": {
                       "args": {
-                        "description": "Arguments to the entrypoint. The docker image's CMD is used if this is not provided. Variable references $(VAR_NAME) are expanded using the container's environment. If a variable cannot be resolved, the reference in the input string will be unchanged. The $(VAR_NAME) syntax can be escaped with a double $$, ie: $$(VAR_NAME). Escaped references will never be expanded, regardless of whether the variable exists or not. Cannot be updated. More info: https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/#running-a-command-in-a-shell",
+                        "description": "Arguments to the entrypoint. The docker image's CMD is used if this is not provided. Variable references $(VAR_NAME) are expanded using the container's environment. If a variable cannot be resolved, the reference in the input string will be unchanged. Double $$ are reduced to a single $, which allows for escaping the $(VAR_NAME) syntax: i.e. \"$$(VAR_NAME)\" will produce the string literal \"$(VAR_NAME)\". Escaped references will never be expanded, regardless of whether the variable exists or not. Cannot be updated. More info: https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/#running-a-command-in-a-shell",
                         "items": {
                           "type": [
                             "string",
@@ -4801,7 +5177,7 @@
                         ]
                       },
                       "command": {
-                        "description": "Entrypoint array. Not executed within a shell. The docker image's ENTRYPOINT is used if this is not provided. Variable references $(VAR_NAME) are expanded using the container's environment. If a variable cannot be resolved, the reference in the input string will be unchanged. The $(VAR_NAME) syntax can be escaped with a double $$, ie: $$(VAR_NAME). Escaped references will never be expanded, regardless of whether the variable exists or not. Cannot be updated. More info: https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/#running-a-command-in-a-shell",
+                        "description": "Entrypoint array. Not executed within a shell. The docker image's ENTRYPOINT is used if this is not provided. Variable references $(VAR_NAME) are expanded using the container's environment. If a variable cannot be resolved, the reference in the input string will be unchanged. Double $$ are reduced to a single $, which allows for escaping the $(VAR_NAME) syntax: i.e. \"$$(VAR_NAME)\" will produce the string literal \"$(VAR_NAME)\". Escaped references will never be expanded, regardless of whether the variable exists or not. Cannot be updated. More info: https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/#running-a-command-in-a-shell",
                         "items": {
                           "type": [
                             "string",
@@ -4823,7 +5199,7 @@
                               "type": "string"
                             },
                             "value": {
-                              "description": "Variable references $(VAR_NAME) are expanded using the previous defined environment variables in the container and any service environment variables. If a variable cannot be resolved, the reference in the input string will be unchanged. The $(VAR_NAME) syntax can be escaped with a double $$, ie: $$(VAR_NAME). Escaped references will never be expanded, regardless of whether the variable exists or not. Defaults to \"\".",
+                              "description": "Variable references $(VAR_NAME) are expanded using the previously defined environment variables in the container and any service environment variables. If a variable cannot be resolved, the reference in the input string will be unchanged. Double $$ are reduced to a single $, which allows for escaping the $(VAR_NAME) syntax: i.e. \"$$(VAR_NAME)\" will produce the string literal \"$(VAR_NAME)\". Escaped references will never be expanded, regardless of whether the variable exists or not. Defaults to \"\".",
                               "type": [
                                 "string",
                                 "null"
@@ -4861,6 +5237,7 @@
                                     "object",
                                     "null"
                                   ],
+                                  "x-kubernetes-map-type": "atomic",
                                   "additionalProperties": false
                                 },
                                 "fieldRef": {
@@ -4885,6 +5262,7 @@
                                     "object",
                                     "null"
                                   ],
+                                  "x-kubernetes-map-type": "atomic",
                                   "additionalProperties": false
                                 },
                                 "resourceFieldRef": {
@@ -4925,6 +5303,7 @@
                                     "object",
                                     "null"
                                   ],
+                                  "x-kubernetes-map-type": "atomic",
                                   "additionalProperties": false
                                 },
                                 "secretKeyRef": {
@@ -4956,6 +5335,7 @@
                                     "object",
                                     "null"
                                   ],
+                                  "x-kubernetes-map-type": "atomic",
                                   "additionalProperties": false
                                 }
                               },
@@ -5547,6 +5927,14 @@
                             ],
                             "additionalProperties": false
                           },
+                          "terminationGracePeriodSeconds": {
+                            "description": "Optional duration in seconds the pod needs to terminate gracefully upon probe failure. The grace period is the duration in seconds after the processes running in the pod are sent a termination signal and the time when the processes are forcibly halted with a kill signal. Set this value longer than the expected cleanup time for your process. If this value is nil, the pod's terminationGracePeriodSeconds will be used. Otherwise, this value overrides the value provided by the pod spec. Value must be non-negative integer. The value zero indicates stop immediately via the kill signal (no opportunity to shut down). This is a beta field and requires enabling ProbeTerminationGracePeriod feature gate. Minimum value is 1. spec.terminationGracePeriodSeconds is used if unset.",
+                            "format": "int64",
+                            "type": [
+                              "integer",
+                              "null"
+                            ]
+                          },
                           "timeoutSeconds": {
                             "description": "Number of seconds after which the probe times out. Defaults to 1 second. Minimum value is 1. More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes",
                             "format": "int32",
@@ -5800,6 +6188,14 @@
                             ],
                             "additionalProperties": false
                           },
+                          "terminationGracePeriodSeconds": {
+                            "description": "Optional duration in seconds the pod needs to terminate gracefully upon probe failure. The grace period is the duration in seconds after the processes running in the pod are sent a termination signal and the time when the processes are forcibly halted with a kill signal. Set this value longer than the expected cleanup time for your process. If this value is nil, the pod's terminationGracePeriodSeconds will be used. Otherwise, this value overrides the value provided by the pod spec. Value must be non-negative integer. The value zero indicates stop immediately via the kill signal (no opportunity to shut down). This is a beta field and requires enabling ProbeTerminationGracePeriod feature gate. Minimum value is 1. spec.terminationGracePeriodSeconds is used if unset.",
+                            "format": "int64",
+                            "type": [
+                              "integer",
+                              "null"
+                            ]
+                          },
                           "timeoutSeconds": {
                             "description": "Number of seconds after which the probe times out. Defaults to 1 second. Minimum value is 1. More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes",
                             "format": "int32",
@@ -5835,7 +6231,7 @@
                                 }
                               ]
                             },
-                            "description": "Limits describes the maximum amount of compute resources allowed. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/",
+                            "description": "Limits describes the maximum amount of compute resources allowed. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/",
                             "type": [
                               "object",
                               "null"
@@ -5858,7 +6254,7 @@
                                 }
                               ]
                             },
-                            "description": "Requests describes the minimum amount of compute resources required. If Requests is omitted for a container, it defaults to Limits if that is explicitly specified, otherwise to an implementation-defined value. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/",
+                            "description": "Requests describes the minimum amount of compute resources required. If Requests is omitted for a container, it defaults to Limits if that is explicitly specified, otherwise to an implementation-defined value. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/",
                             "type": [
                               "object",
                               "null"
@@ -6045,6 +6441,13 @@
                                 "description": "GMSACredentialSpecName is the name of the GMSA credential spec to use.",
                                 "type": [
                                   "string",
+                                  "null"
+                                ]
+                              },
+                              "hostProcess": {
+                                "description": "HostProcess determines if a container should be run as a 'Host Process' container. This field is alpha-level and will only be honored by components that enable the WindowsHostProcessContainers feature flag. Setting this field without the feature flag will result in errors when validating the Pod. All of a Pod's containers must have the same effective HostProcess value (it is not allowed to have a mix of HostProcess containers and non-HostProcess containers).  In addition, if HostProcess is true then HostNetwork must also be set to true.",
+                                "type": [
+                                  "boolean",
                                   "null"
                                 ]
                               },
@@ -6242,6 +6645,14 @@
                             ],
                             "additionalProperties": false
                           },
+                          "terminationGracePeriodSeconds": {
+                            "description": "Optional duration in seconds the pod needs to terminate gracefully upon probe failure. The grace period is the duration in seconds after the processes running in the pod are sent a termination signal and the time when the processes are forcibly halted with a kill signal. Set this value longer than the expected cleanup time for your process. If this value is nil, the pod's terminationGracePeriodSeconds will be used. Otherwise, this value overrides the value provided by the pod spec. Value must be non-negative integer. The value zero indicates stop immediately via the kill signal (no opportunity to shut down). This is a beta field and requires enabling ProbeTerminationGracePeriod feature gate. Minimum value is 1. spec.terminationGracePeriodSeconds is used if unset.",
+                            "format": "int64",
+                            "type": [
+                              "integer",
+                              "null"
+                            ]
+                          },
                           "timeoutSeconds": {
                             "description": "Number of seconds after which the probe times out. Defaults to 1 second. Minimum value is 1. More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes",
                             "format": "int32",
@@ -6424,7 +6835,8 @@
                   "type": [
                     "object",
                     "null"
-                  ]
+                  ],
+                  "x-kubernetes-map-type": "atomic"
                 },
                 "overhead": {
                   "additionalProperties": {
@@ -6443,7 +6855,7 @@
                       }
                     ]
                   },
-                  "description": "Overhead represents the resource overhead associated with running a pod for a given RuntimeClass. This field will be autopopulated at admission time by the RuntimeClass admission controller. If the RuntimeClass admission controller is enabled, overhead must not be set in Pod create requests. The RuntimeClass admission controller will reject Pod create requests which have the overhead already set. If RuntimeClass is configured and selected in the PodSpec, Overhead will be set to the value defined in the corresponding RuntimeClass, otherwise it will remain unset and treated as zero. More info: https://git.k8s.io/enhancements/keps/sig-node/20190226-pod-overhead.md This field is alpha-level as of Kubernetes v1.16, and is only honored by servers that enable the PodOverhead feature.",
+                  "description": "Overhead represents the resource overhead associated with running a pod for a given RuntimeClass. This field will be autopopulated at admission time by the RuntimeClass admission controller. If the RuntimeClass admission controller is enabled, overhead must not be set in Pod create requests. The RuntimeClass admission controller will reject Pod create requests which have the overhead already set. If RuntimeClass is configured and selected in the PodSpec, Overhead will be set to the value defined in the corresponding RuntimeClass, otherwise it will remain unset and treated as zero. More info: https://git.k8s.io/enhancements/keps/sig-node/688-pod-overhead/README.md This field is beta-level as of Kubernetes v1.18, and is only honored by servers that enable the PodOverhead feature.",
                   "type": [
                     "object",
                     "null"
@@ -6472,7 +6884,7 @@
                   ]
                 },
                 "readinessGates": {
-                  "description": "If specified, all readiness gates will be evaluated for pod readiness. A pod is ready when all its containers are ready AND all conditions specified in the readiness gates have status equal to \"True\" More info: https://git.k8s.io/enhancements/keps/sig-network/0007-pod-ready%2B%2B.md",
+                  "description": "If specified, all readiness gates will be evaluated for pod readiness. A pod is ready when all its containers are ready AND all conditions specified in the readiness gates have status equal to \"True\" More info: https://git.k8s.io/enhancements/keps/sig-network/580-pod-readiness-gates",
                   "items": {
                     "description": "PodReadinessGate contains the reference to a pod condition",
                     "properties": {
@@ -6503,7 +6915,7 @@
                   ]
                 },
                 "runtimeClassName": {
-                  "description": "RuntimeClassName refers to a RuntimeClass object in the node.k8s.io group, which should be used to run this pod.  If no RuntimeClass resource matches the named class, the pod will not be run. If unset or empty, the \"legacy\" RuntimeClass will be used, which is an implicit class with an empty definition that uses the default runtime handler. More info: https://git.k8s.io/enhancements/keps/sig-node/runtime-class.md This is a beta feature as of Kubernetes v1.14.",
+                  "description": "RuntimeClassName refers to a RuntimeClass object in the node.k8s.io group, which should be used to run this pod.  If no RuntimeClass resource matches the named class, the pod will not be run. If unset or empty, the \"legacy\" RuntimeClass will be used, which is an implicit class with an empty definition that uses the default runtime handler. More info: https://git.k8s.io/enhancements/keps/sig-node/585-runtime-class This is a beta feature as of Kubernetes v1.14.",
                   "type": [
                     "string",
                     "null"
@@ -6687,6 +7099,13 @@
                             "null"
                           ]
                         },
+                        "hostProcess": {
+                          "description": "HostProcess determines if a container should be run as a 'Host Process' container. This field is alpha-level and will only be honored by components that enable the WindowsHostProcessContainers feature flag. Setting this field without the feature flag will result in errors when validating the Pod. All of a Pod's containers must have the same effective HostProcess value (it is not allowed to have a mix of HostProcess containers and non-HostProcess containers).  In addition, if HostProcess is true then HostNetwork must also be set to true.",
+                          "type": [
+                            "boolean",
+                            "null"
+                          ]
+                        },
                         "runAsUserName": {
                           "description": "The UserName in Windows to run the entrypoint of the container process. Defaults to the user specified in image metadata if unspecified. May also be set in PodSecurityContext. If set in both SecurityContext and PodSecurityContext, the value specified in SecurityContext takes precedence.",
                           "type": [
@@ -6744,7 +7163,7 @@
                   ]
                 },
                 "terminationGracePeriodSeconds": {
-                  "description": "Optional duration in seconds the pod needs to terminate gracefully. May be decreased in delete request. Value must be non-negative integer. The value zero indicates delete immediately. If this value is nil, the default grace period will be used instead. The grace period is the duration in seconds after the processes running in the pod are sent a termination signal and the time when the processes are forcibly halted with a kill signal. Set this value longer than the expected cleanup time for your process. Defaults to 30 seconds.",
+                  "description": "Optional duration in seconds the pod needs to terminate gracefully. May be decreased in delete request. Value must be non-negative integer. The value zero indicates stop immediately via the kill signal (no opportunity to shut down). If this value is nil, the default grace period will be used instead. The grace period is the duration in seconds after the processes running in the pod are sent a termination signal and the time when the processes are forcibly halted with a kill signal. Set this value longer than the expected cleanup time for your process. Defaults to 30 seconds.",
                   "format": "int64",
                   "type": [
                     "integer",
@@ -7086,6 +7505,7 @@
                               "object",
                               "null"
                             ],
+                            "x-kubernetes-map-type": "atomic",
                             "additionalProperties": false
                           },
                           "user": {
@@ -7137,6 +7557,7 @@
                               "object",
                               "null"
                             ],
+                            "x-kubernetes-map-type": "atomic",
                             "additionalProperties": false
                           },
                           "volumeID": {
@@ -7251,6 +7672,7 @@
                               "object",
                               "null"
                             ],
+                            "x-kubernetes-map-type": "atomic",
                             "additionalProperties": false
                           },
                           "readOnly": {
@@ -7321,6 +7743,7 @@
                                     "object",
                                     "null"
                                   ],
+                                  "x-kubernetes-map-type": "atomic",
                                   "additionalProperties": false
                                 },
                                 "mode": {
@@ -7373,6 +7796,7 @@
                                     "object",
                                     "null"
                                   ],
+                                  "x-kubernetes-map-type": "atomic",
                                   "additionalProperties": false
                                 }
                               },
@@ -7433,13 +7857,6 @@
                       "ephemeral": {
                         "description": "Represents an ephemeral volume that is handled by a normal storage driver.",
                         "properties": {
-                          "readOnly": {
-                            "description": "Specifies a read-only configuration for the volume. Defaults to false (read/write).",
-                            "type": [
-                              "boolean",
-                              "null"
-                            ]
-                          },
                           "volumeClaimTemplate": {
                             "description": "PersistentVolumeClaimTemplate is used to produce PersistentVolumeClaim objects as part of an EphemeralVolumeSource.",
                             "properties": {
@@ -7572,6 +7989,13 @@
                                             "null"
                                           ]
                                         },
+                                        "subresource": {
+                                          "description": "Subresource is the name of the subresource used to update that object, or empty string if the object was updated through the main resource. The value of this field is used to distinguish between managers, even if they share the same name. For example, a status update will be distinct from a regular update using the same manager name. Note that the APIVersion field is not related to the Subresource field and it always corresponds to the version of the main resource.",
+                                          "type": [
+                                            "string",
+                                            "null"
+                                          ]
+                                        },
                                         "time": {
                                           "description": "Time is a wrapper around time.Time which supports correct marshaling to YAML and JSON.  Wrappers are provided for many of the factory methods that the time package offers.",
                                           "format": "date-time",
@@ -7652,6 +8076,7 @@
                                         "object",
                                         "null"
                                       ],
+                                      "x-kubernetes-map-type": "atomic",
                                       "additionalProperties": false
                                     },
                                     "type": [
@@ -7732,6 +8157,37 @@
                                       "object",
                                       "null"
                                     ],
+                                    "x-kubernetes-map-type": "atomic",
+                                    "additionalProperties": false
+                                  },
+                                  "dataSourceRef": {
+                                    "description": "TypedLocalObjectReference contains enough information to let you locate the typed referenced object inside the same namespace.",
+                                    "properties": {
+                                      "apiGroup": {
+                                        "description": "APIGroup is the group for the resource being referenced. If APIGroup is not specified, the specified Kind must be in the core API group. For any other third-party types, APIGroup is required.",
+                                        "type": [
+                                          "string",
+                                          "null"
+                                        ]
+                                      },
+                                      "kind": {
+                                        "description": "Kind is the type of resource being referenced",
+                                        "type": "string"
+                                      },
+                                      "name": {
+                                        "description": "Name is the name of resource being referenced",
+                                        "type": "string"
+                                      }
+                                    },
+                                    "required": [
+                                      "kind",
+                                      "name"
+                                    ],
+                                    "type": [
+                                      "object",
+                                      "null"
+                                    ],
+                                    "x-kubernetes-map-type": "atomic",
                                     "additionalProperties": false
                                   },
                                   "resources": {
@@ -7754,7 +8210,7 @@
                                             }
                                           ]
                                         },
-                                        "description": "Limits describes the maximum amount of compute resources allowed. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/",
+                                        "description": "Limits describes the maximum amount of compute resources allowed. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/",
                                         "type": [
                                           "object",
                                           "null"
@@ -7777,7 +8233,7 @@
                                             }
                                           ]
                                         },
-                                        "description": "Requests describes the minimum amount of compute resources required. If Requests is omitted for a container, it defaults to Limits if that is explicitly specified, otherwise to an implementation-defined value. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/",
+                                        "description": "Requests describes the minimum amount of compute resources required. If Requests is omitted for a container, it defaults to Limits if that is explicitly specified, otherwise to an implementation-defined value. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/",
                                         "type": [
                                           "object",
                                           "null"
@@ -8007,6 +8463,7 @@
                               "object",
                               "null"
                             ],
+                            "x-kubernetes-map-type": "atomic",
                             "additionalProperties": false
                           }
                         },
@@ -8248,6 +8705,7 @@
                               "object",
                               "null"
                             ],
+                            "x-kubernetes-map-type": "atomic",
                             "additionalProperties": false
                           },
                           "targetPortal": {
@@ -8485,6 +8943,7 @@
                                               "object",
                                               "null"
                                             ],
+                                            "x-kubernetes-map-type": "atomic",
                                             "additionalProperties": false
                                           },
                                           "mode": {
@@ -8537,6 +8996,7 @@
                                               "object",
                                               "null"
                                             ],
+                                            "x-kubernetes-map-type": "atomic",
                                             "additionalProperties": false
                                           }
                                         },
@@ -8783,6 +9243,7 @@
                               "object",
                               "null"
                             ],
+                            "x-kubernetes-map-type": "atomic",
                             "additionalProperties": false
                           },
                           "user": {
@@ -8843,6 +9304,7 @@
                               }
                             },
                             "type": "object",
+                            "x-kubernetes-map-type": "atomic",
                             "additionalProperties": false
                           },
                           "sslEnabled": {
@@ -8990,6 +9452,7 @@
                               "object",
                               "null"
                             ],
+                            "x-kubernetes-map-type": "atomic",
                             "additionalProperties": false
                           },
                           "volumeName": {
@@ -9111,6 +9574,13 @@
             "null"
           ]
         },
+        "completedIndexes": {
+          "description": "CompletedIndexes holds the completed indexes when .spec.completionMode = \"Indexed\" in a text format. The indexes are represented as decimal integers separated by commas. The numbers are listed in increasing order. Three or more consecutive numbers are compressed and represented by the first and last element of the series, separated by a hyphen. For example, if the completed indexes are 1, 3, 4, 5 and 7, they are represented as \"1,3-5,7\".",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
         "completionTime": {
           "description": "Time is a wrapper around time.Time which supports correct marshaling to YAML and JSON.  Wrappers are provided for many of the factory methods that the time package offers.",
           "format": "date-time",
@@ -9120,7 +9590,7 @@
           ]
         },
         "conditions": {
-          "description": "The latest available observations of an object's current state. When a job fails, one of the conditions will have type == \"Failed\". More info: https://kubernetes.io/docs/concepts/workloads/controllers/jobs-run-to-completion/",
+          "description": "The latest available observations of an object's current state. When a Job fails, one of the conditions will have type \"Failed\" and status true. When a Job is suspended, one of the conditions will have type \"Suspended\" and status true; when the Job is resumed, the status of this condition will become false. When a Job is completed, one of the conditions will have type \"Complete\" and status true. More info: https://kubernetes.io/docs/concepts/workloads/controllers/jobs-run-to-completion/",
           "items": {
             "description": "JobCondition describes current state of a job.",
             "properties": {
@@ -9177,6 +9647,7 @@
             "array",
             "null"
           ],
+          "x-kubernetes-list-type": "atomic",
           "x-kubernetes-patch-merge-key": "type",
           "x-kubernetes-patch-strategy": "merge"
         },
@@ -9203,6 +9674,44 @@
             "integer",
             "null"
           ]
+        },
+        "uncountedTerminatedPods": {
+          "description": "UncountedTerminatedPods holds UIDs of Pods that have terminated but haven't been accounted in Job status counters.",
+          "properties": {
+            "failed": {
+              "description": "Failed holds UIDs of failed Pods.",
+              "items": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "type": [
+                "array",
+                "null"
+              ],
+              "x-kubernetes-list-type": "set"
+            },
+            "succeeded": {
+              "description": "Succeeded holds UIDs of succeeded Pods.",
+              "items": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "type": [
+                "array",
+                "null"
+              ],
+              "x-kubernetes-list-type": "set"
+            }
+          },
+          "type": [
+            "object",
+            "null"
+          ],
+          "additionalProperties": false
         }
       },
       "type": [
