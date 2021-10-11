@@ -20,11 +20,11 @@ import io.fabric8.kubernetes.client.Watcher
 import io.fabric8.kubernetes.client.utils.Serialization
 
 class NonNamespacedCustomResourceOperator(
+    override val kind: ResourceKind<GenericCustomResource>,
     definition: CustomResourceDefinition,
     client: KubernetesClient
 ) : NonNamespacedResourceOperator<GenericCustomResource, KubernetesClient>(client) {
 
-    override val kind = ResourceKind.create(definition.spec)
     private val operation = CustomResourceRawOperation(client, definition)
 
     override fun loadAllResources(): List<GenericCustomResource> {

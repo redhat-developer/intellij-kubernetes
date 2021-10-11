@@ -183,8 +183,8 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
         }
     }
 
-    private fun getOperator(definition: CustomResourceDefinition): IResourceOperator<GenericCustomResource> {
-        val kind = ResourceKind.create(definition.spec)
+    private fun getOperator(definition: CustomResourceDefinition): IResourceOperator<GenericCustomResource>? {
+        val kind = ResourceKind.create(definition.spec) ?: return null
         val resourcesIn = toResourcesIn(definition.spec)
         synchronized(this) {
             var operator: IResourceOperator<GenericCustomResource>? = getOperator(kind, resourcesIn)
@@ -196,16 +196,16 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
     }
 
     override fun getAllResources(definition: CustomResourceDefinition): Collection<GenericCustomResource> {
-        return getOperator(definition).allResources
+        return getOperator(definition)?.allResources ?: return emptyList()
     }
 
     private fun createCustomResourcesOperator(
             definition: CustomResourceDefinition,
             kind: ResourceKind<GenericCustomResource>)
-            : IResourceOperator<GenericCustomResource> {
+            : IResourceOperator<GenericCustomResource>? {
         synchronized(this) {
             val resourceIn = toResourcesIn(definition.spec)
-            val operator = createCustomResourcesOperator(definition, resourceIn)
+            val operator = createCustomResourcesOperator(definition, resourceIn) ?: return null
             setOperator(operator, kind, resourceIn)
             return operator
         }
@@ -214,23 +214,27 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
     protected open fun createCustomResourcesOperator(
             definition: CustomResourceDefinition,
             resourceIn: ResourcesIn)
-            : IResourceOperator<GenericCustomResource> {
+            : IResourceOperator<GenericCustomResource>? {
+        val kind = ResourceKind.create(definition.spec) ?: return null
         return when(resourceIn) {
             CURRENT_NAMESPACE ->
                 NamespacedCustomResourceOperator(
+                    kind,
                     definition,
                     getCurrentNamespace(),
-                    clients.get())
+                    clients.get()
+                )
             ANY_NAMESPACE,
             NO_NAMESPACE ->
                 NonNamespacedCustomResourceOperator(
+                    kind,
                     definition,
                     clients.get())
         }
     }
 
     private fun removeCustomResourceOperator(resource: CustomResourceDefinition) {
-        val kind = ResourceKind.create(resource.spec)
+        val kind = ResourceKind.create(resource.spec) ?: return
         watch.stopWatch(kind)
         val operators = when (toResourcesIn(resource.spec)) {
             CURRENT_NAMESPACE -> namespacedOperators
@@ -286,7 +290,7 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
     }
 
     override fun stopWatch(definition: CustomResourceDefinition) {
-        val kind = ResourceKind.create(definition.spec)
+        val kind = ResourceKind.create(definition.spec) ?: return
         stopWatch(kind)
     }
 
@@ -327,7 +331,10 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
     private fun addResource(resource: CustomResourceDefinition): Boolean {
         val added = addResource(resource as HasMetadata)
         if (added) {
-            createCustomResourcesOperator(resource, ResourceKind.create(resource.spec))
+            val kind = ResourceKind.create(resource.spec)
+            if (kind != null) {
+                createCustomResourcesOperator(resource, kind)
+            }
         }
         return added
     }
@@ -396,7 +403,10 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
         return replaced
     }
 
-    private fun replaced(kind: ResourceKind<out HasMetadata>, resource: HasMetadata): Boolean {
+    private fun replaced(kind: ResourceKind<out HasMetadata>?, resource: HasMetadata): Boolean {
+        if (kind == null) {
+            return false
+        }
         val replaceNamespaced = namespacedOperators[kind]?.replaced(resource) ?: false
         val replaceNonNamespaced = nonNamespacedOperators[kind]?.replaced(resource) ?: false
         return replaceNamespaced

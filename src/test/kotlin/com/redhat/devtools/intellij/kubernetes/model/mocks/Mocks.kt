@@ -65,7 +65,7 @@ object Mocks {
     }
 
     inline fun <reified T : HasMetadata, C : Client> namespacedResourceOperator(
-        kind: ResourceKind<T>,
+        kind: ResourceKind<T>?,
         resources: Collection<T>,
         namespace: Namespace,
         crossinline watchOperation: (watcher: Watcher<in T>) -> Watch? = { null },
@@ -74,8 +74,8 @@ object Mocks {
     ): INamespacedResourceOperator<T, C> {
         return mock {
             Mockito.doReturn(namespace.metadata.name)
-                .`when`(mock).namespace
-            on { this.kind } doReturn kind
+                .whenever(mock).namespace
+            on { this.kind } doReturn kind!!
             on { allResources } doReturn resources
             on { watch(any(), any()) } doAnswer { invocation ->
                 watchOperation.invoke(invocation.getArgument(0))

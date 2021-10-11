@@ -34,7 +34,6 @@ class CustomResourceOperatorFactoryTest {
 
         private val CRD_NOT_MATCHING = customResourceDefinition(
             "crd1", "ns1", "uid1", "apiVersion1",
-            version,
             listOf(
                 customResourceDefinitionVersion("v42")
             ),
@@ -44,7 +43,6 @@ class CustomResourceOperatorFactoryTest {
         )
         private val CRD_CLUSTER_SCOPE = customResourceDefinition(
             "crd1", "ns1", "uid1", "apiVersion1",
-            version,
             listOf(
                 customResourceDefinitionVersion(version)
             ),
@@ -55,7 +53,6 @@ class CustomResourceOperatorFactoryTest {
 
         private val CRD_NAMESPACE_SCOPED = customResourceDefinition(
             "crd1", "ns1", "uid1", "apiVersion1",
-            version,
             listOf(
                 customResourceDefinitionVersion(version)
             ),
@@ -66,7 +63,6 @@ class CustomResourceOperatorFactoryTest {
 
         private val CRD_UNKNOWN_SCOPE = customResourceDefinition(
             "crd1", "ns1", "uid1", "apiVersion1",
-            version,
             listOf(
                 customResourceDefinitionVersion(version)
             ),

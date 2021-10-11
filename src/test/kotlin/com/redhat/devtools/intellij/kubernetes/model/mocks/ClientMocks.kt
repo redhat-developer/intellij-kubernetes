@@ -15,6 +15,7 @@ import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.whenever
 import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.custom.GenericCustomResource
 import com.redhat.devtools.intellij.kubernetes.model.util.getApiVersion
+import com.redhat.devtools.intellij.kubernetes.model.util.getHighestPriorityVersion
 import io.fabric8.kubernetes.api.model.Context
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.NamedContext
@@ -201,7 +202,6 @@ object ClientMocks {
             namespace,
             uid,
             apiVersion,
-            specVersion,
             listOf(customResourceDefinitionVersion(specVersion)),
             specGroup,
             specKind,
@@ -213,7 +213,6 @@ object ClientMocks {
         namespace: String,
         uid: String,
         apiVersion: String,
-        specVersion: String,
         specVersions: List<CustomResourceDefinitionVersion>,
         specGroup: String?,
         specKind: String,
@@ -263,7 +262,8 @@ object ClientMocks {
         val metadata = objectMeta(name, namespace, uid, resourceVersion)
         val apiVersion = getApiVersion(
             definition.spec.group,
-            definition.spec.versions) // TODO: deal with multiple versions
+            getHighestPriorityVersion(definition.spec)!!
+        )
         val kind = definition.spec.names.kind
         return mock {
             on { getMetadata() } doReturn metadata
