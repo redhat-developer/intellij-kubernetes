@@ -165,6 +165,13 @@
                         "null"
                       ]
                     },
+                    "subresource": {
+                      "description": "Subresource is the name of the subresource used to update that object, or empty string if the object was updated through the main resource. The value of this field is used to distinguish between managers, even if they share the same name. For example, a status update will be distinct from a regular update using the same manager name. Note that the APIVersion field is not related to the Subresource field and it always corresponds to the version of the main resource.",
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
                     "time": {
                       "description": "Time is a wrapper around time.Time which supports correct marshaling to YAML and JSON.  Wrappers are provided for many of the factory methods that the time package offers.",
                       "format": "date-time",
@@ -245,6 +252,7 @@
                     "object",
                     "null"
                   ],
+                  "x-kubernetes-map-type": "atomic",
                   "additionalProperties": false
                 },
                 "type": [
@@ -286,10 +294,10 @@
             "description": "NodeSpec describes the attributes that a node is created with.",
             "properties": {
               "configSource": {
-                "description": "NodeConfigSource specifies a source of node configuration. Exactly one subfield (excluding metadata) must be non-nil.",
+                "description": "NodeConfigSource specifies a source of node configuration. Exactly one subfield (excluding metadata) must be non-nil. This API is deprecated since 1.22",
                 "properties": {
                   "configMap": {
-                    "description": "ConfigMapNodeConfigSource contains the information to reference a ConfigMap as a config source for the Node.",
+                    "description": "ConfigMapNodeConfigSource contains the information to reference a ConfigMap as a config source for the Node. This API is deprecated since 1.22: https://git.k8s.io/enhancements/keps/sig-node/281-dynamic-kubelet-configuration",
                     "properties": {
                       "kubeletConfigKey": {
                         "description": "KubeletConfigKey declares which key of the referenced ConfigMap corresponds to the KubeletConfiguration structure This field is required in all cases.",
@@ -574,10 +582,10 @@
                 "description": "NodeConfigStatus describes the status of the config assigned by Node.Spec.ConfigSource.",
                 "properties": {
                   "active": {
-                    "description": "NodeConfigSource specifies a source of node configuration. Exactly one subfield (excluding metadata) must be non-nil.",
+                    "description": "NodeConfigSource specifies a source of node configuration. Exactly one subfield (excluding metadata) must be non-nil. This API is deprecated since 1.22",
                     "properties": {
                       "configMap": {
-                        "description": "ConfigMapNodeConfigSource contains the information to reference a ConfigMap as a config source for the Node.",
+                        "description": "ConfigMapNodeConfigSource contains the information to reference a ConfigMap as a config source for the Node. This API is deprecated since 1.22: https://git.k8s.io/enhancements/keps/sig-node/281-dynamic-kubelet-configuration",
                         "properties": {
                           "kubeletConfigKey": {
                             "description": "KubeletConfigKey declares which key of the referenced ConfigMap corresponds to the KubeletConfiguration structure This field is required in all cases.",
@@ -625,10 +633,10 @@
                     "additionalProperties": false
                   },
                   "assigned": {
-                    "description": "NodeConfigSource specifies a source of node configuration. Exactly one subfield (excluding metadata) must be non-nil.",
+                    "description": "NodeConfigSource specifies a source of node configuration. Exactly one subfield (excluding metadata) must be non-nil. This API is deprecated since 1.22",
                     "properties": {
                       "configMap": {
-                        "description": "ConfigMapNodeConfigSource contains the information to reference a ConfigMap as a config source for the Node.",
+                        "description": "ConfigMapNodeConfigSource contains the information to reference a ConfigMap as a config source for the Node. This API is deprecated since 1.22: https://git.k8s.io/enhancements/keps/sig-node/281-dynamic-kubelet-configuration",
                         "properties": {
                           "kubeletConfigKey": {
                             "description": "KubeletConfigKey declares which key of the referenced ConfigMap corresponds to the KubeletConfiguration structure This field is required in all cases.",
@@ -683,10 +691,10 @@
                     ]
                   },
                   "lastKnownGood": {
-                    "description": "NodeConfigSource specifies a source of node configuration. Exactly one subfield (excluding metadata) must be non-nil.",
+                    "description": "NodeConfigSource specifies a source of node configuration. Exactly one subfield (excluding metadata) must be non-nil. This API is deprecated since 1.22",
                     "properties": {
                       "configMap": {
-                        "description": "ConfigMapNodeConfigSource contains the information to reference a ConfigMap as a config source for the Node.",
+                        "description": "ConfigMapNodeConfigSource contains the information to reference a ConfigMap as a config source for the Node. This API is deprecated since 1.22: https://git.k8s.io/enhancements/keps/sig-node/281-dynamic-kubelet-configuration",
                         "properties": {
                           "kubeletConfigKey": {
                             "description": "KubeletConfigKey declares which key of the referenced ConfigMap corresponds to the KubeletConfiguration structure This field is required in all cases.",
@@ -781,7 +789,10 @@
                           "null"
                         ]
                       },
-                      "type": "array"
+                      "type": [
+                        "array",
+                        "null"
+                      ]
                     },
                     "sizeBytes": {
                       "description": "The size of the image in bytes.",
@@ -792,9 +803,6 @@
                       ]
                     }
                   },
-                  "required": [
-                    "names"
-                  ],
                   "type": [
                     "object",
                     "null"

@@ -169,6 +169,13 @@
                         "null"
                       ]
                     },
+                    "subresource": {
+                      "description": "Subresource is the name of the subresource used to update that object, or empty string if the object was updated through the main resource. The value of this field is used to distinguish between managers, even if they share the same name. For example, a status update will be distinct from a regular update using the same manager name. Note that the APIVersion field is not related to the Subresource field and it always corresponds to the version of the main resource.",
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
                     "time": {
                       "description": "Time is a wrapper around time.Time which supports correct marshaling to YAML and JSON.  Wrappers are provided for many of the factory methods that the time package offers.",
                       "format": "date-time",
@@ -249,6 +256,7 @@
                     "object",
                     "null"
                   ],
+                  "x-kubernetes-map-type": "atomic",
                   "additionalProperties": false
                 },
                 "type": [
@@ -333,7 +341,8 @@
                 "type": [
                   "object",
                   "null"
-                ]
+                ],
+                "x-kubernetes-map-type": "atomic"
               },
               "tolerations": {
                 "description": "tolerations are appended (excluding duplicates) to pods running with this RuntimeClass during admission, effectively unioning the set of nodes tolerated by the pod and the RuntimeClass.",

@@ -165,6 +165,13 @@
                         "null"
                       ]
                     },
+                    "subresource": {
+                      "description": "Subresource is the name of the subresource used to update that object, or empty string if the object was updated through the main resource. The value of this field is used to distinguish between managers, even if they share the same name. For example, a status update will be distinct from a regular update using the same manager name. Note that the APIVersion field is not related to the Subresource field and it always corresponds to the version of the main resource.",
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
                     "time": {
                       "description": "Time is a wrapper around time.Time which supports correct marshaling to YAML and JSON.  Wrappers are provided for many of the factory methods that the time package offers.",
                       "format": "date-time",
@@ -245,6 +252,7 @@
                     "object",
                     "null"
                   ],
+                  "x-kubernetes-map-type": "atomic",
                   "additionalProperties": false
                 },
                 "type": [
@@ -516,6 +524,7 @@
                               "object",
                               "null"
                             ],
+                            "x-kubernetes-map-type": "atomic",
                             "additionalProperties": false
                           },
                           "user": {
@@ -574,6 +583,7 @@
                               "object",
                               "null"
                             ],
+                            "x-kubernetes-map-type": "atomic",
                             "additionalProperties": false
                           },
                           "volumeID": {
@@ -647,6 +657,7 @@
                           "object",
                           "null"
                         ],
+                        "x-kubernetes-map-type": "atomic",
                         "additionalProperties": false
                       },
                       "csi": {
@@ -674,6 +685,7 @@
                               "object",
                               "null"
                             ],
+                            "x-kubernetes-map-type": "atomic",
                             "additionalProperties": false
                           },
                           "controllerPublishSecretRef": {
@@ -698,6 +710,7 @@
                               "object",
                               "null"
                             ],
+                            "x-kubernetes-map-type": "atomic",
                             "additionalProperties": false
                           },
                           "driver": {
@@ -733,6 +746,7 @@
                               "object",
                               "null"
                             ],
+                            "x-kubernetes-map-type": "atomic",
                             "additionalProperties": false
                           },
                           "nodeStageSecretRef": {
@@ -757,6 +771,7 @@
                               "object",
                               "null"
                             ],
+                            "x-kubernetes-map-type": "atomic",
                             "additionalProperties": false
                           },
                           "readOnly": {
@@ -908,6 +923,7 @@
                               "object",
                               "null"
                             ],
+                            "x-kubernetes-map-type": "atomic",
                             "additionalProperties": false
                           }
                         },
@@ -1132,6 +1148,7 @@
                               "object",
                               "null"
                             ],
+                            "x-kubernetes-map-type": "atomic",
                             "additionalProperties": false
                           },
                           "targetPortal": {
@@ -1316,6 +1333,7 @@
                                     "object",
                                     "null"
                                   ],
+                                  "x-kubernetes-map-type": "atomic",
                                   "additionalProperties": false
                                 },
                                 "type": "array"
@@ -1328,6 +1346,7 @@
                               "object",
                               "null"
                             ],
+                            "x-kubernetes-map-type": "atomic",
                             "additionalProperties": false
                           }
                         },
@@ -1516,6 +1535,7 @@
                               "object",
                               "null"
                             ],
+                            "x-kubernetes-map-type": "atomic",
                             "additionalProperties": false
                           },
                           "user": {
@@ -1583,6 +1603,7 @@
                               }
                             },
                             "type": "object",
+                            "x-kubernetes-map-type": "atomic",
                             "additionalProperties": false
                           },
                           "sslEnabled": {
@@ -1710,6 +1731,7 @@
                               "object",
                               "null"
                             ],
+                            "x-kubernetes-map-type": "atomic",
                             "additionalProperties": false
                           },
                           "volumeName": {

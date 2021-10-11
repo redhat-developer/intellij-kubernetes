@@ -23,6 +23,7 @@
         "object",
         "null"
       ],
+      "x-kubernetes-map-type": "atomic",
       "additionalProperties": false
     },
     "controllerPublishSecretRef": {
@@ -47,6 +48,7 @@
         "object",
         "null"
       ],
+      "x-kubernetes-map-type": "atomic",
       "additionalProperties": false
     },
     "driver": {
@@ -85,6 +87,7 @@
         "object",
         "null"
       ],
+      "x-kubernetes-map-type": "atomic",
       "additionalProperties": false
     },
     "nodeStageSecretRef": {
@@ -109,6 +112,7 @@
         "object",
         "null"
       ],
+      "x-kubernetes-map-type": "atomic",
       "additionalProperties": false
     },
     "readOnly": {
