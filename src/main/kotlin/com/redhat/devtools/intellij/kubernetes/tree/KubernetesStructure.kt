@@ -81,9 +81,9 @@ class KubernetesStructure(model: IResourceModel) : AbstractTreeStructureContribu
         val WORKLOADS = Folder("Workloads", null)
 			val DEPLOYMENTS = Folder("Deployments", DeploymentsOperator.KIND) //  Workloads / Deployments
 			val STATEFULSETS = Folder("StatefulSets", StatefulSetsOperator.KIND) //  Workloads / StatefulSets
-			val DAEMONSETS = Folder("DaemonSets", DaemonSetsOperator.KIND) //  Workloads / Pods
-			val JOBS = Folder("Jobs", JobsOperator.KIND) //  Workloads / StatefulSets
-			val CRONJOBS = Folder("CronJobs", CronJobsOperator.KIND) //  Workloads / StatefulSets
+			val DAEMONSETS = Folder("DaemonSets", DaemonSetsOperator.KIND) //  Workloads / DaemonSets
+			val JOBS = Folder("Jobs", JobsOperator.KIND) //  Workloads / Jobs
+			val CRONJOBS = Folder("CronJobs", CronJobsOperator.KIND) //  Workloads / CronJobs
             val PODS = Folder("Pods", NamespacedPodsOperator.KIND) //  Workloads / Pods
         val NETWORK = Folder("Network", null)
             val SERVICES = Folder("Services", ServicesOperator.KIND) // Network / Services
