@@ -132,6 +132,10 @@ open class ResourceEditor protected constructor(
             return create(editor, project)
         }
 
+        fun get(file: VirtualFile?): ResourceEditor? {
+            return file?.getUserData(KEY_RESOURCE_EDITOR)
+        }
+
         private fun create(editor: FileEditor, project: Project): ResourceEditor? {
             val telemetry = TelemetryService.instance.action(NAME_PREFIX_EDITOR + "open")
             try {
@@ -154,6 +158,7 @@ open class ResourceEditor protected constructor(
         ): ResourceEditor {
             val resourceEditor = ResourceEditor(resource, editor, project, clients)
             editor.putUserData(KEY_RESOURCE_EDITOR, resourceEditor)
+            editor.file?.putUserData(KEY_RESOURCE_EDITOR, resourceEditor)
             createToolbar(editor, project)
             return resourceEditor
         }
