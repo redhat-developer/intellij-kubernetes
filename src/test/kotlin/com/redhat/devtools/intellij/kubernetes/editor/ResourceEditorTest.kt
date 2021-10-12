@@ -669,7 +669,7 @@ class ResourceEditorTest {
     fun `#getTitle should return resourcename@namespace if file is temporary file`() {
         // given
         doReturn(true)
-            .whenever(resourceFile).isTemporaryFile()
+            .whenever(resourceFile).isTemporary()
         val resource = localCopy
         // when
         val title = editor.getTitle()
@@ -681,7 +681,7 @@ class ResourceEditorTest {
     fun `#getTitle should return filename if file is NOT temporary file`() {
         // given
         doReturn(false)
-            .whenever(resourceFile).isTemporaryFile()
+            .whenever(resourceFile).isTemporary()
         doReturn("luke.skywalker")
             .whenever(virtualFile).name
         val filename = virtualFile.name

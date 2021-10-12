@@ -446,16 +446,12 @@ open class ResourceEditor protected constructor(
         }
     }
 
+    /**
+     * Closes this instance. closes the resource watch and deletes the temporary file if one was created.
+     */
     fun close() {
         clusterResource?.close()
-        deleteTemporaryFile()
-    }
-
-    private fun deleteTemporaryFile() {
-        val file = createResourceFileForVirtual(editor.file)
-        if (true == file?.isTemporaryFile()) {
-            file.delete()
-        }
+        createResourceFileForVirtual(editor.file)?.deleteTemporary()
     }
 
     /**
@@ -473,7 +469,7 @@ open class ResourceEditor protected constructor(
 
     fun getTitle(): String? {
         val file = editor.file ?: return null
-        return if (true == createResourceFileForVirtual(file)?.isTemporaryFile()) {
+        return if (true == createResourceFileForVirtual(file)?.isTemporary()) {
             val resource = editorResource ?: return ""
             getTitleFor(resource)
         } else {

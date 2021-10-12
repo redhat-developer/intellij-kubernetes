@@ -18,6 +18,7 @@ import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.eq
 import com.nhaarman.mockitokotlin2.mock
+import com.nhaarman.mockitokotlin2.never
 import com.nhaarman.mockitokotlin2.spy
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.whenever
@@ -55,11 +56,11 @@ spec:
 """
     private val path = ResourceFile.TEMP_FOLDER.resolve(
         "luke-skywalker.${ResourceFile.EXTENSION}")
-    private val virtualFileMock: VirtualFile = createVirtualFile(
+    private val temporaryVirtualFile: VirtualFile = createVirtualFile(
         path,
         true,
         ByteArrayInputStream(job.toByteArray(Charset.defaultCharset())))
-    private val resourceFile = spy(TestableResourceFile(virtualFileMock))
+    private val resourceFile = spy(TestableResourceFile(temporaryVirtualFile))
 
     @Test
     fun `#create(virtualFile) should return null for null virtualFile`() {
@@ -102,7 +103,7 @@ spec:
         // given
         val factory = createResourceFileFactoryMock(YAMLFileType.YML)
         // when
-        val isResourceFile = factory.isResourceFile(virtualFileMock)
+        val isResourceFile = factory.isResourceFile(temporaryVirtualFile)
         // then
         assertThat(isResourceFile).isTrue()
     }
@@ -162,7 +163,7 @@ spec:
     fun `#isTemporaryFile() should return true for file in tmp folder`() {
         // given
         // when
-        val isTemporary = resourceFile.isTemporaryFile()
+        val isTemporary = resourceFile.isTemporary()
         // then
         assertThat(isTemporary).isTrue()
     }
@@ -176,7 +177,7 @@ spec:
             ByteArrayInputStream(job.toByteArray(Charset.defaultCharset())))
         val resourceFile = spy(TestableResourceFile(virtualFileMock))
         // when
-        val isTemporary = resourceFile.isTemporaryFile()
+        val isTemporary = resourceFile.isTemporary()
         // then
         assertThat(isTemporary).isFalse()
     }
@@ -203,7 +204,7 @@ spec:
         // when
         resourceFile.write(POD3)
         // then
-        verify(virtualFileMock).refresh(any(), any())
+        verify(temporaryVirtualFile).refresh(any(), any())
     }
 
     @Test
@@ -212,16 +213,31 @@ spec:
         // when
         resourceFile.write(POD3)
         // then
-        verify(virtualFileMock).putUserData(AllowNonProjectEditing.ALLOW_NON_PROJECT_EDITING, true)
+        verify(temporaryVirtualFile).putUserData(AllowNonProjectEditing.ALLOW_NON_PROJECT_EDITING, true)
     }
 
     @Test
-    fun `#delete() should delete virtual file`() {
+    fun `#deleteTemporary() should delete virtual file`() {
         // given
         // when
-        resourceFile.delete()
+        resourceFile.deleteTemporary()
         // then
-        verify(virtualFileMock).delete(any())
+        verify(temporaryVirtualFile).delete(any())
+    }
+
+    @Test
+    fun `#deleteTemporary() should NOT delete virtual file if it's not temporary`() {
+        // given
+        val path = File(SystemProperties.getUserHome()).toPath().resolve("non-temporary")
+        val nonTemporary: VirtualFile = createVirtualFile(
+            path,
+            true,
+            ByteArrayInputStream(job.toByteArray(Charset.defaultCharset())))
+        val resourceFile = spy(TestableResourceFile(nonTemporary))
+        // when
+        resourceFile.deleteTemporary()
+        // then
+        verify(nonTemporary, never()).delete(any())
     }
 
     private class TestableResourceFile(
