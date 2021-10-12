@@ -71,7 +71,9 @@ open class ResourceFile protected constructor(
                 VfsUtil.findFileByIoFile(file, true)
             } catch(e: IOException) {
                 logger<ResourceFile>().warn("Could not create file: ${e.message}", e)
-                Notification().error("Could create file", "Could not create file for resource ${resource.metadata.name}: ${trimWithEllipsis(e.message, 50)}")
+                // https://youtrack.jetbrains.com/issue/IDEA-225226
+                Notification()
+                    .error("Could create file", "Could not create file for ${resource.kind} ${resource.metadata.name}: ${trimWithEllipsis(e.message, 50)}. Maybe do File > Invalidate Caches.")
                 null
             }
         }
