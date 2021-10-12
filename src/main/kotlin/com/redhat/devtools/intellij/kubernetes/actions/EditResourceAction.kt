@@ -32,8 +32,8 @@ class EditResourceAction: StructureTreeAction() {
             ResourceEditor.open(toEdit, project)
         } catch (e: RuntimeException) {
             Notification().error(
-                "Could not open editor for ${toEdit.metadata.name}",
-                "Could not open editor for ${toEdit.kind} ${toEdit.metadata.name}. You may have to File > Invalidate Caches."
+                "Error opening editor ${toEdit.metadata.name}",
+                "Could not open editor for ${toEdit.kind} ${toEdit.metadata.name}."
             )
         }
     }
