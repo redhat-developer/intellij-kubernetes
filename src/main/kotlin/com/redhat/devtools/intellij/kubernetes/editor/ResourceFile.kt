@@ -147,16 +147,29 @@ open class ResourceFile protected constructor(
     }
 
     /**
-     * Deletes the file that this class is dealing with.
+     * Deletes the temporary file that was created when creating this instance.
+     * Does nothing if no temporary file was created.
      */
-    fun delete() {
+    fun deleteTemporary() {
+        if (!isTemporary()) {
+            return
+        }
         executeWriteAction {
             virtualFile.delete(this)
         }
     }
 
-    fun isTemporaryFile(): Boolean {
+    /**
+     * Returns `true` if the file for this instance is a temporary file.
+     */
+    fun isTemporary(): Boolean {
         return virtualFile.path.startsWith(TEMP_FOLDER.toString())
+    }
+
+    private fun delete() {
+        executeWriteAction {
+            virtualFile.delete(this)
+        }
     }
 
     open fun enableNonProjectFileEditing() {
