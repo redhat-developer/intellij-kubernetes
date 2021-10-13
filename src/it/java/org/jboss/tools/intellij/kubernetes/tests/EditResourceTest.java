@@ -31,9 +31,9 @@ public class EditResourceTest extends AbstractKubernetesTest{
         selectedResource.doubleClick();
 
         EditorsSplittersFixture editorSplitter = robot.find(EditorsSplittersFixture.class);
-        String editorTitle = selectedResource.getText() + ".yml";
+        String editorTitle = selectedResource.getText();
 
-        ComponentFixture textFixture = editorSplitter.getEditorTextFixture(editorTitle);
+        ComponentFixture textFixture = editorSplitter.getEditorTextFixture();
         List<RemoteText> remote_text = textFixture.findAllText();
         int labelsId = 0;
         for (RemoteText actual_remote_text : remote_text){
@@ -58,7 +58,7 @@ public class EditResourceTest extends AbstractKubernetesTest{
         openResourceContentList(new String[]{"Nodes"}, kubernetesViewTree);
 
         selectedResource.doubleClick();
-        ComponentFixture textFixtureNew = editorSplitter.getEditorTextFixture(editorTitle);
+        ComponentFixture textFixtureNew = editorSplitter.getEditorTextFixture();
         List<RemoteText> remoteTextNew = textFixtureNew.findAllText();
         boolean labelExist = false;
         for (RemoteText actual_remote_text : remoteTextNew){

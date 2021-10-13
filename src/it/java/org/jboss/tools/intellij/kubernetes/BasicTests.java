@@ -65,7 +65,7 @@ public class BasicTests {
 
     @Test
     public void checkClusterConnected() {
-        step("New Empty Project", () -> ClusterConnectedTest.checkClusterConnected(robot, kubernetesViewTree));
+        step("New Empty Project", () -> ClusterConnectedTest.checkClusterConnected(kubernetesViewTree));
     }
 
     @Test
@@ -85,7 +85,7 @@ public class BasicTests {
         step("delete Resource", () -> CreateResourceByEditTest.deleteResource(robot, kubernetesViewTree));
     }
 
-    @Test
+//    @Test
     public void createAnotherResourceTypeByEdit() {
         step("create another type of Resource", () -> CreateAnotherTypeResourceByEditTest.createAnotherTypeResourceByEdit(robot, kubernetesViewTree));
     }
@@ -101,8 +101,8 @@ public class BasicTests {
 
         final IdeStatusBar ideStatusBar = robot.find(IdeStatusBar.class);
         ideStatusBar.waitUntilProjectImportIsComplete();
-        TipDialog.closeTipDialogIfItAppears(robot);
         ProjectStructureDialog.cancelProjectStructureDialogIfItAppears(robot);
+        TipDialog.closeTipDialogIfItAppears(robot);
         ideStatusBar.waitUntilAllBgTasksFinish();
     }
 

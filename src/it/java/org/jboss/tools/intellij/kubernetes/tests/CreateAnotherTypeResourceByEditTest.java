@@ -47,7 +47,7 @@ public class CreateAnotherTypeResourceByEditTest extends AbstractKubernetesTest{
         EditorsSplittersFixture editorSplitter = robot.find(EditorsSplittersFixture.class);
         Keyboard myKeyboard = new Keyboard(robot);
 
-        setupNewPod(robot, myKeyboard, selectedResource.getText() + ".yml");
+        setupNewPod(robot, myKeyboard);
 
         clearErrors(robot);
 
@@ -56,14 +56,14 @@ public class CreateAnotherTypeResourceByEditTest extends AbstractKubernetesTest{
 
         checkErrors(robot);
 
-        editorSplitter.closeEditor(newResourceName + ".yml"); // close editor
+        editorSplitter.closeEditor(newResourceName); // close editor
         hideClusterContent(kubernetesViewTree);
         openResourceContentList(new String[] {"Workloads", "Pods"}, kubernetesViewTree);
         waitFor(Duration.ofSeconds(15), Duration.ofSeconds(1), "New resource was not been created.", () -> isResourceCreated(kubernetesViewTree, newResourceName, false));
         hideClusterContent(kubernetesViewTree);
     }
 
-    private static void setupNewPod(RemoteRobot robot, Keyboard myKeyboard, String editorTitle){
+    private static void setupNewPod(RemoteRobot robot, Keyboard myKeyboard){
         Clipboard clipboard = getSystemClipboard();
 
         String text = "apiVersion: apps/v1\n" +
@@ -92,7 +92,7 @@ public class CreateAnotherTypeResourceByEditTest extends AbstractKubernetesTest{
         clipboard.setContents(new StringSelection(text), null);
 
         EditorsSplittersFixture editorSplitter = robot.find(EditorsSplittersFixture.class);
-        ComponentFixture textFixture = editorSplitter.getEditorTextFixture(editorTitle);
+        ComponentFixture textFixture = editorSplitter.getEditorTextFixture();
         RemoteText remoteText = textFixture.findAllText().get(0);
 
         myKeyboard.hotKey(KeyEvent.VK_CONTROL, KeyEvent.VK_A);
