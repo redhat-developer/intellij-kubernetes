@@ -59,7 +59,8 @@ open class ResourceFile protected constructor(
         @JvmStatic
         fun create(virtualFile: VirtualFile?): ResourceFile? {
             if (virtualFile == null
-                || !isResourceFile(virtualFile)) {
+                || !isLocalYamlOrJson(virtualFile)
+            ) {
                 return null
             }
             return ResourceFile(virtualFile)
@@ -87,18 +88,14 @@ open class ResourceFile protected constructor(
          * @param file the file which should checked whether it can be handled
          * @return true if this class can handle the given file
          */
-        fun isResourceFile(file: VirtualFile?): Boolean {
-            if (file == null
-                || !isLocalFile(file)
-                || !isYamlOrJson(file)) {
-                return false
-            }
-            return isKubernetesResource(file)
+        fun isLocalYamlOrJson(file: VirtualFile?): Boolean {
+            return file != null
+                    && isLocalFile(file)
+                    && isYamlOrJson(file)
         }
 
-        private fun isYamlOrJson(file: VirtualFile?): Boolean {
-            if (file == null
-                || true == file.extension?.isBlank()) {
+        private fun isYamlOrJson(file: VirtualFile): Boolean {
+            if (true == file.extension?.isBlank()) {
                 return false
             }
             val type = getFileType(file)
@@ -106,17 +103,8 @@ open class ResourceFile protected constructor(
                     || JsonFileType.INSTANCE == type
         }
 
-        fun getFileType(file: VirtualFile): FileType {
+        private fun getFileType(file: VirtualFile): FileType {
             return FileTypeRegistry.getInstance().getFileTypeByFile(file)
-        }
-
-        private fun isKubernetesResource(file: VirtualFile): Boolean {
-            val jsonYaml = IOUtils.toString(file.inputStream, Charset.defaultCharset())
-            return try {
-                createResource<KubernetesResource?>(jsonYaml) != null
-            } catch (e: RuntimeException) {
-                false
-            }
         }
 
         private fun isLocalFile(file: VirtualFile): Boolean {

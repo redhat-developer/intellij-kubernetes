@@ -32,7 +32,6 @@ import com.redhat.devtools.intellij.kubernetes.editor.notification.PullNotificat
 import com.redhat.devtools.intellij.kubernetes.editor.notification.PulledNotification
 import com.redhat.devtools.intellij.kubernetes.editor.notification.PushNotification
 import com.redhat.devtools.intellij.kubernetes.editor.util.getDocument
-import com.redhat.devtools.intellij.kubernetes.editor.util.getFile
 import com.redhat.devtools.intellij.kubernetes.model.ClientConfig
 import com.redhat.devtools.intellij.kubernetes.model.Clients
 import com.redhat.devtools.intellij.kubernetes.model.ClusterResource
@@ -40,6 +39,7 @@ import com.redhat.devtools.intellij.kubernetes.model.ModelChangeObservable
 import com.redhat.devtools.intellij.kubernetes.model.Notification
 import com.redhat.devtools.intellij.kubernetes.model.ResourceException
 import com.redhat.devtools.intellij.kubernetes.model.createClients
+import com.redhat.devtools.intellij.kubernetes.model.util.isKubernetesResource
 import com.redhat.devtools.intellij.kubernetes.model.util.isSameResource
 import com.redhat.devtools.intellij.kubernetes.model.util.trimWithEllipsis
 import com.redhat.devtools.intellij.kubernetes.telemetry.TelemetryService
@@ -125,11 +125,16 @@ open class ResourceEditor protected constructor(
             if (resourceEditor != null) {
                 return resourceEditor
             }
-            val document = getDocument(editor) ?: return null
-            if (!ResourceFile.isResourceFile(getFile(document))) {
+            if (!ResourceFile.isLocalYamlOrJson(editor.file)
+                || !hasKubernetesResource(editor)) {
                 return null
             }
             return create(editor, project)
+        }
+
+        private fun hasKubernetesResource(editor: FileEditor): Boolean {
+            val document = getDocument(editor) ?: return false
+            return isKubernetesResource(document.text)
         }
 
         fun get(file: VirtualFile?): ResourceEditor? {
@@ -460,16 +465,18 @@ open class ResourceEditor protected constructor(
      *
      * @param file to enable the (non-project file) editing for
      */
-    fun enableNonProjectFileEditing(file: VirtualFile? = editor.file) {
-        if (file == null) {
-            return
+    fun enableNonProjectFileEditing() {
+        if (editor.file == null
+            || !hasKubernetesResource(editor)) {
+                return
         }
-        createResourceFileForVirtual(file)?.enableNonProjectFileEditing()
+        createResourceFileForVirtual(editor.file)?.enableNonProjectFileEditing()
     }
 
     fun getTitle(): String? {
         val file = editor.file ?: return null
-        return if (true == createResourceFileForVirtual(file)?.isTemporary()) {
+        return if (true == createResourceFileForVirtual(file)?.isTemporary()
+            || !hasKubernetesResource(editor)) {
             val resource = editorResource ?: return ""
             getTitleFor(resource)
         } else {
@@ -477,7 +484,7 @@ open class ResourceEditor protected constructor(
         }
     }
 
-    private fun getTitleFor(file: VirtualFile): String? {
+    private fun getTitleFor(file: VirtualFile): String {
         return file.name
     }
 

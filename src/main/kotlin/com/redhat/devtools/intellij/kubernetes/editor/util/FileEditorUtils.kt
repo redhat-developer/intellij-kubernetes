@@ -36,13 +36,13 @@ fun getFile(document: Document): VirtualFile? {
 
 fun getResourceFile(document: Document): VirtualFile? {
     val file = FileDocumentManager.getInstance().getFile(document)
-    if (!ResourceFile.isResourceFile(file)) {
+    if (!ResourceFile.isLocalYamlOrJson(file)) {
         return null
     }
     return file
 }
 
-fun getFileEditor(project: Project): FileEditor? {
+fun getSelectedFileEditor(project: Project): FileEditor? {
     return FileEditorManager.getInstance(project).selectedEditor ?: return null
 }
 
