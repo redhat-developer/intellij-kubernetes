@@ -36,17 +36,17 @@ public class OpenResourceEditorTest extends AbstractKubernetesTest{
         rightClickMenu.select("Edit..."); // open the yml editor
 
         EditorsSplittersFixture editorSplitter = robot.find(EditorsSplittersFixture.class);
-        String editorTitle = selectedResource.getText() + ".yml";
-        waitFor(Duration.ofSeconds(15), Duration.ofSeconds(1), "Editor is not available.", () -> isEditorOpened(robot, editorTitle)); // wait 15 seconds for editor
+        String editorTitle = selectedResource.getText();
+        waitFor(Duration.ofSeconds(15), Duration.ofSeconds(1), "Editor is not available.", () -> isEditorOpened(robot)); // wait 15 seconds for editor
         waitFor(Duration.ofSeconds(15), Duration.ofSeconds(1), "Resource schema is wrong.", () -> isSchemaSet(robot, "v1#Node")); // wait 15 seconds for set right schema
 
         editorSplitter.closeEditor(editorTitle); // close editor
         hideClusterContent(kubernetesViewTree);
     }
 
-    private static boolean isEditorOpened(RemoteRobot robot, String editorTitle){
+    private static boolean isEditorOpened(RemoteRobot robot){
         try {
-            robot.find(ComponentFixture.class, byXpath("//div[@accessiblename='Editor for " + editorTitle + "' and @class='EditorComponentImpl']"));
+            robot.find(ComponentFixture.class, byXpath("//div[@class='EditorComponentImpl']"));
         } catch (WaitForConditionTimeoutException e) {
             return false;
         }

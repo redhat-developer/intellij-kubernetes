@@ -43,15 +43,14 @@ public class CreateResourceByEditTest extends AbstractKubernetesTest{
         selectedResource.doubleClick();
 
         EditorsSplittersFixture editorSplitter = robot.find(EditorsSplittersFixture.class);
-        String editorTitle = selectedResource.getText() + ".yml";
         Keyboard myKeyboard = new Keyboard(robot);
-        String newEditorTitle = newResourceName + ".yml";
+        String newEditorTitle = newResourceName;
 
         Clipboard clipboard = getSystemClipboard();
         String text = "\"" + newResourceName + "\"";
         clipboard.setContents(new StringSelection(text), null);
 
-        RemoteText namePlace = findResourceNamePosition(robot, editorSplitter, editorTitle, myKeyboard);
+        RemoteText namePlace = findResourceNamePosition(robot, editorSplitter, myKeyboard);
         namePlace.click(MouseButton.RIGHT_BUTTON);
         RightClickMenu rightClickMenu = robot.find(RightClickMenu.class);
         rightClickMenu.select("Paste");
@@ -76,13 +75,13 @@ public class CreateResourceByEditTest extends AbstractKubernetesTest{
         hideClusterContent(kubernetesViewTree);
     }
 
-    private static RemoteText findResourceNamePosition(RemoteRobot robot, EditorsSplittersFixture editorSplitter, String editorTitle, Keyboard myKeyboard){
+    private static RemoteText findResourceNamePosition(RemoteRobot robot, EditorsSplittersFixture editorSplitter, Keyboard myKeyboard){
         myKeyboard.hotKey(KeyEvent.VK_CONTROL, KeyEvent.VK_F);
         robot.find(ComponentFixture.class, byXpath("//div[@class='SearchTextArea']")).click();
         myKeyboard.enterText(" name:");
 
 
-        ComponentFixture textFixture = editorSplitter.getEditorTextFixture(editorTitle);
+        ComponentFixture textFixture = editorSplitter.getEditorTextFixture();
         List<RemoteText> remoteText = textFixture.findAllText();
 
         int nameId = 0;

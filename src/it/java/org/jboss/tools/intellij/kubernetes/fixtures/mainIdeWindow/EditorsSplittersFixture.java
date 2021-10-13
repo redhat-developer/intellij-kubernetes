@@ -18,6 +18,8 @@ import com.intellij.remoterobot.fixtures.DefaultXpath;
 import com.intellij.remoterobot.fixtures.FixtureName;
 import org.jetbrains.annotations.NotNull;
 
+import java.time.Duration;
+
 import static com.intellij.remoterobot.search.locators.Locators.byXpath;
 
 /**
@@ -30,12 +32,12 @@ public class EditorsSplittersFixture extends CommonContainerFixture {
         super(remoteRobot, remoteComponent);
     }
 
-    public ComponentFixture getEditorTextFixture(String fileName){
-        return find(ComponentFixture.class, byXpath("//div[@accessiblename='Editor for " + fileName + "' and @class='EditorComponentImpl']"));
+    public ComponentFixture getEditorTextFixture(){
+        return find(ComponentFixture.class, byXpath("//div[@class='EditorComponentImpl']"), Duration.ofSeconds(5));
     }
 
     public void closeEditor(String fileName){
-        SingleHeighLabelFixture myLabel = find(SingleHeighLabelFixture.class, byXpath("//div[@accessiblename='" + fileName + "' and @class='SingleHeightLabel']"));
+        SingleHeighLabelFixture myLabel = find(SingleHeighLabelFixture.class, byXpath("//div[@accessiblename='" + fileName + "' and @class='SingleHeightLabel']"), Duration.ofSeconds(5));
         myLabel.close();
     }
 }
