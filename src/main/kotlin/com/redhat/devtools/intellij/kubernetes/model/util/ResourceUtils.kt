@@ -12,6 +12,7 @@ package com.redhat.devtools.intellij.kubernetes.model.util
 
 import com.intellij.openapi.diagnostic.logger
 import io.fabric8.kubernetes.api.model.HasMetadata
+import io.fabric8.kubernetes.api.model.KubernetesResource
 import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinition
 import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinitionSpec
 import io.fabric8.kubernetes.client.dsl.base.CustomResourceDefinitionContext
@@ -309,5 +310,19 @@ fun trimWithEllipsis(value: String?, length: Int): String? {
  */
 inline fun <reified T> createResource(jsonYaml: String): T {
 	return Serialization.unmarshal(jsonYaml, T::class.java)
+}
+
+/**
+ * Returns `true` if the given string contains yaml or json for a kubernetes resource
+ */
+fun isKubernetesResource(string: String?): Boolean {
+	if (string == null) {
+		return false
+	}
+	return try {
+		createResource<KubernetesResource?>(string) != null
+	} catch (e: RuntimeException) {
+		false
+	}
 }
 

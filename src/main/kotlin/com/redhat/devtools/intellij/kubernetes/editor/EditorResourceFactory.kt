@@ -45,7 +45,7 @@ object EditorResourceFactory {
      * @return [HasMetadata] for the given editor and clients
      *
      */
-    private fun create(document: Document?, clients: Clients<out KubernetesClient>): HasMetadata? {
+    fun create(document: Document?, clients: Clients<out KubernetesClient>): HasMetadata? {
         return if (document?.text == null) {
             null
         } else {

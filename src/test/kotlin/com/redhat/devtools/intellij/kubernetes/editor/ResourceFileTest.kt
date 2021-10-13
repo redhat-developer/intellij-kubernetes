@@ -103,7 +103,7 @@ spec:
         // given
         val factory = createResourceFileFactoryMock(YAMLFileType.YML)
         // when
-        val isResourceFile = factory.isResourceFile(temporaryVirtualFile)
+        val isResourceFile = factory.isLocalYamlOrJson(temporaryVirtualFile)
         // then
         assertThat(isResourceFile).isTrue()
     }
@@ -117,7 +117,7 @@ spec:
             false,
             ByteArrayInputStream(job.toByteArray(Charset.defaultCharset())))
         // when
-        val isNotResourceFile = factory.isResourceFile(nonLocalFile)
+        val isNotResourceFile = factory.isLocalYamlOrJson(nonLocalFile)
         // then
         assertThat(isNotResourceFile).isFalse()
     }
@@ -131,7 +131,7 @@ spec:
             false,
             ByteArrayInputStream(job.toByteArray(Charset.defaultCharset())))
         // when
-        val isNotResourceFile = factory.isResourceFile(nonLocalFile)
+        val isNotResourceFile = factory.isLocalYamlOrJson(nonLocalFile)
         // then
         assertThat(isNotResourceFile).isFalse()
     }
@@ -145,7 +145,7 @@ spec:
             true,
             ByteArrayInputStream("bogus content".toByteArray(Charset.defaultCharset())))
         // when
-        val isNotResourceFile = factory.isResourceFile(emptyFile)
+        val isNotResourceFile = factory.isLocalYamlOrJson(emptyFile)
         // then
         assertThat(isNotResourceFile).isFalse()
     }
@@ -154,7 +154,7 @@ spec:
     fun `#isResourceFile(virtualFile) should return false for null file`() {
         // given
         // when
-        val isResourceFile = ResourceFile.isResourceFile(null)
+        val isResourceFile = ResourceFile.isLocalYamlOrJson(null)
         // then
         assertThat(isResourceFile).isFalse()
     }
