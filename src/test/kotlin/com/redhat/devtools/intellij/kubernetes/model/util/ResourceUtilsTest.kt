@@ -392,7 +392,6 @@ class ResourceUtilsTest {
 			"ns",
 			"uid",
 			"apiVersion",
-			version,
 			listOf(
 				customResourceDefinitionVersion("v42"),
 				customResourceDefinitionVersion(version),
@@ -418,7 +417,6 @@ class ResourceUtilsTest {
 			"ns",
 			"uid",
 			"apiVersion",
-			version,
 			listOf(customResourceDefinitionVersion(version)),
 			group,
 			"someOtherKind",
@@ -442,7 +440,6 @@ class ResourceUtilsTest {
 			"ns",
 			"uid",
 			"apiVersion",
-			version,
 			listOf(customResourceDefinitionVersion("v42")),
 			group,
 			kind,

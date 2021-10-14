@@ -33,7 +33,6 @@ class CustomResourceDefinitionMappingTest {
 
         private val CRD_NOT_MATCHING = customResourceDefinition(
             "crd1", "ns1", "uid1", "apiVersion1",
-            version,
             listOf(
                 customResourceDefinitionVersion("v42")
             ),
@@ -43,7 +42,6 @@ class CustomResourceDefinitionMappingTest {
         )
         private val CRD_MATCHING_NEO = customResourceDefinition(
             "crd2", "ns2", "uid2", "apiVersion2",
-            version,
             listOf(
                 customResourceDefinitionVersion("84"),
                 customResourceDefinitionVersion(version),
@@ -55,7 +53,6 @@ class CustomResourceDefinitionMappingTest {
         )
         private val CRD_NOT_MATCHING_2 = customResourceDefinition(
             "crd3", "ns3", "uid3", "apiVersion3",
-            version,
             listOf(
                 customResourceDefinitionVersion("v168")
             ),
@@ -65,7 +62,6 @@ class CustomResourceDefinitionMappingTest {
         )
         private val CRD_MATCHING_NEO_2 = customResourceDefinition(
             "crd4", "ns4", "uid4", "apiVersion4",
-            version,
             listOf(
                 customResourceDefinitionVersion("v11"),
                 customResourceDefinitionVersion("v22"),
@@ -138,6 +134,6 @@ class CustomResourceDefinitionMappingTest {
         // when
         CustomResourceDefinitionMapping.getDefinitions(client)
         // then
-        verify(client.apiextensions().v1beta1().customResourceDefinitions().list()).items
+        verify(client.apiextensions().v1().customResourceDefinitions().list()).items
     }
 }

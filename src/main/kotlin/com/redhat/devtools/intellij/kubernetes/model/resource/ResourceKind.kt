@@ -10,12 +10,12 @@
  ******************************************************************************/
 package com.redhat.devtools.intellij.kubernetes.model.resource
 
+import io.fabric8.kubernetes.api.model.HasMetadata
+import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinition
+import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinitionSpec
 import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.custom.GenericCustomResource
 import com.redhat.devtools.intellij.kubernetes.model.util.getApiVersion
 import com.redhat.devtools.intellij.kubernetes.model.util.getHighestPriorityVersion
-import io.fabric8.kubernetes.api.model.HasMetadata
-import io.fabric8.kubernetes.api.model.apiextensions.v1beta1.CustomResourceDefinition
-import io.fabric8.kubernetes.api.model.apiextensions.v1beta1.CustomResourceDefinitionSpec
 
 data class ResourceKind<R : HasMetadata> private constructor(
 		val version: String,
@@ -41,9 +41,10 @@ data class ResourceKind<R : HasMetadata> private constructor(
 		}
 
 		@JvmStatic
-		fun create(spec: CustomResourceDefinitionSpec): ResourceKind<GenericCustomResource> {
+		fun create(spec: CustomResourceDefinitionSpec): ResourceKind<GenericCustomResource>? {
+			val version = getHighestPriorityVersion(spec) ?: return null
 			return ResourceKind(
-				removeK8sio(getApiVersion(spec.group, getHighestPriorityVersion(spec))),
+				removeK8sio(getApiVersion(spec.group, version)),
 				GenericCustomResource::class.java,
 				spec.names.kind)
 		}

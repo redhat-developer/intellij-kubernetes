@@ -12,7 +12,7 @@ package com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.custom
 
 import com.redhat.devtools.intellij.kubernetes.model.util.isMatchingSpec
 import io.fabric8.kubernetes.api.model.HasMetadata
-import io.fabric8.kubernetes.api.model.apiextensions.v1beta1.CustomResourceDefinition
+import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinition
 import io.fabric8.kubernetes.client.KubernetesClient
 
 object CustomResourceDefinitionMapping {
@@ -27,7 +27,7 @@ object CustomResourceDefinitionMapping {
     }
 
     fun getDefinitions(client: KubernetesClient): Collection<CustomResourceDefinition> {
-        return client.apiextensions().v1beta1().customResourceDefinitions().list().items ?: emptyList()
+        return client.apiextensions().v1().customResourceDefinitions().list().items ?: emptyList()
     }
 
 }

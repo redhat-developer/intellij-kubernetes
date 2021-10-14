@@ -13,9 +13,9 @@ package com.redhat.devtools.intellij.kubernetes.model.mocks
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.whenever
-import com.redhat.devtools.intellij.kubernetes.editor.ResourceFile
 import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.custom.GenericCustomResource
 import com.redhat.devtools.intellij.kubernetes.model.util.getApiVersion
+import com.redhat.devtools.intellij.kubernetes.model.util.getHighestPriorityVersion
 import io.fabric8.kubernetes.api.model.Context
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.NamedContext
@@ -24,14 +24,14 @@ import io.fabric8.kubernetes.api.model.NamespaceList
 import io.fabric8.kubernetes.api.model.ObjectMeta
 import io.fabric8.kubernetes.api.model.Pod
 import io.fabric8.kubernetes.api.model.PodList
-import io.fabric8.kubernetes.api.model.apiextensions.v1beta1.CustomResourceDefinition
-import io.fabric8.kubernetes.api.model.apiextensions.v1beta1.CustomResourceDefinitionList
-import io.fabric8.kubernetes.api.model.apiextensions.v1beta1.CustomResourceDefinitionNames
-import io.fabric8.kubernetes.api.model.apiextensions.v1beta1.CustomResourceDefinitionSpec
-import io.fabric8.kubernetes.api.model.apiextensions.v1beta1.CustomResourceDefinitionVersion
+import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinition
+import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinitionList
+import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinitionNames
+import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinitionSpec
+import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinitionVersion
 import io.fabric8.kubernetes.client.Config
 import io.fabric8.kubernetes.client.KubernetesClient
-import io.fabric8.kubernetes.client.V1beta1ApiextensionAPIGroupDSL
+import io.fabric8.kubernetes.client.V1ApiextensionAPIGroupDSL
 import io.fabric8.kubernetes.client.dsl.ApiextensionsAPIGroupDSL
 import io.fabric8.kubernetes.client.dsl.MixedOperation
 import io.fabric8.kubernetes.client.dsl.NonNamespaceOperation
@@ -85,17 +85,17 @@ object ClientMocks {
     }
 
     private fun apiextensionsOperation(definitions: List<CustomResourceDefinition>): ApiextensionsAPIGroupDSL {
-        val v1beta1CrdListOperation: CustomResourceDefinitionList = mock {
+        val v1CrdListOperation: CustomResourceDefinitionList = mock {
             on { items } doReturn definitions
         }
-        val v1beta1CrdsOperation = mock<MixedOperation<CustomResourceDefinition, CustomResourceDefinitionList, Resource<CustomResourceDefinition>>> {
-            on { list() } doReturn v1beta1CrdListOperation
+        val v1CrdsOperation = mock<MixedOperation<CustomResourceDefinition, CustomResourceDefinitionList, Resource<CustomResourceDefinition>>> {
+            on { list() } doReturn v1CrdListOperation
         }
-        val v1beta1Operation: V1beta1ApiextensionAPIGroupDSL = mock {
-            on { customResourceDefinitions() } doReturn v1beta1CrdsOperation
+        val v1Operation: V1ApiextensionAPIGroupDSL = mock {
+            on { customResourceDefinitions() } doReturn v1CrdsOperation
         }
         return mock {
-            on { v1beta1() } doReturn v1beta1Operation
+            on { v1() } doReturn v1Operation
         }
     }
 
@@ -202,7 +202,6 @@ object ClientMocks {
             namespace,
             uid,
             apiVersion,
-            specVersion,
             listOf(customResourceDefinitionVersion(specVersion)),
             specGroup,
             specKind,
@@ -214,7 +213,6 @@ object ClientMocks {
         namespace: String,
         uid: String,
         apiVersion: String,
-        specVersion: String,
         specVersions: List<CustomResourceDefinitionVersion>,
         specGroup: String?,
         specKind: String,
@@ -223,7 +221,6 @@ object ClientMocks {
             on { mock.kind } doReturn specKind
         }
         val spec = mock<CustomResourceDefinitionSpec> {
-            on { mock.version } doReturn specVersion
             on { mock.versions } doReturn specVersions
             on { mock.group } doReturn specGroup
             on { mock.names } doReturn names
@@ -265,7 +262,8 @@ object ClientMocks {
         val metadata = objectMeta(name, namespace, uid, resourceVersion)
         val apiVersion = getApiVersion(
             definition.spec.group,
-            definition.spec.version) // TODO: deal with multiple versions
+            getHighestPriorityVersion(definition.spec)!!
+        )
         val kind = definition.spec.names.kind
         return mock {
             on { getMetadata() } doReturn metadata

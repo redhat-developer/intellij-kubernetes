@@ -11,9 +11,10 @@
 package com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.custom
 
 import com.redhat.devtools.intellij.kubernetes.model.resource.IResourceOperator
+import com.redhat.devtools.intellij.kubernetes.model.resource.ResourceKind
 import com.redhat.devtools.intellij.kubernetes.model.util.createResource
 import io.fabric8.kubernetes.api.model.HasMetadata
-import io.fabric8.kubernetes.api.model.apiextensions.v1beta1.CustomResourceDefinition
+import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinition
 import io.fabric8.kubernetes.client.KubernetesClient
 
 object CustomResourceOperatorFactory {
@@ -29,9 +30,10 @@ object CustomResourceOperatorFactory {
 
     fun create(resource: HasMetadata, definitions: Collection<CustomResourceDefinition>, client: KubernetesClient): IResourceOperator<GenericCustomResource>? {
         val definition = CustomResourceDefinitionMapping.getDefinitionFor(resource, definitions) ?: return null
+        val kind = ResourceKind.create(definition.spec) ?: return null
         return when (definition.spec.scope) {
-            CustomResourceScope.CLUSTER -> NonNamespacedCustomResourceOperator(definition, client)
-            CustomResourceScope.NAMESPACED -> NamespacedCustomResourceOperator(definition, resource.metadata.namespace, client)
+            CustomResourceScope.CLUSTER -> NonNamespacedCustomResourceOperator(kind, definition, client)
+            CustomResourceScope.NAMESPACED -> NamespacedCustomResourceOperator(kind, definition, resource.metadata.namespace, client)
             else -> throw IllegalArgumentException(
                 "Could not determine scope in spec for custom resource definition ${definition.spec.names.kind}")
         }

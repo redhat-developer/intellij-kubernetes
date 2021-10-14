@@ -14,7 +14,7 @@ import com.redhat.devtools.intellij.common.kubernetes.ClusterInfo
 import com.redhat.devtools.intellij.kubernetes.model.resource.ResourceKind
 import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.custom.GenericCustomResource
 import io.fabric8.kubernetes.api.model.HasMetadata
-import io.fabric8.kubernetes.api.model.apiextensions.v1beta1.CustomResourceDefinition
+import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinition
 import io.fabric8.kubernetes.client.KubernetesClient
 import java.net.URL
 
@@ -91,8 +91,8 @@ interface IActiveContext<N: HasMetadata, C: KubernetesClient>: IContext {
      * @param definition the definition that specifies the kind of custom resources
      * @return all resources of the requested kind
      *
-     * @see [io.fabric8.kubernetes.api.model.apiextensions.v1beta1.CustomResourceDefinition]
-     * @see [io.fabric8.kubernetes.api.model.apiextensions.v1beta1.CustomResourceDefinitionSpec]
+     * @see [io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinition]
+     * @see [io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinitionSpec]
      */
     fun getAllResources(definition: CustomResourceDefinition): Collection<GenericCustomResource>
 
