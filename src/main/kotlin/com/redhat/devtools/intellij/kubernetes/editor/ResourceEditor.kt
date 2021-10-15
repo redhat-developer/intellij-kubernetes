@@ -254,6 +254,7 @@ open class ResourceEditor protected constructor(
                 hideNotifications()
                 pushNotification.show()
             }
+            else -> hideNotifications()
         }
     }
 

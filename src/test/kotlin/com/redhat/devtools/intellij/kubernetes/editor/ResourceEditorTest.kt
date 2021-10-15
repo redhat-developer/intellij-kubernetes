@@ -194,6 +194,21 @@ class ResourceEditorTest {
     }
 
     @Test
+    fun `#update should hide all notifications when editor resource CANNOT be pushed NOR pulled NOR is modified`() {
+        // given
+        doReturn(false)
+            .whenever(clusterResource).isDeleted()
+        doReturn(false)
+            .whenever(clusterResource).isModified(any())
+        doReturn(false)
+            .whenever(clusterResource).canPush(any())
+        // when
+        editor.update()
+        // then
+        verifyHideAllNotifications()
+    }
+
+    @Test
     fun `#update should show error notification and hide all notifications if creating resource throws ResourceException`() {
         // given
         doThrow(ResourceException("resource error", KubernetesClientException("client error")))
