@@ -28,7 +28,7 @@ class EditorTransactionListener: PsiDocumentTransactionListener {
     private fun getResourceEditor(document: Document): ResourceEditor? {
         val file = getResourceFile(document) ?: return null
         val projectAndEditor = getProjectAndEditor(file) ?: return null
-        return ResourceEditor.get(projectAndEditor.editor, projectAndEditor.project)
+        return ResourceEditor.factory.getOrCreate(projectAndEditor.editor, projectAndEditor.project)
     }
 
 }

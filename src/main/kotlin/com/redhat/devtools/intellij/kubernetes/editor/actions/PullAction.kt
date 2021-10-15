@@ -34,7 +34,7 @@ class PullAction: AnAction() {
         com.redhat.devtools.intellij.kubernetes.actions.run("Reloading...", true,
             Progressive {
                 try {
-                    val editor = ResourceEditor.get(editor, project) ?: return@Progressive
+                    val editor = ResourceEditor.factory.getOrCreate(editor, project) ?: return@Progressive
                     editor.pull()
                     reportResource(editor.localCopy, telemetry)
                 } catch (e: Exception) {

@@ -24,22 +24,21 @@ import com.intellij.util.ui.EdtInvocationManager
 import com.redhat.devtools.intellij.common.editor.AllowNonProjectEditing
 import com.redhat.devtools.intellij.common.utils.UIHelper
 import com.redhat.devtools.intellij.kubernetes.model.Notification
-import com.redhat.devtools.intellij.kubernetes.model.util.createResource
 import com.redhat.devtools.intellij.kubernetes.model.util.trimWithEllipsis
 import io.fabric8.kubernetes.api.model.HasMetadata
-import io.fabric8.kubernetes.api.model.KubernetesResource
 import io.fabric8.kubernetes.client.utils.Serialization
 import org.apache.commons.io.FileUtils
-import org.apache.commons.io.IOUtils
 import org.jetbrains.yaml.YAMLFileType
 import java.io.IOException
-import java.nio.charset.Charset
 import java.nio.charset.StandardCharsets
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
 import java.util.function.Supplier
 
+/**
+ * Helper that offers operations on the [VirtualFile] for a [ResourceEditor]
+ */
 open class ResourceFile protected constructor(
     open val virtualFile: VirtualFile
 ) {
@@ -59,8 +58,7 @@ open class ResourceFile protected constructor(
         @JvmStatic
         fun create(virtualFile: VirtualFile?): ResourceFile? {
             if (virtualFile == null
-                || !isLocalYamlOrJson(virtualFile)
-            ) {
+                || !isValidType(virtualFile)) {
                 return null
             }
             return ResourceFile(virtualFile)
@@ -88,7 +86,7 @@ open class ResourceFile protected constructor(
          * @param file the file which should checked whether it can be handled
          * @return true if this class can handle the given file
          */
-        fun isLocalYamlOrJson(file: VirtualFile?): Boolean {
+        fun isValidType(file: VirtualFile?): Boolean {
             return file != null
                     && isLocalFile(file)
                     && isYamlOrJson(file)
@@ -103,7 +101,8 @@ open class ResourceFile protected constructor(
                     || JsonFileType.INSTANCE == type
         }
 
-        private fun getFileType(file: VirtualFile): FileType {
+        /** public for testing purposes **/
+        fun getFileType(file: VirtualFile): FileType {
             return FileTypeRegistry.getInstance().getFileTypeByFile(file)
         }
 

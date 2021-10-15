@@ -99,17 +99,7 @@ spec:
     }
 
     @Test
-    fun `#isResourceFile(virtualFile) should return true for yaml file on local filesystem with kube yaml`() {
-        // given
-        val factory = createResourceFileFactoryMock(YAMLFileType.YML)
-        // when
-        val isResourceFile = factory.isLocalYamlOrJson(temporaryVirtualFile)
-        // then
-        assertThat(isResourceFile).isTrue()
-    }
-
-    @Test
-    fun `#isResourceFile(virtualFile) should return false if yaml file is not on local filesystem`() {
+    fun `#isLocalYamlOrJson(virtualFile) should return false if yaml file is not on local filesystem`() {
         // given
         val factory = createResourceFileFactoryMock(YAMLFileType.YML)
         val nonLocalFile: VirtualFile = createVirtualFile(
@@ -117,13 +107,13 @@ spec:
             false,
             ByteArrayInputStream(job.toByteArray(Charset.defaultCharset())))
         // when
-        val isNotResourceFile = factory.isLocalYamlOrJson(nonLocalFile)
+        val isNotResourceFile = factory.isValidType(nonLocalFile)
         // then
         assertThat(isNotResourceFile).isFalse()
     }
 
     @Test
-    fun `#isResourceFile(virtualFile) should return false if txt file is not on local filesystem`() {
+    fun `#isLocalYamlOrJson(virtualFile) should return false if txt file is not on local filesystem`() {
         // given
         val factory = createResourceFileFactoryMock(PlainTextFileType.INSTANCE)
         val nonLocalFile: VirtualFile = createVirtualFile(
@@ -131,30 +121,16 @@ spec:
             false,
             ByteArrayInputStream(job.toByteArray(Charset.defaultCharset())))
         // when
-        val isNotResourceFile = factory.isLocalYamlOrJson(nonLocalFile)
+        val isNotResourceFile = factory.isValidType(nonLocalFile)
         // then
         assertThat(isNotResourceFile).isFalse()
     }
 
     @Test
-    fun `#isResourceFile(virtualFile) should return false for yaml file that does not contain a kubernetes resource`() {
-        // given
-        val factory = createResourceFileFactoryMock(YAMLFileType.YML)
-        val emptyFile: VirtualFile = createVirtualFile(
-            path,
-            true,
-            ByteArrayInputStream("bogus content".toByteArray(Charset.defaultCharset())))
-        // when
-        val isNotResourceFile = factory.isLocalYamlOrJson(emptyFile)
-        // then
-        assertThat(isNotResourceFile).isFalse()
-    }
-
-    @Test
-    fun `#isResourceFile(virtualFile) should return false for null file`() {
+    fun `#isLocalYamlOrJson(virtualFile) should return false for null file`() {
         // given
         // when
-        val isResourceFile = ResourceFile.isLocalYamlOrJson(null)
+        val isResourceFile = ResourceFile.isValidType(null)
         // then
         assertThat(isResourceFile).isFalse()
     }
@@ -183,7 +159,7 @@ spec:
     }
 
     private fun createResourceFileFactoryMock(fileType: FileType): ResourceFile.Factory {
-        val factory = spy(ResourceFile)
+        val factory = spy(ResourceFile.Factory)
         doReturn(fileType)
             .whenever(factory).getFileType(any())
         return factory

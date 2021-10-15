@@ -52,6 +52,25 @@ import org.mockito.verification.VerificationMode
 
 class ResourceEditorTest {
 
+    private val job: String = """
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: countdown
+spec:
+  template:
+    metadata:
+      name: countdown
+    spec:
+      containers:
+      - name: counter
+        image: centos:7
+        command:
+         - "bin/bash"
+         - "-c"
+         - "echo kube"
+      restartPolicy: Never
+"""
     private val allNamespaces = arrayOf(ClientMocks.NAMESPACE1, ClientMocks.NAMESPACE2, ClientMocks.NAMESPACE3)
     private val currentNamespace = ClientMocks.NAMESPACE2
     // need real resources, not mocks - #equals used to track changes
@@ -123,7 +142,7 @@ class ResourceEditorTest {
     private val deletedNotification: DeletedNotification = mock()
     private val errorNotification: ErrorNotification = mock()
     private val document: Document = mock<Document>().apply {
-        doReturn("")
+        doReturn(job)
             .whenever(this).getText()
     }
     private val documentProvider: (FileEditor) -> Document? = { document }
@@ -651,7 +670,7 @@ class ResourceEditorTest {
     }
 
     @Test
-    fun `#getTitle should return resourcename@namespace if file is temporary file`() {
+    fun `#getTitle should return resourcename@namespace if file is temporary file and contains kubernetes resource`() {
         // given
         doReturn(true)
             .whenever(resourceFile).isTemporary()
@@ -663,17 +682,32 @@ class ResourceEditorTest {
     }
 
     @Test
+    fun `#getTitle should return filename if file is temporary file but does NOT contain kubernetes resource`() {
+        // given
+        doReturn(true)
+            .whenever(resourceFile).isTemporary()
+        doReturn("not kubernetes yaml")
+            .whenever(document).getText()
+        doReturn("lord.vader")
+            .whenever(virtualFile).name
+        val resource = localCopy
+        // when
+        val title = editor.getTitle()
+        // then
+        assertThat(title).isEqualTo("lord.vader")
+    }
+
+    @Test
     fun `#getTitle should return filename if file is NOT temporary file`() {
         // given
         doReturn(false)
             .whenever(resourceFile).isTemporary()
         doReturn("luke.skywalker")
             .whenever(virtualFile).name
-        val filename = virtualFile.name
         // when
         val title = editor.getTitle()
         // then
-        assertThat(title).isEqualTo(filename)
+        assertThat(title).isEqualTo("luke.skywalker")
     }
 
     private class TestableResourceEditor(
@@ -716,5 +750,4 @@ class ResourceEditorTest {
             runnable.invoke()
         }
     }
-
 }
