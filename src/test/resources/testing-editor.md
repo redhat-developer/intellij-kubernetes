@@ -142,6 +142,19 @@
 
 -> Error notification appears
 
+**Error notification disaappears when correcting invalid content**
+1. "Edit..." resource. Have an editor which starts with
+```
+---
+apiVersion: 
+```
+2. Insert a " " before the "---"
+
+-> Error notification appears
+3. Remove the " " (content is now correct)
+
+-> Error notification disappears
+
 **Error notification appears when inserting invalid content**
 1. "Edit..." resource
 2. modify metadata: insert "aaaaa" on a new line right after metadata
