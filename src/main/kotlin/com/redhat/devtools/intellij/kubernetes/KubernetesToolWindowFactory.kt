@@ -69,7 +69,7 @@ class KubernetesToolWindowFactory: ToolWindowFactory {
                 val path = tree.getPathForLocation(point.x, point.y) ?: return
                 val node = path.lastPathComponent as? MutableTreeNode ?: return
                 val resource = node.getElement<HasMetadata>() ?: return
-                ResourceEditor.open(resource, project)
+                ResourceEditor.factory.openEditor(resource, project)
             }
         }
     }

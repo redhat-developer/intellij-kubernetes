@@ -29,7 +29,7 @@ class EditResourceAction: StructureTreeAction() {
         val project = descriptor.project ?: return
         val toEdit: HasMetadata = descriptor.element as? HasMetadata? ?: return
         try {
-            ResourceEditor.open(toEdit, project)
+            ResourceEditor.factory.openEditor(toEdit, project)
         } catch (e: RuntimeException) {
             Notification().error(
                 "Error opening editor ${toEdit.metadata.name}",

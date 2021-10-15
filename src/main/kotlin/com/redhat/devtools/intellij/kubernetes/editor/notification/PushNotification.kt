@@ -42,7 +42,7 @@ class PushNotification(private val editor: FileEditor, private val project: Proj
         val panel = EditorNotificationPanel()
         panel.setText(
             "Push local changes, ${
-                if (false == ResourceEditor.get(editor, project)?.existsOnCluster()) {
+                if (false == ResourceEditor.factory.getOrCreate(editor, project)?.existsOnCluster()) {
                     "create new"
                 } else {
                     "update existing"
@@ -50,7 +50,7 @@ class PushNotification(private val editor: FileEditor, private val project: Proj
             } resource on cluster?"
         )
         panel.createActionLabel("Push", PushAction.ID)
-        if (true == ResourceEditor.get(editor, project)?.isOutdated()) {
+        if (true == ResourceEditor.factory.getOrCreate(editor, project)?.isOutdated()) {
             panel.createActionLabel("Pull", PullAction.ID)
             panel.createActionLabel ("Ignore") {
                 editor.hideNotification(KEY_PANEL, project)

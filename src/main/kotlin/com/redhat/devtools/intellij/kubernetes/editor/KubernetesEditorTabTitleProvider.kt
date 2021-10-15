@@ -18,7 +18,7 @@ import com.redhat.devtools.intellij.kubernetes.editor.util.getProjectAndEditor
 class KubernetesEditorTabTitleProvider : EditorTabTitleProvider {
 
     override fun getEditorTabTitle(project: Project, file: VirtualFile): String? {
-        val editor = ResourceEditor.get(getProjectAndEditor(file)?.editor, project) ?: return null
+        val editor = ResourceEditor.factory.getOrCreate(getProjectAndEditor(file)?.editor, project) ?: return null
         return editor.getTitle()
     }
 

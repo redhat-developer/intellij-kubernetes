@@ -15,6 +15,7 @@ import com.nhaarman.mockitokotlin2.anyOrNull
 import com.nhaarman.mockitokotlin2.doAnswer
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.mock
+import com.nhaarman.mockitokotlin2.whenever
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.NamedContext
 import io.fabric8.kubernetes.api.model.Namespace
@@ -76,7 +77,7 @@ object Mocks {
         getReturnValue: T? = null
     ): INamespacedResourceOperator<T, C> {
         return mock {
-            Mockito.doReturn(namespace.metadata.name)
+            doReturn(namespace.metadata.name)
                 .whenever(mock).namespace
             on { this.kind } doReturn kind!!
             on { allResources } doReturn resources

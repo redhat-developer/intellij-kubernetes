@@ -10,41 +10,28 @@
  ******************************************************************************/
 package com.redhat.devtools.intellij.kubernetes.editor
 
-import com.intellij.openapi.actionSystem.ActionGroup
-import com.intellij.openapi.actionSystem.ActionManager
-import com.intellij.openapi.actionSystem.ActionPlaces
 import com.intellij.openapi.actionSystem.ActionToolbar
-import com.intellij.openapi.actionSystem.impl.ActionToolbarImpl
 import com.intellij.openapi.command.WriteCommandAction
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.editor.Document
 import com.intellij.openapi.fileEditor.FileEditor
-import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.project.Project
-import com.intellij.openapi.util.Key
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.PsiDocumentManager
-import com.intellij.ui.AppUIUtil
-import com.intellij.util.ui.JBEmptyBorder
 import com.redhat.devtools.intellij.kubernetes.editor.notification.DeletedNotification
 import com.redhat.devtools.intellij.kubernetes.editor.notification.ErrorNotification
 import com.redhat.devtools.intellij.kubernetes.editor.notification.PullNotification
 import com.redhat.devtools.intellij.kubernetes.editor.notification.PulledNotification
 import com.redhat.devtools.intellij.kubernetes.editor.notification.PushNotification
 import com.redhat.devtools.intellij.kubernetes.editor.util.getDocument
-import com.redhat.devtools.intellij.kubernetes.model.ClientConfig
 import com.redhat.devtools.intellij.kubernetes.model.Clients
 import com.redhat.devtools.intellij.kubernetes.model.ClusterResource
 import com.redhat.devtools.intellij.kubernetes.model.ModelChangeObservable
 import com.redhat.devtools.intellij.kubernetes.model.Notification
 import com.redhat.devtools.intellij.kubernetes.model.ResourceException
-import com.redhat.devtools.intellij.kubernetes.model.createClients
 import com.redhat.devtools.intellij.kubernetes.model.util.isKubernetesResource
 import com.redhat.devtools.intellij.kubernetes.model.util.isSameResource
 import com.redhat.devtools.intellij.kubernetes.model.util.trimWithEllipsis
-import com.redhat.devtools.intellij.kubernetes.telemetry.TelemetryService
-import com.redhat.devtools.intellij.kubernetes.telemetry.TelemetryService.NAME_PREFIX_EDITOR
-import com.redhat.devtools.intellij.kubernetes.telemetry.TelemetryService.reportResource
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.Namespace
 import io.fabric8.kubernetes.client.KubernetesClient
@@ -56,7 +43,7 @@ import kotlin.concurrent.withLock
 /**
  * An adapter for [FileEditor] instances that allows to push or load the editor content to/from a remote cluster.
  */
-open class ResourceEditor protected constructor(
+open class ResourceEditor constructor(
     var localCopy: HasMetadata?,
     private val editor: FileEditor,
     private val project: Project,
@@ -87,102 +74,13 @@ open class ResourceEditor protected constructor(
     // for mocking purposes
     private val ideNotification: Notification = Notification(),
     private val documentReplaced: AtomicBoolean = AtomicBoolean(false)
-
 ) {
+
     companion object {
-        private val KEY_RESOURCE_EDITOR = Key<ResourceEditor>(ResourceEditor::class.java.name)
-        private val KEY_TOOLBAR = Key<ActionToolbar>(ActionToolbar::class.java.name)
+        const val ID_TOOLBAR = "Kubernetes.Editor.Toolbar"
 
-        /**
-         * Opens a new editor for the given [HasMetadata] and [Project].
-         *
-         * @param resource to edit
-         * @param project that this editor belongs to
-         * @return the new [ResourceEditor] that was opened
-         */
-        fun open(resource: HasMetadata, project: Project): ResourceEditor? {
-            val file = ResourceFile.create(resource)?.write(resource) ?: return null
-            val editor = FileEditorManager.getInstance(project)
-                .openFile(file, true, true)
-                .getOrNull(0)
-                ?: return null
-            return get(editor, project)
-        }
-
-        /**
-         * Returns the existing or creates a new [ResourceEditor] for the given [FileEditor] and [Project].
-         * Returns `null` if the given [FileEditor] is `null`, not a [ResourceEditor] or the given [Project] is `null`.
-         *
-         * @return the existing or a new [ResourceEditor].
-         */
-        fun get(editor: FileEditor?, project: Project?): ResourceEditor? {
-            if (editor == null
-                || project == null) {
-                return null
-            }
-
-            val resourceEditor = editor.getUserData(KEY_RESOURCE_EDITOR)
-            if (resourceEditor != null) {
-                return resourceEditor
-            }
-            if (!ResourceFile.isLocalYamlOrJson(editor.file)
-                || !hasKubernetesResource(editor)) {
-                return null
-            }
-            return create(editor, project)
-        }
-
-        private fun hasKubernetesResource(editor: FileEditor): Boolean {
-            val document = getDocument(editor) ?: return false
-            return isKubernetesResource(document.text)
-        }
-
-        fun get(file: VirtualFile?): ResourceEditor? {
-            return file?.getUserData(KEY_RESOURCE_EDITOR)
-        }
-
-        private fun create(editor: FileEditor, project: Project): ResourceEditor? {
-            val telemetry = TelemetryService.instance.action(NAME_PREFIX_EDITOR + "open")
-            try {
-                val clients = createClients(ClientConfig {}) ?: return null
-                val resource = EditorResourceFactory.create(editor, clients) ?: return null
-                reportResource(resource, telemetry)
-                return create(resource, editor, project, clients)
-            } catch(e: ResourceException) {
-                ErrorNotification(editor, project).show(e.message ?: "", e.cause?.message)
-                telemetry.error(e).send()
-                return null
-            }
-        }
-
-        private fun create(
-            resource: HasMetadata,
-            editor: FileEditor,
-            project: Project,
-            clients: Clients<out KubernetesClient>
-        ): ResourceEditor {
-            val resourceEditor = ResourceEditor(resource, editor, project, clients)
-            editor.putUserData(KEY_RESOURCE_EDITOR, resourceEditor)
-            editor.file?.putUserData(KEY_RESOURCE_EDITOR, resourceEditor)
-            createToolbar(editor, project)
-            return resourceEditor
-        }
-
-        private fun createToolbar(editor: FileEditor, project: Project) {
-            var editorToolbar: ActionToolbar? = editor.getUserData(KEY_TOOLBAR)
-            if (editorToolbar != null) {
-                return
-            }
-            val actionManager = ActionManager.getInstance()
-            val group = actionManager.getAction("Kubernetes.Editor.Toolbar") as ActionGroup
-            editorToolbar = actionManager.createActionToolbar(ActionPlaces.EDITOR_TOOLBAR, group, true) as ActionToolbarImpl
-            editorToolbar.isOpaque = false
-            editorToolbar.border = JBEmptyBorder(0, 2, 0, 2)
-            editor.putUserData(KEY_TOOLBAR, editorToolbar)
-            AppUIUtil.invokeOnEdt {
-                FileEditorManager.getInstance(project).addTopComponent(editor, editorToolbar)
-            }
-        }
+        @JvmStatic
+        val factory = ResourceEditorFactory()
     }
 
     open var editorResource: HasMetadata? = localCopy
@@ -460,10 +358,8 @@ open class ResourceEditor protected constructor(
     }
 
     /**
-     * Enables editing of non project files for the given file. This prevents the IDE from presenting the
+     * Enables editing of non project files for the file in this editor. This prevents the IDE from presenting the
      * "edit non-project" files dialog.
-     *
-     * @param file to enable the (non-project file) editing for
      */
     fun enableNonProjectFileEditing() {
         if (editor.file == null
@@ -473,11 +369,16 @@ open class ResourceEditor protected constructor(
         createResourceFileForVirtual(editor.file)?.enableNonProjectFileEditing()
     }
 
+    protected open fun hasKubernetesResource(editor: FileEditor): Boolean {
+        val document = documentProvider.invoke(editor) ?: return false
+        return isKubernetesResource(document.text)
+    }
+
     fun getTitle(): String? {
         val file = editor.file ?: return null
         return if (true == createResourceFileForVirtual(file)?.isTemporary()
-            || !hasKubernetesResource(editor)) {
-            val resource = editorResource ?: return ""
+            && hasKubernetesResource(editor)) {
+            val resource = editorResource ?: return null
             getTitleFor(resource)
         } else {
             getTitleFor(file)
@@ -504,6 +405,14 @@ open class ResourceEditor protected constructor(
 
     protected open fun executeWriteAction(runnable: () -> Unit) {
         WriteCommandAction.runWriteCommandAction(project, runnable)
+    }
+
+    fun createToolbar() {
+        var editorToolbar: ActionToolbar? = editor.getUserData(ResourceEditorFactory.KEY_TOOLBAR)
+        if (editorToolbar == null) {
+            editorToolbar = EditorToolbarFactory.create(ID_TOOLBAR, editor, project)
+            editor.putUserData(ResourceEditorFactory.KEY_TOOLBAR, editorToolbar)
+        }
     }
 }
 

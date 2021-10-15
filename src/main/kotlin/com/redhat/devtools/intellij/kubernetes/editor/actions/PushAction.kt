@@ -34,7 +34,7 @@ class PushAction: AnAction() {
         com.redhat.devtools.intellij.kubernetes.actions.run("Pushing...", true,
             Progressive {
                 try {
-                    val editor = ResourceEditor.get(editor, project) ?: return@Progressive
+                    val editor = ResourceEditor.factory.getOrCreate(editor, project) ?: return@Progressive
                     editor.push()
                     reportResource(editor.editorResource, telemetry)
                 } catch (e: Exception) {

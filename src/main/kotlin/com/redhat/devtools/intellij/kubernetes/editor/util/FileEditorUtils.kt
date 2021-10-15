@@ -36,7 +36,7 @@ fun getFile(document: Document): VirtualFile? {
 
 fun getResourceFile(document: Document): VirtualFile? {
     val file = FileDocumentManager.getInstance().getFile(document)
-    if (!ResourceFile.isLocalYamlOrJson(file)) {
+    if (!ResourceFile.isValidType(file)) {
         return null
     }
     return file
