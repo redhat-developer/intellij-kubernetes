@@ -13,16 +13,17 @@ package com.redhat.devtools.intellij.kubernetes.editor
 import com.intellij.openapi.editor.Document
 import com.intellij.openapi.fileEditor.FileEditor
 import com.intellij.openapi.fileEditor.FileEditorManager
-import com.intellij.openapi.fileEditor.impl.FileEditorManagerImpl
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.VirtualFile
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.mock
+import com.nhaarman.mockitokotlin2.spy
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.whenever
 import com.redhat.devtools.intellij.kubernetes.model.ClientConfig
 import com.redhat.devtools.intellij.kubernetes.model.Clients
+import com.redhat.devtools.intellij.kubernetes.model.util.createResource
 import com.redhat.devtools.intellij.telemetry.core.service.TelemetryMessageBuilder
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.client.KubernetesClient
@@ -65,17 +66,25 @@ class ResourceEditorFactoryTest {
                           key: secret.password 
     """.trimIndent()
 
-    private val virtualFile: VirtualFile = mock()
-    private val resourceEditor: ResourceEditor = mock()
+    private val resource = createResource<HasMetadata?>(deployment)!!
+    private val virtualFile: VirtualFile = mock {
+        on { isInLocalFileSystem } doReturn true
+    }
+
     private val fileEditor: FileEditor = mock<FileEditor>().apply {
         doReturn(null)
             .whenever(this).getUserData(ResourceEditorFactory.KEY_RESOURCE_EDITOR)
         doReturn(virtualFile)
             .whenever(this).file
     }
-    private val fileEditorManager: FileEditorManager = mock<FileEditorManagerImpl>().apply {
+    private val project: Project = mock()
+    private val fileEditorManager: FileEditorManager = mock<FileEditorManager>().apply {
         doReturn(arrayOf(fileEditor))
             .whenever(this).openFile(any(), any())
+        doReturn(emptyArray<FileEditor>())
+            .whenever(this).allEditors
+        doReturn(emptyArray<FileEditor>())
+            .whenever(this).openFile(any(), any(), any())
     }
     private val getFileEditorManager: (project: Project) -> FileEditorManager = { fileEditorManager }
     private val resourceFile: ResourceFile = mock<ResourceFile>().apply {
@@ -91,25 +100,32 @@ class ResourceEditorFactoryTest {
         doReturn(true)
             .whenever(this).invoke(any())
     }
+    private val isTemporary: (file: VirtualFile?) -> Boolean = mock<(file: VirtualFile?) -> Boolean>().apply {
+        doReturn(true)
+            .whenever(this).invoke(any())
+    }
     private val document: Document = mock<Document>().apply {
         doReturn(deployment)
             .whenever(this).text
     }
     private val getDocument: (editor: FileEditor) -> Document? = { document }
-    private val createEditorResource: (editor: FileEditor, clients: Clients<out KubernetesClient>) -> HasMetadata? = { editor, clients -> mock() }
+    private val createEditorResource: (editor: FileEditor, clients: Clients<out KubernetesClient>) -> HasMetadata? =
+        { editor, clients -> mock() }
     private val createClients: (config: ClientConfig) -> Clients<out KubernetesClient>? =
         mock<(config: ClientConfig) -> Clients<out KubernetesClient>?>().apply {
             doReturn(mock<Clients<out KubernetesClient>>())
                 .whenever(this).invoke(any())
         }
     private val reportTelemetry: (HasMetadata, TelemetryMessageBuilder.ActionMessage) -> Unit = mock()
-    private val createResourceEditor: (HasMetadata, FileEditor, Project, Clients<out KubernetesClient>) -> ResourceEditor = { resource, editor, project, clients -> mock() }
+    private val createResourceEditor: (HasMetadata, FileEditor, Project, Clients<out KubernetesClient>) -> ResourceEditor =
+        { resource, editor, project, clients -> mock() }
+    private val resourceEditor: ResourceEditor = spy(ResourceEditor(resource, fileEditor, mock(), mock()))
 
     private val editorFactory =
-        ResourceEditorFactory(getFileEditorManager, createResourceFile, isValidType, getDocument, createEditorResource, createClients, reportTelemetry, createResourceEditor)
+        ResourceEditorFactory(getFileEditorManager, createResourceFile, isValidType, isTemporary, getDocument, createEditorResource, createClients, reportTelemetry, createResourceEditor)
 
     @Test
-    fun `#openEditor should NOT open editor if resource file could not be created`() {
+    fun `#openEditor should NOT open editor if temporary resource file could not be created`() {
         // given
         doReturn(null)
             .whenever(createResourceFile).invoke(any())
@@ -117,6 +133,51 @@ class ResourceEditorFactoryTest {
         val editor = editorFactory.openEditor(mock(), mock())
         // then
         assertThat(editor).isNull()
+    }
+
+    @Test
+    fun `#openEditor should return resource editor that is in userData of opened FileEditor`() {
+        // given
+        doReturn(true)
+            .whenever(isTemporary).invoke(any())
+        doReturn(arrayOf(fileEditor))
+            .whenever(fileEditorManager).allEditors
+        doReturn(resourceEditor)
+            .whenever(fileEditor).getUserData(ResourceEditorFactory.KEY_RESOURCE_EDITOR)
+        // when
+        val editor = editorFactory.openEditor(resource, mock())
+        // then
+        assertThat(editor).isEqualTo(resourceEditor)
+    }
+
+    @Test
+    fun `#openEditor should create new editor if existing editor edits a non-temporary file`() {
+        // given
+        doReturn(false)
+            .whenever(isTemporary).invoke(any())
+        doReturn(arrayOf(fileEditor))
+            .whenever(fileEditorManager).allEditors
+        doReturn(resourceEditor)
+            .whenever(fileEditor).getUserData(ResourceEditorFactory.KEY_RESOURCE_EDITOR)
+        // when open an editor for a temporary file
+        val editor = editorFactory.openEditor(resource, mock())
+        // then new editor created
+        assertThat(editor).isNotEqualTo(resourceEditor)
+    }
+
+    @Test
+    fun `#openEditor should return resource editor that is in userData of file in opened FileEditor`() {
+        // given
+        doReturn(true)
+            .whenever(isTemporary).invoke(any())
+        doReturn(arrayOf(fileEditor))
+            .whenever(fileEditorManager).allEditors
+        doReturn(resourceEditor)
+            .whenever(virtualFile).getUserData(ResourceEditorFactory.KEY_RESOURCE_EDITOR)
+        // when
+        val editor = editorFactory.openEditor(resource, mock())
+        // then
+        assertThat(editor).isEqualTo(resourceEditor)
     }
 
     @Test

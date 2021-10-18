@@ -45,7 +45,7 @@ import kotlin.concurrent.withLock
  */
 open class ResourceEditor constructor(
     var localCopy: HasMetadata?,
-    private val editor: FileEditor,
+    val editor: FileEditor,
     private val project: Project,
     private val clients: Clients<out KubernetesClient>,
     // for mocking purposes
@@ -57,6 +57,8 @@ open class ResourceEditor constructor(
     // for mocking purposes
     private val createResourceFileForVirtual: (file: VirtualFile?) -> ResourceFile? =
         ResourceFile.Factory::create,
+    private val isTemporary: (file: VirtualFile?) -> Boolean? =
+        ResourceFile.Factory::isTemporary,
     // for mocking purposes
     private val pushNotification: PushNotification = PushNotification(editor, project),
     // for mocking purposes
@@ -376,7 +378,7 @@ open class ResourceEditor constructor(
 
     fun getTitle(): String? {
         val file = editor.file ?: return null
-        return if (true == createResourceFileForVirtual(file)?.isTemporary()
+        return if (true == isTemporary.invoke(file)
             && hasKubernetesResource(editor)) {
             val resource = editorResource ?: return null
             getTitleFor(resource)

@@ -314,15 +314,17 @@ inline fun <reified T> createResource(jsonYaml: String): T {
 
 /**
  * Returns `true` if the given string contains yaml or json for a kubernetes resource
+ *
+ * @param jsonYaml the string that should be converted into a [KubernetesResource]
+ * @return the [KubernetesResource] for the given string
  */
-fun isKubernetesResource(string: String?): Boolean {
-	if (string == null) {
+fun isKubernetesResource(jsonYaml: String?): Boolean {
+	if (jsonYaml == null) {
 		return false
 	}
 	return try {
-		createResource<KubernetesResource?>(string) != null
+		createResource<KubernetesResource?>(jsonYaml) != null
 	} catch (e: RuntimeException) {
 		false
 	}
 }
-

@@ -10,6 +10,7 @@
  ******************************************************************************/
 package com.redhat.devtools.intellij.kubernetes.editor
 
+import com.intellij.ide.highlighter.HtmlFileType
 import com.intellij.openapi.fileTypes.FileType
 import com.intellij.openapi.fileTypes.PlainTextFileType
 import com.intellij.openapi.vfs.VirtualFile
@@ -62,6 +63,12 @@ spec:
         ByteArrayInputStream(job.toByteArray(Charset.defaultCharset())))
     private val resourceFile = spy(TestableResourceFile(temporaryVirtualFile))
 
+    private val nonTemporaryVirtualFile =  createVirtualFile(
+        File(SystemProperties.getUserHome()).toPath().resolve("test.txt"),
+        true,
+        ByteArrayInputStream(job.toByteArray(Charset.defaultCharset())))
+
+
     @Test
     fun `#create(virtualFile) should return null for null virtualFile`() {
         // given
@@ -86,20 +93,21 @@ spec:
     }
 
     @Test
-    fun `#create(virtualFile) should return null for file that has no kubernetes yaml`() {
+    fun `#create(virtualFile) should return null for file that is no yaml or json file`() {
         // given
-        val filePath = ResourceFile.TEMP_FOLDER.resolve("darth-vader.doc")
+        val factory = createResourceFileFactoryMock(HtmlFileType.INSTANCE)
+        val filePath = ResourceFile.TEMP_FOLDER.resolve("darth-vader.html")
         val virtualFile: VirtualFile = createVirtualFile(filePath,
-            false,
-            ByteArrayInputStream("bogus content".toByteArray(Charset.defaultCharset())))
+            true,
+            ByteArrayInputStream(job.toByteArray(Charset.defaultCharset())))
         // when
-        val file = ResourceFile.create(virtualFile)
+        val file = factory.create(virtualFile)
         // then
         assertThat(file).isNull()
     }
 
     @Test
-    fun `#isLocalYamlOrJson(virtualFile) should return false if yaml file is not on local filesystem`() {
+    fun `#isValidType(virtualFile) should return false if yaml file is not on local filesystem`() {
         // given
         val factory = createResourceFileFactoryMock(YAMLFileType.YML)
         val nonLocalFile: VirtualFile = createVirtualFile(
@@ -113,7 +121,7 @@ spec:
     }
 
     @Test
-    fun `#isLocalYamlOrJson(virtualFile) should return false if txt file is not on local filesystem`() {
+    fun `#isValidType(virtualFile) should return false if txt file is not on local filesystem`() {
         // given
         val factory = createResourceFileFactoryMock(PlainTextFileType.INSTANCE)
         val nonLocalFile: VirtualFile = createVirtualFile(
@@ -127,7 +135,7 @@ spec:
     }
 
     @Test
-    fun `#isLocalYamlOrJson(virtualFile) should return false for null file`() {
+    fun `#isValidType(virtualFile) should return false for null file`() {
         // given
         // when
         val isResourceFile = ResourceFile.isValidType(null)
@@ -136,7 +144,34 @@ spec:
     }
 
     @Test
-    fun `#isTemporaryFile() should return true for file in tmp folder`() {
+    fun `#isTemporary(virtualFile) should return false for null file`() {
+        // given
+        // when
+        val isResourceFile = ResourceFile.isTemporary(null)
+        // then
+        assertThat(isResourceFile).isFalse()
+    }
+
+    @Test
+    fun `#isTemporary(virtualFile) should return true for file in temp dir`() {
+        // given
+        // when
+        val isResourceFile = ResourceFile.isTemporary(temporaryVirtualFile)
+        // then
+        assertThat(isResourceFile).isTrue()
+    }
+
+    @Test
+    fun `#isTemporary(virtualFile) should return false for file that's NOT in tmp folder`() {
+        // given
+        // when
+        val isResourceFile = ResourceFile.isTemporary(nonTemporaryVirtualFile)
+        // then
+        assertThat(isResourceFile).isFalse()
+    }
+
+    @Test
+    fun `#isTemporary() should return true for file in tmp folder`() {
         // given
         // when
         val isTemporary = resourceFile.isTemporary()
@@ -145,13 +180,9 @@ spec:
     }
 
     @Test
-    fun `#isTemporaryFile() should return false for file that's NOT in tmp folder`() {
+    fun `#isTemporary() should return false for file that's NOT in tmp folder`() {
         // given
-        val virtualFileMock: VirtualFile = createVirtualFile(
-            File(SystemProperties.getUserHome()).toPath().resolve("test.txt"),
-            true,
-            ByteArrayInputStream(job.toByteArray(Charset.defaultCharset())))
-        val resourceFile = spy(TestableResourceFile(virtualFileMock))
+        val resourceFile = spy(TestableResourceFile(nonTemporaryVirtualFile))
         // when
         val isTemporary = resourceFile.isTemporary()
         // then
