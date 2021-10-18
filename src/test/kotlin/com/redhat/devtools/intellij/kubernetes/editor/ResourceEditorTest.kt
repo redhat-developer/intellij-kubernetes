@@ -118,7 +118,11 @@ spec:
             doReturn(resourceFile)
                 .whenever(this).invoke(any())
         }
-
+    private val isTemporary: (file: VirtualFile?) -> Boolean =
+        mock<(file: VirtualFile?) -> Boolean>().apply {
+                doReturn(true)
+                    .whenever(this).invoke(any())
+        }
     private val project: Project = mock()
     private val clients: Clients<KubernetesClient> =
         Clients(client(currentNamespace.metadata.name, allNamespaces))
@@ -159,6 +163,7 @@ spec:
             createResource,
             createClusterResource,
             createResourceFileForVirtual,
+            isTemporary,
             pushNotification,
             pullNotification,
             pulledNotification,
@@ -673,7 +678,7 @@ spec:
     fun `#getTitle should return resourcename@namespace if file is temporary file and contains kubernetes resource`() {
         // given
         doReturn(true)
-            .whenever(resourceFile).isTemporary()
+            .whenever(isTemporary).invoke(any())
         val resource = localCopy
         // when
         val title = editor.getTitle()
@@ -685,7 +690,7 @@ spec:
     fun `#getTitle should return filename if file is temporary file but does NOT contain kubernetes resource`() {
         // given
         doReturn(true)
-            .whenever(resourceFile).isTemporary()
+            .whenever(isTemporary).invoke(virtualFile)
         doReturn("not kubernetes yaml")
             .whenever(document).getText()
         doReturn("lord.vader")
@@ -701,7 +706,7 @@ spec:
     fun `#getTitle should return filename if file is NOT temporary file`() {
         // given
         doReturn(false)
-            .whenever(resourceFile).isTemporary()
+            .whenever(isTemporary).invoke(virtualFile)
         doReturn("luke.skywalker")
             .whenever(virtualFile).name
         // when
@@ -718,6 +723,7 @@ spec:
         resourceFactory: (editor: FileEditor, clients: Clients<out KubernetesClient>) -> HasMetadata?,
         createClusterResource: (HasMetadata, Clients<out KubernetesClient>) -> ClusterResource,
         resourceFileForVirtual: (file: VirtualFile?) -> ResourceFile?,
+        isTemporary: (file: VirtualFile?) -> Boolean,
         pushNotification: PushNotification,
         pullNotification: PullNotification,
         pulledNotification: PulledNotification,
@@ -734,6 +740,7 @@ spec:
         resourceFactory,
         createClusterResource,
         resourceFileForVirtual,
+        isTemporary,
         pushNotification,
         pullNotification,
         pulledNotification,

@@ -92,6 +92,17 @@ open class ResourceFile protected constructor(
                     && isYamlOrJson(file)
         }
 
+        /**
+         * Returns `true` if the given file is a temporary file.
+         *
+         * @param virtualFile to check if it's a temporary file
+         * @return true if the given file is a temporary file
+         */
+        fun isTemporary(virtualFile: VirtualFile?): Boolean {
+            return virtualFile != null
+                    && virtualFile.path.startsWith(TEMP_FOLDER.toString())
+        }
+
         private fun isYamlOrJson(file: VirtualFile): Boolean {
             if (true == file.extension?.isBlank()) {
                 return false
@@ -106,8 +117,8 @@ open class ResourceFile protected constructor(
             return FileTypeRegistry.getInstance().getFileTypeByFile(file)
         }
 
-        private fun isLocalFile(file: VirtualFile): Boolean {
-            return file.isInLocalFileSystem
+        private fun isLocalFile(file: VirtualFile?): Boolean {
+            return file?.isInLocalFileSystem ?: false
         }
     }
 
@@ -136,11 +147,13 @@ open class ResourceFile protected constructor(
     }
 
     /**
-     * Deletes the temporary file that was created when creating this instance.
-     * Does nothing if no temporary file was created.
+     * Deletes this resource file if it is temporary.
+     * Does nothing if it's not temporary.
+     *
+     * @see [isTemporary]
      */
     fun deleteTemporary() {
-        if (!isTemporary()) {
+        if (!isTemporary(virtualFile)) {
             return
         }
         executeWriteAction {
@@ -149,16 +162,12 @@ open class ResourceFile protected constructor(
     }
 
     /**
-     * Returns `true` if the file for this instance is a temporary file.
+     * Returns `true` if the file in this instance is a temporary file.
+     *
+     * @return true if this resource file is a temporary
      */
     fun isTemporary(): Boolean {
-        return virtualFile.path.startsWith(TEMP_FOLDER.toString())
-    }
-
-    private fun delete() {
-        executeWriteAction {
-            virtualFile.delete(this)
-        }
+        return Factory.isTemporary(virtualFile)
     }
 
     open fun enableNonProjectFileEditing() {

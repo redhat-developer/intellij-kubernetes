@@ -22,6 +22,7 @@ import com.redhat.devtools.intellij.kubernetes.model.ClientConfig
 import com.redhat.devtools.intellij.kubernetes.model.Clients
 import com.redhat.devtools.intellij.kubernetes.model.ResourceException
 import com.redhat.devtools.intellij.kubernetes.model.util.isKubernetesResource
+import com.redhat.devtools.intellij.kubernetes.model.util.isSameResource
 import com.redhat.devtools.intellij.kubernetes.telemetry.TelemetryService
 import com.redhat.devtools.intellij.telemetry.core.service.TelemetryMessageBuilder
 import io.fabric8.kubernetes.api.model.HasMetadata
@@ -32,17 +33,15 @@ open class ResourceEditorFactory(
     private val getFileEditorManager: (project: Project) -> FileEditorManager = FileEditorManager::getInstance,
     /* for mocking purposes */
     private val createResourceFile: (resource: HasMetadata) -> ResourceFile? = { resource: HasMetadata ->
-        ResourceFile.create(
-            resource
-        )
+        ResourceFile.create(resource)
     },
     /* for mocking purposes */
     private val isValidType: (file: VirtualFile?) -> Boolean = ResourceFile.Factory::isValidType,
     /* for mocking purposes */
+    private val isTemporary: (file: VirtualFile?) -> Boolean = ResourceFile.Factory::isTemporary,
+    /* for mocking purposes */
     private val getDocument: (editor: FileEditor) -> Document? = { editor ->
-        com.redhat.devtools.intellij.kubernetes.editor.util.getDocument(
-            editor
-        )
+        com.redhat.devtools.intellij.kubernetes.editor.util.getDocument(editor)
     },
     /* for mocking purposes */
     private val createEditorResource: (editor: FileEditor, clients: Clients<out KubernetesClient>) -> HasMetadata? =
@@ -63,19 +62,34 @@ open class ResourceEditorFactory(
     }
 
     /**
-     * Opens a new editor for the given [HasMetadata] and [Project].
+     * Opens a new editor or focuses an existing editor for the given [HasMetadata] and [Project].
      *
      * @param resource to edit
      * @param project that this editor belongs to
      * @return the new [ResourceEditor] that was opened
      */
     fun openEditor(resource: HasMetadata, project: Project): ResourceEditor? {
+        val resourceEditor = get(resource, project)
+        if (resourceEditor != null) {
+            return resourceEditor
+        }
+
         val file = createResourceFile.invoke(resource)?.write(resource) ?: return null
         val editor = getFileEditorManager.invoke(project)
             .openFile(file, true, true)
             .firstOrNull()
             ?: return null
         return getOrCreate(editor, project)
+    }
+
+    private fun get(resource: HasMetadata, project: Project): ResourceEditor? {
+        return getFileEditorManager.invoke(project).allEditors
+            .mapNotNull { editor -> get(editor) }
+            .firstOrNull { resourceEditor ->
+                // get editor for a temporary file thus only editors for temporary files are candidates
+                isTemporary.invoke(resourceEditor.editor.file)
+                        && resource.isSameResource(resourceEditor.editorResource)
+            }
     }
 
     /**
@@ -90,13 +104,9 @@ open class ResourceEditorFactory(
             return null
         }
 
-        val resourceEditor = editor.getUserData(KEY_RESOURCE_EDITOR)
+        val resourceEditor = get(editor)
         if (resourceEditor != null) {
             return resourceEditor
-        }
-        if (!isValidType.invoke(editor.file)
-            || !hasKubernetesResource(editor)) {
-            return null
         }
         return create(editor, project)
     }
@@ -106,11 +116,43 @@ open class ResourceEditorFactory(
         return isKubernetesResource(document.text)
     }
 
+    /**
+     * Returns a [ResourceEditor] for the given [FileEditor] if it exists. Returns `null` otherwise.
+     * The editor exists if it is contained in the user data for the given editor or its file.
+     *
+     * @param editor for which an existing [ResourceEditor] is returned.
+     * @return [ResourceEditor] that exists.
+     *
+     * @see [FileEditor.getUserData]
+     * @see [VirtualFile.getUserData]
+     */
+    fun get(editor: FileEditor?): ResourceEditor? {
+        if (editor == null) {
+            return null
+        }
+
+        return editor.getUserData(KEY_RESOURCE_EDITOR)
+            ?: get(editor.file)
+    }
+
+    /**
+     * Returns a [ResourceEditor] for the given [VirtualFile] if it exists. Returns `null` otherwise.
+     * The editor exists if it is contained in the user data for the given file.
+     *
+     * @param file for which an existing [VirtualFile] is returned.
+     * @return [ResourceEditor] that exists.
+     *
+     * @see [VirtualFile.getUserData]
+     */
     fun get(file: VirtualFile?): ResourceEditor? {
         return file?.getUserData(KEY_RESOURCE_EDITOR)
     }
 
     private fun create(editor: FileEditor, project: Project): ResourceEditor? {
+        if (!isValidType.invoke(editor.file)
+            || !hasKubernetesResource(editor)) {
+            return null
+        }
         val telemetry = TelemetryService.instance.action(TelemetryService.NAME_PREFIX_EDITOR + "open")
         try {
             val clients = createClients.invoke(ClientConfig {}) ?: return null
