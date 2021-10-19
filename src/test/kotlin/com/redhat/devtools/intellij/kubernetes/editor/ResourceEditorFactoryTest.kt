@@ -126,18 +126,18 @@ class ResourceEditorFactoryTest {
         ResourceEditorFactory(getFileEditorManager, createResourceFile, isValidType, isTemporary, getDocument, createEditorResource, createClients, reportTelemetry, createResourceEditor)
 
     @Test
-    fun `#openEditor should NOT open editor if temporary resource file could not be created`() {
+    fun `#open should NOT open editor if temporary resource file could not be created`() {
         // given
         doReturn(null)
             .whenever(createResourceFile).invoke(any())
         // when
-        val editor = editorFactory.openEditor(mock(), mock())
+        val editor = editorFactory.open(mock(), mock())
         // then
         assertThat(editor).isNull()
     }
 
     @Test
-    fun `#openEditor should return resource editor that is in userData of opened FileEditor`() {
+    fun `#open should return resource editor that is in userData of opened FileEditor`() {
         // given
         doReturn(true)
             .whenever(isTemporary).invoke(any())
@@ -146,13 +146,13 @@ class ResourceEditorFactoryTest {
         doReturn(resourceEditor)
             .whenever(fileEditor).getUserData(KEY_RESOURCE_EDITOR)
         // when
-        val editor = editorFactory.openEditor(resource, mock())
+        val editor = editorFactory.open(resource, mock())
         // then
         assertThat(editor).isEqualTo(resourceEditor)
     }
 
     @Test
-    fun `#openEditor should create new editor if existing editor edits a non-temporary file`() {
+    fun `#open should create new editor if existing editor edits a non-temporary file`() {
         // given
         doReturn(false)
             .whenever(isTemporary).invoke(any())
@@ -161,13 +161,13 @@ class ResourceEditorFactoryTest {
         doReturn(resourceEditor)
             .whenever(fileEditor).getUserData(KEY_RESOURCE_EDITOR)
         // when open an editor for a temporary file
-        val editor = editorFactory.openEditor(resource, mock())
+        val editor = editorFactory.open(resource, mock())
         // then new editor created
         assertThat(editor).isNotEqualTo(resourceEditor)
     }
 
     @Test
-    fun `#openEditor should return resource editor that is in userData of file in opened FileEditor`() {
+    fun `#open should return resource editor that is in userData of file in opened FileEditor`() {
         // given
         doReturn(true)
             .whenever(isTemporary).invoke(any())
@@ -176,7 +176,7 @@ class ResourceEditorFactoryTest {
         doReturn(resourceEditor)
             .whenever(virtualFile).getUserData(KEY_RESOURCE_EDITOR)
         // when
-        val editor = editorFactory.openEditor(resource, mock())
+        val editor = editorFactory.open(resource, mock())
         // then
         assertThat(editor).isEqualTo(resourceEditor)
     }
