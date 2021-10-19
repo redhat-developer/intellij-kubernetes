@@ -10,12 +10,10 @@
  ******************************************************************************/
 package com.redhat.devtools.intellij.kubernetes.editor
 
-import com.intellij.openapi.actionSystem.ActionToolbar
 import com.intellij.openapi.editor.Document
 import com.intellij.openapi.fileEditor.FileEditor
 import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.project.Project
-import com.intellij.openapi.util.Key
 import com.intellij.openapi.vfs.VirtualFile
 import com.redhat.devtools.intellij.kubernetes.editor.notification.ErrorNotification
 import com.redhat.devtools.intellij.kubernetes.model.ClientConfig
@@ -55,11 +53,6 @@ open class ResourceEditorFactory(
     private val createResourceEditor: (HasMetadata, FileEditor, Project, Clients<out KubernetesClient>) -> ResourceEditor =
         { resource, editor, project, clients -> ResourceEditor(resource, editor, project, clients) }
 ) {
-
-    companion object {
-        val KEY_RESOURCE_EDITOR = Key<ResourceEditor>(ResourceEditor::class.java.name)
-        val KEY_TOOLBAR = Key<ActionToolbar>(ActionToolbar::class.java.name)
-    }
 
     /**
      * Opens a new editor or focuses an existing editor for the given [HasMetadata] and [Project].
@@ -131,7 +124,7 @@ open class ResourceEditorFactory(
             return null
         }
 
-        return editor.getUserData(KEY_RESOURCE_EDITOR)
+        return editor.getUserData(ResourceEditor.KEY_RESOURCE_EDITOR)
             ?: get(editor.file)
     }
 
@@ -145,7 +138,7 @@ open class ResourceEditorFactory(
      * @see [VirtualFile.getUserData]
      */
     fun get(file: VirtualFile?): ResourceEditor? {
-        return file?.getUserData(KEY_RESOURCE_EDITOR)
+        return file?.getUserData(ResourceEditor.KEY_RESOURCE_EDITOR)
     }
 
     private fun create(editor: FileEditor, project: Project): ResourceEditor? {
@@ -174,8 +167,8 @@ open class ResourceEditorFactory(
     ): ResourceEditor {
         val resourceEditor = createResourceEditor.invoke(resource, editor, project, clients)
         resourceEditor.createToolbar()
-        editor.putUserData(KEY_RESOURCE_EDITOR, resourceEditor)
-        editor.file?.putUserData(KEY_RESOURCE_EDITOR, resourceEditor)
+        editor.putUserData(ResourceEditor.KEY_RESOURCE_EDITOR, resourceEditor)
+        editor.file?.putUserData(ResourceEditor.KEY_RESOURCE_EDITOR, resourceEditor)
         return resourceEditor
     }
 }

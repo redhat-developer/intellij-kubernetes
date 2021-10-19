@@ -21,6 +21,7 @@ import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.spy
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.whenever
+import com.redhat.devtools.intellij.kubernetes.editor.ResourceEditor.Companion.KEY_RESOURCE_EDITOR
 import com.redhat.devtools.intellij.kubernetes.model.ClientConfig
 import com.redhat.devtools.intellij.kubernetes.model.Clients
 import com.redhat.devtools.intellij.kubernetes.model.util.createResource
@@ -73,7 +74,7 @@ class ResourceEditorFactoryTest {
 
     private val fileEditor: FileEditor = mock<FileEditor>().apply {
         doReturn(null)
-            .whenever(this).getUserData(ResourceEditorFactory.KEY_RESOURCE_EDITOR)
+            .whenever(this).getUserData(KEY_RESOURCE_EDITOR)
         doReturn(virtualFile)
             .whenever(this).file
     }
@@ -143,7 +144,7 @@ class ResourceEditorFactoryTest {
         doReturn(arrayOf(fileEditor))
             .whenever(fileEditorManager).allEditors
         doReturn(resourceEditor)
-            .whenever(fileEditor).getUserData(ResourceEditorFactory.KEY_RESOURCE_EDITOR)
+            .whenever(fileEditor).getUserData(KEY_RESOURCE_EDITOR)
         // when
         val editor = editorFactory.openEditor(resource, mock())
         // then
@@ -158,7 +159,7 @@ class ResourceEditorFactoryTest {
         doReturn(arrayOf(fileEditor))
             .whenever(fileEditorManager).allEditors
         doReturn(resourceEditor)
-            .whenever(fileEditor).getUserData(ResourceEditorFactory.KEY_RESOURCE_EDITOR)
+            .whenever(fileEditor).getUserData(KEY_RESOURCE_EDITOR)
         // when open an editor for a temporary file
         val editor = editorFactory.openEditor(resource, mock())
         // then new editor created
@@ -173,7 +174,7 @@ class ResourceEditorFactoryTest {
         doReturn(arrayOf(fileEditor))
             .whenever(fileEditorManager).allEditors
         doReturn(resourceEditor)
-            .whenever(virtualFile).getUserData(ResourceEditorFactory.KEY_RESOURCE_EDITOR)
+            .whenever(virtualFile).getUserData(KEY_RESOURCE_EDITOR)
         // when
         val editor = editorFactory.openEditor(resource, mock())
         // then
@@ -202,7 +203,7 @@ class ResourceEditorFactoryTest {
     fun `#getOrCreate should return instance existing in FileEditor user data, not create new ResourceEditor`() {
         // given
         doReturn(resourceEditor)
-            .whenever(fileEditor).getUserData(ResourceEditorFactory.KEY_RESOURCE_EDITOR)
+            .whenever(fileEditor).getUserData(KEY_RESOURCE_EDITOR)
         // when
         val editor = editorFactory.getOrCreate(fileEditor, mock())
         // then
@@ -213,7 +214,7 @@ class ResourceEditorFactoryTest {
     fun `#getOrCreate should return null if file is NOT valid file type`() {
         // given
         doReturn(null)
-            .whenever(fileEditor).getUserData(ResourceEditorFactory.KEY_RESOURCE_EDITOR) // force create
+            .whenever(fileEditor).getUserData(KEY_RESOURCE_EDITOR) // force create
         doReturn(false)
             .whenever(isValidType).invoke(any())
         // when
@@ -226,7 +227,7 @@ class ResourceEditorFactoryTest {
     fun `#getOrCreate should return null if file is NOT YAML or JSON`() {
         // given
         doReturn(null)
-            .whenever(fileEditor).getUserData(ResourceEditorFactory.KEY_RESOURCE_EDITOR) // force create
+            .whenever(fileEditor).getUserData(KEY_RESOURCE_EDITOR) // force create
         doReturn(true)
             .whenever(isValidType).invoke(any()) // force file content check
         doReturn("this is not YAML")
@@ -263,7 +264,7 @@ class ResourceEditorFactoryTest {
         // when
         val editor = editorFactory.getOrCreate(fileEditor, mock())
         // then
-        verify(fileEditor).putUserData(ResourceEditorFactory.KEY_RESOURCE_EDITOR, editor)
+        verify(fileEditor).putUserData(KEY_RESOURCE_EDITOR, editor)
     }
 
     @Test
@@ -272,7 +273,7 @@ class ResourceEditorFactoryTest {
         // when
         val editor = editorFactory.getOrCreate(fileEditor, mock())
         // then
-        verify(virtualFile).putUserData(ResourceEditorFactory.KEY_RESOURCE_EDITOR, editor)
+        verify(virtualFile).putUserData(KEY_RESOURCE_EDITOR, editor)
     }
 
 }

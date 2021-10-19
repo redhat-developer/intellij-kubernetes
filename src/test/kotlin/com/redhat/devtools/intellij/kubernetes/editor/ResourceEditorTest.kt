@@ -690,6 +690,33 @@ spec:
     }
 
     @Test
+    fun `#close should close cluster resource`() {
+        // given
+        // when
+        editor.close()
+        // then
+        verify(clusterResource).close()
+    }
+
+    @Test
+    fun `#close should delete temporary resource file`() {
+        // given
+        // when
+        editor.close()
+        // then
+        verify(resourceFile).deleteTemporary()
+    }
+
+    @Test
+    fun `#close should remove editor from virtual file user data`() {
+        // given
+        // when
+        editor.close()
+        // then
+        verify(virtualFile).putUserData(ResourceEditor.KEY_RESOURCE_EDITOR, null)
+    }
+
+    @Test
     fun `#getTitle should return resourcename@namespace if file is temporary file and contains kubernetes resource`() {
         // given
         doReturn(true)
