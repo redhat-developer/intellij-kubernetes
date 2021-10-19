@@ -16,6 +16,7 @@ import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.editor.Document
 import com.intellij.openapi.fileEditor.FileEditor
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.util.Key
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.PsiDocumentManager
 import com.redhat.devtools.intellij.kubernetes.editor.notification.DeletedNotification
@@ -79,6 +80,8 @@ open class ResourceEditor constructor(
 ) {
 
     companion object {
+        val KEY_RESOURCE_EDITOR = Key<ResourceEditor>(ResourceEditor::class.java.name)
+        val KEY_TOOLBAR = Key<ActionToolbar>(ActionToolbar::class.java.name)
         const val ID_TOOLBAR = "Kubernetes.Editor.Toolbar"
 
         @JvmStatic
@@ -355,6 +358,7 @@ open class ResourceEditor constructor(
      */
     fun close() {
         clusterResource?.close()
+        editor.file?.putUserData(KEY_RESOURCE_EDITOR, null)
         createResourceFileForVirtual(editor.file)?.deleteTemporary()
     }
 
@@ -409,10 +413,10 @@ open class ResourceEditor constructor(
     }
 
     fun createToolbar() {
-        var editorToolbar: ActionToolbar? = editor.getUserData(ResourceEditorFactory.KEY_TOOLBAR)
+        var editorToolbar: ActionToolbar? = editor.getUserData(KEY_TOOLBAR)
         if (editorToolbar == null) {
             editorToolbar = EditorToolbarFactory.create(ID_TOOLBAR, editor, project)
-            editor.putUserData(ResourceEditorFactory.KEY_TOOLBAR, editorToolbar)
+            editor.putUserData(KEY_TOOLBAR, editorToolbar)
         }
     }
 }
