@@ -45,7 +45,7 @@ class ClusterResourceTest {
     private val clients: Clients<KubernetesClient> = Clients(client)
     private val endorResource: Pod = resource("Endor", rebelsNamespace.metadata.name, "endorUid", "v1", "1")
     private val endorResourceOnCluster: Pod = resource("Endor", rebelsNamespace.metadata.name, "endorUid", "v1", "2")
-    private val modifiedEndorResourceOnCluster: Pod = resource("Endor", rebelsNamespace.metadata.name, "endorUid", "v1", "2")
+    private val modifiedEndorResourceOnCluster: Pod = resource("Endor", rebelsNamespace.metadata.name, "endorUid", "v1", "3")
     private val nabooResource: Pod = resource("Naboo", rebelsNamespace.metadata.name, "nabooUid", "v1", "1")
     private val watch: Watch = mock()
     private val watchOp: (watcher: Watcher<in Pod>) -> Watch? = { watch }
@@ -485,6 +485,43 @@ class ClusterResourceTest {
         cluster.watch()
         // then
         verify(resourceWatch, never()).watch(eq(endorResource), any(), any())
+    }
+
+    @Test
+    fun `#watch should notify modified if cluster has modified resource`() {
+        // given
+        cluster.get() // initialize updatedResource
+        doReturn(modifiedEndorResourceOnCluster) // request returns modified resource
+            .whenever(operator).get(any())
+        // when
+        cluster.watch()
+        // then
+        verify(observable).fireModified(modifiedEndorResourceOnCluster)
+    }
+
+    @Test
+    fun `#watch should notify removed if resource was removed on cluster`() {
+        // given
+        val updated = cluster.get() // initialize updatedResource
+        doReturn(null) // request returns modified resource
+            .whenever(operator).get(any())
+        // when
+        cluster.watch()
+        // then
+        verify(observable).fireRemoved(updated!!)
+    }
+
+    @Test
+    fun `#watch should NOT notify if resource wasn't not requested yet`() {
+        // given
+        // no cluster.get() so that updatedResource is present yet
+        doReturn(modifiedEndorResourceOnCluster) // request returns modified resource
+            .whenever(operator).get(any())
+        // when
+        cluster.watch()
+        // then
+        verify(observable, never()).fireModified(modifiedEndorResourceOnCluster)
+        verify(observable, never()).fireRemoved(endorResourceOnCluster)
     }
 
     @Test

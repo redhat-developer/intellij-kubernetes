@@ -189,3 +189,38 @@ metadata:
 
 -> error notification disappears
 
+**Push notification appears for local file**
+1. File > New > YML file
+2. paste the following into editor
+```
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: countdown
+spec:
+  template:
+    metadata:
+      name: countdown
+    spec:
+      containers:
+      - name: counter
+        image: centos:7
+        command:
+         - "bin/bash"
+         - "-c"
+         - "for i in 9 8 7 6 5 4 3 2 1 ; do echo $i ; done"
+      restartPolicy: Never
+```
+-> Push notification appears
+
+**Pull notification appears when switching back to editor**
+1. "Edit..." resource
+2. select all && copy
+3. File > New > YML File (ex. pod.yml)
+4. paste
+5. modify content (ex. add label)
+6. push to cluster
+7. switch back to editor with cluster resource
+
+-> pull notification appears
+

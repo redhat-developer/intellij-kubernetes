@@ -243,11 +243,23 @@ open class ClusterResource(
             return
         }
         logger<ClusterResource>().debug("Watching ${initialResource.kind} ${initialResource.metadata.name}.")
+        forcedUpdate()
         watch.watch(
             initialResource,
             { watcher -> operator?.watch(initialResource, watcher) },
             watchListeners
         )
+    }
+
+    private fun forcedUpdate() {
+        val beforeUpdate = updatedResource ?: return
+        val updated = get(true)
+        when {
+            updated == null ->
+                watchListeners.removed(beforeUpdate)
+            updated != beforeUpdate ->
+                watchListeners.replaced(updated)
+        }
     }
 
     /**
