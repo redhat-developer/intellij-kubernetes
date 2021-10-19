@@ -62,17 +62,21 @@ open class ResourceEditorFactory(
      * @return the new [ResourceEditor] that was opened
      */
     fun open(resource: HasMetadata, project: Project): ResourceEditor? {
-        val resourceEditor = get(resource, project)
-        if (resourceEditor != null) {
-            return resourceEditor
-        }
-
-        val file = createResourceFile.invoke(resource)?.write(resource) ?: return null
+        val file = getFile(resource, project) ?: return null
         val editor = getFileEditorManager.invoke(project)
             .openFile(file, true, true)
             .firstOrNull()
             ?: return null
         return getOrCreate(editor, project)
+    }
+
+    private fun getFile(resource: HasMetadata, project: Project): VirtualFile? {
+        val resourceEditor = get(resource, project)
+        return if (resourceEditor != null) {
+            resourceEditor.editor.file
+        } else {
+            createResourceFile.invoke(resource)?.write(resource)
+        }
     }
 
     private fun get(resource: HasMetadata, project: Project): ResourceEditor? {
