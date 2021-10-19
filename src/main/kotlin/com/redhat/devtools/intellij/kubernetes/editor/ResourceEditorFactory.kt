@@ -61,7 +61,7 @@ open class ResourceEditorFactory(
      * @param project that this editor belongs to
      * @return the new [ResourceEditor] that was opened
      */
-    fun openEditor(resource: HasMetadata, project: Project): ResourceEditor? {
+    fun open(resource: HasMetadata, project: Project): ResourceEditor? {
         val resourceEditor = get(resource, project)
         if (resourceEditor != null) {
             return resourceEditor
