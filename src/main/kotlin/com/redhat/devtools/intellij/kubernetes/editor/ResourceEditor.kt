@@ -294,14 +294,14 @@ open class ResourceEditor constructor(
         } catch (e: ResourceException) {
             logger<ResourceEditor>().warn(e)
             ideNotification.error(
-                "Could not save ${
+                "Error Pushing",
+                "Could not push ${
                     if (resource != null) {
                         "${resource.kind} ${resource.metadata.name}"
                     } else {
                         ""
                     }
-                } to cluster",
-                trimWithEllipsis(e.message, 300) ?: ""
+                } to cluster: ${trimWithEllipsis(e.message, 300) ?: ""}"
             )
         }
     }
