@@ -14,7 +14,7 @@ import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.CommonDataKeys
 import com.intellij.openapi.progress.Progressive
-import com.redhat.devtools.intellij.kubernetes.editor.ResourceEditor
+import com.redhat.devtools.intellij.kubernetes.editor.ResourceEditorFactory
 import com.redhat.devtools.intellij.kubernetes.editor.util.getSelectedFileEditor
 import com.redhat.devtools.intellij.kubernetes.model.Notification
 import com.redhat.devtools.intellij.kubernetes.telemetry.TelemetryService
@@ -34,7 +34,7 @@ class PullAction: AnAction() {
         com.redhat.devtools.intellij.kubernetes.actions.run("Reloading...", true,
             Progressive {
                 try {
-                    val editor = ResourceEditor.factory.getOrCreate(editor, project) ?: return@Progressive
+                    val editor = ResourceEditorFactory.instance.getExistingOrCreate(editor, project) ?: return@Progressive
                     editor.pull()
                     reportResource(editor.localCopy, telemetry)
                 } catch (e: Exception) {

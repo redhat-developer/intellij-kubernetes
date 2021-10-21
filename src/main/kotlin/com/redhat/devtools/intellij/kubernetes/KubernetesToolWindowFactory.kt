@@ -24,7 +24,7 @@ import com.redhat.devtools.intellij.common.compat.PopupHandlerAdapter
 import com.redhat.devtools.intellij.common.tree.StructureTreeModelFactory
 import com.redhat.devtools.intellij.kubernetes.actions.addDoubleClickListener
 import com.redhat.devtools.intellij.kubernetes.actions.getElement
-import com.redhat.devtools.intellij.kubernetes.editor.ResourceEditor
+import com.redhat.devtools.intellij.kubernetes.editor.ResourceEditorFactory
 import com.redhat.devtools.intellij.kubernetes.model.IResourceModel
 import com.redhat.devtools.intellij.kubernetes.tree.ResourceWatchController
 import com.redhat.devtools.intellij.kubernetes.tree.TreeStructure
@@ -69,7 +69,7 @@ class KubernetesToolWindowFactory: ToolWindowFactory {
                 val path = tree.getPathForLocation(point.x, point.y) ?: return
                 val node = path.lastPathComponent as? MutableTreeNode ?: return
                 val resource = node.getElement<HasMetadata>() ?: return
-                ResourceEditor.factory.open(resource, project)
+                ResourceEditorFactory.instance.open(resource, project)
             }
         }
     }

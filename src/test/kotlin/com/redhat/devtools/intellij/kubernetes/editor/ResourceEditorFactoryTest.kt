@@ -124,7 +124,7 @@ class ResourceEditorFactoryTest {
     private val resourceEditor: ResourceEditor = spy(ResourceEditor(resource, fileEditor, mock(), mock()))
 
     private val editorFactory =
-        ResourceEditorFactory(getFileEditorManager, createResourceFile, isValidType, isTemporary, getDocument, createEditorResource, createClients, reportTelemetry, createResourceEditor)
+        object: ResourceEditorFactory(getFileEditorManager, createResourceFile, isValidType, isTemporary, getDocument, createEditorResource, createClients, reportTelemetry, createResourceEditor) {}
 
     @Test
     fun `#open should NOT open editor if temporary resource file could not be created`() {
@@ -186,7 +186,7 @@ class ResourceEditorFactoryTest {
     fun `#getOrCreate should return null if editor is null`() {
         // given
         // when
-        val editor = editorFactory.getOrCreate(null, mock())
+        val editor = editorFactory.getExistingOrCreate(null, mock())
         // then
         assertThat(editor).isNull()
     }
@@ -195,7 +195,7 @@ class ResourceEditorFactoryTest {
     fun `#getOrCreate should return null if project is null`() {
         // given
         // when
-        val editor = editorFactory.getOrCreate(mock(), null)
+        val editor = editorFactory.getExistingOrCreate(mock(), null)
         // then
         assertThat(editor).isNull()
     }
@@ -206,7 +206,7 @@ class ResourceEditorFactoryTest {
         doReturn(resourceEditor)
             .whenever(fileEditor).getUserData(KEY_RESOURCE_EDITOR)
         // when
-        val editor = editorFactory.getOrCreate(fileEditor, mock())
+        val editor = editorFactory.getExistingOrCreate(fileEditor, mock())
         // then
         assertThat(editor).isEqualTo(resourceEditor)
     }
@@ -219,7 +219,7 @@ class ResourceEditorFactoryTest {
         doReturn(false)
             .whenever(isValidType).invoke(any())
         // when
-        val editor = editorFactory.getOrCreate(fileEditor, mock())
+        val editor = editorFactory.getExistingOrCreate(fileEditor, mock())
         // then
         assertThat(editor).isNull()
     }
@@ -234,7 +234,7 @@ class ResourceEditorFactoryTest {
         doReturn("this is not YAML")
             .whenever(document).text
         // when
-        val editor = editorFactory.getOrCreate(fileEditor, mock())
+        val editor = editorFactory.getExistingOrCreate(fileEditor, mock())
         // then
         assertThat(editor).isNull()
     }
@@ -243,7 +243,7 @@ class ResourceEditorFactoryTest {
     fun `#getOrCreate should NOT create resource editor if clients cannot be created`() {
         // given
         // when
-        val editor = editorFactory.getOrCreate(fileEditor, mock())
+        val editor = editorFactory.getExistingOrCreate(fileEditor, mock())
         // then
         assertThat(editor).isNotNull()
     }
@@ -254,7 +254,7 @@ class ResourceEditorFactoryTest {
         doReturn(null)
             .whenever(createClients).invoke(any())
         // when
-        val editor = editorFactory.getOrCreate(fileEditor, mock())
+        val editor = editorFactory.getExistingOrCreate(fileEditor, mock())
         // then
         assertThat(editor).isNull()
     }
@@ -263,7 +263,7 @@ class ResourceEditorFactoryTest {
     fun `#getOrCreate should store ResourceEditor that it created in FileEditor user data`() {
         // given
         // when
-        val editor = editorFactory.getOrCreate(fileEditor, mock())
+        val editor = editorFactory.getExistingOrCreate(fileEditor, mock())
         // then
         verify(fileEditor).putUserData(KEY_RESOURCE_EDITOR, editor)
     }
@@ -272,7 +272,7 @@ class ResourceEditorFactoryTest {
     fun `#getOrCreate should store ResourceEditor that it created in VirtualFile user data`() {
         // given
         // when
-        val editor = editorFactory.getOrCreate(fileEditor, mock())
+        val editor = editorFactory.getExistingOrCreate(fileEditor, mock())
         // then
         verify(virtualFile).putUserData(KEY_RESOURCE_EDITOR, editor)
     }

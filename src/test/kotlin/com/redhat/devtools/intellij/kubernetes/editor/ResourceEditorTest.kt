@@ -49,6 +49,8 @@ import io.fabric8.kubernetes.client.utils.Serialization
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test
 import org.mockito.verification.VerificationMode
+import java.util.concurrent.ExecutorService
+import java.util.concurrent.atomic.AtomicBoolean
 
 class ResourceEditorTest {
 
@@ -153,6 +155,8 @@ spec:
     private val psiDocumentManager: PsiDocumentManager = mock()
     private val psiDocumentManagerProvider: (Project) -> PsiDocumentManager = { psiDocumentManager }
     private val ideNotification: Notification = mock()
+    private val documentReplaced: AtomicBoolean = AtomicBoolean(false)
+    private val executor: ExecutorService = mock()
 
     private val editor = spy(
         TestableResourceEditor(
@@ -171,7 +175,9 @@ spec:
             errorNotification,
             documentProvider,
             psiDocumentManagerProvider,
-            ideNotification
+            ideNotification,
+            documentReplaced,
+            executor
         )
     )
 
@@ -354,7 +360,7 @@ spec:
         // when
         editor.update()
         // then
-        verify(pushNotification).show()
+        verify(pushNotification).show(any(), any())
     }
 
     @Test
@@ -509,50 +515,6 @@ spec:
     }
 
     @Test
-    fun `#existsOnCluster should return true if resource does not exist on cluster`() {
-        // given
-        doReturn(true)
-            .whenever(clusterResource).exists()
-        // when
-        val exists = editor.existsOnCluster()
-        // then
-        assertThat(exists).isTrue()
-    }
-
-    @Test
-    fun `#existsOnCluster should return false if resource does not exist on cluster`() {
-        // given
-        doReturn(false)
-            .whenever(clusterResource).exists()
-        // when
-        val exists = editor.existsOnCluster()
-        // then
-        assertThat(exists).isFalse()
-    }
-
-    @Test
-    fun `#isOutdated should return true if editor resource is outdated compared to the one on the cluster`() {
-        // given
-        doReturn(true)
-            .whenever(clusterResource).isOutdated(any())
-        // when
-        val exists = editor.isOutdated()
-        // then
-        assertThat(exists).isTrue()
-    }
-
-    @Test
-    fun `#isOutdated should return false if editor resource is NOT outdated compared to the one on the cluster`() {
-        // given
-        doReturn(false)
-            .whenever(clusterResource).isOutdated(any())
-        // when
-        val exists = editor.isOutdated()
-        // then
-        assertThat(exists).isFalse()
-    }
-
-    @Test
     fun `#replaceContent should set text of document`() {
         // given
         doReturn(GARGAMELv2)
@@ -677,7 +639,7 @@ spec:
         verify(errorNotification, mode).show(any(), any<String>())
         verify(pullNotification, mode).show(any())
         verify(deletedNotification, mode).show(any())
-        verify(pushNotification, mode).show()
+        verify(pushNotification, mode).show(any(), any())
         verify(pulledNotification, mode).show(any())
     }
 
@@ -717,6 +679,15 @@ spec:
     }
 
     @Test
+    fun `#close should shutdown executor`() {
+        // given
+        // when
+        editor.close()
+        // then
+        verify(executor).shutdown()
+    }
+
+    @Test
     fun `#getTitle should return resourcename@namespace if file is temporary file and contains kubernetes resource`() {
         // given
         doReturn(true)
@@ -737,7 +708,6 @@ spec:
             .whenever(document).getText()
         doReturn("lord.vader")
             .whenever(virtualFile).name
-        val resource = localCopy
         // when
         val title = editor.getTitle()
         // then
@@ -773,7 +743,9 @@ spec:
         errorNotification: ErrorNotification,
         documentProvider: (FileEditor) -> Document?,
         psiDocumentManagerProvider: (Project) -> PsiDocumentManager,
-        ideNotification: Notification
+        ideNotification: Notification,
+        documentReplaced: AtomicBoolean,
+        executor: ExecutorService
     ) : ResourceEditor(
         localCopy,
         editor,
@@ -790,13 +762,26 @@ spec:
         errorNotification,
         documentProvider,
         psiDocumentManagerProvider,
-        ideNotification
+        ideNotification,
+        documentReplaced,
+        executor
     ) {
         override var editorResource: HasMetadata? = super.editorResource
 
-        override fun executeWriteAction(runnable: () -> Unit) {
+        override fun runAsync(runnable: () -> Unit) {
             // dont execute in application thread pool
             runnable.invoke()
         }
+
+        override fun runWriteCommand(runnable: () -> Unit) {
+            // dont execute in application thread pool
+            runnable.invoke()
+        }
+
+        override fun runInUI(runnable: () -> Unit) {
+            // dont execute in application thread pool
+            runnable.invoke()
+        }
+
     }
 }

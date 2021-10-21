@@ -29,7 +29,7 @@ class EditorFocusListener(private val project: Project) : FileEditorManagerListe
     override fun fileClosed(source: FileEditorManager, file: VirtualFile) {
         // editor cannot be found via manager once file was closed
         // deleting file before file was closed (#beforeFileClosed) causes recursion #fileClosed
-        ResourceEditor.factory.get(file)?.close()
+        ResourceEditorFactory.instance.getExisting(file)?.close()
     }
 
     private fun handleSelectionGained(editor: FileEditor?, project: Project) {
@@ -37,7 +37,7 @@ class EditorFocusListener(private val project: Project) : FileEditorManagerListe
             return
         }
         try {
-            ResourceEditor.factory.getOrCreate(editor, project)
+            ResourceEditorFactory.instance.getExistingOrCreate(editor, project)
                 ?.startWatch()
                 ?.update()
         } catch (e: ResourceException) {
@@ -53,7 +53,7 @@ class EditorFocusListener(private val project: Project) : FileEditorManagerListe
             return
         }
         try {
-            ResourceEditor.factory.getOrCreate(editor, project)?.stopWatch()
+            ResourceEditorFactory.instance.getExistingOrCreate(editor, project)?.stopWatch()
         } catch (e: RuntimeException) {
             ErrorNotification(editor, project).show(
                 "Error contacting cluster. Make sure it's reachable, api version supported, etc.",

@@ -17,7 +17,7 @@ import com.intellij.openapi.startup.StartupActivity
 import com.intellij.psi.impl.PsiDocumentTransactionListener
 import com.redhat.devtools.intellij.kubernetes.editor.EditorFocusListener
 import com.redhat.devtools.intellij.kubernetes.editor.EditorTransactionListener
-import com.redhat.devtools.intellij.kubernetes.editor.ResourceEditor
+import com.redhat.devtools.intellij.kubernetes.editor.ResourceEditorFactory
 
 class KubernetesPluginInitializer : StartupActivity {
 
@@ -38,12 +38,12 @@ class KubernetesPluginInitializer : StartupActivity {
 
     private fun enableAllEditorsNonProjectEditing(project: Project) {
         FileEditorManager.getInstance(project).allEditors
-            .mapNotNull { editor -> ResourceEditor.factory.getOrCreate(editor, project) }
+            .mapNotNull { editor -> ResourceEditorFactory.instance.getExistingOrCreate(editor, project) }
             .forEach { resourceEditor -> resourceEditor.enableNonProjectFileEditing() }
     }
 
     private fun showResourceEditorNotifications(project: Project) {
         val selected = FileEditorManager.getInstance(project).selectedEditor ?: return
-        ResourceEditor.factory.getOrCreate(selected, project)?.update()
+        ResourceEditorFactory.instance.getExistingOrCreate(selected, project)?.update()
     }
 }

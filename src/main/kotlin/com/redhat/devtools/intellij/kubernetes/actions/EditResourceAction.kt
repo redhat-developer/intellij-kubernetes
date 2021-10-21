@@ -12,7 +12,7 @@ package com.redhat.devtools.intellij.kubernetes.actions
 
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.redhat.devtools.intellij.common.actions.StructureTreeAction
-import com.redhat.devtools.intellij.kubernetes.editor.ResourceEditor
+import com.redhat.devtools.intellij.kubernetes.editor.ResourceEditorFactory
 import com.redhat.devtools.intellij.kubernetes.model.Notification
 import com.redhat.devtools.intellij.kubernetes.model.util.hasDeletionTimestamp
 import io.fabric8.kubernetes.api.model.HasMetadata
@@ -29,7 +29,7 @@ class EditResourceAction: StructureTreeAction() {
         val project = descriptor.project ?: return
         val toEdit: HasMetadata = descriptor.element as? HasMetadata? ?: return
         try {
-            ResourceEditor.factory.open(toEdit, project)
+            ResourceEditorFactory.instance.open(toEdit, project)
         } catch (e: RuntimeException) {
             Notification().error(
                 "Error opening editor ${toEdit.metadata.name}",

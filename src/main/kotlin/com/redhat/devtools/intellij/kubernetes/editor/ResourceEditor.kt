@@ -11,6 +11,7 @@
 package com.redhat.devtools.intellij.kubernetes.editor
 
 import com.intellij.openapi.actionSystem.ActionToolbar
+import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.command.WriteCommandAction
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.editor.Document
@@ -37,14 +38,16 @@ import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.Namespace
 import io.fabric8.kubernetes.client.KubernetesClient
 import io.fabric8.kubernetes.client.utils.Serialization
+import java.util.concurrent.ExecutorService
+import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
 
 /**
- * An adapter for [FileEditor] instances that allows to push or load the editor content to/from a remote cluster.
+ * A Decorator for [FileEditor] instances that allows to push or pull the editor content to/from a remote cluster.
  */
-open class ResourceEditor constructor(
+open class ResourceEditor(
     var localCopy: HasMetadata?,
     val editor: FileEditor,
     private val project: Project,
@@ -76,16 +79,16 @@ open class ResourceEditor constructor(
     private val psiDocumentManagerProvider: (Project) -> PsiDocumentManager = { PsiDocumentManager.getInstance(project) },
     // for mocking purposes
     private val ideNotification: Notification = Notification(),
-    private val documentReplaced: AtomicBoolean = AtomicBoolean(false)
+    // for mocking purposes
+    private val documentReplaced: AtomicBoolean = AtomicBoolean(false),
+    // for mocking purposes
+    private val executor: ExecutorService = Executors.newCachedThreadPool()
 ) {
 
     companion object {
         val KEY_RESOURCE_EDITOR = Key<ResourceEditor>(ResourceEditor::class.java.name)
         val KEY_TOOLBAR = Key<ActionToolbar>(ActionToolbar::class.java.name)
         const val ID_TOOLBAR = "Kubernetes.Editor.Toolbar"
-
-        @JvmStatic
-        val factory = ResourceEditorFactory()
     }
 
     open var editorResource: HasMetadata? = localCopy
@@ -124,48 +127,51 @@ open class ResourceEditor constructor(
      * @see [replaceDocument]
      */
     fun update() {
-        try {
-            if (documentReplaced.compareAndSet(true, false)) {
-                /**
-                 * update triggered by [replaceDocument]
-                 **/
-                return
-            }
-            val resource = createResource.invoke(editor, clients) ?: return
-            this.editorResource = resource
-            update(resource, clusterResource)
-        } catch (e: ResourceException) {
-            showErrorNotification(e)
-        }
-    }
-
-    private fun update(resource: HasMetadata?, clusterResource: ClusterResource?) {
-        if (resource == null
-            || clusterResource == null) {
+        if (documentReplaced.compareAndSet(true, false)) {
+            /*
+             * update triggered by [replaceDocument]
+             */
             return
         }
-        showNotifications(resource, clusterResource)
+        runAsync {
+            val resource = createResource() ?: return@runAsync
+            this.editorResource = resource
+            val cluster = clusterResource ?: return@runAsync
+            showNotifications(resource, cluster)
+       }
     }
 
-    private fun showNotifications(
-        resource: HasMetadata,
-        clusterResource: ClusterResource
-    ) {
+    private fun showNotifications(resource: HasMetadata, clusterResource: ClusterResource) {
         when {
             clusterResource.isDeleted()
-                    && !clusterResource.isModified(resource) -> {
-                hideNotifications()
-                deletedNotification.show(resource)
-            }
-            clusterResource.isOutdated(resource) -> {
-                hideNotifications()
+                    && !clusterResource.isModified(resource) ->
+                showDeletedNotification(resource)
+            clusterResource.isOutdated(resource) ->
                 showPulledOrPullNotification(resource)
-            }
-            clusterResource.canPush(resource) -> {
-                hideNotifications()
-                pushNotification.show()
-            }
-            else -> hideNotifications()
+            clusterResource.canPush(resource) ->
+                showPushNotification(resource)
+            else ->
+                runInUI {
+                    hideNotifications()
+                }
+        }
+    }
+
+    private fun showPushNotification(resource: HasMetadata) {
+        val existsOnCluster = clusterResource?.exists() ?: return
+        val isOutdated = clusterResource?.isOutdated(resource) ?: return
+        runInUI {
+            // hide & show in the same UI thread runnable avoid flickering
+            hideNotifications()
+            pushNotification.show(existsOnCluster, isOutdated)
+        }
+    }
+
+    private fun showDeletedNotification(resource: HasMetadata) {
+        runInUI {
+            // hide & show in the same UI thread runnable avoid flickering
+            hideNotifications()
+            deletedNotification.show(resource)
         }
     }
 
@@ -177,16 +183,21 @@ open class ResourceEditor constructor(
         pulledNotification.hide()
     }
 
-    private fun showPulledOrPullNotification(resource: HasMetadata) {
-        val resourceOnCluster = clusterResource?.get(false)
-        if (resourceOnCluster != null) {
-            if (!hasLocalChanges(resource)) {
+    private fun showPulledOrPullNotification(resourceInEditor: HasMetadata) {
+        val resourceOnCluster = clusterResource?.get(false) ?: return
+        if (!hasLocalChanges(resourceInEditor)) {
+            runInUI {
                 replaceDocument(resourceOnCluster)
-                resourceChangeMutex.withLock {
-                    this.editorResource = resource
-                    this.localCopy = resource
-                }
-            } else {
+                hideNotifications()
+                pulledNotification.show(resourceOnCluster)
+            }
+            resourceChangeMutex.withLock {
+                this.editorResource = resourceInEditor
+                this.localCopy = resourceInEditor
+            }
+        } else {
+            runInUI {
+                hideNotifications()
                 pullNotification.show(resourceOnCluster)
             }
         }
@@ -204,19 +215,25 @@ open class ResourceEditor constructor(
         }
     }
 
-    private fun showErrorNotification(e: Throwable) {
-        hideNotifications()
-        errorNotification.show(e.message ?: "", e.cause?.message)
-    }
-
     /**
      * Pulls the resource from the cluster and replaces the content of this editor.
      * Does nothing if it doesn't exist.
      */
     fun pull() {
-        hideNotifications()
-        val pulledResource = resourceChangeMutex.withLock {
-            val pulled = clusterResource?.get() ?: return
+        val cluster = clusterResource ?: return
+        runAsync {
+            val pulledResource = pull(cluster) ?: return@runAsync
+            runInUI {
+                replaceDocument(pulledResource)
+                hideNotifications()
+                pulledNotification.show(pulledResource)
+            }
+        }
+    }
+
+    private fun pull(cluster: ClusterResource): HasMetadata? {
+        return resourceChangeMutex.withLock {
+            val pulled = cluster.get()
             /**
              * set editor resource now,
              * watch change modification notification can get in before document was replaced
@@ -225,84 +242,76 @@ open class ResourceEditor constructor(
             this.localCopy = pulled
             pulled
         }
-        replaceDocument(pulledResource)
     }
 
     private fun replaceDocument(resource: HasMetadata?) {
         if (resource == null) {
             return
         }
-        val document = documentProvider.invoke(editor) ?: return
         val jsonYaml = Serialization.asYaml(resource).trim()
+        val document = documentProvider.invoke(editor) ?: return
         if (document.text.trim() != jsonYaml) {
-            executeWriteAction {
+            runWriteCommand {
                 document.replaceString(0, document.textLength - 1, jsonYaml)
                 documentReplaced.set(true)
                 val psiDocumentManager = psiDocumentManagerProvider.invoke(project)
                 psiDocumentManager.commitDocument(document)
-                pulledNotification.show(resource)
             }
         }
-    }
-
-    /**
-     * Returns `true` if the resource in this editor exists on the cluster. Returns `false` otherwise.
-     * @return true if the resource in this editor exists on the cluster
-     */
-    fun existsOnCluster(): Boolean {
-        return clusterResource?.exists() ?: false
-    }
-
-    fun isOutdated(): Boolean {
-        val resource = createResource.invoke(editor, clients) ?: return false
-        this.editorResource = resource
-        return clusterResource?.isOutdated(resource) ?: false
     }
 
     /**
      * Pushes the editor content to the cluster.
      */
     fun push() {
-        try {
-            val resource = createResource.invoke(editor, clients) ?: return
+        val cluster = clusterResource ?: return
+        runAsync {
+            val resource = createResource() ?: return@runAsync
             this.editorResource = resource
-            push(resource, clusterResource)
-        } catch (e: Exception) {
-            showErrorNotification(e)
+            try {
+                val updatedResource = push(resource, cluster) ?: return@runAsync
+                runInUI {
+                    hideNotifications()
+                    replaceDocument(updatedResource)
+                    pulledNotification.show(updatedResource)
+                }
+            } catch (e: ResourceException) {
+                logger<ResourceEditor>().warn(e)
+                runInUI {
+                    hideNotifications()
+                    ideNotification.error(
+                        "Error Pushing",
+                        "Could not push ${resource.kind} ${resource.metadata.name} to cluster: ${
+                            trimWithEllipsis(e.message, 300) ?: ""
+                        }"
+                    )
+                }
+            }
         }
     }
 
-    private fun push(resource: HasMetadata?, clusterResource: ClusterResource?) {
-        try {
-            if (resource == null
-                || clusterResource == null
-            ) {
-                return
-            }
-            hideNotifications()
-            val updatedResource = resourceChangeMutex.withLock {
-                val updated = clusterResource.push(resource)
-                /**
-                 * set editor resource now using lock,
-                 * resource watch change modification notification can get in before document was replaced
-                 */
-                this.editorResource = updated
-                this.localCopy = updated
-                updated
-            }
-            replaceDocument(updatedResource)
+    private fun createResource(): HasMetadata? {
+        return try {
+            createResource.invoke(editor, clients)
         } catch (e: ResourceException) {
-            logger<ResourceEditor>().warn(e)
-            ideNotification.error(
-                "Error Pushing",
-                "Could not push ${
-                    if (resource != null) {
-                        "${resource.kind} ${resource.metadata.name}"
-                    } else {
-                        ""
-                    }
-                } to cluster: ${trimWithEllipsis(e.message, 300) ?: ""}"
-            )
+            runInUI {
+                hideNotifications()
+                errorNotification.show(e.message ?: "", e.cause?.message)
+            }
+            null
+        }
+    }
+
+    private fun push(resource: HasMetadata, clusterResource: ClusterResource): HasMetadata? {
+        return resourceChangeMutex.withLock {
+            val updated = clusterResource.push(resource)
+            /*
+             * set editor resource now using lock,
+             * resource watch change modification notification can get in before document was replaced
+             */
+            this.editorResource = updated
+            this.localCopy = updated
+            updated
         }
     }
 
@@ -348,7 +357,9 @@ open class ResourceEditor constructor(
                     && pair.first
                     && pair.second != null
                 ) {
-                    showNotifications(pair.second!!, clusterResource!!)
+                    runAsync {
+                        showNotifications(pair.second!!, clusterResource!!)
+                    }
                 }
             }
         }
@@ -361,6 +372,7 @@ open class ResourceEditor constructor(
         clusterResource?.close()
         editor.file?.putUserData(KEY_RESOURCE_EDITOR, null)
         createResourceFileForVirtual(editor.file)?.deleteTemporary()
+        executor.shutdown()
     }
 
     /**
@@ -409,15 +421,30 @@ open class ResourceEditor constructor(
         }
     }
 
-    protected open fun executeWriteAction(runnable: () -> Unit) {
-        WriteCommandAction.runWriteCommandAction(project, runnable)
-    }
-
     fun createToolbar() {
         var editorToolbar: ActionToolbar? = editor.getUserData(KEY_TOOLBAR)
         if (editorToolbar == null) {
             editorToolbar = EditorToolbarFactory.create(ID_TOOLBAR, editor, project)
             editor.putUserData(KEY_TOOLBAR, editorToolbar)
+        }
+    }
+
+    /** for testing purposes */
+    protected open fun runAsync(runnable: () -> Unit) {
+        executor.submit(runnable)
+    }
+
+    /** for testing purposes */
+    protected open fun runWriteCommand(runnable: () -> Unit) {
+        WriteCommandAction.runWriteCommandAction(project, runnable)
+    }
+
+    /** for testing purposes */
+    protected open fun runInUI(runnable: () -> Unit) {
+        if (ApplicationManager.getApplication().isDispatchThread) {
+            runnable.invoke()
+        } else {
+            ApplicationManager.getApplication().invokeLater(runnable)
         }
     }
 }
