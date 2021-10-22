@@ -19,7 +19,7 @@ import com.redhat.devtools.intellij.kubernetes.editor.util.getSelectedFileEditor
 import com.redhat.devtools.intellij.kubernetes.model.Notification
 import com.redhat.devtools.intellij.kubernetes.telemetry.TelemetryService
 import com.redhat.devtools.intellij.kubernetes.telemetry.TelemetryService.NAME_PREFIX_EDITOR
-import com.redhat.devtools.intellij.kubernetes.telemetry.TelemetryService.reportResource
+import com.redhat.devtools.intellij.kubernetes.telemetry.TelemetryService.sendTelemetry
 
 class PullAction: AnAction() {
 
@@ -36,7 +36,7 @@ class PullAction: AnAction() {
                 try {
                     val editor = ResourceEditorFactory.instance.getExistingOrCreate(editor, project) ?: return@Progressive
                     editor.pull()
-                    reportResource(editor.localCopy, telemetry)
+                    sendTelemetry(editor.localCopy, telemetry)
                 } catch (e: Exception) {
                     Notification().error("Error Pulling", "Could not pull resource from cluster: ${e.message}")
                     telemetry.error(e).send()

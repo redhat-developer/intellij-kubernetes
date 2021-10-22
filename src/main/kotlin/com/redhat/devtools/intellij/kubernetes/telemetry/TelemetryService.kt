@@ -30,15 +30,13 @@ object TelemetryService {
         TelemetryMessageBuilder(TelemetryService::class.java.classLoader)
     }
 
-    fun reportResource(
-        resource: HasMetadata?,
-        telemetry: TelemetryMessageBuilder.ActionMessage
-    ) {
-        if (resource != null) {
-            telemetry.property(PROP_RESOURCE_KIND, getKind(resource)).send()
+    fun sendTelemetry(resource: HasMetadata?, telemetry: TelemetryMessageBuilder.ActionMessage) {
+        val kind = if (resource != null) {
+            getKind(resource)
         } else {
-            telemetry.property(PROP_RESOURCE_KIND, "unknown").send()
+            "unknown"
         }
+        telemetry.property(PROP_RESOURCE_KIND, kind).send()
     }
 
     fun getKinds(resources: Collection<HasMetadata>): String {

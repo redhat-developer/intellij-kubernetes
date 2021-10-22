@@ -21,7 +21,7 @@ import com.redhat.devtools.intellij.kubernetes.editor.util.getSelectedFileEditor
 import com.redhat.devtools.intellij.kubernetes.model.Notification
 import com.redhat.devtools.intellij.kubernetes.telemetry.TelemetryService
 import com.redhat.devtools.intellij.kubernetes.telemetry.TelemetryService.NAME_PREFIX_EDITOR
-import com.redhat.devtools.intellij.kubernetes.telemetry.TelemetryService.reportResource
+import com.redhat.devtools.intellij.kubernetes.telemetry.TelemetryService.sendTelemetry
 
 class PushAction: AnAction() {
 
@@ -36,9 +36,9 @@ class PushAction: AnAction() {
         com.redhat.devtools.intellij.kubernetes.actions.run("Pushing...", true,
             Progressive {
                 try {
-                    val editor = ResourceEditorFactory.instance.getExistingOrCreate(editor, project) ?: return@Progressive
-                    editor.push()
-                    reportResource(editor.editorResource, telemetry)
+                    val resourceEditor = ResourceEditorFactory.instance.getExistingOrCreate(editor, project) ?: return@Progressive
+                    resourceEditor.push()
+                    sendTelemetry(resourceEditor.editorResource, telemetry)
                 } catch (e: Exception) {
                     logger<ResourceFile>().warn("Could not push resource to cluster: ${e.message}", e)
                     Notification().error("Error Pushing", "Could not push resource to cluster: ${e.message}")

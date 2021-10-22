@@ -48,7 +48,7 @@ open class ResourceEditorFactory protected constructor(
     private val createClients: (config: ClientConfig) -> Clients<out KubernetesClient>? =
         { config -> com.redhat.devtools.intellij.kubernetes.model.createClients(config) },
     /* for mocking purposes */
-    private val reportTelemetry: (HasMetadata, TelemetryMessageBuilder.ActionMessage) -> Unit = TelemetryService::reportResource,
+    private val reportTelemetry: (HasMetadata, TelemetryMessageBuilder.ActionMessage) -> Unit = TelemetryService::sendTelemetry,
     /* for mocking purposes */
     private val createResourceEditor: (HasMetadata, FileEditor, Project, Clients<out KubernetesClient>) -> ResourceEditor =
         { resource, editor, project, clients -> ResourceEditor(resource, editor, project, clients) }
