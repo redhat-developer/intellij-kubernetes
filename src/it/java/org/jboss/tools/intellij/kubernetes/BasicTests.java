@@ -17,26 +17,27 @@ import com.intellij.remoterobot.utils.WaitForConditionTimeoutException;
 import com.redhat.devtools.intellij.commonUiTestLibrary.UITestRunner;
 import com.redhat.devtools.intellij.commonUiTestLibrary.fixtures.dialogs.FlatWelcomeFrame;
 import com.redhat.devtools.intellij.commonUiTestLibrary.fixtures.dialogs.information.TipDialog;
-import com.redhat.devtools.intellij.commonUiTestLibrary.fixtures.dialogs.projectManipulation.NewProjectDialog;
+import com.redhat.devtools.intellij.commonUiTestLibrary.fixtures.dialogs.project.NewProjectDialogWizard;
+import com.redhat.devtools.intellij.commonUiTestLibrary.fixtures.dialogs.project.pages.NewProjectFirstPage;
 import com.redhat.devtools.intellij.commonUiTestLibrary.fixtures.mainIdeWindow.ideStatusBar.IdeStatusBar;
 import com.redhat.devtools.intellij.commonUiTestLibrary.fixtures.mainIdeWindow.toolWindowsPane.ToolWindowsPane;
 import org.jboss.tools.intellij.kubernetes.fixtures.dialogs.ProjectStructureDialog;
 import org.jboss.tools.intellij.kubernetes.fixtures.mainIdeWindow.KubernetesToolsFixture;
+import org.jboss.tools.intellij.kubernetes.tests.ClusterConnectedTest;
+import org.jboss.tools.intellij.kubernetes.tests.CreateAnotherTypeResourceByEditTest;
+import org.jboss.tools.intellij.kubernetes.tests.CreateResourceByEditTest;
+import org.jboss.tools.intellij.kubernetes.tests.EditResourceTest;
+import org.jboss.tools.intellij.kubernetes.tests.OpenResourceEditorTest;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
-import static com.intellij.remoterobot.stepsProcessing.StepWorkerKt.step;
-import static com.intellij.remoterobot.utils.RepeatUtilsKt.waitFor;
-
-import org.jboss.tools.intellij.kubernetes.tests.ClusterConnectedTest;
-import org.jboss.tools.intellij.kubernetes.tests.CreateResourceByEditTest;
-import org.jboss.tools.intellij.kubernetes.tests.OpenResourceEditorTest;
-import org.jboss.tools.intellij.kubernetes.tests.EditResourceTest;
-import org.jboss.tools.intellij.kubernetes.tests.CreateAnotherTypeResourceByEditTest;
-
 import java.time.Duration;
 import java.util.List;
+
+import static com.intellij.remoterobot.search.locators.Locators.byXpath;
+import static com.intellij.remoterobot.stepsProcessing.StepWorkerKt.step;
+import static com.intellij.remoterobot.utils.RepeatUtilsKt.waitFor;
 
 /**
  * JUnit UI tests for intellij-kubernetes
@@ -50,7 +51,7 @@ public class BasicTests {
 
     @BeforeAll
     public static void connect() {
-        robot = UITestRunner.runIde(UITestRunner.IdeaVersion.V_2020_2, 8580);
+        robot = UITestRunner.runIde(UITestRunner.IdeaVersion.V_2020_3);
         createEmptyProject();
         openKubernetesTab();
         KubernetesToolsFixture kubernetesToolsFixture = robot.find(KubernetesToolsFixture.class);
@@ -94,10 +95,11 @@ public class BasicTests {
     private static void createEmptyProject(){
         final FlatWelcomeFrame flatWelcomeFrame = robot.find(FlatWelcomeFrame.class);
         flatWelcomeFrame.createNewProject();
-        final NewProjectDialog newProjectDialogFixture = flatWelcomeFrame.find(NewProjectDialog.class, Duration.ofSeconds(20));
-        newProjectDialogFixture.selectNewProjectType("Empty Project");
-        newProjectDialogFixture.next();
-        newProjectDialogFixture.finish();
+        final NewProjectDialogWizard newProjectDialogWizard = flatWelcomeFrame.find(NewProjectDialogWizard.class, Duration.ofSeconds(20));
+        NewProjectFirstPage newProjectFirstPage = newProjectDialogWizard.find(NewProjectFirstPage.class, Duration.ofSeconds(10));
+        newProjectFirstPage.findAll(ComponentFixture.class, byXpath("//div[@class='JBList']")).get(0).findText("Empty Project").click();
+        newProjectDialogWizard.next();
+        newProjectDialogWizard.finish();
 
         final IdeStatusBar ideStatusBar = robot.find(IdeStatusBar.class);
         ideStatusBar.waitUntilProjectImportIsComplete();
@@ -109,12 +111,12 @@ public class BasicTests {
     private static void openKubernetesTab(){
         final ToolWindowsPane toolWindowsPane = robot.find(ToolWindowsPane.class);
         waitFor(Duration.ofSeconds(10), Duration.ofSeconds(1), "The 'Kubernetes' stripe button is not available.", () -> isStripeButtonAvailable(toolWindowsPane, "Kubernetes"));
-        toolWindowsPane.stripeButton("Kubernetes").click();
+        toolWindowsPane.stripeButton("Kubernetes", false).click();
     }
 
     private static boolean isStripeButtonAvailable(ToolWindowsPane toolWindowsPane, String label) { // loading...
         try {
-            toolWindowsPane.stripeButton(label);
+            toolWindowsPane.stripeButton(label, false);
         } catch (WaitForConditionTimeoutException e) {
             return false;
         }

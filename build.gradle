@@ -26,8 +26,6 @@ plugins {
     id "idea"
 }
 
-downloadRobotServerPlugin.version = remoteRobotVersion
-
 sourceSets {
     integrationTest {
         java.srcDir file('src/it/java')
@@ -69,7 +67,7 @@ dependencies {
     )
     integrationTestImplementation(
             "com.redhat.devtools.intellij:intellij-common:1.1.0",
-            "com.redhat.devtools.intellij:intellij-common-ui-test-library:0.0.2"
+            "com.redhat.devtools.intellij:intellij-common-ui-test-library:0.0.3"
     )
 }
 
@@ -134,7 +132,6 @@ publishPlugin {
 }
 
 runIdeForUiTests {
-    systemProperty "robot-server.port", System.getProperty("robot-server.port")
     systemProperties['com.redhat.devtools.intellij.telemetry.mode'] = 'debug'
 }
 
