@@ -82,6 +82,6 @@ open class PodForResource<R: HasMetadata>(private val selectorLabels: Map<String
 class PodForDaemonSet(private val resource: DaemonSet) : Predicate<Pod> {
 
 	override fun test(pod: Pod): Boolean {
-		return resource.spec.selector?.matchLabels?.all { pod.metadata.labels?.entries?.contains(it)  ?: false  } ?: return false
+		return resource.spec.selector?.matchLabels?.all { pod.metadata.labels?.entries?.contains(it)  ?: false  } ?: false
 	}
 }
