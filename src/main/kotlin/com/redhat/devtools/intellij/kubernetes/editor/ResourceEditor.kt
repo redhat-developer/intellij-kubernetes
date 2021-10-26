@@ -38,8 +38,6 @@ import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.Namespace
 import io.fabric8.kubernetes.client.KubernetesClient
 import io.fabric8.kubernetes.client.utils.Serialization
-import java.util.concurrent.ExecutorService
-import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
@@ -80,9 +78,7 @@ open class ResourceEditor(
     // for mocking purposes
     private val ideNotification: Notification = Notification(),
     // for mocking purposes
-    private val documentReplaced: AtomicBoolean = AtomicBoolean(false),
-    // for mocking purposes
-    private val executor: ExecutorService = Executors.newCachedThreadPool()
+    private val documentReplaced: AtomicBoolean = AtomicBoolean(false)
 ) {
 
     companion object {
@@ -372,7 +368,6 @@ open class ResourceEditor(
         clusterResource?.close()
         editor.file?.putUserData(KEY_RESOURCE_EDITOR, null)
         createResourceFileForVirtual(editor.file)?.deleteTemporary()
-        executor.shutdown()
     }
 
     /**
@@ -431,7 +426,7 @@ open class ResourceEditor(
 
     /** for testing purposes */
     protected open fun runAsync(runnable: () -> Unit) {
-        executor.submit(runnable)
+        ApplicationManager.getApplication().executeOnPooledThread(runnable)
     }
 
     /** for testing purposes */

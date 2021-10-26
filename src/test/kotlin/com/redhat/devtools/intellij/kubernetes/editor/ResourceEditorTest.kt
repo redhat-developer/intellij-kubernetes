@@ -49,7 +49,6 @@ import io.fabric8.kubernetes.client.utils.Serialization
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test
 import org.mockito.verification.VerificationMode
-import java.util.concurrent.ExecutorService
 import java.util.concurrent.atomic.AtomicBoolean
 
 class ResourceEditorTest {
@@ -156,7 +155,6 @@ spec:
     private val psiDocumentManagerProvider: (Project) -> PsiDocumentManager = { psiDocumentManager }
     private val ideNotification: Notification = mock()
     private val documentReplaced: AtomicBoolean = AtomicBoolean(false)
-    private val executor: ExecutorService = mock()
 
     private val editor = spy(
         TestableResourceEditor(
@@ -176,8 +174,7 @@ spec:
             documentProvider,
             psiDocumentManagerProvider,
             ideNotification,
-            documentReplaced,
-            executor
+            documentReplaced
         )
     )
 
@@ -679,15 +676,6 @@ spec:
     }
 
     @Test
-    fun `#close should shutdown executor`() {
-        // given
-        // when
-        editor.close()
-        // then
-        verify(executor).shutdown()
-    }
-
-    @Test
     fun `#getTitle should return resourcename@namespace if file is temporary file and contains kubernetes resource`() {
         // given
         doReturn(true)
@@ -744,8 +732,7 @@ spec:
         documentProvider: (FileEditor) -> Document?,
         psiDocumentManagerProvider: (Project) -> PsiDocumentManager,
         ideNotification: Notification,
-        documentReplaced: AtomicBoolean,
-        executor: ExecutorService
+        documentReplaced: AtomicBoolean
     ) : ResourceEditor(
         localCopy,
         editor,
@@ -763,8 +750,7 @@ spec:
         documentProvider,
         psiDocumentManagerProvider,
         ideNotification,
-        documentReplaced,
-        executor
+        documentReplaced
     ) {
         override var editorResource: HasMetadata? = super.editorResource
 
