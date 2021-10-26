@@ -19,6 +19,7 @@ import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.eq
 import com.nhaarman.mockitokotlin2.mock
+import com.nhaarman.mockitokotlin2.never
 import com.nhaarman.mockitokotlin2.spy
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.whenever
@@ -88,7 +89,10 @@ class ResourceEditorFactoryTest {
         doReturn(emptyArray<FileEditor>())
             .whenever(this).openFile(any(), any(), any())
     }
-    private val getFileEditorManager: (project: Project) -> FileEditorManager = { fileEditorManager }
+    private val getFileEditorManager: (project: Project) -> FileEditorManager = mock<(project: Project) -> FileEditorManager>().apply {
+        doReturn(fileEditorManager)
+            .whenever(this).invoke(any())
+    }
     private val resourceFile: ResourceFile = mock<ResourceFile>().apply {
         doReturn(this@ResourceEditorFactoryTest.virtualFile)
             .whenever(this).write(any())
@@ -124,21 +128,21 @@ class ResourceEditorFactoryTest {
     private val resourceEditor: ResourceEditor = spy(ResourceEditor(resource, fileEditor, mock(), mock()))
 
     private val editorFactory =
-        object: ResourceEditorFactory(getFileEditorManager, createResourceFile, isValidType, isTemporary, getDocument, createEditorResource, createClients, reportTelemetry, createResourceEditor) {}
+        TestableResourceEditorFactory(getFileEditorManager, createResourceFile, isValidType, isTemporary, getDocument, createEditorResource, createClients, reportTelemetry, createResourceEditor)
 
     @Test
-    fun `#open should NOT open editor if temporary resource file could not be created`() {
+    fun `#openEditor should NOT open editor if temporary resource file could not be created`() {
         // given
         doReturn(null)
             .whenever(createResourceFile).invoke(any())
         // when
-        val editor = editorFactory.open(mock(), mock())
+        editorFactory.openEditor(mock(), mock())
         // then
-        assertThat(editor).isNull()
+        verify(fileEditorManager, never()).openFile(any(), any(), any())
     }
 
     @Test
-    fun `#open should create new editor if existing editor edits a non-temporary file`() {
+    fun `#openEditor should create new editor if existing editor edits a non-temporary file`() {
         // given
         doReturn(false)
             .whenever(isTemporary).invoke(any())
@@ -147,13 +151,13 @@ class ResourceEditorFactoryTest {
         doReturn(resourceEditor)
             .whenever(fileEditor).getUserData(KEY_RESOURCE_EDITOR)
         // when open an editor for a temporary file
-        val editor = editorFactory.open(resource, mock())
+        val editor = editorFactory.openEditor(resource, mock())
         // then new editor created
         assertThat(editor).isNotEqualTo(resourceEditor)
     }
 
     @Test
-    fun `#open should open editor for file of ResourceEditor that is in userData of opened FileEditor`() {
+    fun `#openEditor should open editor for file of ResourceEditor that is in userData of opened FileEditor`() {
         // given
         doReturn(true)
             .whenever(isTemporary).invoke(any())
@@ -162,13 +166,13 @@ class ResourceEditorFactoryTest {
         doReturn(resourceEditor)
             .whenever(fileEditor).getUserData(KEY_RESOURCE_EDITOR)
         // when
-        editorFactory.open(resource, mock())
+        editorFactory.openEditor(resource, mock())
         // then
         verify(fileEditorManager).openFile(eq(resourceEditor.editor.file!!), any(), any())
     }
 
     @Test
-    fun `#open should open editor for file that has ResourceEditor in userData`() {
+    fun `#openEditor should open editor for file that has ResourceEditor in userData`() {
         // given
         doReturn(true)
             .whenever(isTemporary).invoke(any())
@@ -177,7 +181,7 @@ class ResourceEditorFactoryTest {
         doReturn(resourceEditor)
             .whenever(virtualFile).getUserData(KEY_RESOURCE_EDITOR)
         // when
-        editorFactory.open(resource, mock())
+        editorFactory.openEditor(resource, mock())
         // then
         verify(fileEditorManager).openFile(eq(resourceEditor.editor.file!!), any(), any())
     }
@@ -277,4 +281,36 @@ class ResourceEditorFactoryTest {
         verify(virtualFile).putUserData(KEY_RESOURCE_EDITOR, editor)
     }
 
+    private open class TestableResourceEditorFactory(
+        getFileEditorManager: (project: Project) -> FileEditorManager,
+        createResourceFile: (resource: HasMetadata) -> ResourceFile?,
+        isValidType: (file: VirtualFile?) -> Boolean,
+        isTemporary: (file: VirtualFile?) -> Boolean,
+        getDocument: (editor: FileEditor) -> Document?,
+        createEditorResource: (editor: FileEditor, clients: Clients<out KubernetesClient>) -> HasMetadata?,
+        createClients: (config: ClientConfig) -> Clients<out KubernetesClient>?,
+        reportTelemetry: (HasMetadata, TelemetryMessageBuilder.ActionMessage) -> Unit,
+        createResourceEditor: (HasMetadata, FileEditor, Project, Clients<out KubernetesClient>) -> ResourceEditor
+    ) : ResourceEditorFactory(
+        getFileEditorManager,
+        createResourceFile,
+        isValidType,
+        isTemporary,
+        getDocument,
+        createEditorResource,
+        createClients,
+        reportTelemetry,
+        createResourceEditor
+    ) {
+
+        override fun runAsync(runnable: () -> Unit) {
+            // dont execute in application thread pool
+            runnable.invoke()
+        }
+
+        override fun runInUI(runnable: () -> Unit) {
+            // dont execute in UI thread
+            runnable.invoke()
+        }
+    }
 }

@@ -10,6 +10,8 @@
  ******************************************************************************/
 package com.redhat.devtools.intellij.kubernetes.editor
 
+import com.intellij.openapi.application.ApplicationManager
+import com.intellij.openapi.command.WriteCommandAction
 import com.intellij.openapi.editor.Document
 import com.intellij.openapi.fileEditor.FileEditor
 import com.intellij.openapi.fileEditor.FileEditorManager
@@ -64,13 +66,19 @@ open class ResourceEditorFactory protected constructor(
      * @param project that this editor belongs to
      * @return the new [ResourceEditor] that was opened
      */
-    fun open(resource: HasMetadata, project: Project): ResourceEditor? {
-        val file = getFile(resource, project) ?: return null
-        val editor = getFileEditorManager.invoke(project)
-            .openFile(file, true, true)
-            .firstOrNull()
-            ?: return null
-        return getExistingOrCreate(editor, project)
+    fun openEditor(resource: HasMetadata, project: Project) {
+        runAsync {
+            val file = getFile(resource, project) ?: return@runAsync
+            runInUI {
+                val editor = getFileEditorManager.invoke(project)
+                    .openFile(file, true, true)
+                    .firstOrNull()
+                    ?: return@runInUI
+                runAsync {
+                    create(editor, project)
+                }
+            }
+        }
     }
 
     private fun getFile(resource: HasMetadata, project: Project): VirtualFile? {
@@ -177,5 +185,19 @@ open class ResourceEditorFactory protected constructor(
         editor.putUserData(ResourceEditor.KEY_RESOURCE_EDITOR, resourceEditor)
         editor.file?.putUserData(ResourceEditor.KEY_RESOURCE_EDITOR, resourceEditor)
         return resourceEditor
+    }
+
+    /** for testing purposes */
+    protected open fun runAsync(runnable: () -> Unit) {
+        ApplicationManager.getApplication().executeOnPooledThread(runnable)
+    }
+
+    /** for testing purposes */
+    protected open fun runInUI(runnable: () -> Unit) {
+        if (ApplicationManager.getApplication().isDispatchThread) {
+            runnable.invoke()
+        } else {
+            ApplicationManager.getApplication().invokeLater(runnable)
+        }
     }
 }
