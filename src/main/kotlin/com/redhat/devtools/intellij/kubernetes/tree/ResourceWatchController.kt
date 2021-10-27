@@ -10,8 +10,12 @@
  ******************************************************************************/
 package com.redhat.devtools.intellij.kubernetes.tree
 
+import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.diagnostic.logger
 import com.redhat.devtools.intellij.kubernetes.actions.getDescriptor
+import com.redhat.devtools.intellij.kubernetes.model.IResourceModel
+import com.redhat.devtools.intellij.kubernetes.model.ResourceModel
+import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.AllPodsOperator
 import javax.swing.JTree
 import javax.swing.event.TreeExpansionEvent
 import javax.swing.event.TreeExpansionListener
@@ -23,6 +27,7 @@ import javax.swing.tree.DefaultMutableTreeNode
 object ResourceWatchController {
 
 	fun install(tree: JTree) {
+		watchPods()
 		tree.addTreeExpansionListener(object: TreeExpansionListener {
 			override fun treeExpanded(event: TreeExpansionEvent) {
 				val descriptor = getDescriptor(event)
@@ -47,5 +52,13 @@ object ResourceWatchController {
 			}
 
 		})
+	}
+
+	/**
+	 * Watches all pods. Pods are children to several elements (ex. deployment) and thus need to be always watched.
+	 */
+	private fun watchPods() {
+		val resourceModel = ApplicationManager.getApplication().getService(IResourceModel::class.java)
+		resourceModel.watch(AllPodsOperator.KIND)
 	}
 }
