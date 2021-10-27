@@ -163,10 +163,8 @@ object KubernetesDescriptors {
 		}
 
 		override fun watchResources() {
-			if (element == null) {
-				return
-			}
-			model.watch(element!!)
+			val toWatch = element ?: return
+			model.watch(toWatch)
 		}
 	}
 
