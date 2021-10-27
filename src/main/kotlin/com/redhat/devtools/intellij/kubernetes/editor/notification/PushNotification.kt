@@ -14,7 +14,6 @@ import com.intellij.openapi.fileEditor.FileEditor
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Key
 import com.intellij.ui.EditorNotificationPanel
-import com.redhat.devtools.intellij.kubernetes.editor.ResourceEditor
 import com.redhat.devtools.intellij.kubernetes.editor.actions.PushAction
 import com.redhat.devtools.intellij.kubernetes.editor.actions.PullAction
 import com.redhat.devtools.intellij.kubernetes.editor.hideNotification
@@ -30,19 +29,19 @@ class PushNotification(private val editor: FileEditor, private val project: Proj
         val KEY_PANEL = Key<JComponent>(PushNotification::class.java.canonicalName)
     }
 
-    fun show() {
-        editor.showNotification(KEY_PANEL, { createPanel(editor, project) }, project)
+    fun show(existsOnCluster: Boolean, canPull: Boolean) {
+        editor.showNotification(KEY_PANEL, { createPanel(editor, project, existsOnCluster, canPull) }, project)
     }
 
     fun hide() {
         editor.hideNotification(KEY_PANEL, project)
     }
 
-    private fun createPanel(editor: FileEditor, project: Project): EditorNotificationPanel {
+    private fun createPanel(editor: FileEditor, project: Project, existsOnCluster: Boolean, canPull: Boolean): EditorNotificationPanel {
         val panel = EditorNotificationPanel()
         panel.setText(
             "Push local changes, ${
-                if (false == ResourceEditor.factory.getOrCreate(editor, project)?.existsOnCluster()) {
+                if (!existsOnCluster) {
                     "create new"
                 } else {
                     "update existing"
@@ -50,7 +49,7 @@ class PushNotification(private val editor: FileEditor, private val project: Proj
             } resource on cluster?"
         )
         panel.createActionLabel("Push", PushAction.ID)
-        if (true == ResourceEditor.factory.getOrCreate(editor, project)?.isOutdated()) {
+        if (canPull) {
             panel.createActionLabel("Pull", PullAction.ID)
             panel.createActionLabel ("Ignore") {
                 editor.hideNotification(KEY_PANEL, project)

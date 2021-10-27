@@ -26,7 +26,7 @@ import com.redhat.devtools.intellij.telemetry.core.service.TelemetryMessageBuild
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.client.KubernetesClient
 
-open class ResourceEditorFactory(
+open class ResourceEditorFactory protected constructor(
     /* for mocking purposes */
     private val getFileEditorManager: (project: Project) -> FileEditorManager = FileEditorManager::getInstance,
     /* for mocking purposes */
@@ -48,12 +48,15 @@ open class ResourceEditorFactory(
     private val createClients: (config: ClientConfig) -> Clients<out KubernetesClient>? =
         { config -> com.redhat.devtools.intellij.kubernetes.model.createClients(config) },
     /* for mocking purposes */
-    private val reportTelemetry: (HasMetadata, TelemetryMessageBuilder.ActionMessage) -> Unit = TelemetryService::reportResource,
+    private val reportTelemetry: (HasMetadata, TelemetryMessageBuilder.ActionMessage) -> Unit = TelemetryService::sendTelemetry,
     /* for mocking purposes */
     private val createResourceEditor: (HasMetadata, FileEditor, Project, Clients<out KubernetesClient>) -> ResourceEditor =
         { resource, editor, project, clients -> ResourceEditor(resource, editor, project, clients) }
 ) {
 
+    companion object {
+        val instance = ResourceEditorFactory()
+    }
     /**
      * Opens a new editor or focuses an existing editor for the given [HasMetadata] and [Project].
      *
@@ -67,11 +70,11 @@ open class ResourceEditorFactory(
             .openFile(file, true, true)
             .firstOrNull()
             ?: return null
-        return getOrCreate(editor, project)
+        return getExistingOrCreate(editor, project)
     }
 
     private fun getFile(resource: HasMetadata, project: Project): VirtualFile? {
-        val resourceEditor = get(resource, project)
+        val resourceEditor = getExisting(resource, project)
         return if (resourceEditor != null) {
             resourceEditor.editor.file
         } else {
@@ -79,9 +82,9 @@ open class ResourceEditorFactory(
         }
     }
 
-    private fun get(resource: HasMetadata, project: Project): ResourceEditor? {
+    private fun getExisting(resource: HasMetadata, project: Project): ResourceEditor? {
         return getFileEditorManager.invoke(project).allEditors
-            .mapNotNull { editor -> get(editor) }
+            .mapNotNull { editor -> getExisting(editor) }
             .firstOrNull { resourceEditor ->
                 // get editor for a temporary file thus only editors for temporary files are candidates
                 isTemporary.invoke(resourceEditor.editor.file)
@@ -95,13 +98,13 @@ open class ResourceEditorFactory(
      *
      * @return the existing or a new [ResourceEditor].
      */
-    fun getOrCreate(editor: FileEditor?, project: Project?): ResourceEditor? {
+    fun getExistingOrCreate(editor: FileEditor?, project: Project?): ResourceEditor? {
         if (editor == null
             || project == null) {
             return null
         }
 
-        val resourceEditor = get(editor)
+        val resourceEditor = getExisting(editor)
         if (resourceEditor != null) {
             return resourceEditor
         }
@@ -123,13 +126,13 @@ open class ResourceEditorFactory(
      * @see [FileEditor.getUserData]
      * @see [VirtualFile.getUserData]
      */
-    fun get(editor: FileEditor?): ResourceEditor? {
+    private fun getExisting(editor: FileEditor?): ResourceEditor? {
         if (editor == null) {
             return null
         }
 
         return editor.getUserData(ResourceEditor.KEY_RESOURCE_EDITOR)
-            ?: get(editor.file)
+            ?: getExisting(editor.file)
     }
 
     /**
@@ -141,7 +144,7 @@ open class ResourceEditorFactory(
      *
      * @see [VirtualFile.getUserData]
      */
-    fun get(file: VirtualFile?): ResourceEditor? {
+    fun getExisting(file: VirtualFile?): ResourceEditor? {
         return file?.getUserData(ResourceEditor.KEY_RESOURCE_EDITOR)
     }
 
