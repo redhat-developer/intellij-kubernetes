@@ -755,7 +755,7 @@ spec:
         override var editorResource: HasMetadata? = super.editorResource
 
         override fun runAsync(runnable: () -> Unit) {
-            // dont execute in application thread pool
+            // dont execute in UI thread
             runnable.invoke()
         }
 
