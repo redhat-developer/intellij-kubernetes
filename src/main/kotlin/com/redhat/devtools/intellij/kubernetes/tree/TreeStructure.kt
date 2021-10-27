@@ -27,6 +27,7 @@ import com.redhat.devtools.intellij.kubernetes.model.context.IActiveContext
 import com.redhat.devtools.intellij.kubernetes.model.context.IContext
 import com.redhat.devtools.intellij.kubernetes.model.resource.ResourceKind
 import com.redhat.devtools.intellij.kubernetes.model.util.hasDeletionTimestamp
+import com.redhat.devtools.intellij.kubernetes.model.util.isSameResource
 import com.redhat.devtools.intellij.kubernetes.model.util.isWillBeDeleted
 import java.util.Optional
 import javax.swing.Icon
@@ -262,6 +263,13 @@ open class TreeStructure(
                 presentation.presentableText += " (terminating)"
                 presentation.setAttributesKey(CodeInsightColors.WRONG_REFERENCES_ATTRIBUTES)
             }
+        }
+
+        override fun isMatching(element: Any?): Boolean {
+            if (element !is HasMetadata) {
+                return super.isMatching(element)
+            }
+            return this.element?.isSameResource(element) ?: false
         }
     }
 
