@@ -70,13 +70,11 @@ class TreeUpdater<Structure: AbstractTreeStructure>(
 
     private fun invalidatePath(pathSupplier: () -> TreePath?) {
         treeModel.invoker.invokeLater {
-            val path = pathSupplier()
-            if (path != null) {
-                if (path.lastPathComponent == treeModel.root) {
-                    invalidateRoot()
-                } else {
-                    treeModel.invalidate(path, true)
-                }
+            val path = pathSupplier() ?: return@invokeLater
+            if (path.lastPathComponent == treeModel.root) {
+                invalidateRoot()
+            } else {
+                treeModel.invalidate(path, true)
             }
         }
     }
@@ -89,14 +87,12 @@ class TreeUpdater<Structure: AbstractTreeStructure>(
         return structure.getParentElement(element)
     }
 
-    private fun getTreePath(element: Any?): TreePath {
-        val path =
-            if (isRootNode(element)) {
+    private fun getTreePath(element: Any?): TreePath? {
+        return if (isRootNode(element)) {
                 TreePath(treeModel.root)
             } else {
                 findTreePath(element, treeModel.root as? DefaultMutableTreeNode)
             }
-        return path ?: TreePath(treeModel.root)
     }
 
     private fun isRootNode(element: Any?): Boolean {
