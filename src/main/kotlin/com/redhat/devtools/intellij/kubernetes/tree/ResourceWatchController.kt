@@ -14,7 +14,6 @@ import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.diagnostic.logger
 import com.redhat.devtools.intellij.kubernetes.actions.getDescriptor
 import com.redhat.devtools.intellij.kubernetes.model.IResourceModel
-import com.redhat.devtools.intellij.kubernetes.model.ResourceModel
 import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.AllPodsOperator
 import javax.swing.JTree
 import javax.swing.event.TreeExpansionEvent
@@ -22,7 +21,7 @@ import javax.swing.event.TreeExpansionListener
 import javax.swing.tree.DefaultMutableTreeNode
 
 /**
- * A controller that is watching resources when a given descriptor is expanded
+ * A controller that is watching resources when a tree node is expanded and stops to watch them when folded.
  */
 object ResourceWatchController {
 
