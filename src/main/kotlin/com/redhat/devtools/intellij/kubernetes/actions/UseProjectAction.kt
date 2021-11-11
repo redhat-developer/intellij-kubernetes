@@ -26,7 +26,7 @@ class UseProjectAction : UseResourceAction<Project>(Project::class.java) {
 		val name = project.metadata.name
 		val model = getResourceModel() ?: return
 		val telemetry = TelemetryService.instance
-			.action(NAME_PREFIX_NAMESPACE + "switch")
+			.action(NAME_PREFIX_NAMESPACE + "use")
 		run("Using project $name...", true,
 			Progressive {
 				try {

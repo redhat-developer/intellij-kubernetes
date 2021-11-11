@@ -97,6 +97,9 @@ Alternatively you can replace your local version with the one on the cluster and
 #### Delete Resources
 You may delete any resource that is listed in the resource tree by choosing "Delete" in the context menu.
 
+## Data and Telemetry
+The JetBrains IntelliJ Kubernetes plugin collects anonymous [usage data](https://github.com/redhat-developer/intellij-kubernetes/blob/main/USAGE_DATA.md) and sends it to Red Hat servers to help improve our products and services.
+Read our [privacy statement](https://developers.redhat.com/article/tool-data-collection) to learn more. This extension respects the Red Hat Telemetry setting which you can learn more about at https://github.com/redhat-developer/intellij-redhat-telemetry#telemetry-reporting
 
 
 ## Release notes
