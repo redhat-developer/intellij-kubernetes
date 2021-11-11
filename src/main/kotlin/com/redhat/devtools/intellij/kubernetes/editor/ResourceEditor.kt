@@ -130,7 +130,7 @@ open class ResourceEditor(
             return
         }
         runAsync {
-            val resource = createResource() ?: return@runAsync
+            val resource = createResource(editor, clients) ?: return@runAsync
             this.editorResource = resource
             val cluster = clusterResource ?: return@runAsync
             showNotifications(resource, cluster)
@@ -262,7 +262,7 @@ open class ResourceEditor(
     fun push() {
         val cluster = clusterResource ?: return
         runAsync {
-            val resource = createResource() ?: return@runAsync
+            val resource = createResource(editor, clients) ?: return@runAsync
             this.editorResource = resource
             try {
                 val updatedResource = push(resource, cluster) ?: return@runAsync
@@ -286,7 +286,7 @@ open class ResourceEditor(
         }
     }
 
-    private fun createResource(): HasMetadata? {
+    private fun createResource(editor: FileEditor, clients: Clients<out KubernetesClient>): HasMetadata? {
         return try {
             createResource.invoke(editor, clients)
         } catch (e: ResourceException) {
