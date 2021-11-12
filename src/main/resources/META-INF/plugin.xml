@@ -11,7 +11,13 @@
     <change-notes>
         <![CDATA[
         <p></p>
-        <h3>0.2.3</h3>
+        <h3>0.3.0</h3>
+        <ul>
+            <li><a href="https://github.com/redhat-developer/intellij-kubernetes/issues/217">Resource editor: should allow to edit files loaded from local disk (File > Open)</a>
+            <li><a href="https://github.com/redhat-developer/intellij-kubernetes/issues/266">Support Kubernetes 1.22.0</a>
+            <li><a href="https://github.com/redhat-developer/intellij-kubernetes/issues/281">Pods for a deployment are not listed. An error is displayed instead.</a>
+        </ul>
+        <h3>0.2.4</h3>
         <ul>
             <li><a href="https://github.com/redhat-developer/intellij-kubernetes/issues/258">InvalidPathException: Illegal char <:> at index 16: \Repository Diff: application.yml </a>
             <li><a href="https://github.com/redhat-developer/intellij-kubernetes/issues/249">Replace API usage scheduled for removal in IC-2021.3</a></li>
