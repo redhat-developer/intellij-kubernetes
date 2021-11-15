@@ -58,7 +58,7 @@ The pod in the container is identified with color based on the state of the pod.
 
 ### Create and Edit Resources
 You can edit any existing resource that is shown in the resource tree.
-Either double click it or pick "Edit..." in the context menu. 
+The action can be performed either by `Double Click on Resource` or selecting `Edit` action from the context menu.
 A Yaml editor opens up and allows you to change the resource. 
 Pushing the changes made to the file to the cluster automatically updates the edited Kubernetes resource.
 Users can also create a new Kubernetes resource from local YAML/JSON file and push them to the cluster.
