@@ -12,6 +12,13 @@ It is available for install from the [JetBrains Marketplace](https://plugins.jet
 > **NOTE:** This plugin is in Preview mode. The plugin support for Kubernetes or OpenShift clusters is strictly experimental - assumptions may break, commands and behavior may change!
 
 ## Key Features
+ - Edit Kubernetes resource manifests and apply them to your cluster
+ - View Kubernetes and OpenShift clusters in an explorer tree view
+ - Tree View supports dynamic update of K8s resources
+ - Allow Push and Pull Feature to keep the editor in sync with the Kubernetes resource
+ - Support Creation and Deletion of new Kubernetes resources on Cluster
+ - Navigate into Kubernetes workloads, services, pods and nodes
+ - Switching contexts and namespaces within Kubernetes
 * Browse Kubernetes and OpenShift cluster resources in dynamically update tree
 * Delete resources on cluster
 * Edit resources on cluster backed by kubernetes resource schema
