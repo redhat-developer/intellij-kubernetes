@@ -37,7 +37,7 @@ The user can switch the current context by choosing any context that exists and 
 OpenShift clusters are shown with OpenShift icon and thus differentiated from Kubernetes clusters.
  
 #### Current Namespace/Project
-The tree displays resources that exist within the current namespace/project as specified in the kube config. 
+Kubernetes Resources that exist within the current Namespace/Project (as specified in kubeconfig file) are displayed in the tree view 
 Of course resources that live outside the scope of namespace/project are displayed, too.
 You can switch the current namespace/project with the context menu item "Use Namespace". 
 In OpenShift clusters the tree also lists projects where the tooling behaves in an equivalent manner. 
