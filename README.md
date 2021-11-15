@@ -61,7 +61,7 @@ You can edit any existing resource that is shown in the resource tree.
 Either double click it or pick "Edit..." in the context menu. 
 A Yaml editor opens up and allows you to change the resource. 
 Pushing the changes made to the file to the cluster automatically updates the edited Kubernetes resource.
-You can also open a local yaml/json file and create a new resource on the cluster by pushing the editor to it.
+Users can also create a new Kubernetes resource from local YAML/JSON file and push them to the cluster.
 
 > **Tip**: You're advised to edit copies of your yaml/json files. 
 > This is because the editor keeps your content in sync with the resource that exists on the cluster. 
