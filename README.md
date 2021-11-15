@@ -79,7 +79,7 @@ For instance if you're editing a pod, the editor validates it by a kubernetes po
 
 User can push the local changes made to the cluster in order to update an existing resource or create a new resource.
 The cluster that the editor is saved to is set in the current context (cluster, namespace and user) that's defined in your kube config.
-The editor has a toolbar with an action for this sake.
+There is a `Push` button available in the editor view to make the action more discoverable.
 
 ![editor toolbar](images/editor-toolbar-push.png)
 
