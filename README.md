@@ -51,7 +51,9 @@ Resources are grouped in different categories such as Namespaces, Nodes, Workloa
 Pods are shown with their running state. When running their icon holds a green dot. 
 When red, the dot indicates that a pod is either pending, succeeded (terminated), failed or is in an unknown state.
 Pods also unveil their IP address and the number of running containers out of the total number of containers.
-
+The pod in the container is identified with color based on the state of the pod.
+- A green dot indicates that the pod is currently running.
+- A red dot indicates that the pod is in Pending, Succeeded (Terminated), Failed or in Unknown State.
 ![img.png](images/pod.png)
 
 ### Create and Edit Resources
