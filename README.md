@@ -33,7 +33,7 @@ The explorer tree is dynamically updated in sync with the Kubernetes resources o
 
 #### Current Context
 The tree displays resources that exist on the cluster that the current context points to. 
-The user can switch the current context by choosing any context that exists and picking "Set as Current Cluster" in the context menu.
+The user can switch the current context by choosing any context that exists and selecting `Set as Current Cluster` action from the context menu.
 OpenShift clusters are shown as such with an OpenShift icon instead of a Kubernetes one.
  
 #### Current Namespace/Project
