@@ -28,7 +28,7 @@ It is available for install from the [JetBrains Marketplace](https://plugins.jet
 ## Features
 
 ### Browse Kubernetes & OpenShift resources
-The plugin offers a tool window with a tree that displays all the resources that exist on a Kubernetes or OpenShift cluster. 
+This plugin allows the user to view the Kubernetes and OpenShift Cluster resources in the Application Explorer Tree and browser through them.
 The explorer tree is dynamically updated in sync with the Kubernetes resources on the cluster so that the tree always display the current state of the resources.
 
 #### Current Context
