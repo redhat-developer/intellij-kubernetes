@@ -58,7 +58,7 @@ Pods also unveil their IP address and the number of running containers out of th
 You can edit any existing resource that is shown in the resource tree.
 Either double click it or pick "Edit..." in the context menu. 
 A Yaml editor opens up and allows you to change the resource. 
-Pushing the editor to the cluster then updates the resource that you were editing.
+Pushing the changes made to the file to the cluster automatically updates the edited Kubernetes resource.
 You can also open a local yaml/json file and create a new resource on the cluster by pushing the editor to it.
 
 > **Tip**: You're advised to edit copies of your yaml/json files. 
