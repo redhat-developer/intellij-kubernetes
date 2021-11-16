@@ -15,6 +15,7 @@ import com.intellij.openapi.project.Project
 import com.intellij.ui.tree.LeafState
 import io.fabric8.kubernetes.api.model.HasMetadata
 import com.redhat.devtools.intellij.kubernetes.model.IResourceModel
+import com.redhat.devtools.intellij.kubernetes.model.resource.ResourceKind
 
 abstract class AbstractTreeStructureContribution(override val model: IResourceModel): ITreeStructureContribution {
 
@@ -30,29 +31,43 @@ abstract class AbstractTreeStructureContribution(override val model: IResourceMo
         return null
     }
 
+    override fun getParentKinds(element: Any): Collection<ResourceKind<out HasMetadata>?>? {
+        return null
+    }
+
     class ElementNode<T> {
 
-        private var parentElementsProvider: ((element: T) -> Any?)? = null
+        private var parentElementsProvider: ((element: T) -> Collection<Any?>?)? = null
+        private lateinit var triggerProvider: (element: Any) -> Boolean
+        private var childrenKind: ResourceKind<out HasMetadata>? = null
         private var childElementsProvider: ((element: T) -> Collection<Any>)? = null
-        private lateinit var anchorProvider: (element: Any) -> Boolean
 
-        fun anchor(provider: (element: Any) -> Boolean): ElementNode<T> {
-            this.anchorProvider = provider
+        fun trigger(provider: (element: Any) -> Boolean): ElementNode<T> {
+            this.triggerProvider = provider
             return this
         }
 
-        fun parentElements(provider: ((element: T) -> Any?)?): ElementNode<T> {
+        fun parentElement(provider: ((element: T) -> Collection<Any?>?)?): ElementNode<T> {
             this.parentElementsProvider = provider
             return this
         }
 
-        fun childElements(provider: (element: T) -> Collection<Any>): ElementNode<T> {
+        fun childrenKind(provider: () -> ResourceKind<out HasMetadata>): ElementNode<T> {
+            this.childrenKind = provider.invoke()
+            return this
+        }
+
+        fun children(provider: (element: T) -> Collection<Any>): ElementNode<T> {
             this.childElementsProvider = provider
             return this
         }
 
-        fun isAnchor(element: Any): Boolean {
-            return anchorProvider.invoke(element)
+        fun isTrigger(element: Any): Boolean {
+            return triggerProvider.invoke(element)
+        }
+
+        fun getChildrenKind(): ResourceKind<out HasMetadata>? {
+            return childrenKind
         }
 
         fun getChildElements(element: Any): Collection<Any> {
@@ -61,7 +76,7 @@ abstract class AbstractTreeStructureContribution(override val model: IResourceMo
             return childElementsProvider?.invoke(typedElement) ?: return emptyList()
         }
 
-        fun getParentElements(element: Any): Any? {
+        fun getParentElements(element: Any): Collection<Any?>? {
             @Suppress("UNCHECKED_CAST")
             val typedElement = element as? T ?: return null
             return parentElementsProvider?.invoke(typedElement)

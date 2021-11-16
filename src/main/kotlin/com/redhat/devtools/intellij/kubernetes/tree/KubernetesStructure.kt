@@ -13,6 +13,7 @@ package com.redhat.devtools.intellij.kubernetes.tree
 import com.intellij.ide.util.treeView.NodeDescriptor
 import com.intellij.openapi.project.Project
 import com.intellij.ui.tree.LeafState
+import com.redhat.devtools.intellij.kubernetes.actions.getElement
 import io.fabric8.kubernetes.api.model.ConfigMap
 import io.fabric8.kubernetes.api.model.Namespace
 import io.fabric8.kubernetes.api.model.Node
@@ -31,6 +32,7 @@ import com.redhat.devtools.intellij.kubernetes.model.resource.PodForDaemonSet
 import com.redhat.devtools.intellij.kubernetes.model.resource.PodForDeployment
 import com.redhat.devtools.intellij.kubernetes.model.resource.PodForService
 import com.redhat.devtools.intellij.kubernetes.model.resource.PodForStatefulSet
+import com.redhat.devtools.intellij.kubernetes.model.resource.ResourceKind
 import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.AllPodsOperator
 import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.ConfigMapsOperator
 import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.CronJobsOperator
@@ -73,6 +75,8 @@ import com.redhat.devtools.intellij.kubernetes.tree.KubernetesStructure.Folders.
 import com.redhat.devtools.intellij.kubernetes.tree.KubernetesStructure.Folders.STORAGE_CLASSES
 import com.redhat.devtools.intellij.kubernetes.tree.KubernetesStructure.Folders.WORKLOADS
 import com.redhat.devtools.intellij.kubernetes.tree.TreeStructure.Folder
+import com.redhat.devtools.intellij.kubernetes.tree.util.getResourceKind
+import io.fabric8.kubernetes.api.model.HasMetadata
 
 class KubernetesStructure(model: IResourceModel) : AbstractTreeStructureContribution(model) {
     object Folders {
@@ -101,18 +105,19 @@ class KubernetesStructure(model: IResourceModel) : AbstractTreeStructureContribu
 
 	private val elementsTree: List<ElementNode<*>> = listOf(
 			element<Any> {
-				anchor { it == getRootElement() }
-				childElements {
-					listOf(NAMESPACES,
-							NODES,
-							WORKLOADS,
-							NETWORK,
-							STORAGE,
-							CONFIGURATION,
-							CUSTOM_RESOURCES_DEFINITIONS
+				trigger { it == getRootElement() }
+				children {
+					listOf(
+						NAMESPACES,
+						NODES,
+						WORKLOADS,
+						NETWORK,
+						STORAGE,
+						CONFIGURATION,
+						CUSTOM_RESOURCES_DEFINITIONS
 					)
 				}
-				parentElements { model }
+				parentElement { listOf(model) }
 			},
 			*createPodElements(), // pods are in several places (NODES, WORKLOADS, NETWORK, etc)
 			*createNamespacesElements(),
@@ -125,22 +130,56 @@ class KubernetesStructure(model: IResourceModel) : AbstractTreeStructureContribu
 	)
 
 	override fun getChildElements(element: Any): Collection<Any> {
-		val node = elementsTree.find { it.isAnchor(element) }
-		return node?.getChildElements(element) ?: emptyList()
+		val node = elementsTree.find { it.isTrigger(element) } ?: return emptyList()
+		return node.getChildElements(element)
 	}
 
 	override fun getParentElement(element: Any): Any? {
 		try {
 			// default to null to allow tree structure to choose default parent element
-			val node = elementsTree.find { it.isAnchor(element) } ?: return null
+			val node = elementsTree.find { it.isTrigger(element) } ?: return null
 			return node.getParentElements(element)
 		} catch (e: ResourceException) {
 			return null
 		}
 	}
 
+	override fun getParentKinds(element: Any): Collection<ResourceKind<out HasMetadata>?>? {
+		try {
+/*
+			// default to null to allow tree structure to choose default parent element
+			val nodes = elementsTree.filter { it.isTrigger(element) }
+			if (nodes.isEmpty()) {
+				return null
+			}
+			return nodes.flatMap { node ->
+				node.getParentElements(element)
+					?.filterNotNull()
+					?.toList()
+					?: emptyList()
+			}
+*/
+
+			val kind = getResourceKind(element)
+			return elementsTree.filter { it.getChildrenKind() == kind }
+				.map { elementNode -> elementNode.getChildrenKind() }
+		} catch (e: ResourceException) {
+			return null
+		}
+	}
+
+	override fun isParentDescriptor(descriptor: NodeDescriptor<*>?, element: Any): Boolean {
+		val kind = getResourceKind(element)
+		val matchers: Collection<ElementNode<*>> = elementsTree.filter { it.getChildrenKind() == kind }
+		return matchers.any { elementNode ->
+			val descriptorElement = descriptor?.getElement<Any>() ?: return false
+			elementNode.isTrigger(descriptorElement)
+		}
+	}
+
 	override fun createDescriptor(element: Any, parent: NodeDescriptor<*>?, project: Project): NodeDescriptor<*>? {
-		return KubernetesDescriptors.createDescriptor(element, parent, model, project)
+		val childrenKind = elementsTree.find { it.isTrigger(element) }?.getChildrenKind()
+		return KubernetesDescriptors.createDescriptor(element, childrenKind, parent, model, project)
 	}
 
 	override fun canContribute() = true
@@ -148,18 +187,18 @@ class KubernetesStructure(model: IResourceModel) : AbstractTreeStructureContribu
 	private fun createNamespacesElements(): Array<ElementNode<*>> {
 		return arrayOf(
 				element<Any> {
-					anchor { it == NAMESPACES }
-					childElements {
+					trigger { it == NAMESPACES }
+					parentElement { listOf(getRootElement()) }
+					children {
 						model.resources(NamespacesOperator.KIND)
 								.inNoNamespace()
 								.list()
 								.sortedBy(resourceName)
 					}
-					parentElements { getRootElement() }
 				},
 				element<Any> {
-					anchor { it is Namespace }
-					parentElements { NAMESPACES }
+					trigger { it is Namespace }
+					parentElement { listOf(NAMESPACES) }
 				}
 		)
 	}
@@ -167,16 +206,19 @@ class KubernetesStructure(model: IResourceModel) : AbstractTreeStructureContribu
 	private fun createPodElements(): Array<ElementNode<*>> {
 		return arrayOf(
 				element<Pod> {
-					anchor { it is Pod }
-					childElements {
-						KubernetesDescriptors.createPodDescriptorFactories(it)
+					trigger { it is Pod }
+					parentElement {
+						listOf(
+							NODES,
+							DEPLOYMENTS,
+							PODS,
+							SERVICES,
+							STATEFULSETS,
+							DAEMONSETS
+						)
 					}
-					parentElements {
-						listOf(PODS,
-								NODES,
-								SERVICES,
-								STATEFULSETS,
-								DAEMONSETS)
+					children {
+						KubernetesDescriptors.createPodDescriptorFactories(it)
 					}
 				}
 		)
@@ -185,24 +227,26 @@ class KubernetesStructure(model: IResourceModel) : AbstractTreeStructureContribu
 	private fun createNodesElements(): Array<ElementNode<*>> {
 		return arrayOf(
 				element<Any> {
-					anchor { it == NODES }
-					childElements {
+					trigger { it == NODES }
+					parentElement { listOf(getRootElement()) }
+					childrenKind { NodesOperator.KIND }
+					children {
 						model.resources(NodesOperator.KIND)
 								.inNoNamespace()
 								.list()
 								.sortedBy(resourceName)
 					}
-					parentElements { getRootElement() }
 				},
 				element<Any> {
-					anchor { it is Node }
-					childElements {
+					trigger { it is Node }
+					parentElement { listOf(NODES) }
+					childrenKind { AllPodsOperator.KIND }
+					children {
 						model.resources(AllPodsOperator.KIND)
 								.inAnyNamespace()
 								.list()
 								.sortedBy(resourceName)
 					}
-					parentElements { NODES }
 				}
 		)
 	}
@@ -210,8 +254,9 @@ class KubernetesStructure(model: IResourceModel) : AbstractTreeStructureContribu
 	private fun createWorkloadElements(): Array<ElementNode<*>> {
 		return arrayOf(
 				element<Any> {
-					anchor { it == WORKLOADS }
-					childElements {
+					trigger { it == WORKLOADS }
+					parentElement { listOf(WORKLOADS) }
+					children {
 						listOf<Any>(DEPLOYMENTS,
 								STATEFULSETS,
 								DAEMONSETS,
@@ -219,100 +264,108 @@ class KubernetesStructure(model: IResourceModel) : AbstractTreeStructureContribu
 								CRONJOBS,
 								PODS)
 					}
-					parentElements { getRootElement() }
 				},
 				element<Any> {
-					anchor { it == DEPLOYMENTS }
-					childElements {
+					trigger { it == DEPLOYMENTS }
+					parentElement { listOf(WORKLOADS) }
+					childrenKind { DeploymentsOperator.KIND }
+					children {
 						model.resources(DeploymentsOperator.KIND)
 								.inCurrentNamespace()
 								.list()
 								.sortedBy(resourceName)
 					}
-					parentElements { WORKLOADS }
 				},
 				element<Deployment> {
-					anchor { it is Deployment }
-					childElements {
+					trigger { it is Deployment }
+					parentElement { listOf(DEPLOYMENTS) }
+					childrenKind { NamespacedPodsOperator.KIND }
+					children {
 						model.resources(NamespacedPodsOperator.KIND)
 								.inCurrentNamespace()
 								.filtered(PodForDeployment(it))
 								.list()
 								.sortedBy(resourceName)
 					}
-					parentElements { DEPLOYMENTS }
 				},
 				element<Any> {
-					anchor { it == STATEFULSETS }
-					childElements {
+					trigger { it == STATEFULSETS }
+					parentElement { listOf(WORKLOADS) }
+					childrenKind { StatefulSetsOperator.KIND }
+					children {
 						model.resources(StatefulSetsOperator.KIND)
 								.inCurrentNamespace()
 								.list()
 								.sortedBy(resourceName)
 					}
-					parentElements { WORKLOADS }
 				},
 				element<StatefulSet> {
-					anchor { it is StatefulSet }
-					childElements {
+					trigger { it is StatefulSet }
+					parentElement { listOf(STATEFULSETS) }
+					childrenKind { NamespacedPodsOperator.KIND }
+					children {
 						model.resources(NamespacedPodsOperator.KIND)
 								.inCurrentNamespace()
 								.filtered(PodForStatefulSet(it))
 								.list()
 								.sortedBy(resourceName)
 					}
-					parentElements { WORKLOADS }
 				},
 				element<Any> {
-					anchor { it == DAEMONSETS }
-					childElements {
+					trigger { it == DAEMONSETS }
+					parentElement { listOf(WORKLOADS) }
+					childrenKind { DaemonSetsOperator.KIND }
+					children {
 						model.resources(DaemonSetsOperator.KIND)
 								.inCurrentNamespace()
 								.list()
 								.sortedBy(resourceName)
 					}
-					parentElements { WORKLOADS }
 				},
 				element<DaemonSet> {
-					anchor { it is DaemonSet }
-					childElements {
+					trigger { it is DaemonSet }
+					parentElement { listOf(DAEMONSETS) }
+					childrenKind { NamespacedPodsOperator.KIND }
+					children {
 						model.resources(NamespacedPodsOperator.KIND)
 								.inCurrentNamespace()
 								.filtered(PodForDaemonSet(it))
 								.list()
 								.sortedBy(resourceName)
 					}
-					parentElements { WORKLOADS }
 				},
 				element<Any> {
-					anchor { it == JOBS }
-					childElements {
+					trigger { it == JOBS }
+					parentElement { listOf(WORKLOADS) }
+					childrenKind { JobsOperator.KIND }
+					children {
 						model.resources(JobsOperator.KIND)
 								.inCurrentNamespace()
 								.list()
 								.sortedBy(resourceName)
 					}
-					parentElements { WORKLOADS }
 				},
 				element<Any> {
-					anchor { it == CRONJOBS }
-					childElements {
+					trigger { it == CRONJOBS }
+					parentElement { listOf(WORKLOADS) }
+					childrenKind { CronJobsOperator.KIND }
+					children {
 						model.resources(CronJobsOperator.KIND)
 								.inCurrentNamespace()
 								.list()
 								.sortedBy(resourceName)
 					}
-					parentElements { WORKLOADS }
 				},
 				element<Any> {
-					anchor { it == PODS }
-					childElements {
+					trigger { it == PODS }
+					parentElement { listOf(WORKLOADS) }
+					childrenKind { NamespacedPodsOperator.KIND }
+					children {
 						model.resources(NamespacedPodsOperator.KIND)
 								.inCurrentNamespace()
 								.list()
 								.sortedBy(resourceName)
 					}
-					parentElements { WORKLOADS }
 				}
 		)
 	}
@@ -320,55 +373,59 @@ class KubernetesStructure(model: IResourceModel) : AbstractTreeStructureContribu
 	private fun createNetworkElements(): Array<ElementNode<*>> {
 		return arrayOf(
 				element<Any> {
-					anchor { it == NETWORK }
-					childElements {
+					trigger { it == NETWORK }
+					children {
 						listOf<Any>(
 								SERVICES,
 								ENDPOINTS,
 								INGRESS)
 					}
-					parentElements { getRootElement() }
+					parentElement { listOf(getRootElement()) }
 				},
 				element<Any> {
-					anchor { it == SERVICES }
-					childElements {
+					trigger { it == SERVICES }
+					parentElement { listOf(NETWORK) }
+					childrenKind { ServicesOperator.KIND }
+					children {
 						model.resources(ServicesOperator.KIND)
 								.inCurrentNamespace()
 								.list()
 								.sortedBy(resourceName)
 					}
-					parentElements { NETWORK }
 				},
 				element<Service> {
-					anchor { it is Service }
-					childElements {
+					trigger { it is Service }
+					parentElement { listOf(SERVICES) }
+					childrenKind { NamespacedPodsOperator.KIND }
+					children {
 						model.resources(NamespacedPodsOperator.KIND)
 								.inCurrentNamespace()
 								.filtered(PodForService(it))
 								.list()
 								.sortedBy(resourceName)
 					}
-					parentElements { SERVICES }
 				},
 				element<Any> {
-					anchor { it == ENDPOINTS }
-					childElements {
+					trigger { it == ENDPOINTS }
+					parentElement { listOf(NETWORK) }
+					childrenKind { EndpointsOperator.KIND }
+					children {
 						model.resources(EndpointsOperator.KIND)
 								.inCurrentNamespace()
 								.list()
 								.sortedBy(resourceName)
 					}
-					parentElements { NETWORK }
 				},
 				element<Any> {
-					anchor { it == INGRESS }
-					childElements {
+					trigger { it == INGRESS }
+					parentElement { listOf(NETWORK) }
+					childrenKind { IngressOperator.KIND }
+					children {
 						model.resources(IngressOperator.KIND)
 								.inCurrentNamespace()
 								.list()
 								.sortedBy(resourceName)
 					}
-					parentElements { NETWORK }
 				}
 		)
 	}
@@ -376,44 +433,46 @@ class KubernetesStructure(model: IResourceModel) : AbstractTreeStructureContribu
 	private fun createStorageElements(): Array<ElementNode<*>> {
 		return arrayOf(
 				element<Any> {
-					anchor { it == STORAGE }
-					childElements {
+					trigger { it == STORAGE }
+					parentElement { listOf(getRootElement()) }
+					children {
 						listOf<Any>(
 								PERSISTENT_VOLUMES,
 								PERSISTENT_VOLUME_CLAIMS,
 								STORAGE_CLASSES)
 					}
-					parentElements { getRootElement() }
 				},
 				element<Any> {
-					anchor { it == PERSISTENT_VOLUMES }
-					childElements {
+					trigger { it == PERSISTENT_VOLUMES }
+					parentElement { listOf(STORAGE) }
+					children {
 						model.resources(PersistentVolumesOperator.KIND)
 								.inAnyNamespace()
 								.list()
 								.sortedBy(resourceName)
 					}
-					parentElements { STORAGE }
 				},
 				element<Any> {
-					anchor { it == PERSISTENT_VOLUME_CLAIMS }
-					childElements {
+					trigger { it == PERSISTENT_VOLUME_CLAIMS }
+					parentElement { listOf(STORAGE) }
+					childrenKind { PersistentVolumeClaimsOperator.KIND }
+					children {
 						model.resources(PersistentVolumeClaimsOperator.KIND)
 								.inCurrentNamespace()
 								.list()
 								.sortedBy(resourceName)
 					}
-					parentElements { STORAGE }
 				},
 				element<Any> {
-					anchor { it == STORAGE_CLASSES }
-					childElements {
+					trigger { it == STORAGE_CLASSES }
+					parentElement { listOf(STORAGE) }
+					childrenKind { StorageClassesOperator.KIND }
+					children {
 						model.resources(StorageClassesOperator.KIND)
 								.inAnyNamespace()
 								.list()
 								.sortedBy(resourceName)
 					}
-					parentElements { STORAGE }
 				}
 		)
 	}
@@ -421,47 +480,49 @@ class KubernetesStructure(model: IResourceModel) : AbstractTreeStructureContribu
 	private fun createConfigurationElements(): Array<ElementNode<*>> {
 		return arrayOf(
 				element<Any> {
-					anchor { it == CONFIGURATION }
-					childElements {
+					trigger { it == CONFIGURATION }
+					parentElement { listOf(getRootElement()) }
+					children {
 						listOf<Any>(
 								CONFIG_MAPS,
 								SECRETS)
 					}
-					parentElements { getRootElement() }
 				},
 				element<Any> {
-					anchor { it == CONFIG_MAPS }
-					childElements {
+					trigger { it == CONFIG_MAPS }
+					parentElement { listOf(CONFIGURATION) }
+					childrenKind { ConfigMapsOperator.KIND }
+					children {
 						model.resources(ConfigMapsOperator.KIND)
 								.inCurrentNamespace()
 								.list()
 								.sortedBy(resourceName)
 					}
-					parentElements { CONFIGURATION }
 				},
 				element<ConfigMap> {
-					anchor { it is ConfigMap }
-					childElements {
+					trigger { it is ConfigMap }
+					parentElement { listOf(CONFIGURATION) }
+					children {
 						KubernetesDescriptors.createDataDescriptorFactories((it).data, it)
 					}
-					parentElements { CONFIGURATION }
 				},
 				element<Any> {
-					anchor { it == SECRETS }
-					childElements {
+					trigger { it == SECRETS }
+					parentElement { listOf(CONFIGURATION) }
+					childrenKind { SecretsOperator.KIND }
+					children {
 						model.resources(SecretsOperator.KIND)
 								.inCurrentNamespace()
 								.list()
 								.sortedBy(resourceName)
 					}
-					parentElements { CONFIGURATION }
 				},
 				element<Secret>{
-					anchor { it is Secret }
-					childElements {
+					trigger { it is Secret }
+					parentElement { listOf(SECRETS) }
+					children {
 						KubernetesDescriptors.createDataDescriptorFactories((it).data, it)
 					}
-					parentElements { CONFIGURATION }
 				}
 		)
 	}
@@ -469,23 +530,24 @@ class KubernetesStructure(model: IResourceModel) : AbstractTreeStructureContribu
 	private fun createCustomResourcesElements(): Array<ElementNode<*>> {
 		return arrayOf(
 				element<Any> {
-					anchor { it == CUSTOM_RESOURCES_DEFINITIONS }
-					childElements {
+					trigger { it == CUSTOM_RESOURCES_DEFINITIONS }
+					parentElement { listOf(getRootElement()) }
+					childrenKind { CustomResourceDefinitionsOperator.KIND }
+					children {
 						model.resources(CustomResourceDefinitionsOperator.KIND)
 								.inAnyNamespace()
 								.list()
 								.sortedBy(resourceName)
 					}
-					parentElements { getRootElement() }
 				},
 				element<CustomResourceDefinition> {
-					anchor { it is CustomResourceDefinition }
-					childElements {
+					trigger { it is CustomResourceDefinition }
+					parentElement { listOf(CUSTOM_RESOURCES_DEFINITIONS) }
+					children {
 						model.resources(it)
 								.list()
 								.sortedBy(resourceName)
 					}
-					parentElements { CUSTOM_RESOURCES_DEFINITIONS }
 				}
 		)
 	}

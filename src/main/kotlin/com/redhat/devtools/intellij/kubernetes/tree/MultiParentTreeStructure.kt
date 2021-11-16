@@ -8,20 +8,14 @@
  * Contributors:
  * Red Hat, Inc. - initial API and implementation
  ******************************************************************************/
-package com.redhat.devtools.intellij.kubernetes.tree.util
+package com.redhat.devtools.intellij.kubernetes.tree
 
-import com.redhat.devtools.intellij.kubernetes.model.resource.ResourceKind
-import com.redhat.devtools.intellij.kubernetes.tree.TreeStructure
-import io.fabric8.kubernetes.api.model.HasMetadata
+import com.intellij.ide.util.treeView.NodeDescriptor
 
-fun getResourceKind(element: Any?): ResourceKind<*>? {
-    return when (element) {
-        is HasMetadata ->
-            ResourceKind.create(element)
-        is TreeStructure.Folder ->
-            element.kind
-        else -> {
-            null
-        }
-    }
+/**
+ * Adds API for tree structures that allow multiple parents for a given element.
+ */
+interface MultiParentTreeStructure {
+    fun getParentElements(element: Any): Collection<Any>?
+    fun isParentDescriptor(descriptor: NodeDescriptor<*>?, element: Any): Boolean
 }

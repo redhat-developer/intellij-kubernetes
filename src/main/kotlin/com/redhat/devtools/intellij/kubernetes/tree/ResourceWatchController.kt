@@ -26,12 +26,12 @@ import javax.swing.tree.DefaultMutableTreeNode
 object ResourceWatchController {
 
 	fun install(tree: JTree) {
-		watchPods()
+//		watchPods()
 		tree.addTreeExpansionListener(object: TreeExpansionListener {
 			override fun treeExpanded(event: TreeExpansionEvent) {
 				val descriptor = getDescriptor(event)
 				try {
-					descriptor?.watchResources()
+					descriptor?.watchChildren()
 				} catch(e: Exception) {
 					logger<ResourceWatchController>().warn("Could not watch ${descriptor?.element} resources.", e)
 				}
@@ -40,7 +40,7 @@ object ResourceWatchController {
 			override fun treeCollapsed(event: TreeExpansionEvent?) {
 				val descriptor = getDescriptor(event)
 				try {
-					descriptor?.stopWatchResources()
+					descriptor?.stopWatchChildren()
 				} catch(e: Exception) {
 					logger<ResourceWatchController>().warn("Could not watch ${descriptor?.element} resources.", e)
 				}
@@ -56,8 +56,8 @@ object ResourceWatchController {
 	/**
 	 * Watches all pods. Pods are children to several elements (ex. deployment) and thus need to be always watched.
 	 */
-	private fun watchPods() {
-		val resourceModel = ApplicationManager.getApplication().getService(IResourceModel::class.java)
-		resourceModel.watch(AllPodsOperator.KIND)
-	}
+//	private fun watchPods() {
+//		val resourceModel = ApplicationManager.getApplication().getService(IResourceModel::class.java)
+//		resourceModel.watch(AllPodsOperator.KIND)
+//	}
 }

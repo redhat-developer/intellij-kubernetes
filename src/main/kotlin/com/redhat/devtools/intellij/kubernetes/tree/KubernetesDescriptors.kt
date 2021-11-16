@@ -34,6 +34,7 @@ import io.fabric8.kubernetes.api.model.batch.v1.Job
 import io.fabric8.kubernetes.api.model.storage.StorageClass
 import com.redhat.devtools.intellij.kubernetes.model.IResourceModel
 import com.redhat.devtools.intellij.kubernetes.model.context.KubernetesContext
+import com.redhat.devtools.intellij.kubernetes.model.resource.ResourceKind
 import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.custom.GenericCustomResource
 import com.redhat.devtools.intellij.kubernetes.model.util.getHighestPriorityVersion
 import com.redhat.devtools.intellij.kubernetes.tree.AbstractTreeStructureContribution.DescriptorFactory
@@ -45,13 +46,13 @@ import javax.swing.Icon
 
 object KubernetesDescriptors {
 
-	fun createDescriptor(element: Any, parent: NodeDescriptor<*>?, model: IResourceModel, project: Project): NodeDescriptor<*>? {
+	fun createDescriptor(element: Any, childrenKind: ResourceKind<out HasMetadata>?, parent: NodeDescriptor<*>?, model: IResourceModel, project: Project): NodeDescriptor<*>? {
 		return when (element) {
 			is DescriptorFactory<*> -> element.create(parent, model, project)
 
 			is KubernetesContext -> KubernetesContextDescriptor(element, model, project)
 			is Namespace -> NamespaceDescriptor(element, parent, model, project)
-			is Node -> ResourceDescriptor(element, parent, model, project)
+			is Node -> ResourceDescriptor(element, childrenKind, parent, model, project)
 			is Pod -> PodDescriptor(element, parent, model, project)
 
 			is Deployment,
@@ -68,7 +69,7 @@ object KubernetesDescriptors {
 			is ConfigMap,
 			is Secret,
 			is GenericCustomResource ->
-				ResourceDescriptor(element as HasMetadata, parent, model, project)
+				ResourceDescriptor(element as HasMetadata, childrenKind, parent, model, project)
 			is CustomResourceDefinition ->
 				CustomResourceDefinitionDescriptor(element, parent, model, project)
 			else ->
@@ -97,6 +98,7 @@ object KubernetesDescriptors {
 		project: Project
 	) : ResourceDescriptor<Namespace>(
 		element,
+		null,
 		parent,
 		model,
 		project
@@ -119,6 +121,7 @@ object KubernetesDescriptors {
 		project: Project
 	) : ResourceDescriptor<Pod>(
 		pod,
+		null,
 		parent,
 		model,
 		project
@@ -143,6 +146,7 @@ object KubernetesDescriptors {
 		project: Project
 	) : ResourceDescriptor<CustomResourceDefinition>(
 		definition,
+		null,
 		parent,
 		model,
 		project
@@ -162,7 +166,7 @@ object KubernetesDescriptors {
 			presentation.addText(" (${element!!.spec.group}/${getHighestPriorityVersion(element!!.spec)})", SimpleTextAttributes.GRAYED_SMALL_ATTRIBUTES)
 		}
 
-		override fun watchResources() {
+		override fun watchChildren() {
 			val toWatch = element ?: return
 			model.watch(toWatch)
 		}

@@ -13,9 +13,14 @@ package com.redhat.devtools.intellij.kubernetes.tree
 import com.intellij.ide.util.treeView.AbstractTreeStructure
 import com.intellij.ide.util.treeView.NodeDescriptor
 import com.intellij.ui.tree.StructureTreeModel
+import com.redhat.devtools.intellij.kubernetes.actions.getDescriptor
+import com.redhat.devtools.intellij.kubernetes.actions.getElement
 import com.redhat.devtools.intellij.kubernetes.model.IResourceModel
 import com.redhat.devtools.intellij.kubernetes.model.ModelChangeObservable
+import com.redhat.devtools.intellij.kubernetes.model.util.isSameResource
+import io.fabric8.kubernetes.api.model.HasMetadata
 import javax.swing.tree.DefaultMutableTreeNode
+import javax.swing.tree.TreeNode
 import javax.swing.tree.TreePath
 
 /**
@@ -25,11 +30,11 @@ import javax.swing.tree.TreePath
  * @see IResourceModel
  * @see StructureTreeModel
  */
-class TreeUpdater<Structure: AbstractTreeStructure>(
+class TreeUpdater<Structure : AbstractTreeStructure>(
     private val treeModel: StructureTreeModel<Structure>,
-    private val structure: AbstractTreeStructure,
-    model: IResourceModel)
-    : ModelChangeObservable.IResourceChangeListener {
+    private val structure: MultiParentTreeStructure,
+    model: IResourceModel
+) : ModelChangeObservable.IResourceChangeListener {
 
     init {
         model.addListener(this)
@@ -48,34 +53,36 @@ class TreeUpdater<Structure: AbstractTreeStructure>(
     }
 
     override fun modified(modified: Any) {
-        invalidatePath { getTreePath(modified) }
+        invalidateNode(modified)
     }
 
     private fun invalidateParent(element: Any) {
-        val parent = getParentElement(element)
-        if (parent is Collection<*>) {
-            invalidatePath(parent)
-        } else {
-            invalidatePath { getTreePath(parent) }
-        }
-    }
-
-    private fun invalidatePath(parent: Collection<*>) {
-        parent.forEach {
-            if (it != null) {
-                invalidatePath { getTreePath(it) }
-            }
-        }
-    }
-
-    private fun invalidatePath(pathSupplier: () -> TreePath?) {
         treeModel.invoker.invokeLater {
-            val path = pathSupplier() ?: return@invokeLater
-            if (path.lastPathComponent == treeModel.root) {
-                invalidateRoot()
-            } else {
-                treeModel.invalidate(path, true)
+            val parents = getParentNodes(element).map { TreePath(it) }
+            invalidatePaths(parents)
+        }
+    }
+
+    private fun invalidateNode(element: Any) {
+        treeModel.invoker.invokeLater {
+            val nodes = getTreeNodes(element)
+            nodes.forEach { path ->
+                invalidatePath(path)
             }
+        }
+    }
+
+    private fun invalidatePaths(paths: Collection<TreePath>) {
+        paths.forEach { path ->
+            invalidatePath(path)
+        }
+    }
+
+    private fun invalidatePath(path: TreePath) {
+        if (path.lastPathComponent == treeModel.root) {
+            invalidateRoot()
+        } else {
+            treeModel.invalidate(path, true)
         }
     }
 
@@ -83,49 +90,62 @@ class TreeUpdater<Structure: AbstractTreeStructure>(
         treeModel.invalidate()
     }
 
-    private fun getParentElement(element: Any): Any? {
-        return structure.getParentElement(element)
+    private fun getParentNodes(element: Any): Collection<TreeNode> {
+        val rootNode = treeModel.root
+        if (true == rootNode.getDescriptor()?.hasElement(element)) {
+            return listOf(rootNode)
+        }
+
+        return getAllNodes(rootNode)
+            .filter { node -> structure.isParentDescriptor(node.getDescriptor(), element) }
     }
 
-    private fun getTreePath(element: Any?): TreePath? {
-        return if (isRootNode(element)) {
-                TreePath(treeModel.root)
-            } else {
-                findTreePath(element, treeModel.root as? DefaultMutableTreeNode)
+    private fun getAllNodes(start: TreeNode): Collection<TreeNode> {
+        val all = mutableListOf<TreeNode>()
+        getAllNodes(start, all)
+        return all
+    }
+
+    private fun getAllNodes(start: TreeNode, allNodes: MutableList<TreeNode>) {
+        for (child in start.children()) {
+            allNodes.add(child)
+            getAllNodes(child, allNodes)
+        }
+    }
+
+    private fun findNodes(element: Any, start: TreeNode): Collection<TreeNode> {
+        val nodes = mutableListOf<TreeNode>()
+        findNodes(element, start, nodes)
+        return nodes
+    }
+
+    private fun findNodes(element: Any, start: TreeNode, matchingNodes: MutableList<TreeNode>) {
+        for (child in start.children()) {
+            if (hasElement(element, child)) {
+                matchingNodes.add(child)
             }
+            findNodes(element, child, matchingNodes)
+        }
+    }
+
+    private fun hasElement(element: Any, node: TreeNode): Boolean {
+        return ((element is HasMetadata && element.isSameResource(node.getElement()))
+                || element == node.getElement())
+    }
+
+    private fun getTreeNodes(element: Any?): List<TreePath> {
+        return if (element == null) {
+            return emptyList()
+        } else if (isRootNode(element)) {
+            listOf(TreePath(treeModel.root))
+        } else {
+            findNodes(element, treeModel.root)
+                .map { TreePath(it) }
+        }
     }
 
     private fun isRootNode(element: Any?): Boolean {
         val descriptor = (treeModel.root as? DefaultMutableTreeNode)?.userObject as? NodeDescriptor<*>
         return descriptor?.element == element
-    }
-
-    private fun findTreePath(element: Any?, start: DefaultMutableTreeNode?): TreePath? {
-        if (element == null
-            || start == null) {
-            return null
-        }
-        for (child in start.children()) {
-            if (child !is DefaultMutableTreeNode) {
-                continue
-            }
-            if (hasElement(element, child)) {
-                return TreePath(child.path)
-            }
-            val path = findTreePath(element, child)
-            if (path != null) {
-                return path
-            }
-        }
-        return null
-    }
-
-    private fun hasElement(element: Any?, node: DefaultMutableTreeNode): Boolean {
-        val descriptor = node.userObject as? NodeDescriptor<*> ?: return false
-        return if (descriptor is TreeStructure.Descriptor) {
-            descriptor.isMatching(element)
-        } else {
-            descriptor.element == element
-        }
     }
 }
