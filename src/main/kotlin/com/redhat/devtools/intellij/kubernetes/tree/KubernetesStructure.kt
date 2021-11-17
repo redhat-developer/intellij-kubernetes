@@ -32,7 +32,6 @@ import com.redhat.devtools.intellij.kubernetes.model.resource.PodForDaemonSet
 import com.redhat.devtools.intellij.kubernetes.model.resource.PodForDeployment
 import com.redhat.devtools.intellij.kubernetes.model.resource.PodForService
 import com.redhat.devtools.intellij.kubernetes.model.resource.PodForStatefulSet
-import com.redhat.devtools.intellij.kubernetes.model.resource.ResourceKind
 import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.AllPodsOperator
 import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.ConfigMapsOperator
 import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.CronJobsOperator
@@ -76,7 +75,6 @@ import com.redhat.devtools.intellij.kubernetes.tree.KubernetesStructure.Folders.
 import com.redhat.devtools.intellij.kubernetes.tree.KubernetesStructure.Folders.WORKLOADS
 import com.redhat.devtools.intellij.kubernetes.tree.TreeStructure.Folder
 import com.redhat.devtools.intellij.kubernetes.tree.util.getResourceKind
-import io.fabric8.kubernetes.api.model.HasMetadata
 
 class KubernetesStructure(model: IResourceModel) : AbstractTreeStructureContribution(model) {
     object Folders {
@@ -105,7 +103,7 @@ class KubernetesStructure(model: IResourceModel) : AbstractTreeStructureContribu
 
 	private val elementsTree: List<ElementNode<*>> = listOf(
 			element<Any> {
-				trigger { it == getRootElement() }
+				applicableIf { it == getRootElement() }
 				children {
 					listOf(
 						NAMESPACES,
@@ -117,7 +115,6 @@ class KubernetesStructure(model: IResourceModel) : AbstractTreeStructureContribu
 						CUSTOM_RESOURCES_DEFINITIONS
 					)
 				}
-				parentElement { listOf(model) }
 			},
 			*createPodElements(), // pods are in several places (NODES, WORKLOADS, NETWORK, etc)
 			*createNamespacesElements(),
@@ -130,41 +127,17 @@ class KubernetesStructure(model: IResourceModel) : AbstractTreeStructureContribu
 	)
 
 	override fun getChildElements(element: Any): Collection<Any> {
-		val node = elementsTree.find { it.isTrigger(element) } ?: return emptyList()
+		val node = elementsTree.find { it.isApplicableFor(element) } ?: return emptyList()
 		return node.getChildElements(element)
 	}
 
 	override fun getParentElement(element: Any): Any? {
-		try {
-			// default to null to allow tree structure to choose default parent element
-			val node = elementsTree.find { it.isTrigger(element) } ?: return null
-			return node.getParentElements(element)
-		} catch (e: ResourceException) {
-			return null
-		}
-	}
-
-	override fun getParentKinds(element: Any): Collection<ResourceKind<out HasMetadata>?>? {
-		try {
-/*
-			// default to null to allow tree structure to choose default parent element
-			val nodes = elementsTree.filter { it.isTrigger(element) }
-			if (nodes.isEmpty()) {
-				return null
-			}
-			return nodes.flatMap { node ->
-				node.getParentElements(element)
-					?.filterNotNull()
-					?.toList()
-					?: emptyList()
-			}
-*/
-
+		return try {
 			val kind = getResourceKind(element)
-			return elementsTree.filter { it.getChildrenKind() == kind }
-				.map { elementNode -> elementNode.getChildrenKind() }
+			// default to null to allow tree structure to choose default parent element
+			return elementsTree.first { it.getChildrenKind() == kind }
 		} catch (e: ResourceException) {
-			return null
+			null
 		}
 	}
 
@@ -173,12 +146,12 @@ class KubernetesStructure(model: IResourceModel) : AbstractTreeStructureContribu
 		val matchers: Collection<ElementNode<*>> = elementsTree.filter { it.getChildrenKind() == kind }
 		return matchers.any { elementNode ->
 			val descriptorElement = descriptor?.getElement<Any>() ?: return false
-			elementNode.isTrigger(descriptorElement)
+			elementNode.isApplicableFor(descriptorElement)
 		}
 	}
 
 	override fun createDescriptor(element: Any, parent: NodeDescriptor<*>?, project: Project): NodeDescriptor<*>? {
-		val childrenKind = elementsTree.find { it.isTrigger(element) }?.getChildrenKind()
+		val childrenKind = elementsTree.find { it.isApplicableFor(element) }?.getChildrenKind()
 		return KubernetesDescriptors.createDescriptor(element, childrenKind, parent, model, project)
 	}
 
@@ -187,8 +160,7 @@ class KubernetesStructure(model: IResourceModel) : AbstractTreeStructureContribu
 	private fun createNamespacesElements(): Array<ElementNode<*>> {
 		return arrayOf(
 				element<Any> {
-					trigger { it == NAMESPACES }
-					parentElement { listOf(getRootElement()) }
+					applicableIf { it == NAMESPACES }
 					children {
 						model.resources(NamespacesOperator.KIND)
 								.inNoNamespace()
@@ -197,8 +169,7 @@ class KubernetesStructure(model: IResourceModel) : AbstractTreeStructureContribu
 					}
 				},
 				element<Any> {
-					trigger { it is Namespace }
-					parentElement { listOf(NAMESPACES) }
+					applicableIf { it is Namespace }
 				}
 		)
 	}
@@ -206,17 +177,7 @@ class KubernetesStructure(model: IResourceModel) : AbstractTreeStructureContribu
 	private fun createPodElements(): Array<ElementNode<*>> {
 		return arrayOf(
 				element<Pod> {
-					trigger { it is Pod }
-					parentElement {
-						listOf(
-							NODES,
-							DEPLOYMENTS,
-							PODS,
-							SERVICES,
-							STATEFULSETS,
-							DAEMONSETS
-						)
-					}
+					applicableIf { it is Pod }
 					children {
 						KubernetesDescriptors.createPodDescriptorFactories(it)
 					}
@@ -227,8 +188,7 @@ class KubernetesStructure(model: IResourceModel) : AbstractTreeStructureContribu
 	private fun createNodesElements(): Array<ElementNode<*>> {
 		return arrayOf(
 				element<Any> {
-					trigger { it == NODES }
-					parentElement { listOf(getRootElement()) }
+					applicableIf { it == NODES }
 					childrenKind { NodesOperator.KIND }
 					children {
 						model.resources(NodesOperator.KIND)
@@ -238,8 +198,7 @@ class KubernetesStructure(model: IResourceModel) : AbstractTreeStructureContribu
 					}
 				},
 				element<Any> {
-					trigger { it is Node }
-					parentElement { listOf(NODES) }
+					applicableIf { it is Node }
 					childrenKind { AllPodsOperator.KIND }
 					children {
 						model.resources(AllPodsOperator.KIND)
@@ -254,8 +213,7 @@ class KubernetesStructure(model: IResourceModel) : AbstractTreeStructureContribu
 	private fun createWorkloadElements(): Array<ElementNode<*>> {
 		return arrayOf(
 				element<Any> {
-					trigger { it == WORKLOADS }
-					parentElement { listOf(WORKLOADS) }
+					applicableIf { it == WORKLOADS }
 					children {
 						listOf<Any>(DEPLOYMENTS,
 								STATEFULSETS,
@@ -266,8 +224,7 @@ class KubernetesStructure(model: IResourceModel) : AbstractTreeStructureContribu
 					}
 				},
 				element<Any> {
-					trigger { it == DEPLOYMENTS }
-					parentElement { listOf(WORKLOADS) }
+					applicableIf { it == DEPLOYMENTS }
 					childrenKind { DeploymentsOperator.KIND }
 					children {
 						model.resources(DeploymentsOperator.KIND)
@@ -277,8 +234,7 @@ class KubernetesStructure(model: IResourceModel) : AbstractTreeStructureContribu
 					}
 				},
 				element<Deployment> {
-					trigger { it is Deployment }
-					parentElement { listOf(DEPLOYMENTS) }
+					applicableIf { it is Deployment }
 					childrenKind { NamespacedPodsOperator.KIND }
 					children {
 						model.resources(NamespacedPodsOperator.KIND)
@@ -289,8 +245,7 @@ class KubernetesStructure(model: IResourceModel) : AbstractTreeStructureContribu
 					}
 				},
 				element<Any> {
-					trigger { it == STATEFULSETS }
-					parentElement { listOf(WORKLOADS) }
+					applicableIf { it == STATEFULSETS }
 					childrenKind { StatefulSetsOperator.KIND }
 					children {
 						model.resources(StatefulSetsOperator.KIND)
@@ -300,8 +255,7 @@ class KubernetesStructure(model: IResourceModel) : AbstractTreeStructureContribu
 					}
 				},
 				element<StatefulSet> {
-					trigger { it is StatefulSet }
-					parentElement { listOf(STATEFULSETS) }
+					applicableIf { it is StatefulSet }
 					childrenKind { NamespacedPodsOperator.KIND }
 					children {
 						model.resources(NamespacedPodsOperator.KIND)
@@ -312,8 +266,7 @@ class KubernetesStructure(model: IResourceModel) : AbstractTreeStructureContribu
 					}
 				},
 				element<Any> {
-					trigger { it == DAEMONSETS }
-					parentElement { listOf(WORKLOADS) }
+					applicableIf { it == DAEMONSETS }
 					childrenKind { DaemonSetsOperator.KIND }
 					children {
 						model.resources(DaemonSetsOperator.KIND)
@@ -323,8 +276,7 @@ class KubernetesStructure(model: IResourceModel) : AbstractTreeStructureContribu
 					}
 				},
 				element<DaemonSet> {
-					trigger { it is DaemonSet }
-					parentElement { listOf(DAEMONSETS) }
+					applicableIf { it is DaemonSet }
 					childrenKind { NamespacedPodsOperator.KIND }
 					children {
 						model.resources(NamespacedPodsOperator.KIND)
@@ -335,8 +287,7 @@ class KubernetesStructure(model: IResourceModel) : AbstractTreeStructureContribu
 					}
 				},
 				element<Any> {
-					trigger { it == JOBS }
-					parentElement { listOf(WORKLOADS) }
+					applicableIf { it == JOBS }
 					childrenKind { JobsOperator.KIND }
 					children {
 						model.resources(JobsOperator.KIND)
@@ -346,8 +297,7 @@ class KubernetesStructure(model: IResourceModel) : AbstractTreeStructureContribu
 					}
 				},
 				element<Any> {
-					trigger { it == CRONJOBS }
-					parentElement { listOf(WORKLOADS) }
+					applicableIf { it == CRONJOBS }
 					childrenKind { CronJobsOperator.KIND }
 					children {
 						model.resources(CronJobsOperator.KIND)
@@ -357,8 +307,7 @@ class KubernetesStructure(model: IResourceModel) : AbstractTreeStructureContribu
 					}
 				},
 				element<Any> {
-					trigger { it == PODS }
-					parentElement { listOf(WORKLOADS) }
+					applicableIf { it == PODS }
 					childrenKind { NamespacedPodsOperator.KIND }
 					children {
 						model.resources(NamespacedPodsOperator.KIND)
@@ -373,18 +322,16 @@ class KubernetesStructure(model: IResourceModel) : AbstractTreeStructureContribu
 	private fun createNetworkElements(): Array<ElementNode<*>> {
 		return arrayOf(
 				element<Any> {
-					trigger { it == NETWORK }
+					applicableIf { it == NETWORK }
 					children {
 						listOf<Any>(
 								SERVICES,
 								ENDPOINTS,
 								INGRESS)
 					}
-					parentElement { listOf(getRootElement()) }
 				},
 				element<Any> {
-					trigger { it == SERVICES }
-					parentElement { listOf(NETWORK) }
+					applicableIf { it == SERVICES }
 					childrenKind { ServicesOperator.KIND }
 					children {
 						model.resources(ServicesOperator.KIND)
@@ -394,8 +341,7 @@ class KubernetesStructure(model: IResourceModel) : AbstractTreeStructureContribu
 					}
 				},
 				element<Service> {
-					trigger { it is Service }
-					parentElement { listOf(SERVICES) }
+					applicableIf { it is Service }
 					childrenKind { NamespacedPodsOperator.KIND }
 					children {
 						model.resources(NamespacedPodsOperator.KIND)
@@ -406,8 +352,7 @@ class KubernetesStructure(model: IResourceModel) : AbstractTreeStructureContribu
 					}
 				},
 				element<Any> {
-					trigger { it == ENDPOINTS }
-					parentElement { listOf(NETWORK) }
+					applicableIf { it == ENDPOINTS }
 					childrenKind { EndpointsOperator.KIND }
 					children {
 						model.resources(EndpointsOperator.KIND)
@@ -417,8 +362,7 @@ class KubernetesStructure(model: IResourceModel) : AbstractTreeStructureContribu
 					}
 				},
 				element<Any> {
-					trigger { it == INGRESS }
-					parentElement { listOf(NETWORK) }
+					applicableIf { it == INGRESS }
 					childrenKind { IngressOperator.KIND }
 					children {
 						model.resources(IngressOperator.KIND)
@@ -433,8 +377,7 @@ class KubernetesStructure(model: IResourceModel) : AbstractTreeStructureContribu
 	private fun createStorageElements(): Array<ElementNode<*>> {
 		return arrayOf(
 				element<Any> {
-					trigger { it == STORAGE }
-					parentElement { listOf(getRootElement()) }
+					applicableIf { it == STORAGE }
 					children {
 						listOf<Any>(
 								PERSISTENT_VOLUMES,
@@ -443,8 +386,7 @@ class KubernetesStructure(model: IResourceModel) : AbstractTreeStructureContribu
 					}
 				},
 				element<Any> {
-					trigger { it == PERSISTENT_VOLUMES }
-					parentElement { listOf(STORAGE) }
+					applicableIf { it == PERSISTENT_VOLUMES }
 					children {
 						model.resources(PersistentVolumesOperator.KIND)
 								.inAnyNamespace()
@@ -453,8 +395,7 @@ class KubernetesStructure(model: IResourceModel) : AbstractTreeStructureContribu
 					}
 				},
 				element<Any> {
-					trigger { it == PERSISTENT_VOLUME_CLAIMS }
-					parentElement { listOf(STORAGE) }
+					applicableIf { it == PERSISTENT_VOLUME_CLAIMS }
 					childrenKind { PersistentVolumeClaimsOperator.KIND }
 					children {
 						model.resources(PersistentVolumeClaimsOperator.KIND)
@@ -464,8 +405,7 @@ class KubernetesStructure(model: IResourceModel) : AbstractTreeStructureContribu
 					}
 				},
 				element<Any> {
-					trigger { it == STORAGE_CLASSES }
-					parentElement { listOf(STORAGE) }
+					applicableIf { it == STORAGE_CLASSES }
 					childrenKind { StorageClassesOperator.KIND }
 					children {
 						model.resources(StorageClassesOperator.KIND)
@@ -480,8 +420,7 @@ class KubernetesStructure(model: IResourceModel) : AbstractTreeStructureContribu
 	private fun createConfigurationElements(): Array<ElementNode<*>> {
 		return arrayOf(
 				element<Any> {
-					trigger { it == CONFIGURATION }
-					parentElement { listOf(getRootElement()) }
+					applicableIf { it == CONFIGURATION }
 					children {
 						listOf<Any>(
 								CONFIG_MAPS,
@@ -489,8 +428,7 @@ class KubernetesStructure(model: IResourceModel) : AbstractTreeStructureContribu
 					}
 				},
 				element<Any> {
-					trigger { it == CONFIG_MAPS }
-					parentElement { listOf(CONFIGURATION) }
+					applicableIf { it == CONFIG_MAPS }
 					childrenKind { ConfigMapsOperator.KIND }
 					children {
 						model.resources(ConfigMapsOperator.KIND)
@@ -500,15 +438,13 @@ class KubernetesStructure(model: IResourceModel) : AbstractTreeStructureContribu
 					}
 				},
 				element<ConfigMap> {
-					trigger { it is ConfigMap }
-					parentElement { listOf(CONFIGURATION) }
+					applicableIf { it is ConfigMap }
 					children {
 						KubernetesDescriptors.createDataDescriptorFactories((it).data, it)
 					}
 				},
 				element<Any> {
-					trigger { it == SECRETS }
-					parentElement { listOf(CONFIGURATION) }
+					applicableIf { it == SECRETS }
 					childrenKind { SecretsOperator.KIND }
 					children {
 						model.resources(SecretsOperator.KIND)
@@ -518,8 +454,7 @@ class KubernetesStructure(model: IResourceModel) : AbstractTreeStructureContribu
 					}
 				},
 				element<Secret>{
-					trigger { it is Secret }
-					parentElement { listOf(SECRETS) }
+					applicableIf { it is Secret }
 					children {
 						KubernetesDescriptors.createDataDescriptorFactories((it).data, it)
 					}
@@ -530,8 +465,7 @@ class KubernetesStructure(model: IResourceModel) : AbstractTreeStructureContribu
 	private fun createCustomResourcesElements(): Array<ElementNode<*>> {
 		return arrayOf(
 				element<Any> {
-					trigger { it == CUSTOM_RESOURCES_DEFINITIONS }
-					parentElement { listOf(getRootElement()) }
+					applicableIf { it == CUSTOM_RESOURCES_DEFINITIONS }
 					childrenKind { CustomResourceDefinitionsOperator.KIND }
 					children {
 						model.resources(CustomResourceDefinitionsOperator.KIND)
@@ -541,8 +475,7 @@ class KubernetesStructure(model: IResourceModel) : AbstractTreeStructureContribu
 					}
 				},
 				element<CustomResourceDefinition> {
-					trigger { it is CustomResourceDefinition }
-					parentElement { listOf(CUSTOM_RESOURCES_DEFINITIONS) }
+					applicableIf { it is CustomResourceDefinition }
 					children {
 						model.resources(it)
 								.list()

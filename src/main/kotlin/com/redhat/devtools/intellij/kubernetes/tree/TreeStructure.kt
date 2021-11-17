@@ -78,17 +78,6 @@ open class TreeStructure(
             .firstOrNull()
     }
 
-    override fun getParentElements(element: Any): Collection<Any>? {
-        val parents = getValidContributions()
-            .flatMap { it.getParentKinds(element)
-                ?.filterNotNull()
-                ?.toList()
-                ?: emptyList() }
-        return parents.ifEmpty {
-            listOf(rootElement)
-        }
-    }
-
     private fun getParentElement(element: Any, contribution: ITreeStructureContribution): Any? {
         return try {
             contribution.getParentElement(element)

@@ -44,8 +44,9 @@ abstract class NamespacedResourceOperator<R : HasMetadata, C: Client>(
         get() {
             synchronized(_allResources) {
                 if (_allResources.isEmpty()) {
+                    val namespace = this.namespace
                     if (namespace != null) {
-                        _allResources.addAll(loadAllResources(namespace!!))
+                        _allResources.addAll(loadAllResources(namespace))
                     } else {
                         logger<NamespacedResourceOperator<*, *>>().debug("Could not load $kind resources: no namespace set.")
                     }

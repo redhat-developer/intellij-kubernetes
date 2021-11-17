@@ -31,24 +31,14 @@ abstract class AbstractTreeStructureContribution(override val model: IResourceMo
         return null
     }
 
-    override fun getParentKinds(element: Any): Collection<ResourceKind<out HasMetadata>?>? {
-        return null
-    }
-
     class ElementNode<T> {
 
-        private var parentElementsProvider: ((element: T) -> Collection<Any?>?)? = null
-        private lateinit var triggerProvider: (element: Any) -> Boolean
+        private lateinit var applicableExpression: (element: Any) -> Boolean
         private var childrenKind: ResourceKind<out HasMetadata>? = null
         private var childElementsProvider: ((element: T) -> Collection<Any>)? = null
 
-        fun trigger(provider: (element: Any) -> Boolean): ElementNode<T> {
-            this.triggerProvider = provider
-            return this
-        }
-
-        fun parentElement(provider: ((element: T) -> Collection<Any?>?)?): ElementNode<T> {
-            this.parentElementsProvider = provider
+        fun applicableIf(provider: (element: Any) -> Boolean): ElementNode<T> {
+            this.applicableExpression = provider
             return this
         }
 
@@ -62,8 +52,8 @@ abstract class AbstractTreeStructureContribution(override val model: IResourceMo
             return this
         }
 
-        fun isTrigger(element: Any): Boolean {
-            return triggerProvider.invoke(element)
+        fun isApplicableFor(element: Any): Boolean {
+            return applicableExpression.invoke(element)
         }
 
         fun getChildrenKind(): ResourceKind<out HasMetadata>? {
@@ -75,13 +65,6 @@ abstract class AbstractTreeStructureContribution(override val model: IResourceMo
             val typedElement = element as? T ?: return emptyList()
             return childElementsProvider?.invoke(typedElement) ?: return emptyList()
         }
-
-        fun getParentElements(element: Any): Collection<Any?>? {
-            @Suppress("UNCHECKED_CAST")
-            val typedElement = element as? T ?: return null
-            return parentElementsProvider?.invoke(typedElement)
-        }
-
     }
 
     abstract class DescriptorFactory<R : HasMetadata>(protected val resource: R) {

@@ -16,6 +16,5 @@ import com.intellij.ide.util.treeView.NodeDescriptor
  * Adds API for tree structures that allow multiple parents for a given element.
  */
 interface MultiParentTreeStructure {
-    fun getParentElements(element: Any): Collection<Any>?
     fun isParentDescriptor(descriptor: NodeDescriptor<*>?, element: Any): Boolean
 }

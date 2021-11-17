@@ -23,7 +23,6 @@ interface ITreeStructureContribution {
     fun canContribute(): Boolean
     fun getChildElements(element: Any): Collection<Any>
     fun getParentElement(element: Any): Any?
-    fun getParentKinds(element: Any): Collection<ResourceKind<out HasMetadata>?>?
     fun createDescriptor(element: Any, parent: NodeDescriptor<*>?, project: Project): NodeDescriptor<*>?
     fun isParentDescriptor(descriptor: NodeDescriptor<*>?, element: Any): Boolean
     /**

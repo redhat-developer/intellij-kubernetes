@@ -33,7 +33,7 @@ import javax.swing.tree.TreePath
 class TreeUpdater<Structure : AbstractTreeStructure>(
     private val treeModel: StructureTreeModel<Structure>,
     private val structure: MultiParentTreeStructure,
-    model: IResourceModel
+    private val model: IResourceModel
 ) : ModelChangeObservable.IResourceChangeListener {
 
     init {
@@ -66,8 +66,10 @@ class TreeUpdater<Structure : AbstractTreeStructure>(
     private fun invalidateNode(element: Any) {
         treeModel.invoker.invokeLater {
             val nodes = getTreeNodes(element)
-            nodes.forEach { path ->
-                invalidatePath(path)
+            if (nodes.isEmpty()) {
+                invalidateParent(element)
+            } else {
+                nodes.forEach { invalidatePath(it) }
             }
         }
     }
@@ -83,6 +85,17 @@ class TreeUpdater<Structure : AbstractTreeStructure>(
             invalidateRoot()
         } else {
             treeModel.invalidate(path, true)
+        }
+    }
+
+    private fun getTreeNodes(element: Any?): List<TreePath> {
+        return if (element == null) {
+            return emptyList()
+        } else if (isRootNode(element)) {
+            listOf(TreePath(treeModel.root))
+        } else {
+            findNodes(element, treeModel.root)
+                .map { TreePath(it) }
         }
     }
 
@@ -129,19 +142,8 @@ class TreeUpdater<Structure : AbstractTreeStructure>(
     }
 
     private fun hasElement(element: Any, node: TreeNode): Boolean {
-        return ((element is HasMetadata && element.isSameResource(node.getElement()))
+        return (element is HasMetadata && element.isSameResource(node.getElement())
                 || element == node.getElement())
-    }
-
-    private fun getTreeNodes(element: Any?): List<TreePath> {
-        return if (element == null) {
-            return emptyList()
-        } else if (isRootNode(element)) {
-            listOf(TreePath(treeModel.root))
-        } else {
-            findNodes(element, treeModel.root)
-                .map { TreePath(it) }
-        }
     }
 
     private fun isRootNode(element: Any?): Boolean {
