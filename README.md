@@ -9,8 +9,6 @@ It is available for install from the [JetBrains Marketplace](https://plugins.jet
 
 ![editor push scenario](images/editor-push.gif)
 
-> **NOTE:** This plugin is in Preview mode. The plugin support for Kubernetes or OpenShift clusters is strictly experimental - assumptions may break, commands and behavior may change!
-
 ## Key Features
  - Edit Kubernetes resource manifests and apply them to your cluster
  - View Kubernetes and OpenShift clusters in an explorer tree view
@@ -19,28 +17,22 @@ It is available for install from the [JetBrains Marketplace](https://plugins.jet
  - Support Creation and Deletion of new Kubernetes resources on Cluster
  - Navigate into Kubernetes workloads, services, pods and nodes
  - Switching contexts and namespaces within Kubernetes
-* Browse Kubernetes and OpenShift cluster resources in dynamically update tree
-* Delete resources on cluster
-* Edit resources on cluster backed by kubernetes resource schema
-* Create new resources on cluster
-* Editor kept in sync with the resource on cluster by pushing & pulling
 
 ## Features
 
 ### Browse Kubernetes & OpenShift resources
-This plugin allows the user to view the Kubernetes and OpenShift Cluster resources in the Application Explorer Tree and browser through them.
+This plugin allows the user to view the Kubernetes and OpenShift Cluster resources in a Tree and browse through them.
 The explorer tree is dynamically updated in sync with the Kubernetes resources on the cluster so that the tree always display the current state of the resources.
 
 #### Current Context
-The tree displays resources that exist on the cluster that the current context points to. 
 The user can switch the current context by choosing any context that exists and selecting `Set as Current Cluster` action from the context menu.
 OpenShift clusters are shown with OpenShift icon and thus differentiated from Kubernetes clusters.
- 
+
 #### Current Namespace/Project
-Kubernetes Resources that exist within the current Namespace/Project (as specified in kubeconfig file) are displayed in the tree view 
-Of course resources that live outside the scope of namespace/project are displayed, too.
+Kubernetes Resources that exist within the current Namespace/Project (as specified in kubeconfig file) are displayed in the tree view.
+Non-namespaced aka cluster-scoped resources are of course listed, too.
 Users can switch the current Namespace/Project using the context menu action `Use Namespace`
-In OpenShift clusters the tree also lists projects where the tooling behaves in an equivalent manner. 
+In OpenShift clusters the tree also lists projects where the tooling behaves in an equivalent manner.
 
 #### Resource Categories
 Resources are grouped in different categories such as Namespaces, Nodes, Workloads, Network, Storage, Configuration and Custom Resources.
@@ -48,13 +40,13 @@ Resources are grouped in different categories such as Namespaces, Nodes, Workloa
 ![img.png](images/categories.png)
 
 #### Pods
-Pods are shown with their running state. When running their icon holds a green dot. 
-When red, the dot indicates that a pod is either pending, succeeded (terminated), failed or is in an unknown state.
-Pods also unveil their IP address and the number of running containers out of the total number of containers.
 The pod in the container is identified with color based on the state of the pod.
 - A green dot indicates that the pod is currently running.
-- A red dot indicates that the pod is in Pending, Succeeded (Terminated), Failed or in Unknown State.
+- A red dot indicates that the pod is in Pending, Succeeded (Terminated), Failed or in Unknown State.  
+
 ![img.png](images/pod.png)
+
+Pods also unveil their IP address and the number of running containers out of the total number of containers.
 
 ### Create and Edit Resources
 You can edit Kubernetes resources that is shown in the resource tree and apply them to the cluster.
@@ -66,7 +58,6 @@ Users can also create a new Kubernetes resource from local YAML/JSON file and pu
 > **Tip**: You're advised to edit copies of your yaml/json files. 
 > This is because the editor keeps your content in sync with the resource that exists on the cluster. 
 > Changes that happen on the cluster are included when pushing or pulling the editor.  
-    
 
 ![editor](images/editor.png)
 
@@ -78,8 +69,8 @@ For instance if you're editing a pod, the editor validates it by a kubernetes po
 #### Push (Save) to Cluster
 
 User can push the local changes made to the cluster in order to update an existing resource or create a new resource.
-The editor is saving the changes to the current context (cluster, namespace and user) that's defined in the kubeconfig
-There is a `Push` button available in the editor view to make the action more discoverable.
+The editor is saving the changes to the current context (cluster, namespace and user) that's defined in the kubeconfig.
+There is a `Push` button available in the editor toolbar to make the action more discoverable.
 
 ![editor toolbar](images/editor-toolbar-push.png)
 
@@ -94,7 +85,7 @@ The new resource will then appear in the resource tree that's displayed in our t
 #### Pull (Load) from Cluster
 
 The editor also notifies you if your resource has changed on the cluster.
-The notification informs you of a newer version that is available on the cluster and allows you to "Pull" it into your editor.
+The notification informs you of a newer version that is available on the cluster and allows you to `Pull` it into your editor.
 If you left your editor unchanged since the last push, the new version is pulled unasked and a notification informs you of it.
 
 ![editor pulled](images/editor-pulled.png)
@@ -111,7 +102,6 @@ You may delete any resource that is listed in the resource tree by choosing "Del
 ## Data and Telemetry
 The JetBrains IntelliJ Kubernetes plugin collects anonymous [usage data](https://github.com/redhat-developer/intellij-kubernetes/blob/main/USAGE_DATA.md) and sends it to Red Hat servers to help improve our products and services.
 Read our [privacy statement](https://developers.redhat.com/article/tool-data-collection) to learn more. This extension respects the Red Hat Telemetry setting which you can learn more about at https://github.com/redhat-developer/intellij-redhat-telemetry#telemetry-reporting
-
 
 ## Release notes
 See the change log.
