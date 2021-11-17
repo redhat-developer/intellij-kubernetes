@@ -124,7 +124,7 @@ open class Contexts(
 		return context
 	}
 
-	open protected fun reportTelemetry(context: IActiveContext<out HasMetadata, out KubernetesClient>) {
+	protected open fun reportTelemetry(context: IActiveContext<out HasMetadata, out KubernetesClient>) {
 		ExecHelper.submit {
 			val telemetry = TelemetryService.instance.action(NAME_PREFIX_CONTEXT + "use")
 				.property(PROP_IS_OPENSHIFT, context.isOpenShift().toString())
