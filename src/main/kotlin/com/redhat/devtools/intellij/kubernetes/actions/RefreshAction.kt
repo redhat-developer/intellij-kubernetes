@@ -17,6 +17,7 @@ import com.redhat.devtools.intellij.common.actions.StructureTreeAction
 import com.redhat.devtools.intellij.kubernetes.telemetry.TelemetryService
 import com.redhat.devtools.intellij.kubernetes.telemetry.TelemetryService.sendTelemetry
 import com.redhat.devtools.intellij.kubernetes.tree.ResourceWatchController
+import com.redhat.devtools.intellij.kubernetes.tree.util.getResourceKind
 import io.fabric8.kubernetes.api.model.HasMetadata
 import javax.swing.tree.TreePath
 
@@ -29,7 +30,7 @@ class RefreshAction : StructureTreeAction(Any::class.java) {
 				val telemetry = TelemetryService.instance.action("refresh resource")
 				try {
 					descriptor.invalidate()
-					sendTelemetry(descriptor.element as HasMetadata?, telemetry)
+					sendTelemetry(getResourceKind(descriptor.element), telemetry)
 				} catch (e: Exception) {
 					logger<ResourceWatchController>().warn("Could not refresh $descriptor resources.", e)
 					telemetry.error(e).send()

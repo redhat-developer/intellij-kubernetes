@@ -20,6 +20,7 @@ import com.redhat.devtools.intellij.kubernetes.editor.notification.ErrorNotifica
 import com.redhat.devtools.intellij.kubernetes.model.ClientConfig
 import com.redhat.devtools.intellij.kubernetes.model.Clients
 import com.redhat.devtools.intellij.kubernetes.model.ResourceException
+import com.redhat.devtools.intellij.kubernetes.model.resource.ResourceKind
 import com.redhat.devtools.intellij.kubernetes.model.util.isKubernetesResource
 import com.redhat.devtools.intellij.kubernetes.model.util.isSameResource
 import com.redhat.devtools.intellij.kubernetes.telemetry.TelemetryService
@@ -49,7 +50,7 @@ open class ResourceEditorFactory protected constructor(
     private val createClients: (config: ClientConfig) -> Clients<out KubernetesClient>? =
         { config -> com.redhat.devtools.intellij.kubernetes.model.createClients(config) },
     /* for mocking purposes */
-    private val reportTelemetry: (HasMetadata, TelemetryMessageBuilder.ActionMessage) -> Unit = TelemetryService::sendTelemetry,
+    private val reportTelemetry: (HasMetadata?, TelemetryMessageBuilder.ActionMessage) -> Unit = TelemetryService::sendTelemetry,
     /* for mocking purposes */
     private val createResourceEditor: (HasMetadata, FileEditor, Project, Clients<out KubernetesClient>) -> ResourceEditor =
         { resource, editor, project, clients -> ResourceEditor(resource, editor, project, clients) }

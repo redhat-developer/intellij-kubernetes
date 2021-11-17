@@ -122,7 +122,7 @@ class ResourceEditorFactoryTest {
             doReturn(mock<Clients<out KubernetesClient>>())
                 .whenever(this).invoke(any())
         }
-    private val reportTelemetry: (HasMetadata, TelemetryMessageBuilder.ActionMessage) -> Unit = mock()
+    private val reportTelemetry: (HasMetadata?, TelemetryMessageBuilder.ActionMessage) -> Unit = mock()
     private val createResourceEditor: (HasMetadata, FileEditor, Project, Clients<out KubernetesClient>) -> ResourceEditor =
         { resource, editor, project, clients -> mock() }
     private val resourceEditor: ResourceEditor = spy(ResourceEditor(resource, fileEditor, mock(), mock()))
@@ -289,7 +289,7 @@ class ResourceEditorFactoryTest {
         getDocument: (editor: FileEditor) -> Document?,
         createEditorResource: (editor: FileEditor, clients: Clients<out KubernetesClient>) -> HasMetadata?,
         createClients: (config: ClientConfig) -> Clients<out KubernetesClient>?,
-        reportTelemetry: (HasMetadata, TelemetryMessageBuilder.ActionMessage) -> Unit,
+        reportTelemetry: (HasMetadata?, TelemetryMessageBuilder.ActionMessage) -> Unit,
         createResourceEditor: (HasMetadata, FileEditor, Project, Clients<out KubernetesClient>) -> ResourceEditor
     ) : ResourceEditorFactory(
         getFileEditorManager,

@@ -11,7 +11,7 @@
 package com.redhat.devtools.intellij.kubernetes.telemetry;
 
 import com.redhat.devtools.intellij.kubernetes.model.resource.ResourceKind;
-import com.redhat.devtools.intellij.kubernetes.model.util.API_GROUP_VERSION_DELIMITER
+import com.redhat.devtools.intellij.kubernetes.tree.util.getResourceKind
 import com.redhat.devtools.intellij.telemetry.core.service.TelemetryMessageBuilder;
 import io.fabric8.kubernetes.api.model.HasMetadata;
 
@@ -31,26 +31,27 @@ object TelemetryService {
     }
 
     fun sendTelemetry(resource: HasMetadata?, telemetry: TelemetryMessageBuilder.ActionMessage) {
-        val kind = if (resource != null) {
-            getKind(resource)
-        } else {
-            "unknown"
-        }
-        telemetry.property(PROP_RESOURCE_KIND, kind).send()
+        sendTelemetry(getResourceKind(resource), telemetry)
+    }
+
+    fun sendTelemetry(kind: ResourceKind<*>?, telemetry: TelemetryMessageBuilder.ActionMessage) {
+        telemetry.property(PROP_RESOURCE_KIND, kindOrUnknown(kind)).send()
     }
 
     fun getKinds(resources: Collection<HasMetadata>): String {
         return resources
             .distinct()
-            .groupBy { getKind(it) }
+            .groupBy { kindOrUnknown(getResourceKind(it)) }
             .keys
             .toList()
             .joinToString()
     }
 
-    fun getKind(resource: HasMetadata): String {
-        val kind = ResourceKind.create(resource)
-        return "${kind.version}/${kind.kind}"
+    private fun kindOrUnknown(kind: ResourceKind<*>?): String {
+        return if (kind != null) {
+            "${kind.version}/${kind.kind}"
+        } else {
+            "unknown"
+        }
     }
-
 }
