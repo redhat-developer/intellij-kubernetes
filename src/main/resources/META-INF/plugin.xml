@@ -13,8 +13,8 @@
         <p></p>
         <h3>0.3.0</h3>
         <ul>
-            <li><a href="https://github.com/redhat-developer/intellij-kubernetes/issues/217">Resource editor: should allow to edit files loaded from local disk (File > Open)</a>
-            <li><a href="https://github.com/redhat-developer/intellij-kubernetes/issues/266">Support Kubernetes 1.22.0</a>
+            <li><a href="https://github.com/redhat-developer/intellij-kubernetes/issues/217">Resource editor: should allow to edit files loaded from local disk (File > Open)</a></li>
+            <li><a href="https://github.com/redhat-developer/intellij-kubernetes/issues/266">Support Kubernetes 1.22.0</a></li>
             <li><a href="https://github.com/redhat-developer/intellij-kubernetes/issues/281">Pods for a deployment are not listed. An error is displayed instead.</a></li>
             <li><a href="https://github.com/redhat-developer/intellij-kubernetes/issues/212">Add telemetry information for the extension</a></li>
         </ul>
