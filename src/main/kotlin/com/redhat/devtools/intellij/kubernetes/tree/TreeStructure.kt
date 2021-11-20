@@ -147,10 +147,11 @@ open class TreeStructure(
     }
 
     open class ContextDescriptor<C : IContext>(
-            context: C,
-            parent: NodeDescriptor<*>? = null,
-            model: IResourceModel,
-            project: Project) : Descriptor<C>(
+        context: C,
+        parent: NodeDescriptor<*>? = null,
+        model: IResourceModel,
+        project: Project
+    ) : Descriptor<C>(
         context,
         null,
         parent,
@@ -158,7 +159,7 @@ open class TreeStructure(
         project
     ) {
         override fun getLabel(element: C): String {
-            return if (element.context.context == null) {
+            return if (element?.context?.context == null) {
                 "<unknown context>"
             } else {
                 element.context.name
@@ -213,7 +214,7 @@ open class TreeStructure(
             model.invalidate(element?.kind)
         }
 
-        override fun getLabel(element: Folder): String {
+        override fun getLabel(element: Folder): String? {
             return element.label
         }
     }
@@ -231,7 +232,7 @@ open class TreeStructure(
         project
     ) {
         override fun getLabel(element: java.lang.Exception): String {
-            return "Error: " + element.message
+            return "Error: ${element.message ?: "unspecified"}"
         }
 
         override fun getIcon(element: java.lang.Exception): Icon? {
@@ -274,7 +275,7 @@ open class TreeStructure(
     }
 
     open class Descriptor<T>(
-            private val element: T,
+            private var element: T,
             private val childrenKind: ResourceKind<out HasMetadata>?,
             parent: NodeDescriptor<*>?,
             protected val model: IResourceModel,
@@ -294,6 +295,12 @@ open class TreeStructure(
             return this.element == element
         }
 
+        fun setElement(element: Any): Boolean {
+            val typed: T = element as? T ?: return false
+            this.element = typed
+            return true
+        }
+
         override fun getElement(): T? {
             return element
         }
@@ -303,7 +310,7 @@ open class TreeStructure(
         }
 
         protected open fun getLabel(element: T): String? {
-            return element.toString()
+            return element?.toString()
         }
 
         protected open fun getIcon(element: T): Icon? {

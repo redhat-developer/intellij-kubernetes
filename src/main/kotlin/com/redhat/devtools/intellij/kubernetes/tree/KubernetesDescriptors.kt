@@ -127,7 +127,7 @@ object KubernetesDescriptors {
 		project
 	) {
 		override fun getLabel(element: Pod): String {
-			return element.metadata.name
+			return element.metadata.name ?: "unknown"
 		}
 
 		override fun getIcon(element: Pod): Icon {
@@ -153,8 +153,10 @@ object KubernetesDescriptors {
 	) {
 		override fun getLabel(element: CustomResourceDefinition): String {
 			return when {
-				element.spec.names.plural.isNotBlank() -> element.spec.names.plural
-				else -> element.metadata.name
+				element.spec.names?.plural?.isNotBlank()  ?: false ->
+					element.spec.names.plural
+				else ->
+					element.metadata.name
 			}
 		}
 
@@ -200,7 +202,7 @@ object KubernetesDescriptors {
 			override fun getLabel(element: Pod): String {
 				val total = PodStatusUtil.getContainerStatus(element).size
 				val ready = PodStatusUtil.getContainerStatus(element).filter { it.ready }.size
-				val state = element.status.phase
+				val state = element?.status?.phase ?: "unknown"
 				return "$state ($ready/$total)"
 			}
 		}
@@ -225,7 +227,7 @@ object KubernetesDescriptors {
 				project
 			) {
 			override fun getLabel(element: Pod): String {
-				return element.status?.podIP ?: "<No IP>"
+				return element?.status?.podIP ?: "<No IP>"
 			}
 		}
 	}

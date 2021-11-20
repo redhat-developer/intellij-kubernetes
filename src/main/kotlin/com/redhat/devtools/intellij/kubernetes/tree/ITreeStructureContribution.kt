@@ -14,8 +14,6 @@ import com.intellij.ide.util.treeView.NodeDescriptor
 import com.intellij.openapi.project.Project
 import com.intellij.ui.tree.LeafState
 import com.redhat.devtools.intellij.kubernetes.model.IResourceModel
-import com.redhat.devtools.intellij.kubernetes.model.resource.ResourceKind
-import io.fabric8.kubernetes.api.model.HasMetadata
 
 interface ITreeStructureContribution {
 

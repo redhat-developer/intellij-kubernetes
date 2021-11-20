@@ -13,6 +13,7 @@ package com.redhat.devtools.intellij.kubernetes.tree
 import com.intellij.ide.util.treeView.AbstractTreeStructure
 import com.intellij.ide.util.treeView.NodeDescriptor
 import com.intellij.ui.tree.StructureTreeModel
+import com.intellij.ui.tree.TreePathUtil
 import com.redhat.devtools.intellij.kubernetes.actions.getDescriptor
 import com.redhat.devtools.intellij.kubernetes.actions.getElement
 import com.redhat.devtools.intellij.kubernetes.model.IResourceModel
@@ -24,16 +25,16 @@ import javax.swing.tree.TreeNode
 import javax.swing.tree.TreePath
 
 /**
- * An adapter that listens to events of the IKubernetesResourceModel and operates these changes on the
- * StructureTreeModel (to which the swing tree listens and updates accordingly)
+ * An adapter that listens to events of the IKubernetesResourceModel and invalidates or updates
+ * nodes, descriptors accordingly.
  *
  * @see IResourceModel
  * @see StructureTreeModel
  */
 class TreeUpdater<Structure : AbstractTreeStructure>(
     private val treeModel: StructureTreeModel<Structure>,
-    private val structure: MultiParentTreeStructure,
-    private val model: IResourceModel
+    private val structure: TreeStructure,
+    model: IResourceModel
 ) : ModelChangeObservable.IResourceChangeListener {
 
     init {
@@ -41,38 +42,54 @@ class TreeUpdater<Structure : AbstractTreeStructure>(
     }
 
     override fun currentNamespace(namespace: String?) {
-        invalidateRoot()
+        treeModel.invoker.invokeLater {
+            invalidateRoot()
+        }
     }
 
     override fun removed(removed: Any) {
-        invalidateParent(removed)
+        treeModel.invoker.invokeLater {
+            invalidateParent(removed)
+        }
     }
 
     override fun added(added: Any) {
-        invalidateParent(added)
+        treeModel.invoker.invokeLater {
+            invalidateParent(added)
+        }
     }
 
     override fun modified(modified: Any) {
-        invalidateNode(modified)
+        treeModel.invoker.invokeLater {
+            invalidateNode(modified)
+        }
     }
 
     private fun invalidateParent(element: Any) {
-        treeModel.invoker.invokeLater {
-            val parents = getParentNodes(element).map { TreePath(it) }
-            invalidatePaths(parents)
-        }
+        val parents = getParentNodes(element).map { TreePathUtil.toTreePath(it) }
+        invalidatePaths(parents)
     }
 
     private fun invalidateNode(element: Any) {
-        treeModel.invoker.invokeLater {
-            val nodes = getTreeNodes(element)
-            if (nodes.isEmpty()) {
-                invalidateParent(element)
-            } else {
-                nodes.forEach { invalidatePath(it) }
-            }
+        val paths = getPaths(element)
+
+        if (paths.isEmpty()) {
+            return
+        }
+        // update node
+        updateDescriptors(paths, element)
+        // cause reload of children
+        invalidatePaths(paths)
+    }
+
+    private fun updateDescriptors(paths: List<TreePath>, element: Any) {
+        paths.forEach { path ->
+            val descriptor = TreePathUtil.toTreeNode(path)?.getDescriptor() ?: return
+            descriptor.setElement(element)
+            descriptor.update()
         }
     }
+
 
     private fun invalidatePaths(paths: Collection<TreePath>) {
         paths.forEach { path ->
@@ -88,15 +105,20 @@ class TreeUpdater<Structure : AbstractTreeStructure>(
         }
     }
 
-    private fun getTreeNodes(element: Any?): List<TreePath> {
+    private fun getPaths(element: Any?): List<TreePath> {
         return if (element == null) {
             return emptyList()
         } else if (isRootNode(element)) {
             listOf(TreePath(treeModel.root))
         } else {
-            findNodes(element, treeModel.root)
-                .map { TreePath(it) }
+            findNodes({ node: TreeNode -> hasElement(element, node) }, treeModel.root)
+                .map { node -> TreePathUtil.pathToTreeNode(node) }
         }
+    }
+
+    private fun isRootNode(element: Any?): Boolean {
+        val descriptor = (treeModel.root as? DefaultMutableTreeNode)?.userObject as? NodeDescriptor<*>
+        return descriptor?.element == element
     }
 
     private fun invalidateRoot() {
@@ -114,40 +136,26 @@ class TreeUpdater<Structure : AbstractTreeStructure>(
     }
 
     private fun getAllNodes(start: TreeNode): Collection<TreeNode> {
-        val all = mutableListOf<TreeNode>()
-        getAllNodes(start, all)
-        return all
+        return findNodes({ true }, start)
     }
 
-    private fun getAllNodes(start: TreeNode, allNodes: MutableList<TreeNode>) {
-        for (child in start.children()) {
-            allNodes.add(child)
-            getAllNodes(child, allNodes)
-        }
-    }
-
-    private fun findNodes(element: Any, start: TreeNode): Collection<TreeNode> {
+    private fun findNodes(condition: (child: TreeNode) -> Boolean, start: TreeNode): Collection<TreeNode> {
         val nodes = mutableListOf<TreeNode>()
-        findNodes(element, start, nodes)
+        findNodes(condition, start, nodes)
         return nodes
     }
 
-    private fun findNodes(element: Any, start: TreeNode, matchingNodes: MutableList<TreeNode>) {
+    private fun findNodes(condition: (child: TreeNode) -> Boolean, start: TreeNode, matchingNodes: MutableList<TreeNode>) {
         for (child in start.children()) {
-            if (hasElement(element, child)) {
+            if (condition.invoke(child)) {
                 matchingNodes.add(child)
             }
-            findNodes(element, child, matchingNodes)
+            findNodes(condition, child, matchingNodes)
         }
     }
 
     private fun hasElement(element: Any, node: TreeNode): Boolean {
         return (element is HasMetadata && element.isSameResource(node.getElement())
                 || element == node.getElement())
-    }
-
-    private fun isRootNode(element: Any?): Boolean {
-        val descriptor = (treeModel.root as? DefaultMutableTreeNode)?.userObject as? NodeDescriptor<*>
-        return descriptor?.element == element
     }
 }
