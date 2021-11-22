@@ -134,9 +134,9 @@ class KubernetesStructure(model: IResourceModel) : AbstractTreeStructureContribu
 	override fun getParentElement(element: Any): Any? {
 		return try {
 			val kind = getResourceKind(element)
-			// default to null to allow tree structure to choose default parent element
 			return elementsTree.first { it.getChildrenKind() == kind }
 		} catch (e: ResourceException) {
+			// default to null to allow tree structure to choose default parent element
 			null
 		}
 	}

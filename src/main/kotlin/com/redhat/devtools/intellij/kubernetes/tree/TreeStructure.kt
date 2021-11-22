@@ -73,9 +73,11 @@ open class TreeStructure(
     }
 
     override fun getParentElement(element: Any): Any? {
-        return getValidContributions()
-            .mapNotNull { getParentElement(element, it) }
-            .firstOrNull()
+        return getValidContributions().stream()
+            .map { contribution -> getParentElement(element, contribution) }
+            .filter { parentElement -> parentElement != null }
+            .findAny()
+            .orElse(null)
     }
 
     private fun getParentElement(element: Any, contribution: ITreeStructureContribution): Any? {
