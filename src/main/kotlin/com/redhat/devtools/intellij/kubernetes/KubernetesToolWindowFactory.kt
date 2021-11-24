@@ -56,7 +56,7 @@ class KubernetesToolWindowFactory: ToolWindowFactory {
         tree.isRootVisible = false
         tree.cellRenderer = NodeRenderer()
         tree.addDoubleClickListener(openResourceEditor(project))
-        TreeUpdater(treeModel, structure, resourceModel)
+        TreeUpdater(treeModel, structure).listenTo(resourceModel)
         ResourceWatchController.install(tree)
         return tree
     }

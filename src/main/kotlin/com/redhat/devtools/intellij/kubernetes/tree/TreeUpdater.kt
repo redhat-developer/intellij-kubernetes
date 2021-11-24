@@ -31,14 +31,14 @@ import javax.swing.tree.TreePath
  * @see IResourceModel
  * @see StructureTreeModel
  */
-class TreeUpdater<Structure : AbstractTreeStructure>(
-    private val treeModel: StructureTreeModel<Structure>,
-    private val structure: TreeStructure,
-    model: IResourceModel
+class TreeUpdater(
+    private val treeModel: StructureTreeModel<AbstractTreeStructure>,
+    private val structure: TreeStructure
 ) : ModelChangeObservable.IResourceChangeListener {
 
-    init {
+    fun listenTo(model: IResourceModel): TreeUpdater {
         model.addListener(this)
+        return this
     }
 
     override fun currentNamespace(namespace: String?) {
@@ -49,37 +49,29 @@ class TreeUpdater<Structure : AbstractTreeStructure>(
 
     override fun removed(removed: Any) {
         treeModel.invoker.invokeLater {
-            invalidateParent(removed)
+            val parents = findNodes(removed)
+                .map { TreePathUtil.toTreePath(it.parent) }
+            invalidatePaths(parents)
         }
     }
 
     override fun added(added: Any) {
         treeModel.invoker.invokeLater {
-            invalidateParent(added)
+            val parents = getPotentialParentNodes(added)
+                .map { TreePathUtil.toTreePath(it) }
+            invalidatePaths(parents)
         }
     }
 
     override fun modified(modified: Any) {
         treeModel.invoker.invokeLater {
-            invalidateNode(modified)
+            val paths = findNodes(modified)
+                .map { node -> TreePathUtil.pathToTreeNode(node) }
+            // update node
+            updateDescriptors(paths, modified)
+            // trigger reload of children
+            invalidatePaths(paths)
         }
-    }
-
-    private fun invalidateParent(element: Any) {
-        val parents = getParentNodes(element).map { TreePathUtil.toTreePath(it) }
-        invalidatePaths(parents)
-    }
-
-    private fun invalidateNode(element: Any) {
-        val paths = getPaths(element)
-
-        if (paths.isEmpty()) {
-            return
-        }
-        // update node
-        updateDescriptors(paths, element)
-        // cause reload of children
-        invalidatePaths(paths)
     }
 
     private fun updateDescriptors(paths: List<TreePath>, element: Any) {
@@ -105,17 +97,6 @@ class TreeUpdater<Structure : AbstractTreeStructure>(
         }
     }
 
-    private fun getPaths(element: Any?): List<TreePath> {
-        return if (element == null) {
-            return emptyList()
-        } else if (isRootNode(element)) {
-            listOf(TreePath(treeModel.root))
-        } else {
-            findNodes({ node: TreeNode -> hasElement(element, node) }, treeModel.root)
-                .map { node -> TreePathUtil.pathToTreeNode(node) }
-        }
-    }
-
     private fun isRootNode(element: Any?): Boolean {
         val descriptor = (treeModel.root as? DefaultMutableTreeNode)?.userObject as? NodeDescriptor<*>
         return descriptor?.element == element
@@ -125,18 +106,29 @@ class TreeUpdater<Structure : AbstractTreeStructure>(
         treeModel.invalidate()
     }
 
-    private fun getParentNodes(element: Any): Collection<TreeNode> {
+    private fun getPotentialParentNodes(element: Any): Collection<TreeNode> {
         val rootNode = treeModel.root
         if (true == rootNode.getDescriptor()?.hasElement(element)) {
             return listOf(rootNode)
         }
-
+        // lookup descriptor that would display new element that's not displayed yet
+        // in case of a 'added' event
         return getAllNodes(rootNode)
             .filter { node -> structure.isParentDescriptor(node.getDescriptor(), element) }
     }
 
     private fun getAllNodes(start: TreeNode): Collection<TreeNode> {
         return findNodes({ true }, start)
+    }
+
+    private fun findNodes(element: Any?): Collection<TreeNode> {
+        return if (element == null) {
+            emptyList()
+        } else if (isRootNode(element)) {
+            listOf(treeModel.root)
+        } else {
+            findNodes({ node: TreeNode -> hasElement(element, node) }, treeModel.root)
+        }
     }
 
     private fun findNodes(condition: (child: TreeNode) -> Boolean, start: TreeNode): Collection<TreeNode> {
@@ -158,4 +150,5 @@ class TreeUpdater<Structure : AbstractTreeStructure>(
         return (element is HasMetadata && element.isSameResource(node.getElement())
                 || element == node.getElement())
     }
+
 }
