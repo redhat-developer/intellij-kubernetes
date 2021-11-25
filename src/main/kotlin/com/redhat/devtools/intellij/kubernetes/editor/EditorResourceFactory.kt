@@ -10,6 +10,7 @@
  ******************************************************************************/
 package com.redhat.devtools.intellij.kubernetes.editor
 
+import com.fasterxml.jackson.databind.exc.InvalidFormatException
 import com.intellij.openapi.editor.Document
 import com.intellij.openapi.fileEditor.FileEditor
 import com.redhat.devtools.intellij.kubernetes.editor.util.getDocument
@@ -83,10 +84,13 @@ object EditorResourceFactory {
         } catch(e: KubernetesClientException) {
             // cluster not reachable or invalid kube config
             return try {
-                createResource(jsonYaml)
-            } catch(e: KubernetesClientException) {
                 // unknown type
+                if (e.cause is InvalidFormatException) {
+                    throw ResourceException("invalid kubernetes yaml/json", e.cause)
+                }
                 createResource<GenericCustomResource>(jsonYaml)
+            } catch(e: KubernetesClientException) {
+                throw ResourceException("invalid kubernetes yaml/json", e)
             }
         }
     }
