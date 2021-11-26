@@ -13,6 +13,7 @@ package com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.custom
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize
 import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.hasmetadata.HasMetadataResource
 import io.fabric8.kubernetes.api.model.ObjectMeta
+import java.util.Objects
 
 @JsonDeserialize(using = GenericCustomResourceDeserializer::class)
 class GenericCustomResource(
@@ -29,7 +30,7 @@ class GenericCustomResource(
 		other as GenericCustomResource
 
 		if (!equalsProperties(other)) return false
-		if (spec != other.spec) return false
+		if (!Objects.equals(spec, other.spec)) return false
 
 		return true
 	}
