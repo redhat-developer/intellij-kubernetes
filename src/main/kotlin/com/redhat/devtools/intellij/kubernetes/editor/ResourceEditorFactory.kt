@@ -17,11 +17,10 @@ import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.VirtualFile
 import com.redhat.devtools.intellij.kubernetes.editor.notification.ErrorNotification
+import com.redhat.devtools.intellij.kubernetes.editor.util.hasKubernetesResource
 import com.redhat.devtools.intellij.kubernetes.model.ClientConfig
 import com.redhat.devtools.intellij.kubernetes.model.Clients
 import com.redhat.devtools.intellij.kubernetes.model.ResourceException
-import com.redhat.devtools.intellij.kubernetes.model.resource.ResourceKind
-import com.redhat.devtools.intellij.kubernetes.model.util.isKubernetesResource
 import com.redhat.devtools.intellij.kubernetes.model.util.isSameResource
 import com.redhat.devtools.intellij.kubernetes.telemetry.TelemetryService
 import com.redhat.devtools.intellij.telemetry.core.service.TelemetryMessageBuilder
@@ -52,7 +51,7 @@ open class ResourceEditorFactory protected constructor(
     /* for mocking purposes */
     private val reportTelemetry: (HasMetadata?, TelemetryMessageBuilder.ActionMessage) -> Unit = TelemetryService::sendTelemetry,
     /* for mocking purposes */
-    private val createResourceEditor: (HasMetadata, FileEditor, Project, Clients<out KubernetesClient>) -> ResourceEditor =
+    private val createResourceEditor: (HasMetadata?, FileEditor, Project, Clients<out KubernetesClient>) -> ResourceEditor =
         { resource, editor, project, clients -> ResourceEditor(resource, editor, project, clients) }
 ) {
 
@@ -115,11 +114,6 @@ open class ResourceEditorFactory protected constructor(
         return getExisting(editor) ?: create(editor, project)
     }
 
-    private fun hasKubernetesResource(editor: FileEditor): Boolean {
-        val document = getDocument.invoke(editor) ?: return false
-        return isKubernetesResource(document.text)
-    }
-
     /**
      * Returns a [ResourceEditor] for the given [FileEditor] if it exists. Returns `null` otherwise.
      * The editor exists if it is contained in the user data for the given editor or its file.
@@ -153,13 +147,13 @@ open class ResourceEditorFactory protected constructor(
 
     private fun create(editor: FileEditor, project: Project): ResourceEditor? {
         if (!isValidType.invoke(editor.file)
-            || !hasKubernetesResource(editor)) {
+            || !hasKubernetesResource(editor, project)) {
             return null
         }
         val telemetry = TelemetryService.instance.action(TelemetryService.NAME_PREFIX_EDITOR + "open")
         try {
             val clients = createClients.invoke(ClientConfig {}) ?: return null
-            val resource = createEditorResource.invoke(editor, clients) ?: return null
+            val resource = createResource(editor, clients, project)
             reportTelemetry.invoke(resource, telemetry)
             return create(resource, editor, project, clients)
         } catch (e: ResourceException) {
@@ -169,8 +163,21 @@ open class ResourceEditorFactory protected constructor(
         }
     }
 
+    private fun createResource(
+        editor: FileEditor,
+        clients: Clients<out KubernetesClient>,
+        project: Project
+    ): HasMetadata? {
+        return try {
+            createEditorResource.invoke(editor, clients)
+        } catch (e: ResourceException) {
+            ErrorNotification(editor, project).show(e.message ?: "", e.cause?.message)
+            null
+        }
+    }
+
     private fun create(
-        resource: HasMetadata,
+        resource: HasMetadata?,
         editor: FileEditor,
         project: Project,
         clients: Clients<out KubernetesClient>
