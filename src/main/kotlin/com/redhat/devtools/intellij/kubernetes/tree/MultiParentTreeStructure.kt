@@ -11,21 +11,10 @@
 package com.redhat.devtools.intellij.kubernetes.tree
 
 import com.intellij.ide.util.treeView.NodeDescriptor
-import com.intellij.openapi.project.Project
-import com.intellij.ui.tree.LeafState
-import com.redhat.devtools.intellij.kubernetes.model.IResourceModel
 
-interface ITreeStructureContribution {
-
-    val model: IResourceModel
-    fun canContribute(): Boolean
-    fun getChildElements(element: Any): Collection<Any>
-    fun getParentElement(element: Any): Any?
-    fun createDescriptor(element: Any, parent: NodeDescriptor<*>?, project: Project): NodeDescriptor<*>?
+/**
+ * Adds API for tree structures that allow multiple parents for a given element.
+ */
+interface MultiParentTreeStructure {
     fun isParentDescriptor(descriptor: NodeDescriptor<*>?, element: Any): Boolean
-    /**
-     * Returns the leaf state for the given element.
-     * Returns {@code null} if this contribution has no answer for the given element.
-     */
-    fun getLeafState(element: Any): LeafState?
 }

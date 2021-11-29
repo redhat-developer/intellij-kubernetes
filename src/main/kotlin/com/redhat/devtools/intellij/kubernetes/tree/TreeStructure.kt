@@ -27,8 +27,8 @@ import com.redhat.devtools.intellij.kubernetes.model.context.IActiveContext
 import com.redhat.devtools.intellij.kubernetes.model.context.IContext
 import com.redhat.devtools.intellij.kubernetes.model.resource.ResourceKind
 import com.redhat.devtools.intellij.kubernetes.model.util.hasDeletionTimestamp
+import com.redhat.devtools.intellij.kubernetes.model.util.isSameResource
 import com.redhat.devtools.intellij.kubernetes.model.util.isWillBeDeleted
-import java.util.Optional
 import javax.swing.Icon
 
 /**
@@ -41,7 +41,7 @@ open class TreeStructure(
         private val model: IResourceModel,
         private val extensionPoint: ExtensionPointName<ITreeStructureContributionFactory> =
                 ExtensionPointName.create("com.redhat.devtools.intellij.kubernetes.structureContribution"))
-    : AbstractTreeStructure() {
+    : AbstractTreeStructure(), MultiParentTreeStructure {
 
     private val contributions by lazy {
         listOf(
@@ -73,11 +73,11 @@ open class TreeStructure(
     }
 
     override fun getParentElement(element: Any): Any? {
-        val parent: Optional<Any?> = getValidContributions().stream()
-                .map { getParentElement(element, it) }
-                .filter { it != null }
-                .findAny()
-        return parent.orElse(rootElement)
+        return getValidContributions().stream()
+            .map { contribution -> getParentElement(element, contribution) }
+            .filter { parentElement -> parentElement != null }
+            .findAny()
+            .orElse(null)
     }
 
     private fun getParentElement(element: Any, contribution: ITreeStructureContribution): Any? {
@@ -87,6 +87,11 @@ open class TreeStructure(
             logger<TreeStructure>().warn("Could not get parent for element $element", e)
             null
         }
+    }
+
+    override fun isParentDescriptor(descriptor: NodeDescriptor<*>?, element: Any): Boolean {
+        return getValidContributions()
+            .any { it.isParentDescriptor(descriptor, element) }
     }
 
     override fun createDescriptor(element: Any, parent: NodeDescriptor<*>?): NodeDescriptor<*> {
@@ -101,7 +106,7 @@ open class TreeStructure(
             is IContext -> ContextDescriptor(element, parent, model, project)
             is Exception -> ErrorDescriptor(element, parent, model, project)
             is Folder -> FolderDescriptor(element, parent, model, project)
-            else -> Descriptor(element, parent, model, project)
+            else -> Descriptor(element, null, parent, model, project)
         }
     }
 
@@ -144,17 +149,19 @@ open class TreeStructure(
     }
 
     open class ContextDescriptor<C : IContext>(
-            context: C,
-            parent: NodeDescriptor<*>? = null,
-            model: IResourceModel,
-            project: Project) : Descriptor<C>(
+        context: C,
+        parent: NodeDescriptor<*>? = null,
+        model: IResourceModel,
+        project: Project
+    ) : Descriptor<C>(
         context,
+        null,
         parent,
         model,
         project
     ) {
         override fun getLabel(element: C): String {
-            return if (element.context.context == null) {
+            return if (element?.context?.context == null) {
                 "<unknown context>"
             } else {
                 element.context.name
@@ -173,6 +180,7 @@ open class TreeStructure(
         project: Project
     ) : Descriptor<T>(
         element,
+        null,
         parent,
         model,
         project
@@ -194,11 +202,12 @@ open class TreeStructure(
         project: Project
     ) : Descriptor<Folder>(
         element,
+        element.kind,
         parent,
         model,
         project
     ) {
-        override fun isMatching(element: Any?): Boolean {
+        override fun hasElement(element: Any?): Boolean {
             // change in resource category is notified as change of resource kind
             return this.element?.kind == element
         }
@@ -207,18 +216,8 @@ open class TreeStructure(
             model.invalidate(element?.kind)
         }
 
-        override fun getLabel(element: Folder): String {
+        override fun getLabel(element: Folder): String? {
             return element.label
-        }
-
-        override fun watchResources() {
-            val kind = element?.kind ?: return
-            model.watch(kind)
-        }
-
-        override fun stopWatchResources() {
-            val kind = element?.kind ?: return
-            model.stopWatch(kind)
         }
     }
 
@@ -229,12 +228,13 @@ open class TreeStructure(
         project: Project
     ) : Descriptor<java.lang.Exception>(
         exception,
+        null,
         parent,
         model,
         project
     ) {
         override fun getLabel(element: java.lang.Exception): String {
-            return "Error: " + element.message
+            return "Error: ${element.message ?: "unspecified"}"
         }
 
         override fun getIcon(element: java.lang.Exception): Icon? {
@@ -244,10 +244,11 @@ open class TreeStructure(
 
     open class ResourceDescriptor<T : HasMetadata>(
         element: T,
+        childrenKind: ResourceKind<out HasMetadata>?,
         parent: NodeDescriptor<*>?,
         model: IResourceModel,
         project: Project
-    ) : Descriptor<T>(element, parent, model, project) {
+    ) : Descriptor<T>(element, childrenKind, parent, model, project) {
 
         override fun getLabel(element: T): String {
             return element.metadata.name
@@ -255,18 +256,29 @@ open class TreeStructure(
 
         override fun update(presentation: PresentationData) {
             super.update(presentation)
-            if (isWillBeDeleted(element)) {
-                presentation.presentableText += " (deleted)"
-                presentation.setAttributesKey(CodeInsightColors.WRONG_REFERENCES_ATTRIBUTES)
-            } else if (hasDeletionTimestamp(element)) {
-                presentation.presentableText += " (terminating)"
-                presentation.setAttributesKey(CodeInsightColors.WRONG_REFERENCES_ATTRIBUTES)
+            when {
+                isWillBeDeleted(element) -> {
+                    presentation.presentableText += " (deleted)"
+                    presentation.setAttributesKey(CodeInsightColors.WRONG_REFERENCES_ATTRIBUTES)
+                }
+                hasDeletionTimestamp(element) -> {
+                    presentation.presentableText += " (terminating)"
+                    presentation.setAttributesKey(CodeInsightColors.WRONG_REFERENCES_ATTRIBUTES)
+                }
             }
+        }
+
+        override fun hasElement(element: Any?): Boolean {
+            if (element !is HasMetadata) {
+                return super.hasElement(element)
+            }
+            return this.element?.isSameResource(element) ?: false
         }
     }
 
     open class Descriptor<T>(
-            private val element: T,
+            private var element: T,
+            private val childrenKind: ResourceKind<out HasMetadata>?,
             parent: NodeDescriptor<*>?,
             protected val model: IResourceModel,
             project: Project
@@ -281,8 +293,14 @@ open class TreeStructure(
             presentation.presentableText = label
         }
 
-        open fun isMatching(element: Any?): Boolean {
+        open fun hasElement(element: Any?): Boolean {
             return this.element == element
+        }
+
+        fun setElement(element: Any): Boolean {
+            val typed: T = element as? T ?: return false
+            this.element = typed
+            return true
         }
 
         override fun getElement(): T? {
@@ -294,7 +312,7 @@ open class TreeStructure(
         }
 
         protected open fun getLabel(element: T): String? {
-            return element.toString()
+            return element?.toString()
         }
 
         protected open fun getIcon(element: T): Icon? {
@@ -307,12 +325,14 @@ open class TreeStructure(
             }
         }
 
-        open fun watchResources() {
-            // empty default implementation
+        open fun watchChildren() {
+            val kind = childrenKind ?: return
+            model.watch(kind)
         }
 
-        open fun stopWatchResources() {
-            // empty default implementation
+        open fun stopWatchChildren() {
+            val kind = childrenKind ?: return
+            model.stopWatch(kind)
         }
     }
 

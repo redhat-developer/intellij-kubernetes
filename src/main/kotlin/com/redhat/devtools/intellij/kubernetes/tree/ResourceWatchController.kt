@@ -18,7 +18,7 @@ import javax.swing.event.TreeExpansionListener
 import javax.swing.tree.DefaultMutableTreeNode
 
 /**
- * A controller that is watching resources when a given descriptor is expanded
+ * A controller that is watching resources when a tree node is expanded and stops to watch them when folded.
  */
 object ResourceWatchController {
 
@@ -27,7 +27,7 @@ object ResourceWatchController {
 			override fun treeExpanded(event: TreeExpansionEvent) {
 				val descriptor = getDescriptor(event)
 				try {
-					descriptor?.watchResources()
+					descriptor?.watchChildren()
 				} catch(e: Exception) {
 					logger<ResourceWatchController>().warn("Could not watch ${descriptor?.element} resources.", e)
 				}
@@ -36,7 +36,7 @@ object ResourceWatchController {
 			override fun treeCollapsed(event: TreeExpansionEvent?) {
 				val descriptor = getDescriptor(event)
 				try {
-					descriptor?.stopWatchResources()
+					descriptor?.stopWatchChildren()
 				} catch(e: Exception) {
 					logger<ResourceWatchController>().warn("Could not watch ${descriptor?.element} resources.", e)
 				}

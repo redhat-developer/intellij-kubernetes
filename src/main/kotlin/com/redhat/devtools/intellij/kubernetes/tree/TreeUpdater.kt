@@ -13,90 +13,88 @@ package com.redhat.devtools.intellij.kubernetes.tree
 import com.intellij.ide.util.treeView.AbstractTreeStructure
 import com.intellij.ide.util.treeView.NodeDescriptor
 import com.intellij.ui.tree.StructureTreeModel
+import com.intellij.ui.tree.TreePathUtil
+import com.redhat.devtools.intellij.kubernetes.actions.getDescriptor
+import com.redhat.devtools.intellij.kubernetes.actions.getElement
 import com.redhat.devtools.intellij.kubernetes.model.IResourceModel
 import com.redhat.devtools.intellij.kubernetes.model.ModelChangeObservable
+import com.redhat.devtools.intellij.kubernetes.model.util.isSameResource
+import io.fabric8.kubernetes.api.model.HasMetadata
 import javax.swing.tree.DefaultMutableTreeNode
+import javax.swing.tree.TreeNode
 import javax.swing.tree.TreePath
 
 /**
- * An adapter that listens to events of the IKubernetesResourceModel and operates these changes on the
- * StructureTreeModel (to which the swing tree listens and updates accordingly)
+ * An adapter that listens to events of the IKubernetesResourceModel and invalidates or updates
+ * nodes, descriptors accordingly.
  *
  * @see IResourceModel
  * @see StructureTreeModel
  */
-class TreeUpdater<Structure: AbstractTreeStructure>(
-    private val treeModel: StructureTreeModel<Structure>,
-    private val structure: AbstractTreeStructure,
-    model: IResourceModel)
-    : ModelChangeObservable.IResourceChangeListener {
+class TreeUpdater(
+    private val treeModel: StructureTreeModel<AbstractTreeStructure>,
+    private val structure: TreeStructure
+) : ModelChangeObservable.IResourceChangeListener {
 
-    init {
+    fun listenTo(model: IResourceModel): TreeUpdater {
         model.addListener(this)
+        return this
     }
 
     override fun currentNamespace(namespace: String?) {
-        invalidateRoot()
+        treeModel.invoker.invokeLater {
+            invalidateRoot()
+        }
     }
 
     override fun removed(removed: Any) {
-        invalidateParent(removed)
+        treeModel.invoker.invokeLater {
+            val parents = findNodes(removed)
+                .map { TreePathUtil.toTreePath(it.parent) }
+            invalidatePaths(parents)
+        }
     }
 
     override fun added(added: Any) {
-        invalidateParent(added)
+        treeModel.invoker.invokeLater {
+            val parents = getPotentialParentNodes(added)
+                .map { TreePathUtil.toTreePath(it) }
+            invalidatePaths(parents)
+        }
     }
 
     override fun modified(modified: Any) {
-        invalidatePath { getTreePath(modified) }
-    }
-
-    private fun invalidateParent(element: Any) {
-        val parent = getParentElement(element)
-        if (parent is Collection<*>) {
-            invalidatePath(parent)
-        } else {
-            invalidatePath { getTreePath(parent) }
-        }
-    }
-
-    private fun invalidatePath(parent: Collection<*>) {
-        parent.forEach {
-            if (it != null) {
-                invalidatePath { getTreePath(it) }
-            }
-        }
-    }
-
-    private fun invalidatePath(pathSupplier: () -> TreePath?) {
         treeModel.invoker.invokeLater {
-            val path = pathSupplier()
-            if (path != null) {
-                if (path.lastPathComponent == treeModel.root) {
-                    invalidateRoot()
-                } else {
-                    treeModel.invalidate(path, true)
-                }
-            }
+            val paths = findNodes(modified)
+                .map { node -> TreePathUtil.pathToTreeNode(node) }
+            // update node
+            updateDescriptors(paths, modified)
+            // trigger reload of children
+            invalidatePaths(paths)
         }
     }
 
-    private fun invalidateRoot() {
-        treeModel.invalidate()
+    private fun updateDescriptors(paths: List<TreePath>, element: Any) {
+        paths.forEach { path ->
+            val descriptor = TreePathUtil.toTreeNode(path)?.getDescriptor() ?: return
+            descriptor.setElement(element)
+            descriptor.update()
+        }
     }
 
-    private fun getParentElement(element: Any): Any? {
-        return structure.getParentElement(element)
+
+    private fun invalidatePaths(paths: Collection<TreePath>) {
+        paths.forEach { path ->
+            invalidatePath(path)
+        }
     }
 
-    private fun getTreePath(element: Any?): TreePath {
-        val path =
-            if (isRootNode(element)) {
-                TreePath(treeModel.root)
-            } else {
-                findTreePath(element, treeModel.root as? DefaultMutableTreeNode)
-            }
-        return path ?: TreePath(treeModel.root)
+    private fun invalidatePath(path: TreePath) {
+        if (path.lastPathComponent == treeModel.root) {
+            invalidateRoot()
+        } else {
+            treeModel.invalidate(path, true)
+        }
     }
 
     private fun isRootNode(element: Any?): Boolean {
@@ -104,32 +102,53 @@ class TreeUpdater<Structure: AbstractTreeStructure>(
         return descriptor?.element == element
     }
 
-    private fun findTreePath(element: Any?, start: DefaultMutableTreeNode?): TreePath? {
-        if (element == null
-            || start == null) {
-            return null
-        }
-        for (child in start.children()) {
-            if (child !is DefaultMutableTreeNode) {
-                continue
-            }
-            if (hasElement(element, child)) {
-                return TreePath(child.path)
-            }
-            val path = findTreePath(element, child)
-            if (path != null) {
-                return path
-            }
-        }
-        return null
+    private fun invalidateRoot() {
+        treeModel.invalidate()
     }
 
-    private fun hasElement(element: Any?, node: DefaultMutableTreeNode): Boolean {
-        val descriptor = node.userObject as? NodeDescriptor<*> ?: return false
-        return if (descriptor is TreeStructure.Descriptor) {
-            descriptor.isMatching(element)
+    private fun getPotentialParentNodes(element: Any): Collection<TreeNode> {
+        val rootNode = treeModel.root
+        if (true == rootNode.getDescriptor()?.hasElement(element)) {
+            return listOf(rootNode)
+        }
+        // lookup descriptor that would display new element that's not displayed yet
+        // in case of a 'added' event
+        return getAllNodes(rootNode)
+            .filter { node -> structure.isParentDescriptor(node.getDescriptor(), element) }
+    }
+
+    private fun getAllNodes(start: TreeNode): Collection<TreeNode> {
+        return findNodes({ true }, start)
+    }
+
+    private fun findNodes(element: Any?): Collection<TreeNode> {
+        return if (element == null) {
+            emptyList()
+        } else if (isRootNode(element)) {
+            listOf(treeModel.root)
         } else {
-            descriptor.element == element
+            findNodes({ node: TreeNode -> hasElement(element, node) }, treeModel.root)
         }
     }
+
+    private fun findNodes(condition: (child: TreeNode) -> Boolean, start: TreeNode): Collection<TreeNode> {
+        val nodes = mutableListOf<TreeNode>()
+        findNodes(condition, start, nodes)
+        return nodes
+    }
+
+    private fun findNodes(condition: (child: TreeNode) -> Boolean, start: TreeNode, matchingNodes: MutableList<TreeNode>) {
+        for (child in start.children()) {
+            if (condition.invoke(child)) {
+                matchingNodes.add(child)
+            }
+            findNodes(condition, child, matchingNodes)
+        }
+    }
+
+    private fun hasElement(element: Any, node: TreeNode): Boolean {
+        return (element is HasMetadata && element.isSameResource(node.getElement())
+                || element == node.getElement())
+    }
+
 }

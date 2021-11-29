@@ -52,11 +52,11 @@ class KubernetesToolWindowFactory: ToolWindowFactory {
         val resourceModel = ApplicationManager.getApplication().getService(IResourceModel::class.java)
         val structure = TreeStructure(project, resourceModel)
         val treeModel = StructureTreeModelFactory.create(structure, project)
-        TreeUpdater(treeModel, structure, resourceModel)
         val tree = Tree(AsyncTreeModel(treeModel, project))
         tree.isRootVisible = false
         tree.cellRenderer = NodeRenderer()
         tree.addDoubleClickListener(openResourceEditor(project))
+        TreeUpdater(treeModel, structure).listenTo(resourceModel)
         ResourceWatchController.install(tree)
         return tree
     }

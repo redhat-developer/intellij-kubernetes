@@ -153,9 +153,13 @@ class OpenShiftStructure(model: IResourceModel): AbstractTreeStructureContributi
             is DeploymentConfig,
             is ReplicationController,
             is BuildConfig,
-            is Build -> ResourceDescriptor(element as HasMetadata, parent, model, project)
+            is Build -> ResourceDescriptor(element as HasMetadata, null, parent, model, project)
             else -> null
         }
+    }
+
+    override fun isParentDescriptor(descriptor: NodeDescriptor<*>?, element: Any): Boolean {
+        TODO("Not yet implemented")
     }
 
     private class OpenShiftContextDescriptor(
@@ -167,7 +171,7 @@ class OpenShiftStructure(model: IResourceModel): AbstractTreeStructureContributi
         model = model,
         project = project
     ) {
-        override fun getIcon(element: OpenShiftContext): Icon? {
+        override fun getIcon(element: OpenShiftContext): Icon {
             return IconLoader.getIcon("/icons/openshift-cluster.svg", javaClass)
         }
     }
@@ -177,7 +181,7 @@ class OpenShiftStructure(model: IResourceModel): AbstractTreeStructureContributi
         parent: NodeDescriptor<*>?,
         model: IResourceModel,
         project: com.intellij.openapi.project.Project
-    ) : ResourceDescriptor<Project>(element, parent, model, project) {
+    ) : ResourceDescriptor<Project>(element, null, parent, model, project) {
 
         override fun getLabel(element: Project): String {
             var label = element.metadata.name
