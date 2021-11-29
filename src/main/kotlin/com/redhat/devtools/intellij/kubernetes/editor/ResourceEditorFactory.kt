@@ -16,6 +16,7 @@ import com.intellij.openapi.fileEditor.FileEditor
 import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.VirtualFile
+import com.intellij.psi.PsiDocumentManager
 import com.redhat.devtools.intellij.kubernetes.editor.notification.ErrorNotification
 import com.redhat.devtools.intellij.kubernetes.editor.util.hasKubernetesResource
 import com.redhat.devtools.intellij.kubernetes.model.ClientConfig
@@ -51,6 +52,11 @@ open class ResourceEditorFactory protected constructor(
     /* for mocking purposes */
     private val reportTelemetry: (HasMetadata?, TelemetryMessageBuilder.ActionMessage) -> Unit = TelemetryService::sendTelemetry,
     /* for mocking purposes */
+    private val hasKubernetesResource: (FileEditor, Project) -> Boolean = { editor, project ->
+        val document = getDocument(editor)
+        val psiDocumentManager = PsiDocumentManager.getInstance(project)
+        hasKubernetesResource(document, psiDocumentManager)
+    },
     private val createResourceEditor: (HasMetadata?, FileEditor, Project, Clients<out KubernetesClient>) -> ResourceEditor =
         { resource, editor, project, clients -> ResourceEditor(resource, editor, project, clients) }
 ) {
@@ -147,7 +153,7 @@ open class ResourceEditorFactory protected constructor(
 
     private fun create(editor: FileEditor, project: Project): ResourceEditor? {
         if (!isValidType.invoke(editor.file)
-            || !hasKubernetesResource(editor, project)) {
+            || !hasKubernetesResource.invoke(editor, project)) {
             return null
         }
         val telemetry = TelemetryService.instance.action(TelemetryService.NAME_PREFIX_EDITOR + "open")

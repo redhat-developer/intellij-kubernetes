@@ -75,6 +75,10 @@ open class ResourceEditor(
     // for mocking purposes
     private val psiDocumentManagerProvider: (Project) -> PsiDocumentManager = { PsiDocumentManager.getInstance(project) },
     // for mocking purposes
+    private val hasKubernetesResource: (FileEditor, Project) -> Boolean = { editor, project ->
+        hasKubernetesResource(documentProvider.invoke(editor), psiDocumentManagerProvider.invoke(project))
+    },
+    // for mocking purposes
     private val ideNotification: Notification = Notification(),
     // for mocking purposes
     private val documentReplaced: AtomicBoolean = AtomicBoolean(false)
@@ -367,7 +371,7 @@ open class ResourceEditor(
      */
     fun enableNonProjectFileEditing() {
         if (editor.file == null
-            || !hasKubernetesResource(editor, project)) {
+            || !hasKubernetesResource.invoke(editor, project)) {
                 return
         }
         createResourceFileForVirtual(editor.file)?.enableNonProjectFileEditing()
@@ -376,7 +380,7 @@ open class ResourceEditor(
     fun getTitle(): String? {
         val file = editor.file ?: return null
         return if (true == isTemporary.invoke(file)
-            && hasKubernetesResource(editor, project)) {
+            && hasKubernetesResource.invoke(editor, project)) {
             val resource = editorResource ?: return null
             getTitleFor(resource)
         } else {

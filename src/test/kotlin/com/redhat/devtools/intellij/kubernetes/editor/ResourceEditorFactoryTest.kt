@@ -123,12 +123,29 @@ class ResourceEditorFactoryTest {
                 .whenever(this).invoke(any())
         }
     private val reportTelemetry: (HasMetadata?, TelemetryMessageBuilder.ActionMessage) -> Unit = mock()
+    private val hasKubernetesResource: (editor: FileEditor, project: Project) -> Boolean = mock<(editor: FileEditor, project: Project) -> Boolean>().apply {
+        doReturn(true)
+            .whenever(this).invoke(any(), any())
+    }
     private val createResourceEditor: (HasMetadata?, FileEditor, Project, Clients<out KubernetesClient>) -> ResourceEditor =
         { resource, editor, project, clients -> mock() }
+
     private val resourceEditor: ResourceEditor = spy(ResourceEditor(resource, fileEditor, mock(), mock()))
 
+
     private val editorFactory =
-        TestableResourceEditorFactory(getFileEditorManager, createResourceFile, isValidType, isTemporary, getDocument, createEditorResource, createClients, reportTelemetry, createResourceEditor)
+        TestableResourceEditorFactory(
+            getFileEditorManager,
+            createResourceFile,
+            isValidType,
+            isTemporary,
+            getDocument,
+            createEditorResource,
+            createClients,
+            reportTelemetry,
+            hasKubernetesResource,
+            createResourceEditor
+        )
 
     @Test
     fun `#openEditor should NOT open editor if temporary resource file could not be created`() {
@@ -229,14 +246,10 @@ class ResourceEditorFactoryTest {
     }
 
     @Test
-    fun `#getOrCreate should return null if file is NOT YAML or JSON`() {
+    fun `#getOrCreate should return null if file does not have kubernetes resource`() {
         // given
-        doReturn(null)
-            .whenever(fileEditor).getUserData(KEY_RESOURCE_EDITOR) // force create
-        doReturn(true)
-            .whenever(isValidType).invoke(any()) // force file content check
-        doReturn("this is not YAML")
-            .whenever(document).text
+        doReturn(false)
+            .whenever(hasKubernetesResource).invoke(any(), any())
         // when
         val editor = editorFactory.getExistingOrCreate(fileEditor, mock())
         // then
@@ -246,21 +259,21 @@ class ResourceEditorFactoryTest {
     @Test
     fun `#getOrCreate should NOT create resource editor if clients cannot be created`() {
         // given
-        // when
-        val editor = editorFactory.getExistingOrCreate(fileEditor, mock())
-        // then
-        assertThat(editor).isNotNull()
-    }
-
-    @Test
-    fun `#getOrCreate should create resource editor if no instance exists, local file contains kubernetes YAML`() {
-        // given
         doReturn(null)
             .whenever(createClients).invoke(any())
         // when
         val editor = editorFactory.getExistingOrCreate(fileEditor, mock())
         // then
         assertThat(editor).isNull()
+    }
+
+    @Test
+    fun `#getOrCreate should create resource editor if no instance exists, local file contains kubernetes YAML`() {
+        // given
+        // when
+        val editor = editorFactory.getExistingOrCreate(fileEditor, mock())
+        // then
+        assertThat(editor).isNotNull()
     }
 
     @Test
@@ -290,6 +303,7 @@ class ResourceEditorFactoryTest {
         createEditorResource: (editor: FileEditor, clients: Clients<out KubernetesClient>) -> HasMetadata?,
         createClients: (config: ClientConfig) -> Clients<out KubernetesClient>?,
         reportTelemetry: (HasMetadata?, TelemetryMessageBuilder.ActionMessage) -> Unit,
+        hasKubernetesResource: (FileEditor, Project) -> Boolean,
         createResourceEditor: (HasMetadata?, FileEditor, Project, Clients<out KubernetesClient>) -> ResourceEditor
     ) : ResourceEditorFactory(
         getFileEditorManager,
@@ -300,6 +314,7 @@ class ResourceEditorFactoryTest {
         createEditorResource,
         createClients,
         reportTelemetry,
+        hasKubernetesResource,
         createResourceEditor
     ) {
 
