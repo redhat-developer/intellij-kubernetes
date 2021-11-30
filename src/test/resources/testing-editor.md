@@ -237,3 +237,38 @@ spec:
 
 -> pull notification appears
 
+**Change replicas causes new pods to appear in tree**
+1. File > New > YML file
+2. paste the following into editor
+```
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sise-deploy
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: sise
+  template:
+    metadata:
+      labels:
+        app: sise
+    spec:
+      containers:
+      - name: sise
+        image: quay.io/openshiftlabs/simpleservice:0.5.0
+        ports:
+        - containerPort: 9876
+        env:
+        - name: SIMPLE_SERVICE_VERSION
+          value: "0.9"
+```
+3. Push editor to cluster
+4. Identify pod `sise-deploy-xxxx` in all 3 categories
+ * [context] > Nodes > [node]
+ * [context] > Workloads > Deployments > sise-deploy
+ * [context] > Workloads > Pods
+6. change `spec > replicas` to 2 & push
+
+-> 2nd pod `sise-deploy-xxxx` appears in all 3 categories
