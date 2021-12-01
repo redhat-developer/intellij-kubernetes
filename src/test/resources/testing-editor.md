@@ -123,28 +123,28 @@
 
 -> Push notification "create new"
 
-**Automatic reload of editor & reloaded notification if local copy has no changes**
+**Automatic pull of editor & pulled notification if local copy has no changes**
 1. "Edit..." resource
 1. modify resource externally (console, kubectl)
 
--> editor is reloaded (verify by watching metadata > `resourceVersion`)
--> reloaded notification appears
+-> editor content is pulled (verify by watching metadata > `resourceVersion`)
+-> Pulled notification appears
 
-**Modified notification appears**
+**Push notification appears**
 1. "Edit..." resource
 1. add label 
 
 1. modify resource externally (console, kubectl)
 
--> modified notification appears
+-> Push notification appears
 
-**Reload -> Modified notification disappears**
+**Pull -> Push notification disappears**
 1. "Edit..." resource
 1. modify resource (ex. change label)
    -> Push notification appears
 1. modify resource externally
-   -> Push notification shows additional option "Reload"
-1. hit "Reload"
+   -> Push notification shows additional option "Pull"
+1. hit "Pull"
 
 -> editor shows new resource, notification disappears
 
