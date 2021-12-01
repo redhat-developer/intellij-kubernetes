@@ -32,7 +32,6 @@ import com.redhat.devtools.intellij.kubernetes.model.ModelChangeObservable
 import com.redhat.devtools.intellij.kubernetes.model.Notification
 import com.redhat.devtools.intellij.kubernetes.model.ResourceException
 import com.redhat.devtools.intellij.kubernetes.model.util.isKubernetesResource
-import com.redhat.devtools.intellij.kubernetes.model.util.isSameResource
 import com.redhat.devtools.intellij.kubernetes.model.util.trimWithEllipsis
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.Namespace
@@ -181,15 +180,15 @@ open class ResourceEditor(
 
     private fun showPulledOrPullNotification(resourceInEditor: HasMetadata) {
         val resourceOnCluster = clusterResource?.get(false) ?: return
-        if (!hasLocalChanges(resourceInEditor)) {
+        if (!hasLocalChanges()) {
+            resourceChangeMutex.withLock {
+                this.editorResource = resourceInEditor
+                this.localCopy = resourceInEditor
+            }
             runInUI {
                 replaceDocument(resourceOnCluster)
                 hideNotifications()
                 pulledNotification.show(resourceOnCluster)
-            }
-            resourceChangeMutex.withLock {
-                this.editorResource = resourceInEditor
-                this.localCopy = resourceInEditor
             }
         } else {
             runInUI {
@@ -200,14 +199,14 @@ open class ResourceEditor(
     }
 
     /**
-     * Returns `true` if the given resource is dirty aka has modifications that were not pushed.
+     * Returns `true` if the resource in the editor is dirty aka has modifications that were not pushed.
      *
      * @param resource to be checked for modification
      * @return true if the resource is dirty
      */
-    private fun hasLocalChanges(resource: HasMetadata): Boolean {
+    private fun hasLocalChanges(): Boolean {
         return resourceChangeMutex.withLock {
-            resource != this.localCopy
+            editorResource != this.localCopy
         }
     }
 
@@ -345,17 +344,9 @@ open class ResourceEditor(
             }
 
             private fun showNotifications() {
-                val pair = resourceChangeMutex.withLock {
-                    val sameResource = editorResource?.isSameResource(localCopy) ?: false
-                    Pair(sameResource, editorResource)
-                }
-                if (clusterResource != null
-                    && pair.first
-                    && pair.second != null
-                ) {
-                    runAsync {
-                        showNotifications(pair.second!!, clusterResource!!)
-                    }
+                val editorResource = this@ResourceEditor.editorResource ?: return
+                runAsync {
+                    showNotifications(editorResource, clusterResource!!)
                 }
             }
         }

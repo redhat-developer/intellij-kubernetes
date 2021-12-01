@@ -75,7 +75,7 @@ open class ResourceEditorFactory protected constructor(
                     .firstOrNull()
                     ?: return@runInUI
                 runAsync {
-                    create(editor, project)
+                    getExistingOrCreate(editor, project)
                 }
             }
         }
@@ -112,11 +112,7 @@ open class ResourceEditorFactory protected constructor(
             return null
         }
 
-        val resourceEditor = getExisting(editor)
-        if (resourceEditor != null) {
-            return resourceEditor
-        }
-        return create(editor, project)
+        return getExisting(editor) ?: create(editor, project)
     }
 
     private fun hasKubernetesResource(editor: FileEditor): Boolean {
@@ -138,7 +134,6 @@ open class ResourceEditorFactory protected constructor(
         if (editor == null) {
             return null
         }
-
         return editor.getUserData(ResourceEditor.KEY_RESOURCE_EDITOR)
             ?: getExisting(editor.file)
     }
