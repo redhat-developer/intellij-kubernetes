@@ -20,20 +20,17 @@ import com.intellij.psi.PsiDocumentManager
 import com.redhat.devtools.intellij.kubernetes.editor.notification.ErrorNotification
 import com.redhat.devtools.intellij.kubernetes.editor.util.getKubernetesResourceInfo
 import com.redhat.devtools.intellij.kubernetes.editor.util.hasKubernetesResource
-import com.redhat.devtools.intellij.kubernetes.model.ClientConfig
-import com.redhat.devtools.intellij.kubernetes.model.Clients
 import com.redhat.devtools.intellij.kubernetes.model.ResourceException
 import com.redhat.devtools.intellij.kubernetes.model.util.isSameResource
 import com.redhat.devtools.intellij.kubernetes.telemetry.TelemetryService
 import com.redhat.devtools.intellij.telemetry.core.service.TelemetryMessageBuilder
 import io.fabric8.kubernetes.api.model.HasMetadata
-import io.fabric8.kubernetes.client.KubernetesClient
 
 open class ResourceEditorFactory protected constructor(
     /* for mocking purposes */
     private val getFileEditorManager: (project: Project) -> FileEditorManager = FileEditorManager::getInstance,
     /* for mocking purposes */
-    private val createResourceFile: (resource: HasMetadata) -> ResourceFile? = { resource: HasMetadata ->
+    private val createResourceFile: (resource: HasMetadata) -> ResourceFile? = { resource ->
         ResourceFile.create(resource)
     },
     /* for mocking purposes */
@@ -45,16 +42,14 @@ open class ResourceEditorFactory protected constructor(
         com.redhat.devtools.intellij.kubernetes.editor.util.getDocument(editor)
     },
     /* for mocking purposes */
-    private val createClients: (config: ClientConfig) -> Clients<out KubernetesClient>? =
-        { config -> com.redhat.devtools.intellij.kubernetes.model.createClients(config) },
-    /* for mocking purposes */
     private val hasKubernetesResource: (FileEditor, Project) -> Boolean = { editor, project ->
         val document = getDocument(editor)
         val psiDocumentManager = PsiDocumentManager.getInstance(project)
         hasKubernetesResource(document, psiDocumentManager)
     },
-    private val createResourceEditor: (HasMetadata?, FileEditor, Project, Clients<out KubernetesClient>) -> ResourceEditor =
-        { resource, editor, project, clients -> ResourceEditor(resource, editor, project, clients) },
+    /* for mocking purposes */
+    private val createResourceEditor: (HasMetadata?, FileEditor, Project) -> ResourceEditor =
+        { resource, editor, project -> ResourceEditor(resource, editor, project) },
     /* for mocking purposes */
     private val reportTelemetry: (FileEditor, Project, TelemetryMessageBuilder.ActionMessage) -> Unit = { editor, project, telemetry ->
         val resourceInfo = getKubernetesResourceInfo(getDocument(editor), PsiDocumentManager.getInstance(project))
@@ -165,28 +160,18 @@ open class ResourceEditorFactory protected constructor(
             return null
         }
         val telemetry = TelemetryService.instance.action(TelemetryService.NAME_PREFIX_EDITOR + "open")
-        try {
-            val clients = createClients.invoke(ClientConfig {}) ?: return null
+        return try {
             runAsync { reportTelemetry.invoke(editor, project, telemetry) }
-            return create(resource, editor, project, clients)
+            val resourceEditor = createResourceEditor.invoke(resource, editor, project)
+            resourceEditor.createToolbar()
+            editor.putUserData(ResourceEditor.KEY_RESOURCE_EDITOR, resourceEditor)
+            editor.file?.putUserData(ResourceEditor.KEY_RESOURCE_EDITOR, resourceEditor)
+            resourceEditor
         } catch (e: ResourceException) {
             ErrorNotification(editor, project).show(e.message ?: "", e.cause?.message)
-            telemetry.error(e).send()
-            return null
+            runAsync { telemetry.error(e).send() }
+            null
         }
-    }
-
-    private fun create(
-        resource: HasMetadata?,
-        editor: FileEditor,
-        project: Project,
-        clients: Clients<out KubernetesClient>
-    ): ResourceEditor {
-        val resourceEditor = createResourceEditor.invoke(resource, editor, project, clients)
-        resourceEditor.createToolbar()
-        editor.putUserData(ResourceEditor.KEY_RESOURCE_EDITOR, resourceEditor)
-        editor.file?.putUserData(ResourceEditor.KEY_RESOURCE_EDITOR, resourceEditor)
-        return resourceEditor
     }
 
     /** for testing purposes */

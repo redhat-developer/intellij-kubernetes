@@ -16,6 +16,8 @@ import com.nhaarman.mockitokotlin2.doAnswer
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.whenever
+import com.redhat.devtools.intellij.common.validation.KubernetesResourceInfo
+import com.redhat.devtools.intellij.common.validation.KubernetesTypeInfo
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.NamedContext
 import io.fabric8.kubernetes.api.model.Namespace
@@ -114,4 +116,20 @@ object Mocks {
     fun resourceModel(): IResourceModel {
         return mock {}
     }
+
+    fun kubernetesTypeInfo(kind: String?, apiGroup: String?): KubernetesTypeInfo {
+        return mock {
+            on { this.apiGroup } doReturn apiGroup
+            on { this.kind } doReturn kind
+        }
+    }
+
+    fun kubernetesResourceInfo(name: String?, namespace: String?, typeInfo: KubernetesTypeInfo): KubernetesResourceInfo {
+        return mock {
+            on { this.name } doReturn name
+            on { this.namespace } doReturn namespace
+            on { this.typeInfo } doReturn typeInfo
+        }
+    }
+
 }

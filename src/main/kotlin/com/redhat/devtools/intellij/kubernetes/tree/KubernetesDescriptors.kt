@@ -202,7 +202,7 @@ object KubernetesDescriptors {
 			override fun getLabel(element: Pod): String {
 				val total = PodStatusUtil.getContainerStatus(element).size
 				val ready = PodStatusUtil.getContainerStatus(element).filter { it.ready }.size
-				val state = element?.status?.phase ?: "unknown"
+				val state = element.status?.phase ?: "unknown"
 				return "$state ($ready/$total)"
 			}
 		}
@@ -227,7 +227,7 @@ object KubernetesDescriptors {
 				project
 			) {
 			override fun getLabel(element: Pod): String {
-				return element?.status?.podIP ?: "<No IP>"
+				return element.status?.podIP ?: "<No IP>"
 			}
 		}
 	}

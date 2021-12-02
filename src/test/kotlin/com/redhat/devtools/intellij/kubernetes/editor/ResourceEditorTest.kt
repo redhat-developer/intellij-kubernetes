@@ -27,6 +27,8 @@ import com.nhaarman.mockitokotlin2.spy
 import com.nhaarman.mockitokotlin2.times
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.whenever
+import com.redhat.devtools.intellij.common.validation.KubernetesResourceInfo
+import com.redhat.devtools.intellij.common.validation.KubernetesTypeInfo
 import com.redhat.devtools.intellij.kubernetes.editor.notification.DeletedNotification
 import com.redhat.devtools.intellij.kubernetes.editor.notification.ErrorNotification
 import com.redhat.devtools.intellij.kubernetes.editor.notification.PullNotification
@@ -74,6 +76,7 @@ spec:
 """
     private val allNamespaces = arrayOf(ClientMocks.NAMESPACE1, ClientMocks.NAMESPACE2, ClientMocks.NAMESPACE3)
     private val currentNamespace = ClientMocks.NAMESPACE2
+
     // need real resources, not mocks - #equals used to track changes
     private val GARGAMEL = PodBuilder(POD2)
         .editMetadata()
@@ -83,18 +86,21 @@ spec:
         .endMetadata()
         .withApiVersion("v1")
         .build()
+
     // need real resources, not mocks - #equals used to track changes
     private val GARGAMEL_WITH_LABEL = PodBuilder(GARGAMEL)
         .editMetadata()
-        .withLabels<String, String>(mapOf(Pair("hat", "none")))
+            .withLabels<String, String>(mapOf(Pair("hat", "none")))
         .endMetadata()
         .build()
+
     // need real resources, not mocks - #equals used to track changes
     private val GARGAMELv2 = PodBuilder(GARGAMEL)
         .editMetadata()
-        .withResourceVersion("2")
+            .withResourceVersion("2")
         .endMetadata()
         .build()
+
     // need real resources, not mocks - #equals used to track changes
     private val AZRAEL = PodBuilder(POD3)
         .editMetadata()
@@ -121,12 +127,13 @@ spec:
         }
     private val isTemporary: (file: VirtualFile?) -> Boolean =
         mock<(file: VirtualFile?) -> Boolean>().apply {
-                doReturn(true)
-                    .whenever(this).invoke(any())
+            doReturn(true)
+                .whenever(this).invoke(any())
         }
     private val project: Project = mock()
-    private val clients: Clients<KubernetesClient> =
+    private val clients: () -> Clients<KubernetesClient> = {
         Clients(client(currentNamespace.metadata.name, allNamespaces))
+    }
     private val getCustomResourceDefinitions: (client: KubernetesClient) -> Collection<CustomResourceDefinition> =
         mock<(client: KubernetesClient) -> Collection<CustomResourceDefinition>>().apply {
         doReturn(emptyList<CustomResourceDefinition>())
@@ -158,9 +165,17 @@ spec:
     private val getDocument: (FileEditor) -> Document? = { document }
     private val psiDocumentManager: PsiDocumentManager = mock()
     private val getPsiDocumentManager: (Project) -> PsiDocumentManager = { psiDocumentManager }
-    private val hasKubernetesResource: (FileEditor, Project) -> Boolean = mock<(FileEditor, Project) -> Boolean>().apply {
-        doReturn(true)
-            .whenever(this).invoke(any(), any())
+    private val kubernetesTypeInfo: KubernetesTypeInfo = mock {
+        on { kind } doReturn GARGAMEL.kind
+        on { apiGroup } doReturn GARGAMEL.apiVersion
+    }
+    private val kubernetesResourceInfo: KubernetesResourceInfo = mock {
+        on { typeInfo } doReturn kubernetesTypeInfo
+        on { name } doReturn GARGAMEL.metadata.name
+        on { namespace } doReturn GARGAMEL.metadata.namespace
+    }
+    private val getKubernetesResourceInfo: (FileEditor, Project) -> KubernetesResourceInfo = { editor, project ->
+        kubernetesResourceInfo
     }
     private val documentReplaced: AtomicBoolean = AtomicBoolean(false)
 
@@ -182,7 +197,7 @@ spec:
             errorNotification,
             getDocument,
             getPsiDocumentManager,
-            hasKubernetesResource,
+            getKubernetesResourceInfo,
             documentReplaced
         )
     )
@@ -543,10 +558,25 @@ spec:
     }
 
     @Test
-    fun `#enableNonProjectFileEditing should NOT call #enableNonProjectFileEditing if editor has not kubernetes resource`() {
+    fun `#enableNonProjectFileEditing should NOT call #enableNonProjectFileEditing if editor has no kind`() {
         // given
-        doReturn(false)
-            .whenever(hasKubernetesResource).invoke(any(), any())
+        doReturn("apiGroup")
+            .whenever(kubernetesTypeInfo).apiGroup
+        doReturn(null)
+            .whenever(kubernetesTypeInfo).kind
+        // when
+        editor.enableNonProjectFileEditing()
+        // then
+        verify(resourceFile, never()).enableNonProjectFileEditing()
+    }
+
+    @Test
+    fun `#enableNonProjectFileEditing should NOT call #enableNonProjectFileEditing if editor has no apiGroup`() {
+        // given
+        doReturn(null)
+            .whenever(kubernetesTypeInfo).apiGroup
+        doReturn("kind")
+            .whenever(kubernetesTypeInfo).kind
         // when
         editor.enableNonProjectFileEditing()
         // then
@@ -718,7 +748,7 @@ spec:
     }
 
     @Test
-    fun `#getTitle should return resourcename@namespace if file is temporary file and contains kubernetes resource`() {
+    fun `#getTitle should return 'resourcename@namespace' if file is temporary and contains kubernetes resource with namespace`() {
         // given
         doReturn(true)
             .whenever(isTemporary).invoke(any())
@@ -730,22 +760,39 @@ spec:
     }
 
     @Test
-    fun `#getTitle should return filename if file is temporary file but does NOT contain kubernetes resource`() {
+    fun `#getTitle should return 'name' if local file is temporary and has kubernetes resource without namespace - ex Namespace, Project`() {
         // given
+        val name = "bogus name"
         doReturn(true)
             .whenever(isTemporary).invoke(virtualFile)
-        doReturn(false)
-            .whenever(hasKubernetesResource).invoke(any(), any())
-        doReturn("lord.vader")
-            .whenever(virtualFile).name
+        doReturn(name)
+            .whenever(kubernetesResourceInfo).name
+        doReturn(null)
+            .whenever(kubernetesResourceInfo).namespace
         // when
         val title = editor.getTitle()
         // then
-        assertThat(title).isEqualTo("lord.vader")
+        assertThat(title).isEqualTo(name)
     }
 
     @Test
-    fun `#getTitle should return filename if file is NOT temporary file`() {
+    fun `#getTitle should return 'unknown@namespace' if local file is temporary, has kubernetes resource but name not recognized`() {
+        // given
+        val namespace = "bogus namespace"
+        doReturn(true)
+            .whenever(isTemporary).invoke(virtualFile)
+        doReturn(null)
+            .whenever(kubernetesResourceInfo).name
+        doReturn(namespace)
+            .whenever(kubernetesResourceInfo).namespace
+        // when
+        val title = editor.getTitle()
+        // then
+        assertThat(title).isEqualTo("${ResourceEditor.TITLE_UNKNOWN_NAME}@$namespace")
+    }
+
+    @Test
+    fun `#getTitle should return filename if file is NOT temporary`() {
         // given
         doReturn(false)
             .whenever(isTemporary).invoke(virtualFile)
@@ -761,7 +808,7 @@ spec:
         localCopy: HasMetadata?,
         editor: FileEditor,
         project: Project,
-        clients: Clients<out KubernetesClient>,
+        clients: () -> Clients<out KubernetesClient>,
         getDefinitions: (client: KubernetesClient) -> Collection<CustomResourceDefinition>,
         resourceFactory: (editor: FileEditor, definitions: Collection<CustomResourceDefinition>) -> HasMetadata?,
         createClusterResource: (HasMetadata, Clients<out KubernetesClient>, Collection<CustomResourceDefinition>) -> ClusterResource,
@@ -774,7 +821,7 @@ spec:
         errorNotification: ErrorNotification,
         documentProvider: (FileEditor) -> Document?,
         psiDocumentManagerProvider: (Project) -> PsiDocumentManager,
-        hasKubernetesResource: (FileEditor, Project) -> Boolean,
+        getKubernetesResourceInfo: (FileEditor, Project) -> KubernetesResourceInfo,
         documentReplaced: AtomicBoolean
     ) : ResourceEditor(
         localCopy,
@@ -793,7 +840,7 @@ spec:
         errorNotification,
         documentProvider,
         psiDocumentManagerProvider,
-        hasKubernetesResource,
+        getKubernetesResourceInfo,
         documentReplaced
     ) {
         override var editorResource: HasMetadata? = super.editorResource

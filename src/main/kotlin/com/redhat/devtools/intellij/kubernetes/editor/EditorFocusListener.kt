@@ -22,8 +22,8 @@ import com.redhat.devtools.intellij.kubernetes.model.ResourceException
 class EditorFocusListener(private val project: Project) : FileEditorManagerListener, FileEditorManagerListener.Before {
 
     override fun selectionChanged(event: FileEditorManagerEvent) {
-        handleSelectionLost(event.oldEditor, project)
-        handleSelectionGained(event.newEditor, project)
+        selectionLost(event.oldEditor, project)
+        selectionGained(event.newEditor, project)
     }
 
     override fun fileClosed(source: FileEditorManager, file: VirtualFile) {
@@ -32,7 +32,7 @@ class EditorFocusListener(private val project: Project) : FileEditorManagerListe
         ResourceEditorFactory.instance.getExisting(file)?.close()
     }
 
-    private fun handleSelectionGained(editor: FileEditor?, project: Project) {
+    private fun selectionGained(editor: FileEditor?, project: Project) {
         if (editor == null) {
             return
         }
@@ -48,7 +48,7 @@ class EditorFocusListener(private val project: Project) : FileEditorManagerListe
         }
     }
 
-    private fun handleSelectionLost(editor: FileEditor?, project: Project) {
+    private fun selectionLost(editor: FileEditor?, project: Project) {
         if (editor == null) {
             return
         }
