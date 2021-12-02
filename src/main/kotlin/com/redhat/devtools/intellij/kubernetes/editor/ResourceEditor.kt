@@ -20,22 +20,25 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Key
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.PsiDocumentManager
+import com.redhat.devtools.intellij.common.validation.KubernetesResourceInfo
 import com.redhat.devtools.intellij.kubernetes.editor.notification.DeletedNotification
 import com.redhat.devtools.intellij.kubernetes.editor.notification.ErrorNotification
 import com.redhat.devtools.intellij.kubernetes.editor.notification.PullNotification
 import com.redhat.devtools.intellij.kubernetes.editor.notification.PulledNotification
 import com.redhat.devtools.intellij.kubernetes.editor.notification.PushNotification
 import com.redhat.devtools.intellij.kubernetes.editor.util.getDocument
-import com.redhat.devtools.intellij.kubernetes.editor.util.hasKubernetesResource
+import com.redhat.devtools.intellij.kubernetes.editor.util.getKubernetesResourceInfo
+import com.redhat.devtools.intellij.kubernetes.editor.util.isKubernetesResource
+import com.redhat.devtools.intellij.kubernetes.model.ClientConfig
 import com.redhat.devtools.intellij.kubernetes.model.Clients
 import com.redhat.devtools.intellij.kubernetes.model.ClusterResource
 import com.redhat.devtools.intellij.kubernetes.model.ModelChangeObservable
 import com.redhat.devtools.intellij.kubernetes.model.ResourceException
+import com.redhat.devtools.intellij.kubernetes.model.createClients
 import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.custom.CustomResourceDefinitionMapping
 import com.redhat.devtools.intellij.kubernetes.model.util.causeOrExceptionMessage
 import com.redhat.devtools.intellij.kubernetes.model.util.trimWithEllipsis
 import io.fabric8.kubernetes.api.model.HasMetadata
-import io.fabric8.kubernetes.api.model.Namespace
 import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinition
 import io.fabric8.kubernetes.client.KubernetesClient
 import io.fabric8.kubernetes.client.KubernetesClientException
@@ -48,10 +51,14 @@ import kotlin.concurrent.withLock
  * A Decorator for [FileEditor] instances that allows to push or pull the editor content to/from a remote cluster.
  */
 open class ResourceEditor(
-    _localCopy: HasMetadata?,
+    resource: HasMetadata?,
     val editor: FileEditor,
     private val project: Project,
-    private val clients: Clients<out KubernetesClient>,
+    /* for mocking purposes */
+    private val createClients: () -> Clients<out KubernetesClient> = {
+            val config = ClientConfig {}
+            createClients(config)
+        },
     // for mocking purposes
     private val getCustomResourceDefinitions: (client: KubernetesClient) -> Collection<CustomResourceDefinition> =
         CustomResourceDefinitionMapping::getDefinitions,
@@ -77,12 +84,12 @@ open class ResourceEditor(
     // for mocking purposes
     private val errorNotification: ErrorNotification = ErrorNotification(editor, project),
     // for mocking purposes
-    private val documentProvider: (FileEditor) -> Document? = ::getDocument,
+    private val getDocument: (FileEditor) -> Document? = ::getDocument,
     // for mocking purposes
-    private val psiDocumentManagerProvider: (Project) -> PsiDocumentManager = { PsiDocumentManager.getInstance(project) },
+    private val getPsiDocumentManager: (Project) -> PsiDocumentManager = { PsiDocumentManager.getInstance(project) },
     // for mocking purposes
-    private val hasKubernetesResource: (FileEditor, Project) -> Boolean = { editor, project ->
-        hasKubernetesResource(documentProvider.invoke(editor), psiDocumentManagerProvider.invoke(project))
+    private val getKubernetesResourceInfo: (FileEditor, Project) -> KubernetesResourceInfo? = { editor, project ->
+        getKubernetesResourceInfo(getDocument.invoke(editor), getPsiDocumentManager.invoke(project))
     },
     // for mocking purposes
     private val documentReplaced: AtomicBoolean = AtomicBoolean(false)
@@ -92,15 +99,20 @@ open class ResourceEditor(
         val KEY_RESOURCE_EDITOR = Key<ResourceEditor>(ResourceEditor::class.java.name)
         val KEY_TOOLBAR = Key<ActionToolbar>(ActionToolbar::class.java.name)
         const val ID_TOOLBAR = "Kubernetes.Editor.Toolbar"
+        const val TITLE_UNKNOWN_CLUSTERRESOURCE = "Unknown Cluster Resource"
+        const val TITLE_UNKNOWN_NAME = "unknown name"
     }
 
-    var localCopy: HasMetadata? = _localCopy
+    var localCopy: HasMetadata? = resource
         get() {
             if (field == null) {
                 field = createResource.invoke(editor, definitions)
             }
             return field
         }
+    val clients: Clients<out KubernetesClient> by lazy {
+        createClients.invoke()
+    }
 
     private val definitions: Collection<CustomResourceDefinition> by lazy {
         try {
@@ -110,7 +122,7 @@ open class ResourceEditor(
         }
     }
 
-    open var editorResource: HasMetadata? = localCopy
+    open var editorResource: HasMetadata? = resource
         get() {
             resourceChangeMutex.withLock {
                 return field
@@ -162,7 +174,7 @@ open class ResourceEditor(
                 runInUI {
                     hideNotifications()
                     errorNotification.show(
-                        "Invalid kubernetes yaml/json",
+                        e.message ?: "Invalid kubernetes yaml/json",
                         trimWithEllipsis(causeOrExceptionMessage(e), 300) ?: ""
                     )
                 }
@@ -248,13 +260,26 @@ open class ResourceEditor(
      * Does nothing if it doesn't exist.
      */
     fun pull() {
-        val cluster = clusterResource ?: return
-        runAsync {
-            val pulledResource = pull(cluster) ?: return@runAsync
+        try {
+            val cluster = clusterResource ?: return
+            runAsync {
+                val pulledResource = pull(cluster) ?: return@runAsync
+                runInUI {
+                    replaceDocument(pulledResource)
+                    hideNotifications()
+                    pulledNotification.show(pulledResource)
+                }
+            }
+        } catch (e: ResourceException) {
+            logger<ResourceEditor>().warn(e)
             runInUI {
-                replaceDocument(pulledResource)
                 hideNotifications()
-                pulledNotification.show(pulledResource)
+                errorNotification.show(
+                    "Error Pulling",
+                    "Could not pull ${editorResource?.kind} ${editorResource?.metadata?.name} from cluster ${
+                        trimWithEllipsis(causeOrExceptionMessage(e, ": "), 300)
+                    }"
+                )
             }
         }
     }
@@ -277,12 +302,12 @@ open class ResourceEditor(
             return
         }
         val jsonYaml = Serialization.asYaml(resource).trim()
-        val document = documentProvider.invoke(editor) ?: return
+        val document = getDocument.invoke(editor) ?: return
         if (document.text.trim() != jsonYaml) {
             runWriteCommand {
                 document.replaceString(0, document.textLength, jsonYaml)
                 documentReplaced.set(true)
-                val psiDocumentManager = psiDocumentManagerProvider.invoke(project)
+                val psiDocumentManager = getPsiDocumentManager.invoke(project)
                 psiDocumentManager.commitDocument(document)
             }
         }
@@ -388,7 +413,8 @@ open class ResourceEditor(
      */
     fun enableNonProjectFileEditing() {
         if (editor.file == null
-            || !hasKubernetesResource.invoke(editor, project)) {
+            || !isKubernetesResource(
+                getKubernetesResourceInfo.invoke(editor, project))){
                 return
         }
         createResourceFileForVirtual(editor.file)?.enableNonProjectFileEditing()
@@ -396,10 +422,14 @@ open class ResourceEditor(
 
     fun getTitle(): String? {
         val file = editor.file ?: return null
-        return if (true == isTemporary.invoke(file)
-            && hasKubernetesResource.invoke(editor, project)) {
-            val resource = editorResource ?: return null
-            getTitleFor(resource)
+        return if (true == isTemporary.invoke(file)) {
+            val resourceInfo = getKubernetesResourceInfo.invoke(editor, project)
+            if (resourceInfo != null
+                && isKubernetesResource(resourceInfo)) {
+                getTitleFor(resourceInfo)
+            } else {
+                TITLE_UNKNOWN_CLUSTERRESOURCE
+            }
         } else {
             getTitleFor(file)
         }
@@ -409,17 +439,13 @@ open class ResourceEditor(
         return file.name
     }
 
-    private fun getTitleFor(resource: HasMetadata): String {
-        return when (resource) {
-            is Namespace,
-            is io.fabric8.openshift.api.model.Project -> resource.metadata.name
-            else -> {
-                if (resource.metadata.namespace != null) {
-                    "${resource.metadata.name}@${resource.metadata.namespace}"
-                } else {
-                    resource.metadata.name
-                }
-            }
+    private fun getTitleFor(info: KubernetesResourceInfo): String {
+        val name = info.name ?: TITLE_UNKNOWN_NAME
+        val namespace = info.namespace
+        return if (namespace == null) {
+            name
+        } else {
+            "$name@$namespace"
         }
     }
 

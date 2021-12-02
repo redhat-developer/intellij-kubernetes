@@ -35,7 +35,7 @@ fun createClients(
 	}
 }
 
-fun createClients(config: ClientConfig): Clients<out KubernetesClient>? {
+fun createClients(config: ClientConfig): Clients<out KubernetesClient> {
 	val cluster =  config.currentContext?.context?.cluster
 	return createClients(cluster)
 }

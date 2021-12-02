@@ -31,8 +31,8 @@ object HasMetadataResourceFactory: AbstractResourceFactory<HasMetadataResource>(
 
 	override fun createResource(node: JsonNode): HasMetadataResource {
 		return HasMetadataResource(
-			node.get(KIND).asText(),
-			node.get(API_VERSION).asText(),
+			node.get(KIND)?.asText(),
+			node.get(API_VERSION)?.asText(),
 			createObjectMetadata(node.get(METADATA))
 		)
 	}

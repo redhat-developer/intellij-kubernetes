@@ -15,7 +15,6 @@ import com.intellij.openapi.fileEditor.FileEditor
 import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.VirtualFile
-import com.intellij.psi.PsiDocumentManager
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.eq
@@ -24,14 +23,10 @@ import com.nhaarman.mockitokotlin2.never
 import com.nhaarman.mockitokotlin2.spy
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.whenever
-import com.redhat.devtools.intellij.common.validation.KubernetesResourceInfo
 import com.redhat.devtools.intellij.kubernetes.editor.ResourceEditor.Companion.KEY_RESOURCE_EDITOR
-import com.redhat.devtools.intellij.kubernetes.model.ClientConfig
-import com.redhat.devtools.intellij.kubernetes.model.Clients
 import com.redhat.devtools.intellij.kubernetes.model.util.createResource
 import com.redhat.devtools.intellij.telemetry.core.service.TelemetryMessageBuilder
 import io.fabric8.kubernetes.api.model.HasMetadata
-import io.fabric8.kubernetes.client.KubernetesClient
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test
 
@@ -82,7 +77,6 @@ class ResourceEditorFactoryTest {
         doReturn(virtualFile)
             .whenever(this).file
     }
-    private val project: Project = mock()
     private val fileEditorManager: FileEditorManager = mock<FileEditorManager>().apply {
         doReturn(arrayOf(fileEditor))
             .whenever(this).openFile(any(), any())
@@ -117,19 +111,13 @@ class ResourceEditorFactoryTest {
             .whenever(this).text
     }
     private val getDocument: (editor: FileEditor) -> Document? = { document }
-    private val getPsiDocumentManager: (Project) -> PsiDocumentManager = mock()
-    private val createClients: (config: ClientConfig) -> Clients<out KubernetesClient>? =
-        mock<(config: ClientConfig) -> Clients<out KubernetesClient>?>().apply {
-            doReturn(mock<Clients<out KubernetesClient>>())
-                .whenever(this).invoke(any())
-        }
     private val reportTelemetry: (FileEditor, Project, TelemetryMessageBuilder.ActionMessage) -> Unit = mock()
     private val hasKubernetesResource: (editor: FileEditor, project: Project) -> Boolean = mock<(editor: FileEditor, project: Project) -> Boolean>().apply {
         doReturn(true)
             .whenever(this).invoke(any(), any())
     }
-    private val createResourceEditor: (HasMetadata?, FileEditor, Project, Clients<out KubernetesClient>) -> ResourceEditor =
-        { resource, editor, project, clients -> mock() }
+    private val createResourceEditor: (HasMetadata?, FileEditor, Project) -> ResourceEditor =
+        { resource, editor, project -> mock() }
 
     private val resourceEditor: ResourceEditor = spy(ResourceEditor(resource, fileEditor, mock(), mock()))
 
@@ -141,7 +129,6 @@ class ResourceEditorFactoryTest {
             isValidType,
             isTemporary,
             getDocument,
-            createClients,
             hasKubernetesResource,
             createResourceEditor,
             reportTelemetry
@@ -233,12 +220,14 @@ class ResourceEditorFactoryTest {
     }
 
     @Test
-    fun `#getOrCreate should return null if file is NOT valid file type`() {
+    fun `#getOrCreate should NOT create editor if file is NOT valid file type`() {
         // given
         doReturn(null)
             .whenever(fileEditor).getUserData(KEY_RESOURCE_EDITOR) // force create
         doReturn(false)
             .whenever(isValidType).invoke(any())
+        doReturn(true)
+            .whenever(hasKubernetesResource).invoke(any(), any())
         // when
         val editor = editorFactory.getExistingOrCreate(fileEditor, mock())
         // then
@@ -246,8 +235,12 @@ class ResourceEditorFactoryTest {
     }
 
     @Test
-    fun `#getOrCreate should return null if file does not have kubernetes resource`() {
+    fun `#getOrCreate should NOT create resource editor if local file does NOT contain kubernetes resource`() {
         // given
+        doReturn(null)
+            .whenever(fileEditor).getUserData(KEY_RESOURCE_EDITOR) // force create
+        doReturn(true)
+            .whenever(isValidType).invoke(any())
         doReturn(false)
             .whenever(hasKubernetesResource).invoke(any(), any())
         // when
@@ -257,19 +250,14 @@ class ResourceEditorFactoryTest {
     }
 
     @Test
-    fun `#getOrCreate should NOT create resource editor if clients cannot be created`() {
+    fun `#getOrCreate should create resource editor if local file contains kubernetes resource`() {
         // given
         doReturn(null)
-            .whenever(createClients).invoke(any())
-        // when
-        val editor = editorFactory.getExistingOrCreate(fileEditor, mock())
-        // then
-        assertThat(editor).isNull()
-    }
-
-    @Test
-    fun `#getOrCreate should create resource editor if no instance exists, local file contains kubernetes YAML`() {
-        // given
+            .whenever(fileEditor).getUserData(KEY_RESOURCE_EDITOR) // force create
+        doReturn(true)
+            .whenever(isValidType).invoke(any())
+        doReturn(true)
+            .whenever(hasKubernetesResource).invoke(any(), any())
         // when
         val editor = editorFactory.getExistingOrCreate(fileEditor, mock())
         // then
@@ -300,9 +288,8 @@ class ResourceEditorFactoryTest {
         isValidType: (file: VirtualFile?) -> Boolean,
         isTemporary: (file: VirtualFile?) -> Boolean,
         getDocument: (editor: FileEditor) -> Document?,
-        createClients: (config: ClientConfig) -> Clients<out KubernetesClient>?,
         hasKubernetesResource: (FileEditor, Project) -> Boolean,
-        createResourceEditor: (HasMetadata?, FileEditor, Project, Clients<out KubernetesClient>) -> ResourceEditor,
+        createResourceEditor: (HasMetadata?, FileEditor, Project) -> ResourceEditor,
         reportTelemetry: (FileEditor, Project, TelemetryMessageBuilder.ActionMessage) -> Unit
     ) : ResourceEditorFactory(
         getFileEditorManager,
@@ -310,7 +297,6 @@ class ResourceEditorFactoryTest {
         isValidType,
         isTemporary,
         getDocument,
-        createClients,
         hasKubernetesResource,
         createResourceEditor,
         reportTelemetry
