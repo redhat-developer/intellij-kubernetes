@@ -23,10 +23,10 @@ import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.util.ui.EdtInvocationManager
 import com.redhat.devtools.intellij.common.editor.AllowNonProjectEditing
 import com.redhat.devtools.intellij.common.utils.UIHelper
+import com.redhat.devtools.intellij.kubernetes.editor.util.Serialization
 import com.redhat.devtools.intellij.kubernetes.model.Notification
 import com.redhat.devtools.intellij.kubernetes.model.util.trimWithEllipsis
 import io.fabric8.kubernetes.api.model.HasMetadata
-import io.fabric8.kubernetes.client.utils.Serialization
 import org.apache.commons.io.FileUtils
 import org.jetbrains.yaml.YAMLFileType
 import java.io.IOException
