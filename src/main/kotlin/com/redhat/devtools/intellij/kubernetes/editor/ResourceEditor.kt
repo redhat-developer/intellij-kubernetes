@@ -26,12 +26,12 @@ import com.redhat.devtools.intellij.kubernetes.editor.notification.PullNotificat
 import com.redhat.devtools.intellij.kubernetes.editor.notification.PulledNotification
 import com.redhat.devtools.intellij.kubernetes.editor.notification.PushNotification
 import com.redhat.devtools.intellij.kubernetes.editor.util.getDocument
+import com.redhat.devtools.intellij.kubernetes.editor.util.hasKubernetesResource
 import com.redhat.devtools.intellij.kubernetes.model.Clients
 import com.redhat.devtools.intellij.kubernetes.model.ClusterResource
 import com.redhat.devtools.intellij.kubernetes.model.ModelChangeObservable
 import com.redhat.devtools.intellij.kubernetes.model.Notification
 import com.redhat.devtools.intellij.kubernetes.model.ResourceException
-import com.redhat.devtools.intellij.kubernetes.model.util.isKubernetesResource
 import com.redhat.devtools.intellij.kubernetes.model.util.trimWithEllipsis
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.Namespace
@@ -74,6 +74,10 @@ open class ResourceEditor(
     private val documentProvider: (FileEditor) -> Document? = ::getDocument,
     // for mocking purposes
     private val psiDocumentManagerProvider: (Project) -> PsiDocumentManager = { PsiDocumentManager.getInstance(project) },
+    // for mocking purposes
+    private val hasKubernetesResource: (FileEditor, Project) -> Boolean = { editor, project ->
+        hasKubernetesResource(documentProvider.invoke(editor), psiDocumentManagerProvider.invoke(project))
+    },
     // for mocking purposes
     private val ideNotification: Notification = Notification(),
     // for mocking purposes
@@ -367,21 +371,16 @@ open class ResourceEditor(
      */
     fun enableNonProjectFileEditing() {
         if (editor.file == null
-            || !hasKubernetesResource(editor)) {
+            || !hasKubernetesResource.invoke(editor, project)) {
                 return
         }
         createResourceFileForVirtual(editor.file)?.enableNonProjectFileEditing()
     }
 
-    protected open fun hasKubernetesResource(editor: FileEditor): Boolean {
-        val document = documentProvider.invoke(editor) ?: return false
-        return isKubernetesResource(document.text)
-    }
-
     fun getTitle(): String? {
         val file = editor.file ?: return null
         return if (true == isTemporary.invoke(file)
-            && hasKubernetesResource(editor)) {
+            && hasKubernetesResource.invoke(editor, project)) {
             val resource = editorResource ?: return null
             getTitleFor(resource)
         } else {

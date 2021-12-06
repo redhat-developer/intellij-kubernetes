@@ -150,9 +150,13 @@ spec:
         doReturn(job)
             .whenever(this).getText()
     }
-    private val documentProvider: (FileEditor) -> Document? = { document }
+    private val getDocument: (FileEditor) -> Document? = { document }
     private val psiDocumentManager: PsiDocumentManager = mock()
-    private val psiDocumentManagerProvider: (Project) -> PsiDocumentManager = { psiDocumentManager }
+    private val getPsiDocumentManager: (Project) -> PsiDocumentManager = { psiDocumentManager }
+    private val hasKubernetesResource: (FileEditor, Project) -> Boolean = mock<(FileEditor, Project) -> Boolean>().apply {
+        doReturn(true)
+            .whenever(this).invoke(any(), any())
+    }
     private val ideNotification: Notification = mock()
     private val documentReplaced: AtomicBoolean = AtomicBoolean(false)
 
@@ -171,8 +175,9 @@ spec:
             pulledNotification,
             deletedNotification,
             errorNotification,
-            documentProvider,
-            psiDocumentManagerProvider,
+            getDocument,
+            getPsiDocumentManager,
+            hasKubernetesResource,
             ideNotification,
             documentReplaced
         )
@@ -512,6 +517,17 @@ spec:
     }
 
     @Test
+    fun `#enableNonProjectFileEditing should NOT call #enableNonProjectFileEditing if editor has not kubernetes resource`() {
+        // given
+        doReturn(false)
+            .whenever(hasKubernetesResource).invoke(any(), any())
+        // when
+        editor.enableNonProjectFileEditing()
+        // then
+        verify(resourceFile, never()).enableNonProjectFileEditing()
+    }
+
+    @Test
     fun `#replaceContent should set text of document`() {
         // given
         doReturn(GARGAMELv2)
@@ -692,8 +708,8 @@ spec:
         // given
         doReturn(true)
             .whenever(isTemporary).invoke(virtualFile)
-        doReturn("not kubernetes yaml")
-            .whenever(document).getText()
+        doReturn(false)
+            .whenever(hasKubernetesResource).invoke(any(), any())
         doReturn("lord.vader")
             .whenever(virtualFile).name
         // when
@@ -731,6 +747,7 @@ spec:
         errorNotification: ErrorNotification,
         documentProvider: (FileEditor) -> Document?,
         psiDocumentManagerProvider: (Project) -> PsiDocumentManager,
+        hasKubernetesResource: (FileEditor, Project) -> Boolean,
         ideNotification: Notification,
         documentReplaced: AtomicBoolean
     ) : ResourceEditor(
@@ -749,6 +766,7 @@ spec:
         errorNotification,
         documentProvider,
         psiDocumentManagerProvider,
+        hasKubernetesResource,
         ideNotification,
         documentReplaced
     ) {

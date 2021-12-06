@@ -81,13 +81,7 @@ object EditorResourceFactory {
                 createResource(jsonYaml)
             }
         } catch(e: KubernetesClientException) {
-            // cluster not reachable or invalid kube config
-            return try {
-                createResource(jsonYaml)
-            } catch(e: KubernetesClientException) {
-                // unknown type
-                createResource<GenericCustomResource>(jsonYaml)
-            }
+            throw ResourceException("invalid kubernetes yaml/json", e.cause)
         }
     }
 }

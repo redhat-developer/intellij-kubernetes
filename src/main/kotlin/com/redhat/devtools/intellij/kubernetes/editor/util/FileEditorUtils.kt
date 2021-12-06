@@ -18,6 +18,8 @@ import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.project.ProjectManager
 import com.intellij.openapi.vfs.VirtualFile
+import com.intellij.psi.PsiDocumentManager
+import com.redhat.devtools.intellij.common.validation.KubernetesTypeInfo
 import com.redhat.devtools.intellij.kubernetes.editor.ResourceFile
 
 fun getProjectAndEditor(file: VirtualFile): ProjectAndEditor? {
@@ -50,6 +52,25 @@ fun getDocument(editor: FileEditor): Document? {
     val file = editor.file ?: return null
     return ReadAction.compute<Document, Exception> {
         FileDocumentManager.getInstance().getDocument(file)
+    }
+}
+
+/**
+ * Returns `true` if the given document for the given psi document manager has a kubernetes resource
+ */
+fun hasKubernetesResource(document: Document?, psiDocumentManager: PsiDocumentManager): Boolean {
+    if (document == null) {
+        return false
+    }
+    return try {
+        val typeInfo = ReadAction.compute<KubernetesTypeInfo, RuntimeException> {
+            val psiFile = psiDocumentManager.getPsiFile(document)
+            KubernetesTypeInfo.extractMeta(psiFile)
+        }
+        (typeInfo.kind != null
+                && typeInfo.apiGroup != null)
+    } catch (e: java.lang.RuntimeException) {
+        false
     }
 }
 

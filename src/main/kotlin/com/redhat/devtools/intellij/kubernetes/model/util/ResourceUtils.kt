@@ -15,6 +15,7 @@ import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.KubernetesResource
 import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinition
 import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinitionSpec
+import io.fabric8.kubernetes.client.KubernetesClientException
 import io.fabric8.kubernetes.client.dsl.base.CustomResourceDefinitionContext
 import io.fabric8.kubernetes.client.utils.KubernetesVersionPriority
 import io.fabric8.kubernetes.client.utils.Serialization
@@ -318,13 +319,18 @@ inline fun <reified T> createResource(jsonYaml: String): T {
  * @param jsonYaml the string that should be converted into a [KubernetesResource]
  * @return the [KubernetesResource] for the given string
  */
-fun isKubernetesResource(jsonYaml: String?): Boolean {
+fun hasKubernetesResource(jsonYaml: String?): Boolean {
 	if (jsonYaml == null) {
 		return false
 	}
+
 	return try {
 		createResource<KubernetesResource?>(jsonYaml) != null
-	} catch (e: RuntimeException) {
+	} catch (e: KubernetesClientException) {
+		// invalid yaml/json
+		true
+	} catch (e: ClassCastException) {
+		// not yaml/json
 		false
 	}
 }
