@@ -133,11 +133,23 @@ open class ResourceEditor(
             return
         }
         runAsync {
-            val resource = createResource(editor, clients) ?: return@runAsync
-            this.editorResource = resource
-            val cluster = clusterResource ?: return@runAsync
-            showNotifications(resource, cluster)
-       }
+            try {
+                val resource = createResource(editor, clients) ?: return@runAsync
+                this.editorResource = resource
+                val cluster = clusterResource ?: return@runAsync
+                showNotifications(resource, cluster)
+            } catch (e: ResourceException) {
+                runInUI {
+                    hideNotifications()
+                    errorNotification.show(
+                        "Error Contacting Cluster",
+                        "Could not contact cluster: ${
+                            trimWithEllipsis(e.cause?.message, 300) ?: ""
+                        }")
+                }
+                null
+            }
+        }
     }
 
     private fun showNotifications(resource: HasMetadata, clusterResource: ClusterResource) {
@@ -290,15 +302,7 @@ open class ResourceEditor(
     }
 
     private fun createResource(editor: FileEditor, clients: Clients<out KubernetesClient>): HasMetadata? {
-        return try {
-            createResource.invoke(editor, clients)
-        } catch (e: ResourceException) {
-            runInUI {
-                hideNotifications()
-                errorNotification.show(e.message ?: "", e.cause?.message)
-            }
-            null
-        }
+        return createResource.invoke(editor, clients)
     }
 
     private fun push(resource: HasMetadata, clusterResource: ClusterResource): HasMetadata? {

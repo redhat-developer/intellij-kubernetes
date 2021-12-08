@@ -92,18 +92,23 @@ open class ClusterResource(
 
     private fun request(): HasMetadata? {
         return try {
-            if (operator == null) {
-                throw ResourceException(
-                    "Unsupported resource kind ${initialResource.kind} in version ${initialResource.apiVersion}."
-                )
-            } else {
-                operator!!.get(this.initialResource)
-            }
+            val operator = this.operator ?: throw ResourceException(
+                "Unsupported resource kind ${initialResource.kind} in version ${initialResource.apiVersion}."
+            )
+            operator.get(this.initialResource)
         } catch (e: KubernetesClientException) {
             if (e.isNotFound()) {
                 null
             } else {
-                throw ResourceException("Error contacting cluster: ${e.cause?.message}", e)
+                throw ResourceException(
+                    "Error contacting cluster ${
+                        if (e.cause?.message != null) {
+                            ": ${e.cause?.message}"
+                        } else {
+                            ""
+                        }
+                    }", e
+                )
             }
         }
     }
@@ -124,10 +129,14 @@ open class ClusterResource(
         if (toCompare == null) {
             return true
         }
-        val resource = get(false)
-        return resource == null
-                || (isSameResource(toCompare)
-                && isModified(toCompare))
+        return try {
+            val resource = get(false)
+            resource == null
+                    || (isSameResource(toCompare) && isModified(toCompare))
+        } catch (e: ResourceException) {
+            logger<ClusterResource>().warn("Could not request resource ${initialResource.metadata.name}", e)
+            return false
+        }
     }
 
     /**
@@ -139,12 +148,13 @@ open class ClusterResource(
      * @param resource the resource that shall be save to the cluster
      */
     fun push(resource: HasMetadata): HasMetadata? {
-        if (operator == null
-            || !initialResource.isSameResource(resource)) {
-            throw ResourceException(
-                "unsupported resource kind ${resource.kind} in version ${resource.apiVersion}.")
-        }
         try {
+            if (operator == null
+                || !initialResource.isSameResource(resource)) {
+                throw ResourceException(
+                    "unsupported resource kind ${resource.kind} in version ${resource.apiVersion}."
+                )
+            }
             val updated =
                 if (exists()) {
                     operator?.replace(resource)
@@ -160,16 +170,14 @@ open class ClusterResource(
     }
 
     private fun getDetails(e: KubernetesClientException): String? {
-        if (e.message == null) {
-            return null
-        }
+        val message = e.message ?: return null
 
         val detailsIdentifier = "Message: "
-        val detailsStart = e.message!!.indexOf(detailsIdentifier)
+        val detailsStart = message.indexOf(detailsIdentifier)
         if (detailsStart < 0) {
-            return e.message
+            return message
         }
-        return e.message!!.substring(detailsStart + detailsIdentifier.length)
+        return message.substring(detailsStart + detailsIdentifier.length)
     }
 
     /**
@@ -237,18 +245,24 @@ open class ClusterResource(
      * @see [stopWatch]
      */
     fun watch() {
-        if (operator == null) {
-            logger<ClusterResource>().debug(
-                "Cannot watch ${initialResource.kind} ${initialResource.metadata.name}. No operator present")
-            return
+        try {
+            if (operator == null) {
+                logger<ClusterResource>().debug(
+                    "Cannot watch ${initialResource.kind} ${initialResource.metadata.name}. No operator present"
+                )
+                return
+            }
+            logger<ClusterResource>().debug("Watching ${initialResource.kind} ${initialResource.metadata.name}.")
+            forcedUpdate()
+            watch.watch(
+                initialResource,
+                { watcher -> operator?.watch(initialResource, watcher) },
+                watchListeners
+            )
+        } catch (e: KubernetesClientException) {
+            val details = getDetails(e)
+            throw ResourceException(details, e)
         }
-        logger<ClusterResource>().debug("Watching ${initialResource.kind} ${initialResource.metadata.name}.")
-        forcedUpdate()
-        watch.watch(
-            initialResource,
-            { watcher -> operator?.watch(initialResource, watcher) },
-            watchListeners
-        )
     }
 
     private fun forcedUpdate() {
