@@ -14,6 +14,7 @@ import com.intellij.openapi.diagnostic.logger
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.KubernetesResourceList
 import io.fabric8.kubernetes.client.Client
+import io.fabric8.kubernetes.client.KubernetesClientException
 import io.fabric8.kubernetes.client.Watch
 import io.fabric8.kubernetes.client.Watcher
 import io.fabric8.kubernetes.client.dsl.MixedOperation
@@ -26,14 +27,11 @@ interface INamespacedResourceOperator<R: HasMetadata, C: Client>: IResourceOpera
 }
 
 abstract class NamespacedResourceOperator<R : HasMetadata, C: Client>(
-    protected val client: C
+    protected val client: C,
+    namespace: String? = client.namespace
 ) : AbstractResourceOperator<R>(), INamespacedResourceOperator<R, C> {
 
-    constructor(namespace: String?, client: C): this(client) {
-        this.namespace = namespace
-    }
-
-    final override var namespace: String? = null
+    final override var namespace: String? = namespace
         set(namespace) {
             logger<NamespacedResourceOperator<*, *>>().debug("Using new namespace $namespace.")
             invalidate()
@@ -68,16 +66,18 @@ abstract class NamespacedResourceOperator<R : HasMetadata, C: Client>(
         }
         @Suppress("UNCHECKED_CAST")
         val typedWatcher = watcher as? Watcher<R> ?: return null
+        val inNamespace = this.namespace ?: return null
         return getOperation()
-            ?.inNamespace(namespace!!)
+            ?.inNamespace(inNamespace)
             ?.watch(typedWatcher)
     }
 
     override fun watch(resource: HasMetadata, watcher: Watcher<in R>): Watch? {
         @Suppress("UNCHECKED_CAST")
         val typedWatcher = watcher as? Watcher<R> ?: return null
+        val inNamespace = resourceOrCurrentNamespace(resource)
         return getOperation()
-            ?.inNamespace(resource.metadata.namespace)
+            ?.inNamespace(inNamespace)
             ?.withName(resource.metadata.name)
             ?.watch(typedWatcher)
     }
@@ -96,8 +96,9 @@ abstract class NamespacedResourceOperator<R : HasMetadata, C: Client>(
         val toReplace = resource as? R ?: return null
         removeResourceVersion(toReplace)
         removeUID(toReplace)
+        val inNamespace = resourceOrCurrentNamespace(toReplace)
         return getOperation()
-            ?.inNamespace(toReplace.metadata.namespace)
+            ?.inNamespace(inNamespace)
             ?.withName(toReplace.metadata.name)
             ?.replace(toReplace)
     }
@@ -107,8 +108,9 @@ abstract class NamespacedResourceOperator<R : HasMetadata, C: Client>(
         val toCreate = resource as? R ?: return null
         removeResourceVersion(toCreate)
         removeUID(toCreate)
+        val inNamespace = resourceOrCurrentNamespace(toCreate)
         return getOperation()
-            ?.inNamespace(toCreate.metadata.namespace)
+            ?.inNamespace(inNamespace)
             ?.withName(toCreate.metadata.name)
             ?.create(toCreate)
     }
@@ -116,10 +118,16 @@ abstract class NamespacedResourceOperator<R : HasMetadata, C: Client>(
     override fun get(resource: HasMetadata): HasMetadata? {
         @Suppress("UNCHECKED_CAST")
         val toGet = resource as? R ?: return null
+        val inNamespace = resourceOrCurrentNamespace(toGet)
         return getOperation()
-            ?.inNamespace(toGet.metadata.namespace)
+            ?.inNamespace(inNamespace)
             ?.withName(toGet.metadata.name)
             ?.get()
+    }
+
+    protected fun resourceOrCurrentNamespace(resource: HasMetadata): String {
+        return resource.metadata.namespace ?: this.namespace
+        ?: throw KubernetesClientException("No namespace found, neither in operated resource ${resource.metadata.name} nor in current namespace.")
     }
 
     protected open fun getOperation(): NamespacedOperation<R>? {

@@ -16,7 +16,6 @@ import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.ObjectMeta
 import io.fabric8.kubernetes.api.model.ObjectMetaBuilder
 import io.fabric8.kubernetes.client.utils.Serialization
-import java.util.stream.Collectors
 
 abstract class AbstractResourceFactory<T : HasMetadata> {
 
@@ -42,12 +41,11 @@ abstract class AbstractResourceFactory<T : HasMetadata> {
     }
 
     private fun createResources(items: List<Map<String, Any?>>): List<T> {
-        return items.stream()
-            .map { createResource(it) }
-            .collect(Collectors.toList())
+        return items
+            .mapNotNull { createResource(it) }
     }
 
-    abstract fun createResource(item: Map<String, Any?>): T
+    abstract fun createResource(item: Map<String, Any?>?): T?
 
     abstract fun createResource(node: JsonNode): T
 

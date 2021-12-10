@@ -102,11 +102,7 @@ open class ClusterResource(
             } else {
                 throw ResourceException(
                     "Error contacting cluster ${
-                        if (e.cause?.message != null) {
-                            ": ${e.cause?.message}"
-                        } else {
-                            ""
-                        }
+                        causeOrExceptionMessage(e, ": ")
                     }", e
                 )
             }
@@ -303,13 +299,14 @@ open class ClusterResource(
     }
 
     protected open fun createOperator(resource: HasMetadata): IResourceOperator<out HasMetadata>? {
-        return if (resource is GenericCustomResource) {
+        val kind = ResourceKind.create(resource)
+        val operator: IResourceOperator<out HasMetadata>? = OperatorFactory.create(kind, clients)
+        return if (operator != null) {
+            operator
+        } else {
             val client = clients.get()
             val definitions = CustomResourceDefinitionMapping.getDefinitions(client)
             CustomResourceOperatorFactory.create(resource, definitions, client)
-        } else {
-            val kind = ResourceKind.create(resource)
-            OperatorFactory.create(kind, clients)
         }
     }
 }

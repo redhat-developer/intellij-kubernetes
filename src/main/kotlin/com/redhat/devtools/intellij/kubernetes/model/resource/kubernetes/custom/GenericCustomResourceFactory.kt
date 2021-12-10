@@ -19,7 +19,10 @@ object GenericCustomResourceFactory: AbstractResourceFactory<GenericCustomResour
 
 	const val SPEC = "spec"
 
-	override fun createResource(item: Map<String, Any?>): GenericCustomResource {
+	override fun createResource(item: Map<String, Any?>?): GenericCustomResource? {
+		if (item == null) {
+			return null
+		}
 		@Suppress("UNCHECKED_CAST")
 		return GenericCustomResource(
 			item[KIND] as? String,

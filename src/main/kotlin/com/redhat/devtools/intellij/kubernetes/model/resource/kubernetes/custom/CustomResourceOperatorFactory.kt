@@ -33,7 +33,10 @@ object CustomResourceOperatorFactory {
         val kind = ResourceKind.create(definition.spec) ?: return null
         return when (definition.spec.scope) {
             CustomResourceScope.CLUSTER -> NonNamespacedCustomResourceOperator(kind, definition, client)
-            CustomResourceScope.NAMESPACED -> NamespacedCustomResourceOperator(kind, definition, resource.metadata.namespace, client)
+            CustomResourceScope.NAMESPACED -> {
+                val namespace = resource.metadata.namespace ?: client.namespace
+                NamespacedCustomResourceOperator(kind, definition, namespace, client)
+            }
             else -> throw IllegalArgumentException(
                 "Could not determine scope in spec for custom resource definition ${definition.spec.names.kind}")
         }

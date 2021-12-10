@@ -17,8 +17,11 @@ object HasMetadataResourceFactory: AbstractResourceFactory<HasMetadataResource>(
 
 	const val SPEC = "spec"
 
-	override fun createResource(item: Map<String, Any?>): HasMetadataResource {
+	override fun createResource(item: Map<String, Any?>?): HasMetadataResource? {
 		@Suppress("UNCHECKED_CAST")
+		if (item == null) {
+			return null
+		}
 		return HasMetadataResource(
 			item[KIND] as? String,
 			item[API_VERSION] as? String,
