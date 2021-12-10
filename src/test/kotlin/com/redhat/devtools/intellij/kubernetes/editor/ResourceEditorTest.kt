@@ -16,6 +16,7 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.PsiDocumentManager
 import com.nhaarman.mockitokotlin2.any
+import com.nhaarman.mockitokotlin2.argThat
 import com.nhaarman.mockitokotlin2.argWhere
 import com.nhaarman.mockitokotlin2.atLeastOnce
 import com.nhaarman.mockitokotlin2.clearInvocations
@@ -178,7 +179,6 @@ spec:
             getDocument,
             getPsiDocumentManager,
             hasKubernetesResource,
-            ideNotification,
             documentReplaced
         )
     )
@@ -241,7 +241,7 @@ spec:
         // when
         editor.update()
         // then
-        verify(errorNotification).show("resource error", "client error")
+        verify(errorNotification).show(any(), argWhere<String> { it.contains("client error") })
         verifyHideAllNotifications()
     }
 
@@ -482,18 +482,40 @@ spec:
         // when
         editor.push()
         // then
-        verify(errorNotification).show("resource error", "client error")
+        verify(errorNotification).show(any(), argWhere<String> { it.contains("client error", false) })
     }
 
     @Test
-    fun `#push should show error notification if pushing to cluster throws ResourceException`() {
+    fun `#push should show error notification if creating cluster resource throws`() {
         // given
-        doThrow(ResourceException("client error"))
+        doThrow(ResourceException("resource error", KubernetesClientException("client error")))
+            .whenever(createClusterResource).invoke(any(), any())
+        // when
+        editor.push()
+        // then
+        verify(errorNotification).show(any(), argWhere<String> { it.contains("client error", false) })
+    }
+
+    @Test
+    fun `#push should show error notification with message of exception if pushing to cluster throws ResourceException`() {
+        // given
+        doThrow(ResourceException("resource error"))
             .whenever(clusterResource).push(any())
         // when
         editor.push()
         // then
-        verify(ideNotification).error(any(), argWhere { it.contains("client error", false) })
+        verify(errorNotification).show(any(), argWhere<String> { it.contains("resource error") })
+    }
+
+    @Test
+    fun `#push should show error notification with message of cause if pushing to cluster throws ResourceException`() {
+        // given
+        doThrow(ResourceException("client error", KubernetesClientException("client error")))
+            .whenever(clusterResource).push(any())
+        // when
+        editor.push()
+        // then
+        verify(errorNotification).show(any(), argWhere<String> { it.contains("client error") })
     }
 
     @Test
@@ -748,7 +770,6 @@ spec:
         documentProvider: (FileEditor) -> Document?,
         psiDocumentManagerProvider: (Project) -> PsiDocumentManager,
         hasKubernetesResource: (FileEditor, Project) -> Boolean,
-        ideNotification: Notification,
         documentReplaced: AtomicBoolean
     ) : ResourceEditor(
         localCopy,
@@ -767,7 +788,6 @@ spec:
         documentProvider,
         psiDocumentManagerProvider,
         hasKubernetesResource,
-        ideNotification,
         documentReplaced
     ) {
         override var editorResource: HasMetadata? = super.editorResource

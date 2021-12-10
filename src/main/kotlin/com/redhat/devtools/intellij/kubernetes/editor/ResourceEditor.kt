@@ -32,6 +32,7 @@ import com.redhat.devtools.intellij.kubernetes.model.ClusterResource
 import com.redhat.devtools.intellij.kubernetes.model.ModelChangeObservable
 import com.redhat.devtools.intellij.kubernetes.model.Notification
 import com.redhat.devtools.intellij.kubernetes.model.ResourceException
+import com.redhat.devtools.intellij.kubernetes.model.util.causeOrExceptionMessage
 import com.redhat.devtools.intellij.kubernetes.model.util.trimWithEllipsis
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.Namespace
@@ -78,8 +79,6 @@ open class ResourceEditor(
     private val hasKubernetesResource: (FileEditor, Project) -> Boolean = { editor, project ->
         hasKubernetesResource(documentProvider.invoke(editor), psiDocumentManagerProvider.invoke(project))
     },
-    // for mocking purposes
-    private val ideNotification: Notification = Notification(),
     // for mocking purposes
     private val documentReplaced: AtomicBoolean = AtomicBoolean(false)
 ) {
@@ -143,8 +142,8 @@ open class ResourceEditor(
                     hideNotifications()
                     errorNotification.show(
                         "Error Contacting Cluster",
-                        "Could not contact cluster: ${
-                            trimWithEllipsis(e.cause?.message, 300) ?: ""
+                        "Could not contact cluster ${
+                            trimWithEllipsis(causeOrExceptionMessage(e, ": "), 300) ?: ""
                         }")
                 }
                 null
@@ -275,11 +274,11 @@ open class ResourceEditor(
      * Pushes the editor content to the cluster.
      */
     fun push() {
-        val cluster = clusterResource ?: return
         runAsync {
-            val resource = createResource(editor, clients) ?: return@runAsync
-            this.editorResource = resource
             try {
+                val resource = createResource.invoke(editor, clients) ?: return@runAsync
+                this.editorResource = resource
+                val cluster = clusterResource ?: return@runAsync
                 val updatedResource = push(resource, cluster) ?: return@runAsync
                 runInUI {
                     hideNotifications()
@@ -290,19 +289,15 @@ open class ResourceEditor(
                 logger<ResourceEditor>().warn(e)
                 runInUI {
                     hideNotifications()
-                    ideNotification.error(
+                    errorNotification.show(
                         "Error Pushing",
-                        "Could not push ${resource.kind} ${resource.metadata.name} to cluster: ${
-                            trimWithEllipsis(e.message, 300) ?: ""
+                        "Could not push ${editorResource?.kind} ${editorResource?.metadata?.name} to cluster ${
+                            trimWithEllipsis(causeOrExceptionMessage(e, ": "), 300)
                         }"
                     )
                 }
             }
         }
-    }
-
-    private fun createResource(editor: FileEditor, clients: Clients<out KubernetesClient>): HasMetadata? {
-        return createResource.invoke(editor, clients)
     }
 
     private fun push(resource: HasMetadata, clusterResource: ClusterResource): HasMetadata? {

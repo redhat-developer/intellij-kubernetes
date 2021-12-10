@@ -13,6 +13,7 @@ package com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.argumentCaptor
 import com.nhaarman.mockitokotlin2.clearInvocations
+import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.never
 import com.nhaarman.mockitokotlin2.spy
@@ -47,10 +48,10 @@ class NamespacedPodsOperatorTest {
     private val currentNamespace = NAMESPACE2.metadata.name
     private val clients = Clients(client(currentNamespace, arrayOf(NAMESPACE1, NAMESPACE2, NAMESPACE3)))
     private val operator = spy(TestablePodsOperator(clients))
+private         val op = inNamespace(pods(clients.get()))
 
     @Before
     fun before() {
-        val op = inNamespace(pods(clients.get()))
         items(list(op), POD1, POD2, POD3) // list
         withName(op, POD2) // create, replace, get
         operator.namespace = currentNamespace
@@ -529,17 +530,36 @@ class NamespacedPodsOperatorTest {
     }
 
     @Test
-    fun `#get() is getting even if namespace is null`() {
+    fun `#get() is using resource namespace if exists`() {
         // given
-        operator.namespace =  null
+        val pod = PodBuilder(POD2).build()
+        operator.namespace =  "smurfville" // should not use it
         clearInvocations(operator)
         // when
-        operator.get(POD2)
+        operator.get(pod)
         // then
-        verify(clients.get().pods()
-            .inNamespace(POD2.metadata.namespace)
-            .withName(POD2.metadata.name))
-            .get()
+        verify(clients.get().pods())
+            .inNamespace(pod.metadata.namespace)
+        verify(clients.get().pods().inNamespace(operator.namespace))
+            .withName(pod.metadata.name)
+    }
+
+    @Test
+    fun `#get() is using operator namespace if resource namespace is null`() {
+        // given
+        val pod = PodBuilder(POD2).editMetadata()
+            .withNamespace(null) // no namespace in pod
+            .endMetadata()
+            .build()
+        operator.namespace =  "smurfington" // should use it
+        clearInvocations(operator)
+        // when
+        operator.get(pod)
+        // then
+        verify(clients.get().pods())
+            .inNamespace(operator.namespace)
+        verify(clients.get().pods().inNamespace(operator.namespace))
+            .withName(pod.metadata.name)
     }
 
     class TestablePodsOperator(clients: Clients<KubernetesClient>): NamespacedPodsOperator(clients) {

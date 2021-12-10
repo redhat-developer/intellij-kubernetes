@@ -10,12 +10,12 @@
  ******************************************************************************/
 package com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.custom
 
-import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.client
-import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.customResourceDefinition
-import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.customResourceDefinitionVersion
 import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.NAMESPACE1
 import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.NAMESPACE2
 import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.NAMESPACE3
+import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.client
+import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.customResourceDefinition
+import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.customResourceDefinitionVersion
 import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.resource
 import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.hasmetadata.HasMetadataResource
 import com.redhat.devtools.intellij.kubernetes.model.util.getApiVersion
@@ -101,12 +101,22 @@ class CustomResourceOperatorFactoryTest {
     }
 
     @Test
-    fun `#create(resource) should set namespace to NamespacedCustomResourceOperator that it is creating`() {
+    fun `#create(resource) should set namespace of resource to NamespacedCustomResourceOperator`() {
         // given
         // when
         val operator = CustomResourceOperatorFactory.create(neo, listOf(CRD_NAMESPACE_SCOPED), client)
         // then
         assertThat((operator as? NamespacedCustomResourceOperator)?.namespace).isEqualTo(neo.metadata.namespace)
+    }
+
+    @Test
+    fun `#create(resource) should set current namespace in client to NamespacedCustomResourceOperator if resource has no namespace`() {
+        // given
+        val morpheus = resource<HasMetadataResource>("neo", null, "uid", getApiVersion(group, version), "1")
+        // when
+        val operator = CustomResourceOperatorFactory.create(morpheus, listOf(CRD_NAMESPACE_SCOPED), client)
+        // then
+        assertThat((operator as? NamespacedCustomResourceOperator)?.namespace).isEqualTo(client.namespace)
     }
 
     @Test(expected=IllegalArgumentException::class)

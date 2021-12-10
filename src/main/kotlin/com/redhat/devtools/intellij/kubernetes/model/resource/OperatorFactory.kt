@@ -114,8 +114,8 @@ object OperatorFactory {
     ): T? {
         val operators = getOperatorsByKind(clients)
         return operators
-            .filter { kindAndOperatorFactory -> kind == kindAndOperatorFactory.first }
-            .map { kindAndOperatorFactory -> kindAndOperatorFactory.second.invoke(clients) }
+            .filter { kindAndOperator -> kind == kindAndOperator.first }
+            .map { kindAndOperator -> kindAndOperator.second.invoke(clients) }
             .filterIsInstance<T>()
             .firstOrNull()
     }

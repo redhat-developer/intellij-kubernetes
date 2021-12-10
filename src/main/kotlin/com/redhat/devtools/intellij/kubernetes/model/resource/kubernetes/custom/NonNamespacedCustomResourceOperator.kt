@@ -62,7 +62,7 @@ class NonNamespacedCustomResourceOperator(
         return true
     }
 
-    override fun replace(resource: HasMetadata): HasMetadata {
+    override fun replace(resource: HasMetadata): HasMetadata? {
         val updated = operation.get().createOrReplace(resource.metadata.name, Serialization.asJson(resource))
         return GenericCustomResourceFactory.createResource(updated)
     }
@@ -71,7 +71,7 @@ class NonNamespacedCustomResourceOperator(
         return replace(resource)
     }
 
-    override fun get(resource: HasMetadata): HasMetadata {
+    override fun get(resource: HasMetadata): HasMetadata? {
         val updated = operation.get().get(null, resource.metadata.name)
         return GenericCustomResourceFactory.createResource(updated)
     }
