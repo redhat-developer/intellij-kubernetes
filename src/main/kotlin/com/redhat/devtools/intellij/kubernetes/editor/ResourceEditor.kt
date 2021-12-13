@@ -248,7 +248,7 @@ open class ResourceEditor(
         val document = documentProvider.invoke(editor) ?: return
         if (document.text.trim() != jsonYaml) {
             runWriteCommand {
-                document.replaceString(0, document.textLength - 1, jsonYaml)
+                document.replaceString(0, document.textLength, jsonYaml)
                 documentReplaced.set(true)
                 val psiDocumentManager = psiDocumentManagerProvider.invoke(project)
                 psiDocumentManager.commitDocument(document)
