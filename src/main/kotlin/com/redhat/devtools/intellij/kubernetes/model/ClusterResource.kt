@@ -15,11 +15,13 @@ import com.redhat.devtools.intellij.kubernetes.model.ResourceWatch.WatchListener
 import com.redhat.devtools.intellij.kubernetes.model.resource.IResourceOperator
 import com.redhat.devtools.intellij.kubernetes.model.resource.OperatorFactory
 import com.redhat.devtools.intellij.kubernetes.model.resource.ResourceKind
-import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.custom.CustomResourceDefinitionMapping
 import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.custom.CustomResourceOperatorFactory
-import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.custom.GenericCustomResource
-import com.redhat.devtools.intellij.kubernetes.model.util.*
+import com.redhat.devtools.intellij.kubernetes.model.util.causeOrExceptionMessage
+import com.redhat.devtools.intellij.kubernetes.model.util.isNewerVersionThan
+import com.redhat.devtools.intellij.kubernetes.model.util.isNotFound
+import com.redhat.devtools.intellij.kubernetes.model.util.isSameResource
 import io.fabric8.kubernetes.api.model.HasMetadata
+import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinition
 import io.fabric8.kubernetes.client.KubernetesClient
 import io.fabric8.kubernetes.client.KubernetesClientException
 
@@ -30,6 +32,7 @@ import io.fabric8.kubernetes.client.KubernetesClientException
 open class ClusterResource(
     resource: HasMetadata,
     private val clients: Clients<out KubernetesClient>,
+    private val definitions: Collection<CustomResourceDefinition>,
     private val watch: ResourceWatch<HasMetadata> = ResourceWatch(),
     private val modelChange: ModelChangeObservable = ModelChangeObservable()
 ) {
@@ -100,8 +103,7 @@ open class ClusterResource(
             if (e.isNotFound()) {
                 null
             } else {
-                throw ResourceException(
-                    "Error contacting cluster ${
+                throw ResourceException("Error contacting cluster ${
                         causeOrExceptionMessage(e, ": ")
                     }", e
                 )
@@ -301,12 +303,6 @@ open class ClusterResource(
     protected open fun createOperator(resource: HasMetadata): IResourceOperator<out HasMetadata>? {
         val kind = ResourceKind.create(resource)
         val operator: IResourceOperator<out HasMetadata>? = OperatorFactory.create(kind, clients)
-        return if (operator != null) {
-            operator
-        } else {
-            val client = clients.get()
-            val definitions = CustomResourceDefinitionMapping.getDefinitions(client)
-            CustomResourceOperatorFactory.create(resource, definitions, client)
-        }
+        return operator ?: CustomResourceOperatorFactory.create(resource, definitions, clients.get())
     }
 }

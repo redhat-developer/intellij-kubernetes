@@ -37,7 +37,6 @@ import io.fabric8.kubernetes.client.dsl.MixedOperation
 import io.fabric8.kubernetes.client.dsl.NonNamespaceOperation
 import io.fabric8.kubernetes.client.dsl.PodResource
 import io.fabric8.kubernetes.client.dsl.Resource
-import jdk.dynalink.NamespaceOperation
 import org.mockito.ArgumentMatchers
 import java.net.URL
 

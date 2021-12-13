@@ -19,6 +19,7 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.project.ProjectManager
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.PsiDocumentManager
+import com.redhat.devtools.intellij.common.validation.KubernetesResourceInfo
 import com.redhat.devtools.intellij.common.validation.KubernetesTypeInfo
 import com.redhat.devtools.intellij.kubernetes.editor.ResourceFile
 
@@ -73,6 +74,26 @@ fun hasKubernetesResource(document: Document?, psiDocumentManager: PsiDocumentMa
         false
     }
 }
+
+/**
+ * Returns [KubernetesResourceInfo] for the given document and psi document manager
+ *
+ * @param document the document to check for being a kubernetes resource
+ * @param psiDocumentManager the psi document manager to use for inspection
+ */
+fun getKubernetesResourceInfo(document: Document?, psiDocumentManager: PsiDocumentManager): KubernetesResourceInfo? {
+    if (document == null) {
+        return null
+    }
+    return try {
+            ReadAction.compute<KubernetesResourceInfo, RuntimeException> {
+                val psiFile = psiDocumentManager.getPsiFile(document)
+                KubernetesResourceInfo.extractMeta(psiFile)
+            }
+        } catch (e: java.lang.RuntimeException) {
+            null
+        }
+    }
 
 class ProjectAndEditor(val project: Project, val editor: FileEditor)
 

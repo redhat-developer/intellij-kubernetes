@@ -84,6 +84,40 @@
 
 -> push notification ("update existing")
 
+**Push notification for file that contains custom resource without namespace**
+1. File > New > YML file
+2. paste the following into editor
+```
+---
+kind: "Task"
+apiVersion: "tekton.dev/v1beta1"
+metadata:
+  name: "foo"
+spec:
+  params:
+  - default: "/workspace/workspace/Dockerfile"
+    description: "The path to the dockerfile to build"
+    name: "pathToDockerFile"
+    type: "string"
+  resources:
+    inputs:
+    - name: "workspace"
+      type: "git"
+    outputs:
+    - name: "buildImage"
+      type: "image"
+  steps:
+  - args:
+    - "-c"
+    - "echo hello world"
+    command:
+    - "/bin/bash"
+    image: "fedora"
+    name: "build-sources"
+    resources: {}
+```
+-> push notification ("create new")
+
 **Push notification with "update existing" for knative 'Service' custom resource**
 1. Install knative tutorial https://redhat-developer-demos.github.io/knative-tutorial/knative-tutorial/
 1. Make sure have "greeter" service at Custom Resources > services > greeter
@@ -154,7 +188,7 @@
 
 -> Error notification appears
 
-**Error notification disaappears when correcting invalid content**
+**Error notification disappears when correcting invalid content**
 1. "Edit..." resource. Have an editor which starts with
 ```
 ---

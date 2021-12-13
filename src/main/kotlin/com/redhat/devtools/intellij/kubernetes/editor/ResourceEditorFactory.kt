@@ -18,6 +18,7 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.PsiDocumentManager
 import com.redhat.devtools.intellij.kubernetes.editor.notification.ErrorNotification
+import com.redhat.devtools.intellij.kubernetes.editor.util.getKubernetesResourceInfo
 import com.redhat.devtools.intellij.kubernetes.editor.util.hasKubernetesResource
 import com.redhat.devtools.intellij.kubernetes.model.ClientConfig
 import com.redhat.devtools.intellij.kubernetes.model.Clients
@@ -44,13 +45,8 @@ open class ResourceEditorFactory protected constructor(
         com.redhat.devtools.intellij.kubernetes.editor.util.getDocument(editor)
     },
     /* for mocking purposes */
-    private val createEditorResource: (editor: FileEditor, clients: Clients<out KubernetesClient>) -> HasMetadata? =
-        { editor, clients -> EditorResourceFactory.create(editor, clients) },
-    /* for mocking purposes */
     private val createClients: (config: ClientConfig) -> Clients<out KubernetesClient>? =
         { config -> com.redhat.devtools.intellij.kubernetes.model.createClients(config) },
-    /* for mocking purposes */
-    private val reportTelemetry: (HasMetadata?, TelemetryMessageBuilder.ActionMessage) -> Unit = TelemetryService::sendTelemetry,
     /* for mocking purposes */
     private val hasKubernetesResource: (FileEditor, Project) -> Boolean = { editor, project ->
         val document = getDocument(editor)
@@ -58,12 +54,18 @@ open class ResourceEditorFactory protected constructor(
         hasKubernetesResource(document, psiDocumentManager)
     },
     private val createResourceEditor: (HasMetadata?, FileEditor, Project, Clients<out KubernetesClient>) -> ResourceEditor =
-        { resource, editor, project, clients -> ResourceEditor(resource, editor, project, clients) }
+        { resource, editor, project, clients -> ResourceEditor(resource, editor, project, clients) },
+    /* for mocking purposes */
+    private val reportTelemetry: (FileEditor, Project, TelemetryMessageBuilder.ActionMessage) -> Unit = { editor, project, telemetry ->
+        val resourceInfo = getKubernetesResourceInfo(getDocument(editor), PsiDocumentManager.getInstance(project))
+        TelemetryService.sendTelemetry(resourceInfo, telemetry)
+    }
 ) {
 
     companion object {
         val instance = ResourceEditorFactory()
     }
+
     /**
      * Opens a new editor or focuses an existing editor for the given [HasMetadata] and [Project].
      *
@@ -112,12 +114,17 @@ open class ResourceEditorFactory protected constructor(
      * @return the existing or a new [ResourceEditor].
      */
     fun getExistingOrCreate(editor: FileEditor?, project: Project?): ResourceEditor? {
+        return getExistingOrCreate(null, editor, project)
+    }
+
+    private fun getExistingOrCreate(resource: HasMetadata?, editor: FileEditor?, project: Project?): ResourceEditor? {
         if (editor == null
-            || project == null) {
+            || project == null
+        ) {
             return null
         }
 
-        return getExisting(editor) ?: create(editor, project)
+        return getExisting(editor) ?: create(resource, editor, project)
     }
 
     /**
@@ -151,34 +158,21 @@ open class ResourceEditorFactory protected constructor(
         return file?.getUserData(ResourceEditor.KEY_RESOURCE_EDITOR)
     }
 
-    private fun create(editor: FileEditor, project: Project): ResourceEditor? {
+    private fun create(resource: HasMetadata?, editor: FileEditor, project: Project): ResourceEditor? {
         if (!isValidType.invoke(editor.file)
-            || !hasKubernetesResource.invoke(editor, project)) {
+            || !hasKubernetesResource.invoke(editor, project)
+        ) {
             return null
         }
         val telemetry = TelemetryService.instance.action(TelemetryService.NAME_PREFIX_EDITOR + "open")
         try {
             val clients = createClients.invoke(ClientConfig {}) ?: return null
-            val resource = createResource(editor, clients, project)
-            reportTelemetry.invoke(resource, telemetry)
+            runAsync { reportTelemetry.invoke(editor, project, telemetry) }
             return create(resource, editor, project, clients)
         } catch (e: ResourceException) {
             ErrorNotification(editor, project).show(e.message ?: "", e.cause?.message)
             telemetry.error(e).send()
             return null
-        }
-    }
-
-    private fun createResource(
-        editor: FileEditor,
-        clients: Clients<out KubernetesClient>,
-        project: Project
-    ): HasMetadata? {
-        return try {
-            createEditorResource.invoke(editor, clients)
-        } catch (e: ResourceException) {
-            ErrorNotification(editor, project).show(e.message ?: "", e.cause?.message)
-            null
         }
     }
 
