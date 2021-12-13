@@ -28,6 +28,7 @@ import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.Namespace
 import io.fabric8.kubernetes.api.model.Pod
 import io.fabric8.kubernetes.api.model.PodBuilder
+import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinition
 import io.fabric8.kubernetes.client.KubernetesClient
 import io.fabric8.kubernetes.client.KubernetesClientException
 import io.fabric8.kubernetes.client.Watch
@@ -57,9 +58,10 @@ class ClusterResourceTest {
         true,
         endorResourceOnCluster
     )
+    private val definitions: Collection<CustomResourceDefinition> = emptyList()
     private val resourceWatch: ResourceWatch<HasMetadata> = mock()
     private val observable: ModelChangeObservable = mock()
-    private val cluster = TestableClusterResource(endorResource, operator, clients, resourceWatch, observable)
+    private val cluster = TestableClusterResource(endorResource, operator, clients, definitions, resourceWatch, observable)
 
     @Test
     fun `#get(false) should retrieve from cluster if there is no cached value yet`() {
@@ -126,7 +128,7 @@ class ClusterResourceTest {
     @Test(expected = ResourceException::class)
     fun `#get(true) should throw if there is no operator`() {
         // given
-        val cluster = TestableClusterResource(endorResource, null, clients, resourceWatch, observable)
+        val cluster = TestableClusterResource(endorResource, null, clients, definitions, resourceWatch, observable)
         // when
         cluster.get(true)
         // then should have thrown
@@ -582,9 +584,10 @@ class ClusterResourceTest {
         resource: HasMetadata,
         public override var operator: IResourceOperator<out HasMetadata>?,
         clients: Clients<KubernetesClient>,
+        definitions: Collection<CustomResourceDefinition>,
         watch: ResourceWatch<HasMetadata>,
         observable: ModelChangeObservable
-    ) : ClusterResource(resource, clients, watch, observable) {
+    ) : ClusterResource(resource, clients, definitions, watch, observable) {
 
         public override var updatedResource: HasMetadata?
             get(): HasMetadata? {

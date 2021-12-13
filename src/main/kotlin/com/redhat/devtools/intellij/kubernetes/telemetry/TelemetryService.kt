@@ -10,6 +10,8 @@
  ******************************************************************************/
 package com.redhat.devtools.intellij.kubernetes.telemetry;
 
+import com.redhat.devtools.intellij.common.validation.KubernetesResourceInfo
+import com.redhat.devtools.intellij.common.validation.KubernetesTypeInfo
 import com.redhat.devtools.intellij.kubernetes.model.resource.ResourceKind;
 import com.redhat.devtools.intellij.kubernetes.tree.util.getResourceKind
 import com.redhat.devtools.intellij.telemetry.core.service.TelemetryMessageBuilder;
@@ -38,6 +40,10 @@ object TelemetryService {
         telemetry.property(PROP_RESOURCE_KIND, kindOrUnknown(kind)).send()
     }
 
+    fun sendTelemetry(info: KubernetesResourceInfo?, telemetry: TelemetryMessageBuilder.ActionMessage) {
+        telemetry.property(PROP_RESOURCE_KIND, kindOrUnknown(info?.typeInfo)).send()
+    }
+
     fun getKinds(resources: Collection<HasMetadata>): String {
         return resources
             .distinct()
@@ -54,4 +60,13 @@ object TelemetryService {
             "unknown"
         }
     }
+
+    private fun kindOrUnknown(info: KubernetesTypeInfo?): String {
+        return if (info != null) {
+            "${info.apiGroup}/${info.kind}"
+        } else {
+            "unknown"
+        }
+    }
+
 }

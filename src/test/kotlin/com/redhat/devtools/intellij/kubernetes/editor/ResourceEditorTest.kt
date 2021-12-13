@@ -16,7 +16,6 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.PsiDocumentManager
 import com.nhaarman.mockitokotlin2.any
-import com.nhaarman.mockitokotlin2.argThat
 import com.nhaarman.mockitokotlin2.argWhere
 import com.nhaarman.mockitokotlin2.atLeastOnce
 import com.nhaarman.mockitokotlin2.clearInvocations
@@ -36,7 +35,6 @@ import com.redhat.devtools.intellij.kubernetes.editor.notification.PushNotificat
 import com.redhat.devtools.intellij.kubernetes.model.Clients
 import com.redhat.devtools.intellij.kubernetes.model.ClusterResource
 import com.redhat.devtools.intellij.kubernetes.model.ModelChangeObservable
-import com.redhat.devtools.intellij.kubernetes.model.Notification
 import com.redhat.devtools.intellij.kubernetes.model.ResourceException
 import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks
 import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.POD2
@@ -44,6 +42,7 @@ import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.POD3
 import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.client
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.PodBuilder
+import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinition
 import io.fabric8.kubernetes.client.KubernetesClient
 import io.fabric8.kubernetes.client.KubernetesClientException
 import io.fabric8.kubernetes.client.utils.Serialization
@@ -128,8 +127,13 @@ spec:
     private val project: Project = mock()
     private val clients: Clients<KubernetesClient> =
         Clients(client(currentNamespace.metadata.name, allNamespaces))
-    private val createResource: (editor: FileEditor, clients: Clients<out KubernetesClient>) -> HasMetadata? =
-        mock<(editor: FileEditor, clients: Clients<out KubernetesClient>) -> HasMetadata?>().apply  {
+    private val getCustomResourceDefinitions: (client: KubernetesClient) -> Collection<CustomResourceDefinition> =
+        mock<(client: KubernetesClient) -> Collection<CustomResourceDefinition>>().apply {
+        doReturn(emptyList<CustomResourceDefinition>())
+            .whenever(this).invoke(any())
+    }
+    private val createResource: (editor: FileEditor, definitions: Collection<CustomResourceDefinition>) -> HasMetadata? =
+        mock<(editor: FileEditor, definitions: Collection<CustomResourceDefinition>) -> HasMetadata?>().apply  {
             doReturn(localCopy)
                 .whenever(this).invoke(any(), any())
         }
@@ -137,10 +141,10 @@ spec:
         doReturn(GARGAMELv2)
             .whenever(this).get(any())
     }
-    private val createClusterResource: (HasMetadata, Clients<out KubernetesClient>) -> ClusterResource =
-        mock<(HasMetadata, Clients<out KubernetesClient>) -> ClusterResource>().apply {
+    private val createClusterResource: (HasMetadata, Clients<out KubernetesClient>, Collection<CustomResourceDefinition>) -> ClusterResource =
+        mock<(HasMetadata, Clients<out KubernetesClient>, Collection<CustomResourceDefinition>) -> ClusterResource>().apply {
             doReturn(clusterResource)
-                .whenever(this).invoke(any(), any())
+                .whenever(this).invoke(any(), any(), any())
         }
     private val pushNotification: PushNotification = mock()
     private val pullNotification: PullNotification = mock()
@@ -158,7 +162,6 @@ spec:
         doReturn(true)
             .whenever(this).invoke(any(), any())
     }
-    private val ideNotification: Notification = mock()
     private val documentReplaced: AtomicBoolean = AtomicBoolean(false)
 
     private val editor = spy(
@@ -167,6 +170,7 @@ spec:
             fileEditor,
             project,
             clients,
+            getCustomResourceDefinitions,
             createResource,
             createClusterResource,
             createResourceFileForVirtual,
@@ -489,7 +493,7 @@ spec:
     fun `#push should show error notification if creating cluster resource throws`() {
         // given
         doThrow(ResourceException("resource error", KubernetesClientException("client error")))
-            .whenever(createClusterResource).invoke(any(), any())
+            .whenever(createClusterResource).invoke(any(), any(), any())
         // when
         editor.push()
         // then
@@ -758,8 +762,9 @@ spec:
         editor: FileEditor,
         project: Project,
         clients: Clients<out KubernetesClient>,
-        resourceFactory: (editor: FileEditor, clients: Clients<out KubernetesClient>) -> HasMetadata?,
-        createClusterResource: (HasMetadata, Clients<out KubernetesClient>) -> ClusterResource,
+        getDefinitions: (client: KubernetesClient) -> Collection<CustomResourceDefinition>,
+        resourceFactory: (editor: FileEditor, definitions: Collection<CustomResourceDefinition>) -> HasMetadata?,
+        createClusterResource: (HasMetadata, Clients<out KubernetesClient>, Collection<CustomResourceDefinition>) -> ClusterResource,
         resourceFileForVirtual: (file: VirtualFile?) -> ResourceFile?,
         isTemporary: (file: VirtualFile?) -> Boolean,
         pushNotification: PushNotification,
@@ -776,6 +781,7 @@ spec:
         editor,
         project,
         clients,
+        getDefinitions,
         resourceFactory,
         createClusterResource,
         resourceFileForVirtual,

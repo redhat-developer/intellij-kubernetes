@@ -20,8 +20,9 @@ import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.custom.
 import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.hasmetadata.HasMetadataResource
 import com.redhat.devtools.intellij.kubernetes.model.util.createResource
 import io.fabric8.kubernetes.api.model.HasMetadata
-import io.fabric8.kubernetes.client.KubernetesClient
+import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinition
 import io.fabric8.kubernetes.client.KubernetesClientException
+import java.lang.RuntimeException
 
 object EditorResourceFactory {
 
@@ -29,27 +30,27 @@ object EditorResourceFactory {
      * Returns a [HasMetadata] for a given editor and [Clients] instance.
      *
      * @param editor to retrieve the json/yaml from
-     * @param clients to retrieve the custom resource definitions from
+     * @param definitions custom resource definitions that exist on the cluster
      * @return [HasMetadata] for the given editor and clients
      *
      */
-    fun create(editor: FileEditor, clients: Clients<out KubernetesClient>): HasMetadata? {
-        return create(getDocument(editor), clients)
+    fun create(editor: FileEditor, definitions: Collection<CustomResourceDefinition>): HasMetadata? {
+        return create(getDocument(editor), definitions)
     }
 
     /**
      * Returns a [HasMetadata] for a given [Document] and [Clients] instance.
      *
      * @param document to retrieve the json/yaml from
-     * @param clients to retrieve the custom resource definitions from
+     * @param definitions custom resource definitions that exist on the cluster
      * @return [HasMetadata] for the given editor and clients
      *
      */
-    fun create(document: Document?, clients: Clients<out KubernetesClient>): HasMetadata? {
+    fun create(document: Document?, definitions: Collection<CustomResourceDefinition>): HasMetadata? {
         return if (document?.text == null) {
             null
         } else {
-            create(document.text, clients)
+            create(document.text, definitions)
         }
     }
 
@@ -60,27 +61,26 @@ object EditorResourceFactory {
      * built-in sub class of [HasMetadata].
      *
      * @param jsonYaml to deserialize
-     * @param clients to retrieve the custom resource definitions from
+     * @param definitions custom resource definitions that exist on the cluster
      * @return [HasMetadata] for the given editor and clients
      * @throws ResourceException if the given json/yaml is invalid or the custom resource definitions could not be retrieved
      *
      * @see CustomResourceDefinitionMapping
      */
-    private fun create(jsonYaml: String, clients: Clients<out KubernetesClient>): HasMetadata {
+    private fun create(jsonYaml: String, definitions: Collection<CustomResourceDefinition>): HasMetadata {
         val resource = try {
             createResource<HasMetadataResource>(jsonYaml)
-        } catch (e: Exception) {
+        } catch (e: RuntimeException) {
             throw ResourceException("Invalid kubernetes yaml/json", e.cause ?: e)
         }
 
         return try {
-            val definitions = CustomResourceDefinitionMapping.getDefinitions(clients.get())
             if (CustomResourceDefinitionMapping.isCustomResource(resource, definitions)) {
                 createResource<GenericCustomResource>(jsonYaml)
             } else {
                 createResource(jsonYaml)
             }
-        } catch(e: KubernetesClientException) {
+        } catch(e: RuntimeException) {
             throw ResourceException("invalid kubernetes yaml/json", e.cause)
         }
     }

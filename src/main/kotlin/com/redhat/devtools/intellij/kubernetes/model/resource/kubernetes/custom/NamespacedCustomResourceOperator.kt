@@ -38,7 +38,7 @@ class NamespacedCustomResourceOperator(
     }
 
 	override fun watch(resource: HasMetadata, watcher: Watcher<in GenericCustomResource>): Watch? {
-		val inNamespace = resourceOrCurrentNamespace(resource) ?: return null
+		val inNamespace = resourceOrCurrentNamespace(resource)
 		return watch(inNamespace, resource.metadata.name, watcher)
 	}
 

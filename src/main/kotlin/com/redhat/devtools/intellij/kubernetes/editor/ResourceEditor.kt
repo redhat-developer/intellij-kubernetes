@@ -30,13 +30,15 @@ import com.redhat.devtools.intellij.kubernetes.editor.util.hasKubernetesResource
 import com.redhat.devtools.intellij.kubernetes.model.Clients
 import com.redhat.devtools.intellij.kubernetes.model.ClusterResource
 import com.redhat.devtools.intellij.kubernetes.model.ModelChangeObservable
-import com.redhat.devtools.intellij.kubernetes.model.Notification
 import com.redhat.devtools.intellij.kubernetes.model.ResourceException
+import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.custom.CustomResourceDefinitionMapping
 import com.redhat.devtools.intellij.kubernetes.model.util.causeOrExceptionMessage
 import com.redhat.devtools.intellij.kubernetes.model.util.trimWithEllipsis
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.Namespace
+import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinition
 import io.fabric8.kubernetes.client.KubernetesClient
+import io.fabric8.kubernetes.client.KubernetesClientException
 import io.fabric8.kubernetes.client.utils.Serialization
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.locks.ReentrantLock
@@ -46,16 +48,19 @@ import kotlin.concurrent.withLock
  * A Decorator for [FileEditor] instances that allows to push or pull the editor content to/from a remote cluster.
  */
 open class ResourceEditor(
-    var localCopy: HasMetadata?,
+    _localCopy: HasMetadata?,
     val editor: FileEditor,
     private val project: Project,
     private val clients: Clients<out KubernetesClient>,
     // for mocking purposes
-    private val createResource: (editor: FileEditor, clients: Clients<out KubernetesClient>) -> HasMetadata? =
+    private val getCustomResourceDefinitions: (client: KubernetesClient) -> Collection<CustomResourceDefinition> =
+        CustomResourceDefinitionMapping::getDefinitions,
+    // for mocking purposes
+    private val createResource: (editor: FileEditor, definitions: Collection<CustomResourceDefinition>) -> HasMetadata? =
         EditorResourceFactory::create,
     // for mocking purposes
-    private val createClusterResource: (resource: HasMetadata, clients: Clients<out KubernetesClient>) -> ClusterResource =
-        { resource, clients -> ClusterResource(resource, clients) },
+    private val createClusterResource: (resource: HasMetadata, clients: Clients<out KubernetesClient>, definitions: Collection<CustomResourceDefinition>) -> ClusterResource =
+        { resource, clients, definitions -> ClusterResource(resource, clients, definitions) },
     // for mocking purposes
     private val createResourceFileForVirtual: (file: VirtualFile?) -> ResourceFile? =
         ResourceFile.Factory::create,
@@ -87,6 +92,22 @@ open class ResourceEditor(
         val KEY_RESOURCE_EDITOR = Key<ResourceEditor>(ResourceEditor::class.java.name)
         val KEY_TOOLBAR = Key<ActionToolbar>(ActionToolbar::class.java.name)
         const val ID_TOOLBAR = "Kubernetes.Editor.Toolbar"
+    }
+
+    var localCopy: HasMetadata? = _localCopy
+        get() {
+            if (field == null) {
+                field = createResource.invoke(editor, definitions)
+            }
+            return field
+        }
+
+    private val definitions: Collection<CustomResourceDefinition> by lazy {
+        try {
+            getCustomResourceDefinitions.invoke(clients.get())
+        } catch (e: KubernetesClientException) {
+            emptyList<CustomResourceDefinition>()
+        }
     }
 
     open var editorResource: HasMetadata? = localCopy
@@ -133,7 +154,7 @@ open class ResourceEditor(
         }
         runAsync {
             try {
-                val resource = createResource(editor, clients) ?: return@runAsync
+                val resource = createResource.invoke(editor, definitions) ?: return@runAsync
                 this.editorResource = resource
                 val cluster = clusterResource ?: return@runAsync
                 showNotifications(resource, cluster)
@@ -141,12 +162,10 @@ open class ResourceEditor(
                 runInUI {
                     hideNotifications()
                     errorNotification.show(
-                        "Error Contacting Cluster",
-                        "Could not contact cluster ${
-                            trimWithEllipsis(causeOrExceptionMessage(e, ": "), 300) ?: ""
-                        }")
+                        "Invalid kubernetes yaml/json",
+                        trimWithEllipsis(causeOrExceptionMessage(e), 300) ?: ""
+                    )
                 }
-                null
             }
         }
     }
@@ -216,7 +235,6 @@ open class ResourceEditor(
     /**
      * Returns `true` if the resource in the editor is dirty aka has modifications that were not pushed.
      *
-     * @param resource to be checked for modification
      * @return true if the resource is dirty
      */
     private fun hasLocalChanges(): Boolean {
@@ -276,7 +294,7 @@ open class ResourceEditor(
     fun push() {
         runAsync {
             try {
-                val resource = createResource.invoke(editor, clients) ?: return@runAsync
+                val resource = createResource.invoke(editor, definitions) ?: return@runAsync
                 this.editorResource = resource
                 val cluster = clusterResource ?: return@runAsync
                 val updatedResource = push(resource, cluster) ?: return@runAsync
@@ -326,7 +344,7 @@ open class ResourceEditor(
         if (resource == null) {
             return null
         }
-        val clusterResource = createClusterResource.invoke(resource, clients)
+        val clusterResource = createClusterResource.invoke(resource, clients, definitions)
         clusterResource.addListener(onResourceChanged())
         clusterResource.watch()
         return clusterResource
