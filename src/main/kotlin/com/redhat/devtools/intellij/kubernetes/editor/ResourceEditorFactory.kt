@@ -82,7 +82,7 @@ open class ResourceEditorFactory protected constructor(
                     .firstOrNull()
                     ?: return@runInUI
                 runAsync {
-                    getExistingOrCreate(editor, project)
+                    getExistingOrCreate(resource, editor, project)
                 }
             }
         }
