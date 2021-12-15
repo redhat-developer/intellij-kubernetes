@@ -13,11 +13,47 @@ package com.redhat.devtools.intellij.kubernetes.tree
 import com.intellij.ide.util.treeView.NodeDescriptor
 import com.intellij.openapi.project.Project
 import com.intellij.ui.tree.LeafState
+import com.redhat.devtools.intellij.kubernetes.actions.getElement
 import io.fabric8.kubernetes.api.model.HasMetadata
 import com.redhat.devtools.intellij.kubernetes.model.IResourceModel
+import com.redhat.devtools.intellij.kubernetes.model.ResourceException
 import com.redhat.devtools.intellij.kubernetes.model.resource.ResourceKind
+import com.redhat.devtools.intellij.kubernetes.tree.util.getResourceKind
 
 abstract class AbstractTreeStructureContribution(override val model: IResourceModel): ITreeStructureContribution {
+
+    protected open val elementsTree: List<ElementNode<*>> = emptyList()
+
+    override fun getChildElements(element: Any): Collection<Any> {
+        val node = elementsTree.find { it.isApplicableFor(element) } ?: return emptyList()
+        return node.getChildElements(element)
+    }
+
+    override fun getParentElement(element: Any): Any? {
+        return try {
+            val kind = getResourceKind(element)
+            return elementsTree.first { it.getChildrenKind() == kind }
+        } catch (e: ResourceException) {
+            // default to null to allow tree structure to choose default parent element
+            null
+        }
+    }
+
+    override fun isParentDescriptor(descriptor: NodeDescriptor<*>?, element: Any): Boolean {
+        val kind = getResourceKind(element)
+        val haveChildrenKind: Collection<ElementNode<*>> = elementsTree.filter { it.getChildrenKind() == kind }
+        return haveChildrenKind.any { elementNode ->
+            val descriptorElement = descriptor?.getElement<Any>() ?: return false
+            elementNode.isApplicableFor(descriptorElement)
+        }
+    }
+
+    override fun createDescriptor(element: Any, parent: NodeDescriptor<*>?, project: Project): NodeDescriptor<*>? {
+        val childrenKind = elementsTree.find { it.isApplicableFor(element) }?.getChildrenKind()
+        return descriptorFactory().invoke(element, childrenKind, parent, model, project)
+    }
+
+    abstract fun descriptorFactory(): (Any, ResourceKind<out HasMetadata>?, NodeDescriptor<*>?, IResourceModel, Project) -> NodeDescriptor<*>?
 
     protected fun getRootElement(): Any? {
         return model.getCurrentContext()

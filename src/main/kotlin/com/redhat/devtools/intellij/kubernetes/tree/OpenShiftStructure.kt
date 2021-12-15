@@ -11,23 +11,11 @@
 package com.redhat.devtools.intellij.kubernetes.tree
 
 import com.intellij.ide.util.treeView.NodeDescriptor
-import com.intellij.openapi.util.IconLoader
 import com.intellij.ui.tree.LeafState
-import io.fabric8.kubernetes.api.model.HasMetadata
-import io.fabric8.kubernetes.api.model.Node
-import io.fabric8.kubernetes.api.model.ReplicationController
-import io.fabric8.openshift.api.model.Build
-import io.fabric8.openshift.api.model.BuildConfig
-import io.fabric8.openshift.api.model.DeploymentConfig
-import io.fabric8.openshift.api.model.ImageStream
-import io.fabric8.openshift.api.model.Project
 import com.redhat.devtools.intellij.kubernetes.model.IResourceModel
-import com.redhat.devtools.intellij.kubernetes.model.ResourceException
-import com.redhat.devtools.intellij.kubernetes.model.context.OpenShiftContext
-import com.redhat.devtools.intellij.kubernetes.model.resource.BuildConfigFor
 import com.redhat.devtools.intellij.kubernetes.model.resource.BuildFor
-import com.redhat.devtools.intellij.kubernetes.model.resource.DeploymentConfigFor
 import com.redhat.devtools.intellij.kubernetes.model.resource.ReplicationControllerFor
+import com.redhat.devtools.intellij.kubernetes.model.resource.ResourceKind
 import com.redhat.devtools.intellij.kubernetes.model.resource.openshift.BuildConfigsOperator
 import com.redhat.devtools.intellij.kubernetes.model.resource.openshift.BuildsOperator
 import com.redhat.devtools.intellij.kubernetes.model.resource.openshift.DeploymentConfigsOperator
@@ -35,11 +23,12 @@ import com.redhat.devtools.intellij.kubernetes.model.resource.openshift.ImageStr
 import com.redhat.devtools.intellij.kubernetes.model.resource.openshift.ProjectsOperator
 import com.redhat.devtools.intellij.kubernetes.model.resource.openshift.ReplicationControllersOperator
 import com.redhat.devtools.intellij.kubernetes.model.resourceName
-import com.redhat.devtools.intellij.kubernetes.tree.KubernetesStructure.Folders.NODES
 import com.redhat.devtools.intellij.kubernetes.tree.KubernetesStructure.Folders.WORKLOADS
 import com.redhat.devtools.intellij.kubernetes.tree.TreeStructure.Folder
-import com.redhat.devtools.intellij.kubernetes.tree.TreeStructure.ResourceDescriptor
-import javax.swing.Icon
+import io.fabric8.kubernetes.api.model.HasMetadata
+import io.fabric8.openshift.api.model.BuildConfig
+import io.fabric8.openshift.api.model.DeploymentConfig
+import io.fabric8.openshift.api.model.Project
 
 class OpenShiftStructure(model: IResourceModel): AbstractTreeStructureContribution(model) {
 
@@ -50,146 +39,91 @@ class OpenShiftStructure(model: IResourceModel): AbstractTreeStructureContributi
         val BUILDCONFIGS = Folder("BuildConfigs", BuildConfigsOperator.KIND)
     }
 
-    override fun canContribute(): Boolean {
-        return model.getCurrentContext()?.isOpenShift() ?: false
-    }
+    override val elementsTree: List<ElementNode<*>> = listOf(
+        element<Any> {
+            applicableIf { it == getRootElement() }
+            children {
+                listOf(
+                    PROJECTS
+                )
+            }
+        },
+        *createWorkloadElements()
+    )
 
-    override fun getChildElements(element: Any): Collection<Any> {
-        return when (element) {
-            getRootElement() ->
-                listOf(PROJECTS)
-            WORKLOADS ->
-                listOf<Any>(
+    private fun createWorkloadElements(): Array<ElementNode<*>> {
+        return arrayOf(
+            element<Any> {
+                applicableIf { it == WORKLOADS }
+                children {
+                    listOf<Any>(
                         IMAGESTREAMS,
                         DEPLOYMENTCONFIGS,
-                        BUILDCONFIGS)
-            is DeploymentConfig ->
-                model.resources(ReplicationControllersOperator.KIND)
-                        .inCurrentNamespace()
-                        .filtered(ReplicationControllerFor(element))
-                        .list()
-                        .sortedBy(resourceName)
-            is BuildConfig ->
-                model.resources(BuildsOperator.KIND)
-                        .inCurrentNamespace()
-                        .filtered(BuildFor(element))
-                        .list()
-                        .sortedBy(resourceName)
-            PROJECTS ->
-                model.resources(ProjectsOperator.KIND)
-                        .inNoNamespace()
-                        .list()
-                        .sortedBy(resourceName)
-            IMAGESTREAMS ->
-                model.resources(ImageStreamsOperator.KIND)
-                        .inCurrentNamespace()
-                        .list()
-            DEPLOYMENTCONFIGS ->
-                model.resources(DeploymentConfigsOperator.KIND)
+                        BUILDCONFIGS
+                    )
+                }
+            },
+            element<Any> {
+                applicableIf { it == IMAGESTREAMS }
+                childrenKind { ImageStreamsOperator.KIND }
+                children {
+                    model.resources(ImageStreamsOperator.KIND)
                         .inCurrentNamespace()
                         .list()
                         .sortedBy(resourceName)
-            BUILDCONFIGS ->
-                model.resources(BuildConfigsOperator.KIND)
-                        .inCurrentNamespace()
-                        .list()
-                        .sortedBy(resourceName)
-            else -> emptyList()
-        }
-    }
-
-    override fun getParentElement(element: Any): Any? {
-        try {
-            return when (element) {
-                getRootElement() ->
-                    model
-                is Project ->
-                    PROJECTS
-                PROJECTS ->
-                    getRootElement()
-                is Node ->
-                    NODES
-                NODES ->
-                    getRootElement()
-                is ImageStream ->
-                    IMAGESTREAMS
-                IMAGESTREAMS ->
-                    WORKLOADS
-                is DeploymentConfig ->
-                    DEPLOYMENTCONFIGS
-                DEPLOYMENTCONFIGS ->
-                    WORKLOADS
-                is ReplicationController ->
+                }
+            },
+            element<Any> {
+                applicableIf { it == DEPLOYMENTCONFIGS }
+                childrenKind { DeploymentConfigsOperator.KIND }
+                children {
                     model.resources(DeploymentConfigsOperator.KIND)
-                            .inCurrentNamespace()
-                            .filtered(DeploymentConfigFor(element))
-                            .list()
-                            .sortedBy(resourceName)
-                is BuildConfig ->
-                    BuildConfigsOperator
-                BUILDCONFIGS ->
-                    WORKLOADS
-                is Build ->
+                        .inCurrentNamespace()
+                        .list()
+                        .sortedBy(resourceName)
+                }
+            },
+            element<DeploymentConfig> {
+                applicableIf { it is DeploymentConfig }
+                childrenKind { ReplicationControllersOperator.KIND }
+                children {
+                    model.resources(ReplicationControllersOperator.KIND)
+                        .inCurrentNamespace()
+                        .filtered(ReplicationControllerFor(it))
+                        .list()
+                        .sortedBy(resourceName)
+                }
+            },
+            element<Any> {
+                applicableIf { it == BUILDCONFIGS }
+                childrenKind { BuildConfigsOperator.KIND }
+                children {
                     model.resources(BuildConfigsOperator.KIND)
-                            .inCurrentNamespace()
-                            .filtered(BuildConfigFor(element))
-                            .list()
-                            .sortedBy(resourceName)
-                else ->
-                    // fallback to (calling) tree structure
-                    null
+                        .inCurrentNamespace()
+                        .list()
+                        .sortedBy(resourceName)
+                }
+            },
+            element<BuildConfig> {
+                applicableIf { it is BuildConfig }
+                childrenKind { BuildsOperator.KIND }
+                children {
+                    model.resources(BuildsOperator.KIND)
+                        .inCurrentNamespace()
+                        .filtered(BuildFor(it))
+                        .list()
+                        .sortedBy(resourceName)
+                }
             }
-        } catch(e: ResourceException) {
-            return null
-        }
+        )
     }
 
-    override fun createDescriptor(element: Any, parent: NodeDescriptor<*>?, project: com.intellij.openapi.project.Project
-    ): NodeDescriptor<*>? {
-        return when(element) {
-            is OpenShiftContext -> OpenShiftContextDescriptor(element, model, project)
-            is Project -> ProjectDescriptor(element, parent, model, project)
-            is ImageStream,
-            is DeploymentConfig,
-            is ReplicationController,
-            is BuildConfig,
-            is Build -> ResourceDescriptor(element as HasMetadata, null, parent, model, project)
-            else -> null
-        }
+    override fun descriptorFactory(): (Any, ResourceKind<out HasMetadata>?, NodeDescriptor<*>?, IResourceModel, com.intellij.openapi.project.Project) -> NodeDescriptor<*>? {
+        return OpenShiftDescriptors::createDescriptor
     }
 
-    override fun isParentDescriptor(descriptor: NodeDescriptor<*>?, element: Any): Boolean {
-        TODO("Not yet implemented")
-    }
-
-    private class OpenShiftContextDescriptor(
-        context: OpenShiftContext,
-        model: IResourceModel,
-        project: com.intellij.openapi.project.Project
-    ) : TreeStructure.ContextDescriptor<OpenShiftContext>(
-        context = context,
-        model = model,
-        project = project
-    ) {
-        override fun getIcon(element: OpenShiftContext): Icon {
-            return IconLoader.getIcon("/icons/openshift-cluster.svg", javaClass)
-        }
-    }
-
-    private class ProjectDescriptor(
-        element: Project,
-        parent: NodeDescriptor<*>?,
-        model: IResourceModel,
-        project: com.intellij.openapi.project.Project
-    ) : ResourceDescriptor<Project>(element, null, parent, model, project) {
-
-        override fun getLabel(element: Project): String {
-            var label = element.metadata.name
-            if (label == model.getCurrentNamespace()) {
-                label = "* $label"
-            }
-            return label
-        }
+    override fun canContribute(): Boolean {
+        return model.getCurrentContext()?.isOpenShift() ?: false
     }
 
     override fun getLeafState(element: Any): LeafState? {
