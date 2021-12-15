@@ -13,29 +13,15 @@ package com.redhat.devtools.intellij.kubernetes.tree
 import com.intellij.ide.util.treeView.NodeDescriptor
 import com.intellij.openapi.project.Project
 import com.intellij.ui.tree.LeafState
-import com.redhat.devtools.intellij.kubernetes.actions.getElement
-import io.fabric8.kubernetes.api.model.ConfigMap
-import io.fabric8.kubernetes.api.model.Namespace
-import io.fabric8.kubernetes.api.model.Node
-import io.fabric8.kubernetes.api.model.Pod
-import io.fabric8.kubernetes.api.model.Secret
-import io.fabric8.kubernetes.api.model.Service
-import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinition
-import io.fabric8.kubernetes.api.model.apps.DaemonSet
-import io.fabric8.kubernetes.api.model.apps.Deployment
-import io.fabric8.kubernetes.api.model.apps.StatefulSet
-import io.fabric8.kubernetes.api.model.discovery.v1beta1.Endpoint
-import io.fabric8.kubernetes.api.model.storage.StorageClass
 import com.redhat.devtools.intellij.kubernetes.model.IResourceModel
-import com.redhat.devtools.intellij.kubernetes.model.ResourceException
 import com.redhat.devtools.intellij.kubernetes.model.resource.PodForDaemonSet
 import com.redhat.devtools.intellij.kubernetes.model.resource.PodForDeployment
 import com.redhat.devtools.intellij.kubernetes.model.resource.PodForService
 import com.redhat.devtools.intellij.kubernetes.model.resource.PodForStatefulSet
+import com.redhat.devtools.intellij.kubernetes.model.resource.ResourceKind
 import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.AllPodsOperator
 import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.ConfigMapsOperator
 import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.CronJobsOperator
-import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.custom.CustomResourceDefinitionsOperator
 import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.DaemonSetsOperator
 import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.DeploymentsOperator
 import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.EndpointsOperator
@@ -50,6 +36,7 @@ import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.Secrets
 import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.ServicesOperator
 import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.StatefulSetsOperator
 import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.StorageClassesOperator
+import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.custom.CustomResourceDefinitionsOperator
 import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.custom.GenericCustomResource
 import com.redhat.devtools.intellij.kubernetes.model.resourceName
 import com.redhat.devtools.intellij.kubernetes.tree.KubernetesStructure.Folders.CONFIGURATION
@@ -74,7 +61,19 @@ import com.redhat.devtools.intellij.kubernetes.tree.KubernetesStructure.Folders.
 import com.redhat.devtools.intellij.kubernetes.tree.KubernetesStructure.Folders.STORAGE_CLASSES
 import com.redhat.devtools.intellij.kubernetes.tree.KubernetesStructure.Folders.WORKLOADS
 import com.redhat.devtools.intellij.kubernetes.tree.TreeStructure.Folder
-import com.redhat.devtools.intellij.kubernetes.tree.util.getResourceKind
+import io.fabric8.kubernetes.api.model.ConfigMap
+import io.fabric8.kubernetes.api.model.HasMetadata
+import io.fabric8.kubernetes.api.model.Namespace
+import io.fabric8.kubernetes.api.model.Node
+import io.fabric8.kubernetes.api.model.Pod
+import io.fabric8.kubernetes.api.model.Secret
+import io.fabric8.kubernetes.api.model.Service
+import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinition
+import io.fabric8.kubernetes.api.model.apps.DaemonSet
+import io.fabric8.kubernetes.api.model.apps.Deployment
+import io.fabric8.kubernetes.api.model.apps.StatefulSet
+import io.fabric8.kubernetes.api.model.discovery.v1beta1.Endpoint
+import io.fabric8.kubernetes.api.model.storage.StorageClass
 
 class KubernetesStructure(model: IResourceModel) : AbstractTreeStructureContribution(model) {
     object Folders {
@@ -101,7 +100,7 @@ class KubernetesStructure(model: IResourceModel) : AbstractTreeStructureContribu
 		val CUSTOM_RESOURCES_DEFINITIONS = Folder("Custom Resources", CustomResourceDefinitionsOperator.KIND)
     }
 
-	private val elementsTree: List<ElementNode<*>> = listOf(
+	override val elementsTree: List<ElementNode<*>> = listOf(
 			element<Any> {
 				applicableIf { it == getRootElement() }
 				children {
@@ -125,35 +124,6 @@ class KubernetesStructure(model: IResourceModel) : AbstractTreeStructureContribu
 			*createConfigurationElements(),
 			*createCustomResourcesElements()
 	)
-
-	override fun getChildElements(element: Any): Collection<Any> {
-		val node = elementsTree.find { it.isApplicableFor(element) } ?: return emptyList()
-		return node.getChildElements(element)
-	}
-
-	override fun getParentElement(element: Any): Any? {
-		return try {
-			val kind = getResourceKind(element)
-			return elementsTree.first { it.getChildrenKind() == kind }
-		} catch (e: ResourceException) {
-			// default to null to allow tree structure to choose default parent element
-			null
-		}
-	}
-
-	override fun isParentDescriptor(descriptor: NodeDescriptor<*>?, element: Any): Boolean {
-		val kind = getResourceKind(element)
-		val matchers: Collection<ElementNode<*>> = elementsTree.filter { it.getChildrenKind() == kind }
-		return matchers.any { elementNode ->
-			val descriptorElement = descriptor?.getElement<Any>() ?: return false
-			elementNode.isApplicableFor(descriptorElement)
-		}
-	}
-
-	override fun createDescriptor(element: Any, parent: NodeDescriptor<*>?, project: Project): NodeDescriptor<*>? {
-		val childrenKind = elementsTree.find { it.isApplicableFor(element) }?.getChildrenKind()
-		return KubernetesDescriptors.createDescriptor(element, childrenKind, parent, model, project)
-	}
 
 	override fun canContribute() = true
 
@@ -197,7 +167,7 @@ class KubernetesStructure(model: IResourceModel) : AbstractTreeStructureContribu
 								.sortedBy(resourceName)
 					}
 				},
-				element<Any> {
+				element<Node> {
 					applicableIf { it is Node }
 					childrenKind { AllPodsOperator.KIND }
 					children {
@@ -483,6 +453,10 @@ class KubernetesStructure(model: IResourceModel) : AbstractTreeStructureContribu
 					}
 				}
 		)
+	}
+
+	override fun descriptorFactory(): (Any, ResourceKind<out HasMetadata>?, NodeDescriptor<*>?, IResourceModel, Project) -> NodeDescriptor<*>? {
+		return KubernetesDescriptors::createDescriptor
 	}
 
 	override fun getLeafState(element: Any): LeafState? {
