@@ -91,7 +91,9 @@ open class TreeStructure(
 
     override fun isParentDescriptor(descriptor: NodeDescriptor<*>?, element: Any): Boolean {
         return getValidContributions()
-            .any { it.isParentDescriptor(descriptor, element) }
+            .any { contribution ->
+                descriptor is Descriptor<*>
+                        && contribution.isParentDescriptor(descriptor, element) }
     }
 
     override fun createDescriptor(element: Any, parent: NodeDescriptor<*>?): NodeDescriptor<*> {
@@ -278,7 +280,7 @@ open class TreeStructure(
 
     open class Descriptor<T>(
             private var element: T,
-            private val childrenKind: ResourceKind<out HasMetadata>?,
+            val childrenKind: ResourceKind<out HasMetadata>?,
             parent: NodeDescriptor<*>?,
             protected val model: IResourceModel,
             project: Project
