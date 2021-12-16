@@ -13,12 +13,11 @@ package com.redhat.devtools.intellij.kubernetes.tree
 import com.intellij.ide.util.treeView.NodeDescriptor
 import com.intellij.openapi.project.Project
 import com.intellij.ui.tree.LeafState
-import com.redhat.devtools.intellij.kubernetes.actions.getElement
-import io.fabric8.kubernetes.api.model.HasMetadata
 import com.redhat.devtools.intellij.kubernetes.model.IResourceModel
 import com.redhat.devtools.intellij.kubernetes.model.ResourceException
 import com.redhat.devtools.intellij.kubernetes.model.resource.ResourceKind
 import com.redhat.devtools.intellij.kubernetes.tree.util.getResourceKind
+import io.fabric8.kubernetes.api.model.HasMetadata
 
 abstract class AbstractTreeStructureContribution(override val model: IResourceModel): ITreeStructureContribution {
 
@@ -39,13 +38,9 @@ abstract class AbstractTreeStructureContribution(override val model: IResourceMo
         }
     }
 
-    override fun isParentDescriptor(descriptor: NodeDescriptor<*>?, element: Any): Boolean {
+    override fun isParentDescriptor(descriptor: TreeStructure.Descriptor<*>?, element: Any): Boolean {
         val kind = getResourceKind(element)
-        val haveChildrenKind: Collection<ElementNode<*>> = elementsTree.filter { it.getChildrenKind() == kind }
-        return haveChildrenKind.any { elementNode ->
-            val descriptorElement = descriptor?.getElement<Any>() ?: return false
-            elementNode.isApplicableFor(descriptorElement)
-        }
+        return kind == descriptor?.childrenKind
     }
 
     override fun createDescriptor(element: Any, parent: NodeDescriptor<*>?, project: Project): NodeDescriptor<*>? {

@@ -14,6 +14,7 @@ import com.intellij.ide.util.treeView.NodeDescriptor
 import com.intellij.openapi.project.Project
 import com.intellij.ui.tree.LeafState
 import com.redhat.devtools.intellij.kubernetes.model.IResourceModel
+import com.redhat.devtools.intellij.kubernetes.tree.TreeStructure.Descriptor
 
 interface ITreeStructureContribution {
 
@@ -22,7 +23,7 @@ interface ITreeStructureContribution {
     fun getChildElements(element: Any): Collection<Any>
     fun getParentElement(element: Any): Any?
     fun createDescriptor(element: Any, parent: NodeDescriptor<*>?, project: Project): NodeDescriptor<*>?
-    fun isParentDescriptor(descriptor: NodeDescriptor<*>?, element: Any): Boolean
+    fun isParentDescriptor(descriptor: Descriptor<*>?, element: Any): Boolean
     /**
      * Returns the leaf state for the given element.
      * Returns {@code null} if this contribution has no answer for the given element.

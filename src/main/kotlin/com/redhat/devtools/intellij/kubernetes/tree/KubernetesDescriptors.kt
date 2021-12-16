@@ -146,7 +146,7 @@ object KubernetesDescriptors {
 		project: Project
 	) : ResourceDescriptor<CustomResourceDefinition>(
 		definition,
-		null,
+		ResourceKind.create(definition.spec),
 		parent,
 		model,
 		project
