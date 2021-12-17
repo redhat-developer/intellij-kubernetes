@@ -56,8 +56,7 @@ abstract class AbstractResourceFactory<T : HasMetadata> {
         @Suppress("UNCHECKED_CAST")
         return ObjectMetaBuilder()
             .withCreationTimestamp(metadata[CREATION_TIMESTAMP] as? String?)
-            // jackson is deserializing 'generation' to Int
-            .withGeneration((metadata[GENERATION] as? Int?)?.toLong())
+            .withGeneration((metadata[GENERATION] as? Long?))
             .withName(metadata[NAME] as? String?)
             .withNamespace(metadata[NAMESPACE] as? String?)
             .withResourceVersion(metadata[RESOURCE_VERSION] as? String?)
