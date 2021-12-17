@@ -77,8 +77,7 @@ class GenericCustomResourceFactoryTest {
 
 		// metadata
 		val creationTimestamp = "creation1"
-		// deserizalization creates an Int
-		val generation: Int = 42
+		val generation: Long = 42
 		val name = "name1"
 		val namespace = "namespace1"
 		val metadataResourceVersion = "metadataResourceVersion1"
@@ -175,7 +174,7 @@ class GenericCustomResourceFactoryTest {
 
 	private fun createMetadataMap(
 			creationTimestamp: String? = null,
-			generation: Int? = null,
+			generation: Long? = null,
 			name: String? = null,
 			namespace: String? = null,
 			resourceVersion: String? = null,
