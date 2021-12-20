@@ -92,7 +92,14 @@ abstract class NonNamespacedResourceOperator<R : HasMetadata, C : Client>(
 
     /**
      * Returns the given resource only if it has the same namespace as the given spec. Returns null otherwise.
-     * This may be required for non namespaced operators which handle namespaced resources in all namespaces (ex [AllPodsOperator])
+     * If no spec is given any resources is returned, regardless of its namespace.
+     * This may be required for non namespaced operators which handle namespaced resources in all namespaces
+     * (ex [com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.AllPodsOperator])
+     *
+     * @param spec the spec that prescribes the namespace
+     * @param resource that should match the namespace prescribed by the spec
+     *
+     * @return the given resource if it's matching the namespace prescribed by the given spec
      */
     protected fun ensureSameNamespace(spec: HasMetadata?, resource: HasMetadata?): HasMetadata? {
         return when {
