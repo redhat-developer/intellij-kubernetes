@@ -275,10 +275,8 @@ open class ResourceEditor(
             runInUI {
                 hideNotifications()
                 errorNotification.show(
-                    "Error Pulling",
-                    "Could not pull ${editorResource?.kind} ${editorResource?.metadata?.name} from cluster ${
-                        trimWithEllipsis(causeOrExceptionMessage(e, ": "), 300)
-                    }"
+                    "Could not pull ${editorResource?.kind} ${editorResource?.metadata?.name}",
+                    trimWithEllipsis(causeOrExceptionMessage(e), 300)
                 )
             }
         }
@@ -333,10 +331,8 @@ open class ResourceEditor(
                 runInUI {
                     hideNotifications()
                     errorNotification.show(
-                        "Error Pushing",
-                        "Could not push ${editorResource?.kind} ${editorResource?.metadata?.name} to cluster ${
-                            trimWithEllipsis(causeOrExceptionMessage(e, ": "), 300)
-                        }"
+                        "Could not push ${editorResource?.kind} ${editorResource?.metadata?.name}",
+                        trimWithEllipsis(causeOrExceptionMessage(e), 300)
                     )
                 }
             }
