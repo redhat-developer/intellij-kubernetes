@@ -13,13 +13,14 @@ package com.redhat.devtools.intellij.kubernetes.model.resource
 import com.intellij.openapi.diagnostic.logger
 import io.fabric8.kubernetes.api.model.HasMetadata
 import com.redhat.devtools.intellij.kubernetes.model.util.isSameResource
+import io.fabric8.kubernetes.client.Client
 
-abstract class AbstractResourceOperator<R : HasMetadata> : IResourceOperator<R> {
+abstract class AbstractResourceOperator<R : HasMetadata, C : Client>(protected val client: C) : IResourceOperator<R> {
 
     protected val _allResources: MutableList<R> = mutableListOf()
 
     override fun invalidate() {
-        logger<AbstractResourceOperator<*>>().debug("Invalidating all $kind resources.")
+        logger<AbstractResourceOperator<*, *>>().debug("Invalidating all $kind resources.")
         synchronized(_allResources) {
             _allResources.clear()
         }
@@ -29,7 +30,7 @@ abstract class AbstractResourceOperator<R : HasMetadata> : IResourceOperator<R> 
         if (!isCorrectKind(resource)) {
             return false
         }
-        logger<AbstractResourceOperator<*>>().debug("Adding resource ${resource.metadata.name}.")
+        logger<AbstractResourceOperator<*, *>>().debug("Adding resource ${resource.metadata.name}.")
         // don't add resource if different instance of same resource is already contained
         synchronized(_allResources) {
             @Suppress("UNCHECKED_CAST")
@@ -45,7 +46,7 @@ abstract class AbstractResourceOperator<R : HasMetadata> : IResourceOperator<R> 
         if (!isCorrectKind(resource)) {
             return false
         }
-        logger<AbstractResourceOperator<*>>().debug("Removing resource ${resource.metadata.name}.")
+        logger<AbstractResourceOperator<*, *>>().debug("Removing resource ${resource.metadata.name}.")
         synchronized(_allResources) {
             // do not remove by instance equality (ex. when removal is triggered by resource watch)
             // or equals bcs instance to be removed can be different and not equals either
@@ -58,7 +59,7 @@ abstract class AbstractResourceOperator<R : HasMetadata> : IResourceOperator<R> 
         if (!isCorrectKind(resource)) {
             return false
         }
-        logger<AbstractResourceOperator<*>>().debug("Replacing resource ${resource.metadata.name}.")
+        logger<AbstractResourceOperator<*, *>>().debug("Replacing resource ${resource.metadata.name}.")
         synchronized(_allResources) {
             val toReplace = _allResources.find { resource.isSameResource(it) } ?: return false
             return replace(toReplace, resource)

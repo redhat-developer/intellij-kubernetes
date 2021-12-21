@@ -25,8 +25,8 @@ typealias NonNamespacedOperation<R> = NonNamespaceOperation<R, out KubernetesRes
 interface INonNamespacedResourceOperator<R: HasMetadata, C: Client>: IResourceOperator<R>
 
 abstract class NonNamespacedResourceOperator<R : HasMetadata, C : Client>(
-    protected val client: C
-) : AbstractResourceOperator<R>(), INonNamespacedResourceOperator<R, C> {
+    client: C
+) : AbstractResourceOperator<R, C>(client), INonNamespacedResourceOperator<R, C> {
 
     override val allResources: List<R>
         get() {

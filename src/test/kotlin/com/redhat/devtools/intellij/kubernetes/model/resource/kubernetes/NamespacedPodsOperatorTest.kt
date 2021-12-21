@@ -48,7 +48,7 @@ class NamespacedPodsOperatorTest {
     private val currentNamespace = NAMESPACE2.metadata.name
     private val clients = Clients(client(currentNamespace, arrayOf(NAMESPACE1, NAMESPACE2, NAMESPACE3)))
     private val operator = spy(TestablePodsOperator(clients))
-private         val op = inNamespace(pods(clients.get()))
+    private val op = inNamespace(pods(clients.get()))
 
     @Before
     fun before() {
@@ -267,15 +267,28 @@ private         val op = inNamespace(pods(clients.get()))
     }
 
     @Test
-    fun `#watchALl() watches all pods in given namespace using client`() {
+    fun `#watchAll() watches all pods in given namespace using client`() {
         // given
         val watcher = mock<Watcher<Pod>>()
         // when
         operator.watchAll(watcher)
         // then
         verify(clients.get().pods()
-            .inNamespace(POD2.metadata.namespace))
-            .watch(watcher)
+            .inNamespace(POD2.metadata.namespace)
+        ).watch(watcher)
+    }
+
+    @Test
+    fun `#watchAll() does NOT watch if operator has no namespace`() {
+        // given
+        val watcher = mock<Watcher<Pod>>()
+        operator.namespace = null
+        // when
+        operator.watchAll(watcher)
+        // then
+        verify(clients.get().pods()
+            .inNamespace(POD2.metadata.namespace), never()
+        ).watch(watcher)
     }
 
     @Test
@@ -287,8 +300,8 @@ private         val op = inNamespace(pods(clients.get()))
         // then
         verify(clients.get().pods()
             .inNamespace(POD2.metadata.namespace)
-            .withName(POD2.metadata.name))
-            .watch(watcher)
+            .withName(POD2.metadata.name)
+        ).watch(watcher)
     }
 
     @Test
