@@ -25,7 +25,6 @@ import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.Abstrac
 import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.AbstractResourceFactory.Companion.SELF_LINK
 import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.AbstractResourceFactory.Companion.UID
 import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.custom.GenericCustomResourceFactory.SPEC
-import io.fabric8.kubernetes.api.model.HasMetadata
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.data.MapEntry
 import org.junit.Test

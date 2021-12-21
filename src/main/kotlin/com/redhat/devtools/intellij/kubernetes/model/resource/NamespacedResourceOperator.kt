@@ -27,9 +27,9 @@ interface INamespacedResourceOperator<R: HasMetadata, C: Client>: IResourceOpera
 }
 
 abstract class NamespacedResourceOperator<R : HasMetadata, C: Client>(
-    protected val client: C,
+    client: C,
     namespace: String? = client.namespace
-) : AbstractResourceOperator<R>(), INamespacedResourceOperator<R, C> {
+) : AbstractResourceOperator<R, C>(client), INamespacedResourceOperator<R, C> {
 
     final override var namespace: String? = namespace
         set(namespace) {
