@@ -10,6 +10,7 @@
  ******************************************************************************/
 package com.redhat.devtools.intellij.kubernetes.model
 
+import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.diagnostic.logger
 import com.redhat.devtools.intellij.common.utils.ExecHelper
 import com.redhat.devtools.intellij.kubernetes.model.context.Context
@@ -107,8 +108,12 @@ open class Contexts(
 
 	protected open fun refresh() {
 		if (clear()) {
-			modelObservable.fireModified(this) // invalidates root bcs there's no tree node for this
+			modelObservable.fireModified(getResourceModel()) // refresh tree root node
 		}
+	}
+
+	protected open fun getResourceModel(): IResourceModel {
+		return ApplicationManager.getApplication().getService(IResourceModel::class.java)
 	}
 
 	private fun closeCurrent(): Boolean {
