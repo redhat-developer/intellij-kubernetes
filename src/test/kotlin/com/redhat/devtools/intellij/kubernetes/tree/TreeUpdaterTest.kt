@@ -43,7 +43,8 @@ import javax.swing.tree.TreePath
 
 class TreeUpdaterTest {
 
-    private val root = mutableTreeNode(null)
+    private val resourceModel = mock<IResourceModel>()
+    private val root = mutableTreeNode(resourceModel)
     private val texas = deployment("Texas")
     private val kansas = deployment("Kansas")
     private val mississippi = deployment("Mississippi")
@@ -114,7 +115,6 @@ class TreeUpdaterTest {
         // required to not npe at runtime when mock calls super class
         on { invalidate(any(), any()) } doReturn mock<Promise<TreePath>>()
     }
-    private val resourceModel: IResourceModel = mock()
     private val updater = TreeUpdater(treeModel, structure)
 
     @Test
@@ -206,6 +206,15 @@ class TreeUpdaterTest {
     }
 
     @Test
+    fun `#modified(resource model) should invalidate tree model (aka root node)`() {
+        // given
+        // when
+        updater.modified(resourceModel)
+        // then
+        verify(treeModel).invalidate()
+    }
+
+    @Test
     fun `#modified should NOT invalidate element that is NOT displayed`() {
         // given
         // when
@@ -243,8 +252,8 @@ class TreeUpdaterTest {
             .build()
     }
 
-    private fun mutableTreeNode(resource: HasMetadata?): DefaultMutableTreeNode {
-        val descriptor: TreeStructure.Descriptor<HasMetadata> = mock {
+    private fun mutableTreeNode(resource: Any?): DefaultMutableTreeNode {
+        val descriptor: TreeStructure.Descriptor<Any> = mock {
             on { this.element } doReturn resource
         }
         return DefaultMutableTreeNode(descriptor)

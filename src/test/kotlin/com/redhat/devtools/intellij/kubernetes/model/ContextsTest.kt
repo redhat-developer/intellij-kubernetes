@@ -23,6 +23,7 @@ import com.redhat.devtools.intellij.kubernetes.model.mocks.Mocks
 import com.redhat.devtools.intellij.kubernetes.model.mocks.Mocks.activeContext
 import com.redhat.devtools.intellij.kubernetes.model.mocks.Mocks.context
 import org.junit.Test
+import org.mockito.ArgumentMatcher
 import org.mockito.Mockito
 
 class ContextsTest {
@@ -78,12 +79,12 @@ class ContextsTest {
 	}
 
 	@Test
-	fun `#refresh() should notify change of Contexts`() {
+	fun `#refresh() should notify change of Contexts by firing resource model`() {
 		// given
 		// when
 		contexts.refresh()
 		// then
-		verify(modelChange).fireModified(contexts)
+		verify(modelChange).fireModified(any<IResourceModel>())
 	}
 
 	@Test
@@ -332,6 +333,10 @@ class ContextsTest {
 
 		override fun reportTelemetry(context: IActiveContext<out HasMetadata, out KubernetesClient>) {
 			// prevent telemetry reporting
+		}
+
+		override fun getResourceModel(): IResourceModel {
+			return mock()
 		}
 	}
 }
