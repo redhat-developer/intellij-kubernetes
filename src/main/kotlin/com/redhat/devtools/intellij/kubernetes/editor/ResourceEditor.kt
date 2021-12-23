@@ -118,7 +118,9 @@ open class ResourceEditor(
         try {
             getCustomResourceDefinitions.invoke(clients.get())
         } catch (e: KubernetesClientException) {
-            emptyList<CustomResourceDefinition>()
+            throw ResourceException(
+                "Error contacting cluster: could not retrieve custom resource definitions", e
+            )
         }
     }
 

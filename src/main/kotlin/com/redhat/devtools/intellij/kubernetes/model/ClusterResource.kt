@@ -103,10 +103,7 @@ open class ClusterResource(
             if (e.isNotFound()) {
                 null
             } else {
-                throw ResourceException("Error contacting cluster ${
-                        causeOrExceptionMessage(e, ": ")
-                    }", e
-                )
+                throw ResourceException("Error contacting cluster: could not retrieve resource", e)
             }
         }
     }
