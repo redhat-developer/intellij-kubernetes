@@ -23,8 +23,6 @@ import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.doThrow
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.never
-import com.nhaarman.mockitokotlin2.spy
-import com.nhaarman.mockitokotlin2.times
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.whenever
 import com.redhat.devtools.intellij.common.validation.KubernetesResourceInfo
@@ -36,12 +34,13 @@ import com.redhat.devtools.intellij.kubernetes.editor.notification.PulledNotific
 import com.redhat.devtools.intellij.kubernetes.editor.notification.PushNotification
 import com.redhat.devtools.intellij.kubernetes.model.Clients
 import com.redhat.devtools.intellij.kubernetes.model.ClusterResource
-import com.redhat.devtools.intellij.kubernetes.model.ModelChangeObservable
 import com.redhat.devtools.intellij.kubernetes.model.ResourceException
-import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks
+import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.NAMESPACE1
+import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.NAMESPACE2
+import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.NAMESPACE3
 import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.POD2
-import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.POD3
 import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.client
+import com.redhat.devtools.intellij.kubernetes.model.util.ResettableLazyProperty
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.PodBuilder
 import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinition
@@ -50,7 +49,6 @@ import io.fabric8.kubernetes.client.KubernetesClientException
 import io.fabric8.kubernetes.client.utils.Serialization
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test
-import org.mockito.verification.VerificationMode
 import java.util.concurrent.atomic.AtomicBoolean
 
 class ResourceEditorTest {
@@ -74,8 +72,11 @@ spec:
          - "echo kube"
       restartPolicy: Never
 """
-    private val allNamespaces = arrayOf(ClientMocks.NAMESPACE1, ClientMocks.NAMESPACE2, ClientMocks.NAMESPACE3)
-    private val currentNamespace = ClientMocks.NAMESPACE2
+    private val allNamespaces = arrayOf(
+        NAMESPACE1,
+        NAMESPACE2,
+        NAMESPACE3)
+    private val currentNamespace = NAMESPACE2
 
     // need real resources, not mocks - #equals used to track changes
     private val GARGAMEL = PodBuilder(POD2)
@@ -100,17 +101,11 @@ spec:
             .withResourceVersion("2")
         .endMetadata()
         .build()
-
-    // need real resources, not mocks - #equals used to track changes
-    private val AZRAEL = PodBuilder(POD3)
+    private val AZRAEL = PodBuilder(GARGAMEL)
         .editMetadata()
             .withName("Azrael")
-            .withNamespace("namespace2")
-            .withResourceVersion("1")
         .endMetadata()
-        .withApiVersion("v1")
         .build()
-    private val localCopy = GARGAMEL
     private val virtualFile: VirtualFile = mock()
     private val fileEditor: FileEditor = mock<FileEditor>().apply {
         doReturn(virtualFile)
@@ -141,12 +136,12 @@ spec:
     }
     private val createResource: (editor: FileEditor, definitions: Collection<CustomResourceDefinition>?) -> HasMetadata? =
         mock<(editor: FileEditor, definitions: Collection<CustomResourceDefinition>?) -> HasMetadata?>().apply  {
-            doReturn(localCopy)
+            doReturn(GARGAMEL)
                 .whenever(this).invoke(any(), any())
         }
-    private val clusterResource: ClusterResource = mock<ClusterResource>().apply {
-        doReturn(GARGAMELv2)
-            .whenever(this).get(any())
+    private val clusterResource: ClusterResource = mock {
+        on { pull(any()) } doReturn GARGAMELv2
+        on { isSameResource(any()) } doReturn true
     }
     private val createClusterResource: (HasMetadata, Clients<out KubernetesClient>, Collection<CustomResourceDefinition>?) -> ClusterResource =
         mock<(HasMetadata, Clients<out KubernetesClient>, Collection<CustomResourceDefinition>?) -> ClusterResource>().apply {
@@ -178,10 +173,10 @@ spec:
         kubernetesResourceInfo
     }
     private val documentReplaced: AtomicBoolean = AtomicBoolean(false)
+    private val resourceVersion: PersistentEditorValue = mock()
 
-    private val editor = spy(
+    private val editor =
         TestableResourceEditor(
-            localCopy,
             fileEditor,
             project,
             clients,
@@ -198,9 +193,69 @@ spec:
             getDocument,
             getPsiDocumentManager,
             getKubernetesResourceInfo,
-            documentReplaced
+            documentReplaced,
+            resourceVersion
         )
-    )
+
+    @Test
+    fun `#isModified should return true if editor resource doesn't exist on cluster`() {
+        // given
+        doReturn(false)
+            .whenever(clusterResource).exists()
+        // when
+        val modified = editor.isModified()
+        // then
+        assertThat(modified).isTrue()
+    }
+
+    @Test
+    fun `#isModified should return false if editor resource exists on cluster`() {
+        // given
+        // lastPulledPushed is initialized with editorResource if resource exists on cluster
+        doReturn(true)
+            .whenever(clusterResource).exists()
+        // when
+        val modified = editor.isModified()
+        // then
+        assertThat(modified).isFalse()
+    }
+
+    @Test
+    fun `#isModified should return true if editor resource is changed when compared to pushed resource`() {
+        // given
+        editor.editorResource.set(GARGAMEL_WITH_LABEL)
+        editor.lastPushedPulled.set(GARGAMEL)
+        // when
+        val modified = editor.isModified()
+        // then
+        assertThat(modified).isTrue()
+    }
+
+    @Test
+    fun `#isModified should return false after changed resource is pushed`() {
+        // given
+        editor.editorResource.set(GARGAMEL_WITH_LABEL)
+        doReturn(GARGAMEL_WITH_LABEL)
+            .whenever(createResource).invoke(any(), any()) // called after pushing
+        editor.lastPushedPulled.set(GARGAMEL)
+        assertThat(editor.isModified()).isTrue()
+        // when
+        editor.push()
+        // then
+        assertThat(editor.isModified()).isFalse()
+    }
+
+    @Test
+    fun `#isModified should return false after changed resource is pulled`() {
+        // given
+        editor.editorResource.set(GARGAMEL_WITH_LABEL)
+        editor.lastPushedPulled.set(GARGAMEL)
+        assertThat(editor.isModified()).isTrue()
+        // when
+        editor.pull()
+        // then
+        assertThat(editor.isModified()).isFalse()
+    }
 
     @Test
     fun `#update should trigger fetching crds`() {
@@ -222,24 +277,11 @@ spec:
     }
 
     @Test
-    fun `#update called 2x should fetch crds 2x if fetch throws`() {
-        // given
-        doThrow(KubernetesClientException::class)
-            .whenever(getCustomResourceDefinitions).invoke(any())
-        // when
-        editor.update()
-        editor.update()
-        // then
-        verify(getCustomResourceDefinitions, times(2)).invoke(any())
-    }
-
-    @Test
     fun `#update should hide all notifications when resource on cluster is deleted`() {
         // given
-        doReturn(true)
-            .whenever(clusterResource).isDeleted()
-        doReturn(false)
-            .whenever(clusterResource).isModified(any())
+        givenClusterResourceIsDeleted(true)
+        givenEditorResourceIsModified(false)
+        givenEditorResourceIsOutdated(false)
         // when
         editor.update()
         // then
@@ -247,10 +289,11 @@ spec:
     }
 
     @Test
-    fun `#update should hide all notifications when resource on cluster is outdated`() {
+    fun `#update should hide all notifications when resource is modified`() {
         // given
-        doReturn(true)
-            .whenever(clusterResource).isOutdated(any())
+        givenClusterResourceIsDeleted(false)
+        givenEditorResourceIsModified(true)
+        givenEditorResourceIsOutdated(false)
         // when
         editor.update()
         // then
@@ -258,10 +301,11 @@ spec:
     }
 
     @Test
-    fun `#update should hide all notifications when editor resource can be pushed`() {
+    fun `#update should hide all notifications when resource is outdated`() {
         // given
-        doReturn(true)
-            .whenever(clusterResource).canPush(any())
+        givenClusterResourceIsDeleted(false)
+        givenEditorResourceIsModified(false)
+        givenEditorResourceIsOutdated(true)
         // when
         editor.update()
         // then
@@ -269,14 +313,11 @@ spec:
     }
 
     @Test
-    fun `#update should hide all notifications when editor resource CANNOT be pushed NOR pulled NOR is modified`() {
+    fun `#update should hide all notifications when editor resource is NOT deleted nor modified nor outdated`() {
         // given
-        doReturn(false)
-            .whenever(clusterResource).isDeleted()
-        doReturn(false)
-            .whenever(clusterResource).isModified(any())
-        doReturn(false)
-            .whenever(clusterResource).canPush(any())
+        givenClusterResourceIsDeleted(false)
+        givenEditorResourceIsModified(false)
+        givenEditorResourceIsOutdated(false)
         // when
         editor.update()
         // then
@@ -284,7 +325,7 @@ spec:
     }
 
     @Test
-    fun `#update should show error notification and hide all notifications if creating resource throws ResourceException`() {
+    fun `#update should show error notification and hide all notifications if creating editor resource throws ResourceException`() {
         // given
         doThrow(ResourceException("resource error", KubernetesClientException("client error")))
             .whenever(createResource).invoke(any(), any())
@@ -296,12 +337,11 @@ spec:
     }
 
     @Test
-    fun `#update should show deleted notification if resource on cluster is deleted and editor resource is NOT modified`() {
+    fun `#update should show deleted notification if resource on cluster is deleted`() {
         // given
-        doReturn(true)
-            .whenever(clusterResource).isDeleted()
-        doReturn(false)
-            .whenever(clusterResource).isModified(any())
+        givenClusterResourceIsDeleted(true)
+        givenEditorResourceIsModified(false)
+        givenEditorResourceIsOutdated(false)
         // when
         editor.update()
         // then
@@ -309,106 +349,11 @@ spec:
     }
 
     @Test
-    fun `#update should NOT show deleted notification if resource on cluster is deleted but editor resource is modified`() {
+    fun `#update should show push notification if resource is modified`() {
         // given
-        doReturn(true)
-            .whenever(clusterResource).isDeleted()
-        doReturn(true)
-            .whenever(clusterResource).isModified(any())
-        // when
-        editor.update()
-        // then
-        verify(deletedNotification, never()).show(any())
-    }
-
-    @Test
-    fun `#update should show modified notification if resource on cluster is modified and there are local changes to resource`() {
-        // given
-        doReturn(true)
-            .whenever(clusterResource).isOutdated(any())
-        doReturn(GARGAMEL)
-            .whenever(clusterResource).get(any())
-        doReturn(GARGAMEL_WITH_LABEL) // editor resource is modified
-            .whenever(createResource).invoke(any(), any())
-        // when
-        editor.update()
-        // then
-        verify(pullNotification).show(any())
-    }
-
-    @Test
-    fun `#update should NOT show modified notification after editor is replaced`() {
-        // given
-        doReturn(false)
-            .whenever(clusterResource).isDeleted() // dont show deleted notification
-        doReturn(true)
-            .whenever(clusterResource).isOutdated(any())  // dont show modified notification
-        doReturn(AZRAEL) // cluster resource is different -> editor is outdated
-            .whenever(clusterResource).get(any())
-        whenever(createResource.invoke(any(), any()))
-            .doReturn(
-                GARGAMELv2, // 1st call to factory in #update: editor is modified -> modified notification, no automatic reload
-                AZRAEL) // 2nd call to factory in #update after replace: editor has resource from cluster -> no modified notification
-        editor.update() // 1st call: local changes, shows modified notification
-        editor.pull()
-        // when
-        editor.update() // 2nd call: no local changes (editor content was replaced), no modified notification
-        // then modification notification only shown once even though #update called twice
-        verify(pullNotification, times(1)).show(any())
-    }
-
-    @Test
-    fun `#update should NOT show modified notification if resource on cluster is modified BUT there are NO local changes to resource`() {
-        // given
-        doReturn(true)
-            .whenever(clusterResource).isOutdated(any())
-        doReturn(GARGAMEL)
-            .whenever(clusterResource).get(any())
-        doReturn(GARGAMEL)
-            .whenever(createResource).invoke(any(), any())
-        // when
-        editor.update()
-        // then
-        verify(pullNotification, never()).show(any())
-    }
-
-    @Test
-    fun `#update should show reloaded notification if resource on cluster is modified BUT there are NO local changes to resource`() {
-        // given
-        doReturn(true)
-            .whenever(clusterResource).isOutdated(any())
-        doReturn(GARGAMEL)
-            .whenever(clusterResource).get(any())
-        doReturn(GARGAMEL)
-            .whenever(createResource).invoke(any(), any())
-        // when
-        editor.update()
-        // then
-        verify(pulledNotification).show(any())
-    }
-
-    @Test
-    fun `#update should set text of document if resource on cluster is modified and there are NO local changes to resource`() {
-        // given
-        doReturn(true)
-            .whenever(clusterResource).isOutdated(any())
-        doReturn(GARGAMEL)
-            .whenever(clusterResource).get(any())
-        doReturn(GARGAMEL)
-            .whenever(createResource).invoke(any(), any())
-        // when
-        editor.update()
-        // then
-        verify(document).replaceString(0, document.textLength - 1, Serialization.asYaml(GARGAMEL))
-    }
-
-    @Test
-    fun `#update should show push notification if resource is modified and can push resource to cluster`() {
-        // given
-        doReturn(true)
-            .whenever(clusterResource).isModified(any())
-        doReturn(true)
-            .whenever(clusterResource).canPush(any())
+        givenClusterResourceIsDeleted(false)
+        givenEditorResourceIsModified(true)
+        givenEditorResourceIsOutdated(false)
         // when
         editor.update()
         // then
@@ -416,23 +361,93 @@ spec:
     }
 
     @Test
+    fun `#update should show pull notification if resource is outdated`() {
+        // given
+        givenClusterResourceIsDeleted(false)
+        givenEditorResourceIsModified(false)
+        givenEditorResourceIsOutdated(true)
+        // when
+        editor.update()
+        // then
+        verify(pullNotification).show(any(), any())
+    }
+
+    @Test
+    fun `#update should save resource version of resource in editor`() {
+        // given
+        doReturn(GARGAMEL_WITH_LABEL)
+            .whenever(createResource).invoke(any(), any())
+        // when
+        editor.update()
+        // then
+        verify(resourceVersion).set(GARGAMEL_WITH_LABEL.metadata.resourceVersion)
+    }
+
+    @Test
+    fun `#update should NOT save resource version if resource in editor has no resource version`() {
+        // given
+        val resource = PodBuilder(GARGAMEL)
+            .editMetadata()
+                .withResourceVersion(null)
+            .endMetadata()
+            .build()
+        doReturn(resource)
+            .whenever(createResource).invoke(any(), any())
+        // when
+        editor.update()
+        // then
+        verify(resourceVersion, never()).set(any())
+    }
+
+    @Test
+    fun `#update should NOT save resource version if resource in editor has smaller resource version than previously saved version`() {
+        // given
+        doReturn(GARGAMEL.metadata.resourceVersion)
+            .whenever(resourceVersion).get()
+        val smallerVersion = (GARGAMEL.metadata.resourceVersion.toInt() - 1).toString()
+        val resource = PodBuilder(GARGAMEL)
+            .editMetadata()
+            .withResourceVersion(smallerVersion)
+            .endMetadata()
+            .build()
+        doReturn(resource)
+            .whenever(createResource).invoke(any(), any())
+        // when
+        editor.update()
+        // then
+        verify(resourceVersion, never()).set(any())
+    }
+
+    @Test
     fun `#update after a #pull should do nothing bcs it was triggered by #replaceDocument (replace triggers editor transaction listener and thus #update)`() {
         // given
         doReturn(GARGAMELv2)
-            .whenever(clusterResource).get(any())
+            .whenever(clusterResource).pull(any())
         editor.pull()
         clearAllNotificationInvocations()
         // when
         editor.update()
         // then
-        verifyShowAllNotifications(never())
+        verifyShowNoNotifications()
+    }
+
+    @Test
+    fun `#update after change of resource should show push notification`() {
+        // given
+        givenEditorResourceIsModified(false)
+        doReturn(AZRAEL)
+            .whenever(createResource).invoke(any(), any())
+        // when
+        editor.update()
+        // then
+        verify(pushNotification).show(any(), any())
     }
 
     @Test
     fun `#pull should replace document`() {
         // given
         doReturn(GARGAMELv2)
-            .whenever(clusterResource).get(any())
+            .whenever(clusterResource).pull(any())
         // when
         editor.pull()
         // then
@@ -469,7 +484,7 @@ spec:
     fun `#pull should show pulled notification`() {
         // given
         doReturn(GARGAMELv2)
-            .whenever(clusterResource).get(any())
+            .whenever(clusterResource).pull(any())
         // when
         editor.pull()
         // then
@@ -486,12 +501,30 @@ spec:
     }
 
     @Test
+    fun `#pull should show error notification if pulling throws`() {
+        // given
+        doThrow(ResourceException::class)
+            .whenever(clusterResource).pull()
+        // when
+        editor.pull()
+        // then
+        verify(errorNotification).show(any(), any<String>())
+    }
+
+    @Test
+    fun `#pull should save resource version`() {
+        // given
+        doReturn(GARGAMELv2)
+            .whenever(clusterResource).pull()
+        // when
+        editor.pull()
+        // then
+        verify(resourceVersion).set(GARGAMELv2.metadata.resourceVersion)
+    }
+
+    @Test
     fun `#push should push resource to cluster`() {
         // given
-        doReturn(true)
-            .whenever(clusterResource).isModified(any())
-        doReturn(true)
-            .whenever(clusterResource).canPush(any())
         // when
         editor.push()
         // then
@@ -499,40 +532,15 @@ spec:
     }
 
     @Test
-    fun `#push should replace text of document`() {
+    fun `#push should save version of resource that cluster responded with`() {
         // given
-        doReturn(GARGAMEL)
-            .whenever(createResource).invoke(any(), any())
+        val versionInResponse = GARGAMELv2.metadata.resourceVersion
         doReturn(GARGAMELv2)
             .whenever(clusterResource).push(any())
         // when
         editor.push()
         // then
-        verify(document).replaceString(0, document.textLength - 1, Serialization.asYaml(GARGAMELv2))
-    }
-
-    @Test
-    fun `#push should show pulled notification`() {
-        // given
-        doReturn(GARGAMEL)
-            .whenever(createResource).invoke(any(), any())
-        doReturn(GARGAMELv2)
-            .whenever(clusterResource).push(any())
-        // when
-        editor.push()
-        // then
-        verify(pulledNotification).show(GARGAMELv2)
-    }
-
-    @Test
-    fun `#push should show error notification if parsing editor content throws`() {
-        // given
-        doThrow(ResourceException("resource error", KubernetesClientException("client error")))
-            .whenever(createResource).invoke(any(), any())
-        // when
-        editor.push()
-        // then
-        verify(errorNotification).show(any(), argWhere<String> { it.contains("client error", false) })
+        verify(resourceVersion).set(versionInResponse)
     }
 
     @Test
@@ -618,7 +626,7 @@ spec:
     fun `#replaceContent should set text of document`() {
         // given
         doReturn(GARGAMELv2)
-            .whenever(clusterResource).get(any())
+            .whenever(clusterResource).pull(any())
         // when
         editor.pull()
         // then
@@ -629,7 +637,7 @@ spec:
     fun `#replaceContent should commit document`() {
         // given
         doReturn(GARGAMELv2)
-            .whenever(clusterResource).get(any())
+            .whenever(clusterResource).pull(any())
         // when
         editor.pull()
         // then
@@ -654,79 +662,6 @@ spec:
         verify(clusterResource, atLeastOnce()).stopWatch()
     }
 
-    @Test
-    fun `IResourceChangeListener#removed should show deleted notification`() {
-        // given
-        doReturn(true)
-            .whenever(clusterResource).isDeleted()
-        doReturn(false)
-            .whenever(clusterResource).isModified(any())
-        editor.startWatch() // create cluster
-        val listener = captureClusterResourceListener(clusterResource) // listener added to cluster
-        assertThat(listener).isNotNull()
-        // when
-        listener!!.removed(GARGAMEL)
-        // then
-        verify(deletedNotification).show(GARGAMEL)
-    }
-
-    @Test
-    fun `IResourceChangeListener#modified should show pull notification if editor is modified`() {
-        // given
-        doReturn(GARGAMEL) // cluster has GARGAMEL
-            .whenever(clusterResource).get(any())
-        doReturn(false) // dont show deleted notification
-            .whenever(clusterResource).isDeleted()
-        doReturn(true) // local copy is outdated
-            .whenever(clusterResource).isOutdated(any())
-        editor.editorResource = GARGAMEL_WITH_LABEL // editor document is modified, is GARGAMEL_WITH_LABEL
-        editor.startWatch() // create cluster
-        val listener = captureClusterResourceListener(clusterResource) // listener added to cluster
-        assertThat(listener).isNotNull()
-        // when
-        listener!!.modified(GARGAMEL)
-        // then
-        verify(pullNotification).show(GARGAMEL)
-    }
-
-    @Test
-    fun `IResourceChangeListener#modified should replace document and show pulled notification if editor is NOT modified`() {
-        // given
-        doReturn(GARGAMELv2)
-            .whenever(clusterResource).get(any())
-        doReturn(false) // dont show deleted notification
-            .whenever(clusterResource).isDeleted()
-        doReturn(true) // local copy is outdated
-            .whenever(clusterResource).isOutdated(any())
-        editor.startWatch() // create cluster
-        val listener = captureClusterResourceListener(clusterResource) // listener added to cluster
-        assertThat(listener).isNotNull()
-        // when
-        listener!!.modified(GARGAMEL)
-        // then
-        verify(document).replaceString(0, document.textLength - 1, Serialization.asYaml(GARGAMELv2))
-        verify(pulledNotification).show(any())
-    }
-
-    /**
-     * Captures the [ModelChangeObservable.IResourceChangeListener] that's added to the given [ClusterResource]
-     * when [ClusterResource.addListener] is called.
-     * Mockito fails to do so when using an [org.mockito.ArgumentCaptor] and fails with an [IllegalArgumentException]
-     * instead because the listener argument is not nullable.
-     * This method works around this by using an [org.mockito.ArgumentMatcher] instead
-     *
-     * @param clusterResource to capture the [ModelChangeObservable.IResourceChangeListener] from that's added via [ClusterResource.addListener]
-     */
-    private fun captureClusterResourceListener(clusterResource: ClusterResource): ModelChangeObservable.IResourceChangeListener? {
-        var listener: ModelChangeObservable.IResourceChangeListener? = null
-        verify(clusterResource).addListener(argWhere {
-                toAdd: ModelChangeObservable.IResourceChangeListener ->
-                listener = toAdd
-                true // let it succeed so that it can capture
-        })
-        return listener
-    }
-
     private fun verifyHideAllNotifications() {
         verify(errorNotification).hide()
         verify(pullNotification).hide()
@@ -735,12 +670,12 @@ spec:
         verify(pulledNotification).hide()
     }
 
-    private fun verifyShowAllNotifications(mode: VerificationMode = times(1)) {
-        verify(errorNotification, mode).show(any(), any<String>())
-        verify(pullNotification, mode).show(any())
-        verify(deletedNotification, mode).show(any())
-        verify(pushNotification, mode).show(any(), any())
-        verify(pulledNotification, mode).show(any())
+    private fun verifyShowNoNotifications() {
+        verify(errorNotification, never()).show(any(), any<String>())
+        verify(pullNotification, never()).show(any(), any())
+        verify(deletedNotification, never()).show(any())
+        verify(pushNotification, never()).show(any(), any())
+        verify(pulledNotification, never()).show(any())
     }
 
     private fun clearAllNotificationInvocations() {
@@ -779,11 +714,20 @@ spec:
     }
 
     @Test
+    fun `#close should remove editor user data`() {
+        // given
+        // when
+        editor.close()
+        // then
+        verify(fileEditor).putUserData(ResourceEditor.KEY_RESOURCE_EDITOR, null)
+    }
+
+    @Test
     fun `#getTitle should return 'resourcename@namespace' if file is temporary and contains kubernetes resource with namespace`() {
         // given
         doReturn(true)
             .whenever(isTemporary).invoke(any())
-        val resource = localCopy
+        val resource = GARGAMEL
         // when
         val title = editor.getTitle()
         // then
@@ -835,8 +779,39 @@ spec:
         assertThat(title).isEqualTo("luke.skywalker")
     }
 
+    private fun givenClusterResourceIsDeleted(deleted: Boolean) {
+        doReturn(deleted)
+            .whenever(clusterResource).isDeleted()
+    }
+
+    private fun givenEditorResourceIsOutdated(outdated: Boolean) {
+        doReturn(outdated)
+            .whenever(clusterResource).isOutdated(any() as String?)
+    }
+
+    private fun givenEditorResourceIsModified(modified: Boolean) {
+        val editorResource = if (modified) {
+            GARGAMEL_WITH_LABEL
+        } else {
+            GARGAMEL
+        }
+        /**
+         * Workaround: force [ResourceEditor.clusterResource] to be created
+         * & reset [ResourceEditor.lastPushedPulled] so that no reset happens anymore.
+         *
+         * [ResourceEditor.lastPushedPulled.get] is causing initialization of [ResourceEditor.lastPushedPulled]
+         * which is causing [ResourceEditor.clusterResource] to be created which then resets [ResourceEditor.lastPushedPulled]
+         * */
+        editor.lastPushedPulled.get() // WORKAROUND
+        editor.lastPushedPulled.set(GARGAMEL)
+        editor.editorResource.set(editorResource)
+        doReturn(editorResource)
+            .whenever(createResource).invoke(any(), any())
+        doReturn(editorResource.metadata.resourceVersion)
+            .whenever(resourceVersion).get()
+    }
+
     private class TestableResourceEditor(
-        localCopy: HasMetadata?,
         editor: FileEditor,
         project: Project,
         clients: () -> Clients<out KubernetesClient>,
@@ -853,9 +828,9 @@ spec:
         documentProvider: (FileEditor) -> Document?,
         psiDocumentManagerProvider: (Project) -> PsiDocumentManager,
         getKubernetesResourceInfo: (FileEditor, Project) -> KubernetesResourceInfo,
-        documentReplaced: AtomicBoolean
+        documentReplaced: AtomicBoolean,
+        resourceVersion: PersistentEditorValue
     ) : ResourceEditor(
-        localCopy,
         editor,
         project,
         clients,
@@ -872,9 +847,14 @@ spec:
         documentProvider,
         psiDocumentManagerProvider,
         getKubernetesResourceInfo,
-        documentReplaced
+        documentReplaced,
+        resourceVersion
     ) {
-        override var editorResource: HasMetadata? = super.editorResource
+        public override var lastPushedPulled: ResettableLazyProperty<HasMetadata?> = super.lastPushedPulled
+
+        public override fun isModified(): Boolean {
+            return super.isModified()
+        }
 
         override fun runAsync(runnable: () -> Unit) {
             // dont execute in UI thread
@@ -890,6 +870,5 @@ spec:
             // dont execute in application thread pool
             runnable.invoke()
         }
-
     }
 }

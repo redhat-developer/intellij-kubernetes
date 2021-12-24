@@ -31,19 +31,21 @@ class PullNotification(private val editor: FileEditor, private val project: Proj
         val KEY_PANEL = Key<JComponent>(PullNotification::class.java.canonicalName)
     }
 
-    fun show(resource: HasMetadata) {
-        editor.showNotification(KEY_PANEL, { createPanel(editor, resource, project) }, project)
+    fun show(resource: HasMetadata, canPush: Boolean) {
+        editor.showNotification(KEY_PANEL, { createPanel(editor, resource, project, canPush) }, project)
     }
 
     fun hide() {
         editor.hideNotification(KEY_PANEL, project)
     }
 
-    private fun createPanel(editor: FileEditor, resource: HasMetadata, project: Project): EditorNotificationPanel {
+    private fun createPanel(editor: FileEditor, resource: HasMetadata, project: Project, canPush: Boolean): EditorNotificationPanel {
         val panel = EditorNotificationPanel()
         panel.setText("${resource.kind} '${resource.metadata.name}' changed on cluster. Pull?")
         panel.createActionLabel("Pull", PullAction.ID)
-        panel.createActionLabel("Push", PushAction.ID)
+        if (canPush) {
+            panel.createActionLabel("Push", PushAction.ID)
+        }
         panel.createActionLabel("Ignore") {
             editor.hideNotification(KEY_PANEL, project)
         }

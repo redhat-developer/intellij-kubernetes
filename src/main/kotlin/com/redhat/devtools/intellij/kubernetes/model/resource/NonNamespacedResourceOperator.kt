@@ -64,19 +64,24 @@ abstract class NonNamespacedResourceOperator<R : HasMetadata, C : Client>(
     override fun replace(resource: HasMetadata): HasMetadata? {
         @Suppress("UNCHECKED_CAST")
         val toReplace = resource as? R ?: return null
-        removeResourceVersion(toReplace)
-        removeUID(toReplace)
-        return getOperation()?.withName(toReplace.metadata.name)?.replace(toReplace)
+        val resourceVersion = removeResourceVersion(toReplace)
+        val uid = removeUid(toReplace)
+        val replaced = getOperation()?.withName(toReplace.metadata.name)?.replace(toReplace)
+        // restore properties that were removed before sending
+        toReplace.metadata.resourceVersion = resourceVersion
+        toReplace.metadata.uid = uid
+        return replaced
     }
 
     override fun create(resource: HasMetadata): HasMetadata? {
         @Suppress("UNCHECKED_CAST")
         val toCreate = resource as? R ?: return null
-        removeResourceVersion(toCreate)
-        removeUID(toCreate)
-        return getOperation()
-            ?.withName(toCreate.metadata.name)
-            ?.create(toCreate)
+
+        return runWithoutServerSetProperties(toCreate) {
+            getOperation()
+                ?.withName(toCreate.metadata.name)
+                ?.create(toCreate)
+        }
     }
 
     override fun get(resource: HasMetadata): HasMetadata? {

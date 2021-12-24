@@ -15,6 +15,9 @@ import com.intellij.openapi.editor.Document
 import com.intellij.openapi.fileEditor.FileEditor
 import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.project.ProjectManager
+import com.intellij.openapi.project.ProjectManagerListener
+import com.intellij.openapi.util.Key
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.PsiDocumentManager
 import com.redhat.devtools.intellij.kubernetes.editor.notification.ErrorNotification
@@ -25,6 +28,7 @@ import com.redhat.devtools.intellij.kubernetes.model.util.isSameResource
 import com.redhat.devtools.intellij.kubernetes.telemetry.TelemetryService
 import com.redhat.devtools.intellij.telemetry.core.service.TelemetryMessageBuilder
 import io.fabric8.kubernetes.api.model.HasMetadata
+
 
 open class ResourceEditorFactory protected constructor(
     /* for mocking purposes */
@@ -48,17 +52,21 @@ open class ResourceEditorFactory protected constructor(
         hasKubernetesResource(document, psiDocumentManager)
     },
     /* for mocking purposes */
-    private val createResourceEditor: (HasMetadata?, FileEditor, Project) -> ResourceEditor =
-        { resource, editor, project -> ResourceEditor(resource, editor, project) },
+    private val createResourceEditor: (FileEditor, Project) -> ResourceEditor =
+        { editor, project -> ResourceEditor(editor, project) },
     /* for mocking purposes */
     private val reportTelemetry: (FileEditor, Project, TelemetryMessageBuilder.ActionMessage) -> Unit = { editor, project, telemetry ->
         val resourceInfo = getKubernetesResourceInfo(getDocument(editor), PsiDocumentManager.getInstance(project))
         TelemetryService.sendTelemetry(resourceInfo, telemetry)
-    }
+    },
+    /* for mocking purposes */
+    private val getProjectManager: () -> ProjectManager = {  ProjectManager.getInstance() }
+
 ) {
 
     companion object {
         val instance = ResourceEditorFactory()
+        private val KEY_RESOURCE = Key<HasMetadata>(HasMetadata::class.java.name)
     }
 
     /**
@@ -71,14 +79,13 @@ open class ResourceEditorFactory protected constructor(
     fun openEditor(resource: HasMetadata, project: Project) {
         runAsync {
             val file = getFile(resource, project) ?: return@runAsync
+            file.putUserData(KEY_RESOURCE, resource)
             runInUI {
-                val editor = getFileEditorManager.invoke(project)
+                // invokes editor selection listeners before call returns
+                getFileEditorManager.invoke(project)
                     .openFile(file, true, true)
                     .firstOrNull()
                     ?: return@runInUI
-                runAsync {
-                    getExistingOrCreate(resource, editor, project)
-                }
             }
         }
     }
@@ -98,7 +105,7 @@ open class ResourceEditorFactory protected constructor(
             .firstOrNull { resourceEditor ->
                 // get editor for a temporary file thus only editors for temporary files are candidates
                 isTemporary.invoke(resourceEditor.editor.file)
-                        && resource.isSameResource(resourceEditor.editorResource)
+                        && resource.isSameResource(resourceEditor.editorResource.get())
             }
     }
 
@@ -109,17 +116,13 @@ open class ResourceEditorFactory protected constructor(
      * @return the existing or a new [ResourceEditor].
      */
     fun getExistingOrCreate(editor: FileEditor?, project: Project?): ResourceEditor? {
-        return getExistingOrCreate(null, editor, project)
-    }
-
-    private fun getExistingOrCreate(resource: HasMetadata?, editor: FileEditor?, project: Project?): ResourceEditor? {
         if (editor == null
             || project == null
         ) {
             return null
         }
 
-        return getExisting(editor) ?: create(resource, editor, project)
+        return getExisting(editor) ?: create(editor, project)
     }
 
     /**
@@ -153,7 +156,7 @@ open class ResourceEditorFactory protected constructor(
         return file?.getUserData(ResourceEditor.KEY_RESOURCE_EDITOR)
     }
 
-    private fun create(resource: HasMetadata?, editor: FileEditor, project: Project): ResourceEditor? {
+    private fun create(editor: FileEditor, project: Project): ResourceEditor? {
         if (!isValidType.invoke(editor.file)
             || !hasKubernetesResource.invoke(editor, project)
         ) {
@@ -162,8 +165,9 @@ open class ResourceEditorFactory protected constructor(
         val telemetry = TelemetryService.instance.action(TelemetryService.NAME_PREFIX_EDITOR + "open")
         return try {
             runAsync { reportTelemetry.invoke(editor, project, telemetry) }
-            val resourceEditor = createResourceEditor.invoke(resource, editor, project)
+            val resourceEditor = createResourceEditor.invoke(editor, project)
             resourceEditor.createToolbar()
+            getProjectManager.invoke().addProjectManagerListener(project, onProjectClosed(resourceEditor))
             editor.putUserData(ResourceEditor.KEY_RESOURCE_EDITOR, resourceEditor)
             editor.file?.putUserData(ResourceEditor.KEY_RESOURCE_EDITOR, resourceEditor)
             resourceEditor
@@ -171,6 +175,14 @@ open class ResourceEditorFactory protected constructor(
             ErrorNotification(editor, project).show(e.message ?: "", e.cause?.message)
             runAsync { telemetry.error(e).send() }
             null
+        }
+    }
+
+    private fun onProjectClosed(resourceEditor: ResourceEditor): ProjectManagerListener {
+        return object : ProjectManagerListener {
+            override fun projectClosing(project: Project) {
+                resourceEditor.close()
+            }
         }
     }
 

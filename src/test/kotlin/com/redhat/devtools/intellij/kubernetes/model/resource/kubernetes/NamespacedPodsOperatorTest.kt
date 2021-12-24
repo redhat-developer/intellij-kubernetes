@@ -13,16 +13,13 @@ package com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.argumentCaptor
 import com.nhaarman.mockitokotlin2.clearInvocations
-import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.never
 import com.nhaarman.mockitokotlin2.spy
 import com.nhaarman.mockitokotlin2.times
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.whenever
-import io.fabric8.kubernetes.api.model.Pod
-import io.fabric8.kubernetes.client.KubernetesClient
-import org.assertj.core.api.Assertions.assertThat
+import com.redhat.devtools.intellij.kubernetes.model.Clients
 import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.NAMESPACE1
 import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.NAMESPACE2
 import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.NAMESPACE3
@@ -36,12 +33,13 @@ import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.list
 import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.pods
 import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.resource
 import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.withName
-import com.redhat.devtools.intellij.kubernetes.model.Clients
+import io.fabric8.kubernetes.api.model.Pod
 import io.fabric8.kubernetes.api.model.PodBuilder
+import io.fabric8.kubernetes.client.KubernetesClient
 import io.fabric8.kubernetes.client.Watcher
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
 import org.junit.Test
-import org.mockito.ArgumentCaptor
 
 class NamespacedPodsOperatorTest {
 
@@ -362,45 +360,28 @@ class NamespacedPodsOperatorTest {
     }
 
     @Test
-    fun `#replace() is removing resource version`() {
+    fun `#replace() is removing and restoring resource version`() {
         // given
-        val resourceVersion = "azrael"
-        val pod = PodBuilder(POD2)
-            .editMetadata()
-            .withResourceVersion(resourceVersion)
-            .endMetadata()
-            .build()
-        assertThat(pod.metadata.resourceVersion).isEqualTo(resourceVersion)
-        val toReplace = ArgumentCaptor.forClass(Pod::class.java)
+        val pod = resource<Pod>("pod2", "namespace2", "podUid2", "v1", "1")
+        val resourceVersion = pod.metadata.resourceVersion
         // when
         operator.replace(pod)
         // then
-        verify(clients.get().pods()
-            .inNamespace(pod.metadata.namespace)
-            .withName(pod.metadata.name))
-            .replace(toReplace.capture())
-        assertThat(toReplace.value.metadata.resourceVersion).isNull()
+        verify(pod.metadata).resourceVersion = null
+        verify(pod.metadata).resourceVersion = resourceVersion
     }
 
     @Test
     fun `#replace() is removing uid`() {
         // given
-        val uid = "gargamel"
-        val pod = PodBuilder(POD2)
-            .editMetadata()
-            .withUid(uid)
-            .endMetadata()
-            .build()
-        assertThat(pod.metadata.uid).isEqualTo(uid)
-        val toReplace = ArgumentCaptor.forClass(Pod::class.java)
+        val pod = resource<Pod>("pod2", "namespace2", "podUid2", "v1", "1")
+        clearInvocations(pod)
+        val uid = pod.metadata.uid
         // when
         operator.replace(pod)
         // then
-        verify(clients.get().pods()
-            .inNamespace(pod.metadata.namespace)
-            .withName(pod.metadata.name))
-            .replace(toReplace.capture())
-        assertThat(toReplace.value.metadata.uid).isNull()
+        verify(pod.metadata).uid = null
+        verify(pod.metadata).uid = uid
     }
 
     @Test
@@ -445,45 +426,30 @@ class NamespacedPodsOperatorTest {
     }
 
     @Test
-    fun `#create() is removing resource version`() {
+    fun `#create() is removing and restoring resource version`() {
         // given
-        val resourceVersion = "azrael"
-        val pod = PodBuilder(POD2)
-            .editMetadata()
-            .withResourceVersion(resourceVersion)
-            .endMetadata()
-            .build()
-        assertThat(pod.metadata.resourceVersion).isEqualTo(resourceVersion)
-        val toReplace = ArgumentCaptor.forClass(Pod::class.java)
+        val pod = resource<Pod>("pod2", "namespace2", "podUid2", "v1", "1")
+
+        clearInvocations(pod)
+        val resourceVersion = pod.metadata.resourceVersion
         // when
         operator.create(pod)
         // then
-        verify(clients.get().pods()
-            .inNamespace(pod.metadata.namespace)
-            .withName(pod.metadata.name))
-            .create(toReplace.capture())
-        assertThat(toReplace.value.metadata.resourceVersion).isNull()
+        verify(pod.metadata).resourceVersion = null
+        verify(pod.metadata).resourceVersion = resourceVersion
     }
 
     @Test
     fun `#create() is removing uid`() {
         // given
-        val uid = "gargamel"
-        val pod = PodBuilder(POD2)
-            .editMetadata()
-            .withUid(uid)
-            .endMetadata()
-            .build()
-        assertThat(pod.metadata.uid).isEqualTo(uid)
-        val toReplace = ArgumentCaptor.forClass(Pod::class.java)
+        val pod = resource<Pod>("pod2", "namespace2", "podUid2", "v1", "1")
+        clearInvocations(pod)
+        val uid = pod.metadata.uid
         // when
         operator.create(pod)
         // then
-        verify(clients.get().pods()
-            .inNamespace(pod.metadata.namespace)
-            .withName(pod.metadata.name))
-            .create(toReplace.capture())
-        assertThat(toReplace.value.metadata.uid).isNull()
+        verify(pod.metadata).uid = null
+        verify(pod.metadata).uid = uid
     }
 
     @Test

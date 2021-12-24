@@ -33,7 +33,7 @@ object CustomResourceDefinitionMapping {
     }
 
     fun getDefinitions(client: KubernetesClient): Collection<CustomResourceDefinition> {
-        return client.apiextensions().v1().customResourceDefinitions().list().items ?: emptyList()
+        return client.apiextensions()?.v1()?.customResourceDefinitions()?.list()?.items ?: emptyList()
     }
 
 }

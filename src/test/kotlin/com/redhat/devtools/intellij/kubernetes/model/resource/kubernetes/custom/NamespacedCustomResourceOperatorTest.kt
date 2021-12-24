@@ -73,21 +73,27 @@ class NamespacedCustomResourceOperatorTest {
     @Test
     fun `#replace() is removing uid`() {
         // given
+        val uid = customResource.metadata.uid
         // when
         operator.replace(customResource)
         // then
         verify(customResource.metadata)
             .uid = null
+        verify(customResource.metadata)
+            .uid = uid
     }
 
     @Test
-    fun `#replace() is removing resourceVersion`() {
+    fun `#replace() is removing and restoring resourceVersion`() {
         // given
+        val resourceVersion = customResource.metadata.resourceVersion
         // when
         operator.replace(customResource)
         // then
         verify(customResource.metadata)
             .resourceVersion = null
+        verify(customResource.metadata)
+            .resourceVersion = resourceVersion
     }
 
     @Test
