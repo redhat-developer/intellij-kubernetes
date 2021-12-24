@@ -63,11 +63,17 @@ open class ResourceEditor(
     private val getCustomResourceDefinitions: (client: KubernetesClient) -> Collection<CustomResourceDefinition> =
         CustomResourceDefinitionMapping::getDefinitions,
     // for mocking purposes
-    private val createResource: (editor: FileEditor, definitions: Collection<CustomResourceDefinition>) -> HasMetadata? =
+    private val createResource: (editor: FileEditor, definitions: Collection<CustomResourceDefinition>?) -> HasMetadata? =
         EditorResourceFactory::create,
     // for mocking purposes
-    private val createClusterResource: (resource: HasMetadata, clients: Clients<out KubernetesClient>, definitions: Collection<CustomResourceDefinition>) -> ClusterResource =
-        { resource, clients, definitions -> ClusterResource(resource, clients, definitions) },
+    private val createClusterResource: (resource: HasMetadata, clients: Clients<out KubernetesClient>, definitions: Collection<CustomResourceDefinition>?) -> ClusterResource? =
+        { resource, clients, definitions ->
+            if (definitions == null) {
+                null
+            } else {
+                ClusterResource(resource, clients, definitions)
+            }
+        },
     // for mocking purposes
     private val createResourceFileForVirtual: (file: VirtualFile?) -> ResourceFile? =
         ResourceFile.Factory::create,
@@ -110,19 +116,24 @@ open class ResourceEditor(
             }
             return field
         }
-    val clients: Clients<out KubernetesClient> by lazy {
+    private val clients: Clients<out KubernetesClient> by lazy {
         createClients.invoke()
     }
 
-    private val definitions: Collection<CustomResourceDefinition> by lazy {
-        try {
-            getCustomResourceDefinitions.invoke(clients.get())
-        } catch (e: KubernetesClientException) {
-            throw ResourceException(
-                "Error contacting cluster: could not retrieve custom resource definitions", e
-            )
+    private var definitions: Collection<CustomResourceDefinition>? = null
+        get() {
+            if (field == null) {
+                try {
+                    field = getCustomResourceDefinitions.invoke(clients.get())
+                } catch (e: KubernetesClientException) {
+                    field = null
+                    throw ResourceException(
+                        "Error contacting cluster: could not retrieve custom resource definitions", e
+                    )
+                }
+            }
+            return field
         }
-    }
 
     open var editorResource: HasMetadata? = resource
         get() {
@@ -367,7 +378,7 @@ open class ResourceEditor(
         if (resource == null) {
             return null
         }
-        val clusterResource = createClusterResource.invoke(resource, clients, definitions)
+        val clusterResource = createClusterResource.invoke(resource, clients, definitions) ?: return null
         clusterResource.addListener(onResourceChanged())
         clusterResource.watch()
         return clusterResource

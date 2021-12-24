@@ -16,7 +16,6 @@ import com.redhat.devtools.intellij.kubernetes.model.resource.IResourceOperator
 import com.redhat.devtools.intellij.kubernetes.model.resource.OperatorFactory
 import com.redhat.devtools.intellij.kubernetes.model.resource.ResourceKind
 import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.custom.CustomResourceOperatorFactory
-import com.redhat.devtools.intellij.kubernetes.model.util.causeOrExceptionMessage
 import com.redhat.devtools.intellij.kubernetes.model.util.isNewerVersionThan
 import com.redhat.devtools.intellij.kubernetes.model.util.isNotFound
 import com.redhat.devtools.intellij.kubernetes.model.util.isSameResource

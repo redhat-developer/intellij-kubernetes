@@ -34,7 +34,7 @@ object EditorResourceFactory {
      * @return [HasMetadata] for the given editor and clients
      *
      */
-    fun create(editor: FileEditor, definitions: Collection<CustomResourceDefinition>): HasMetadata? {
+    fun create(editor: FileEditor, definitions: Collection<CustomResourceDefinition>?): HasMetadata? {
         return create(getDocument(editor), definitions)
     }
 
@@ -46,7 +46,7 @@ object EditorResourceFactory {
      * @return [HasMetadata] for the given editor and clients
      *
      */
-    fun create(document: Document?, definitions: Collection<CustomResourceDefinition>): HasMetadata? {
+    fun create(document: Document?, definitions: Collection<CustomResourceDefinition>?): HasMetadata? {
         return if (document?.text == null) {
             null
         } else {
@@ -67,7 +67,10 @@ object EditorResourceFactory {
      *
      * @see CustomResourceDefinitionMapping
      */
-    private fun create(jsonYaml: String, definitions: Collection<CustomResourceDefinition>): HasMetadata {
+    private fun create(jsonYaml: String, definitions: Collection<CustomResourceDefinition>?): HasMetadata? {
+        if (definitions == null) {
+            return null
+        }
         val resource = try {
             createResource<HasMetadataResource>(jsonYaml)
         } catch (e: RuntimeException) {
