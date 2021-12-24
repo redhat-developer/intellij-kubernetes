@@ -210,102 +210,135 @@ class ResourceUtilsTest {
 	}
 
 	@Test
-	fun `#isNewerVersionThan should return false if both resources have same version`() {
+	fun `#isOutdated should return false if both resources have same version`() {
 		// given
 		val sameVersion1 = resource<Pod>("neo", "ns","uid", "v1", "1")
 		val sameVersion2 = resource<Pod>("neo", "ns","uid", "v1", "1")
 		// when
-		val newer = sameVersion1.isNewerVersionThan(sameVersion2)
+		val newer = sameVersion1.isOutdated(sameVersion2)
 		// then
 		assertThat(newer).isFalse()
 	}
 
 	@Test
-	fun `#isNewerVersionThan should return true if this resource has older version`() {
+	fun `#isOutdated should return true if this resource has older version`() {
 		// given
 		val older = resource<Pod>("neo", "ns","uid", "v1", "1")
 		val newer = resource<Pod>("neo", "ns","uid", "v1", "2")
 		// when
-		val isNewer = newer.isNewerVersionThan(older)
+		val isNewer = newer.isOutdated(older)
 		// then
 		assertThat(isNewer).isTrue()
 	}
 
 	@Test
-	fun `#isNewerVersionThan should return true if given resource has newer version`() {
+	fun `#isOutdated should return true if given resource has newer version`() {
 		// given
 		val older = resource<Pod>("neo", "ns","uid", "v1", "1")
 		val newer = resource<Pod>("neo", "ns", "uid", "v1", "2")
 		// when
-		val isNewer = older.isNewerVersionThan(newer)
+		val isNewer = older.isOutdated(newer)
 		// then
 		assertThat(isNewer).isFalse()
 	}
 
 	@Test
-	fun `#isNewerVersionThan should return false if one resource has no version, other resource has a version`() {
+	fun `#isOutdated should return true if resource without version is compared to resource with version`() {
 		// given
 		val noVersion = resource<Pod>("neo", "ns","uid", "v1",null)
 		val hasVersion = resource<Pod>("neo", "ns","uid", "v1","1")
 		// when
-		val newer = noVersion.isNewerVersionThan(hasVersion)
-		// then
-		assertThat(newer).isFalse()
-	}
-
-	@Test
-	fun `#isNewerVersionThan should return true if one resource has version, other one has no version`() {
-		// given
-		val noVersion = resource<Pod>("neo", "zion", "uid", "v1",null)
-		val hasVersion = resource<Pod>("neo", "zion", "uid", "v1","1")
-		// when
-		val newer = hasVersion.isNewerVersionThan(noVersion)
+		val newer = noVersion.isOutdated(hasVersion)
 		// then
 		assertThat(newer).isTrue()
 	}
 
 	@Test
-	fun `#isNewerVersionThan should return false if both resources have no version`() {
+	fun `#isOutdated should return false if resource with version is compared to resource without version`() {
+		// given
+		val noVersion = resource<Pod>("neo", "zion", "uid", "v1",null)
+		val hasVersion = resource<Pod>("neo", "zion", "uid", "v1","1")
+		// when
+		val newer = hasVersion.isOutdated(noVersion)
+		// then
+		assertThat(newer).isFalse()
+	}
+
+	@Test
+	fun `#isOutdated should return false if both resources have no version`() {
 		// given
 		val noVersion = resource<Pod>("neo", "zion", "uid", "v1",null)
 		val hasVersion = resource<Pod>("neo", "zion", "uid", "v1",null)
 		// when
-		val newer = hasVersion.isNewerVersionThan(noVersion)
+		val newer = hasVersion.isOutdated(noVersion)
 		// then
 		assertThat(newer).isFalse()
 	}
 
 	@Test
-	fun `#isNewerVersionThan should return false if resources have different name`() {
+	fun `#isOutdated should return false if resources have different name`() {
 		// given
 		val neo = resource<Pod>("neo", "ns", "uid", "v1","1")
 		val morpheus = resource<Pod>("morpheus", "ns", "uid", "v1","2")
 		// when
-		val newer = morpheus.isNewerVersionThan(neo)
+		val newer = morpheus.isOutdated(neo)
 		// then
 		assertThat(newer).isFalse()
 	}
 
 	@Test
-	fun `#isNewerVersionThan should return false if resources have different namespace`() {
+	fun `#isOutdated should return false if resources have different namespace`() {
 		// given
 		val neo = resource<Pod>("neo", "matrix", "uid", "v1","1")
 		val morpheus = resource<Pod>("neo", "zion", "uid", "v1","2")
 		// when
-		val newer = morpheus.isNewerVersionThan(neo)
+		val newer = morpheus.isOutdated(neo)
 		// then
 		assertThat(newer).isFalse()
 	}
 
 	@Test
-	fun `#isNewerVersionThan should return false if resources have different api version`() {
+	fun `#isOutdated should return false if resources have different api version`() {
 		// given
 		val neo = resource<Pod>("neo", "zion", "uid", "v1","1")
 		val morpheus = resource<Pod>("neo", "zion", "uid", "v2","2")
 		// when
-		val newer = morpheus.isNewerVersionThan(neo)
+		val newer = morpheus.isOutdated(neo)
 		// then
 		assertThat(newer).isFalse()
+	}
+
+	@Test
+	fun `#isGreaterIntThan(String) should return true if string is larger than given string`() {
+		// given
+		val smaller = "1"
+		val greater = "2"
+		// when
+		val isGreater = greater.isGreaterIntThan(smaller)
+		// then
+		assertThat(isGreater).isTrue()
+	}
+
+	@Test
+	fun `#isGreaterIntThan(String) should return false if string is smaller than given string`() {
+		// given
+		val smaller = "1"
+		val greater = "2"
+		// when
+		val isGreater = smaller.isGreaterIntThan(greater)
+		// then
+		assertThat(isGreater).isFalse()
+	}
+
+	@Test
+	fun `#isGreaterIntThan(String) should return true if given string is null`() {
+		// given
+		val notNull = "1"
+		val nullString = null
+		// when
+		val isGreater = notNull.isGreaterIntThan(nullString)
+		// then
+		assertThat(isGreater).isTrue()
 	}
 
 	@Test

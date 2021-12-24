@@ -76,12 +76,35 @@ abstract class AbstractResourceOperator<R : HasMetadata, C : Client>(protected v
         return true
     }
 
-    protected fun removeResourceVersion(toCreate: R) {
-        toCreate.metadata.resourceVersion = null
+    protected fun runWithoutServerSetProperties(resource: R, operation: () -> R?): R? {
+        // remove properties
+        val resourceVersion = removeResourceVersion(resource)
+        val uid = removeUid(resource)
+        val value = operation.invoke()
+        // restore properties
+        setResourceVersion(resourceVersion, resource)
+        setUid(uid, resource)
+        return value
     }
 
-    protected fun removeUID(toCreate: R) {
+    protected fun removeResourceVersion(toCreate: R): String? {
+        val value = toCreate.metadata.resourceVersion
+        toCreate.metadata.resourceVersion = null
+        return value
+    }
+
+    protected fun setResourceVersion(resourceVersion: String?, toCreate: R) {
+        toCreate.metadata.resourceVersion = resourceVersion
+    }
+
+    protected fun removeUid(toCreate: R): String? {
+        val value = toCreate.metadata.uid
         toCreate.metadata.uid = null
+        return value
+    }
+
+    protected fun setUid(uid: String?, toCreate: R) {
+        toCreate.metadata.uid = uid
     }
 
     private fun isCorrectKind(resource: HasMetadata): Boolean {

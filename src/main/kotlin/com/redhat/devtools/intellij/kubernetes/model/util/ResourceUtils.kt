@@ -98,14 +98,28 @@ fun HasMetadata.isSameKind(resource: HasMetadata?): Boolean {
  *
  * @see [io.fabric8.kubernetes.api.model.ObjectMeta.resourceVersion]
  */
-fun HasMetadata.isNewerVersionThan(resource: HasMetadata?): Boolean {
+fun HasMetadata.isOutdated(resource: HasMetadata?): Boolean {
 	if (resource == null
 		|| !isSameResource(resource)) {
 		return false
 	}
-	val thisVersion = this.metadata?.resourceVersion?.toIntOrNull() ?: return false
-	val thatVersion = resource.metadata?.resourceVersion?.toIntOrNull() ?: return true
-	return  thisVersion > thatVersion
+	val thisVersion = this.metadata?.resourceVersion?.toIntOrNull()
+	val thatVersion = resource.metadata?.resourceVersion?.toIntOrNull()
+	return if (thisVersion == null) {
+		thatVersion != null
+	} else {
+		if (thatVersion == null) {
+			false
+		} else {
+			thisVersion > thatVersion
+		}
+	}
+}
+
+fun String.isGreaterIntThan(other: String?): Boolean {
+	val thisInt = this.toIntOrNull() ?: return other?.toIntOrNull() != null
+	val thatInt = other?.toIntOrNull() ?: return true
+	return  thisInt > thatInt
 }
 
 /**

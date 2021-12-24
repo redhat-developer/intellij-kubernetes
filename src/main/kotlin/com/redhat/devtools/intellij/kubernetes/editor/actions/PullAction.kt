@@ -36,7 +36,7 @@ class PullAction: AnAction() {
                 try {
                     val editor = ResourceEditorFactory.instance.getExistingOrCreate(editor, project) ?: return@Progressive
                     editor.pull()
-                    sendTelemetry(editor.localCopy, telemetry)
+                    sendTelemetry(editor.editorResource.get(), telemetry)
                 } catch (e: Exception) {
                     Notification().error("Error Pulling", "Could not pull resource from cluster: ${e.message}")
                     telemetry.error(e).send()

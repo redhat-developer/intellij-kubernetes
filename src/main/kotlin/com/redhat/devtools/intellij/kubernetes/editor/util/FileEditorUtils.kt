@@ -55,52 +55,5 @@ fun getDocument(editor: FileEditor): Document? {
     }
 }
 
-/**
- * Returns `true` if the given document for the given psi document manager has a kubernetes resource.
- * A yaml/json document is considered to be a kubernetes resource document if it contains
- * - metadata.name
- * - metadata.namespace
- *
- * @param document the document to check for being a kubernetes resource
- * @param psiDocumentManager the psi document manager to use for inspection
- * @return true if the document has a kubernetes resource
- */
-fun hasKubernetesResource(document: Document?, psiDocumentManager: PsiDocumentManager): Boolean {
-    return isKubernetesResource(getKubernetesResourceInfo(document, psiDocumentManager))
-}
-
-/**
- * Returns `true` if the given [KubernetesResourceInfo] has the informations required for a kubernetes resource.
- * A yaml/json document is considered to be a kubernetes resource document if it contains
- * - apiGroup
- * - kind
- *
- * @param resourceInfo the resource info to inspect
- */
-fun isKubernetesResource(resourceInfo: KubernetesResourceInfo?): Boolean {
-    return resourceInfo?.typeInfo?.apiGroup?.isNotBlank() ?: false
-            && resourceInfo?.typeInfo?.kind?.isNotBlank() ?: false
-}
-
-/**
- * Returns [KubernetesResourceInfo] for the given document and psi document manager
- *
- * @param document the document to check for being a kubernetes resource
- * @param psiDocumentManager the psi document manager to use for inspection
- */
-fun getKubernetesResourceInfo(document: Document?, psiDocumentManager: PsiDocumentManager): KubernetesResourceInfo? {
-    if (document == null) {
-        return null
-    }
-    return try {
-        ReadAction.compute<KubernetesResourceInfo, RuntimeException> {
-            val psiFile = psiDocumentManager.getPsiFile(document)
-            KubernetesResourceInfo.extractMeta(psiFile)
-        }
-    } catch (e: RuntimeException) {
-        null
-    }
-}
-
 class ProjectAndEditor(val project: Project, val editor: FileEditor)
 

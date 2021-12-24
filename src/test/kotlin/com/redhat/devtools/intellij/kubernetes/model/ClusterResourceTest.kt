@@ -64,73 +64,73 @@ class ClusterResourceTest {
     private val cluster = TestableClusterResource(endorResource, operator, clients, definitions, resourceWatch, observable)
 
     @Test
-    fun `#get(false) should retrieve from cluster if there is no cached value yet`() {
+    fun `#pull(false) should retrieve from cluster if there is no cached value yet`() {
         // given
         assertThat(cluster.updatedResource).isNull()
         // when
-        cluster.get(false)
+        cluster.pull(false)
         // then
         verify(operator).get(any())
     }
 
     @Test
-    fun `#get(false) should NOT retrieve from cluster if there is a cached value`() {
+    fun `#pull(false) should NOT retrieve from cluster if there is a cached value`() {
         // given
         cluster.updatedResource = endorResourceOnCluster
         assertThat(cluster.updatedResource).isNotNull()
         // when
-        cluster.get(false)
+        cluster.pull(false)
         // then
         verify(operator, never()).get(any())
     }
 
     @Test
-    fun `#get(true) should retrieve from cluster if there is a cached value`() {
+    fun `#pull(true) should retrieve from cluster if there is a cached value`() {
         // given
         cluster.updatedResource = endorResourceOnCluster
         assertThat(cluster.updatedResource).isNotNull()
         // when
-        cluster.get(true)
+        cluster.pull(true)
         // then
         verify(operator).get(any())
     }
 
     @Test
-    fun `#get(true) should retrieve from cluster`() {
+    fun `#pull(true) should retrieve from cluster`() {
         // given
         // when
-        cluster.get(true)
+        cluster.pull(true)
         // then
         verify(operator, times(1)).get(any())
     }
 
     @Test
-    fun `#get(true) should return null if cluster returns 404`() {
+    fun `#pull(true) should return null if cluster returns 404`() {
         // given
         whenever(operator.get(any()))
             .doThrow(KubernetesClientException("not found", 404, null))
         // when
-        val retrieved = cluster.get(true)
+        val retrieved = cluster.pull(true)
         // then resource was deleted
         assertThat(retrieved).isNull()
     }
 
     @Test(expected = ResourceException::class)
-    fun `#get(true) should throw if cluster throws exception that is not 404`() {
+    fun `#pull(true) should throw if cluster throws exception that is not 404`() {
         // given
         whenever(operator.get(any()))
             .doThrow(KubernetesClientException("internal error", 500, null))
         // when
-        cluster.get(true)
+        cluster.pull(true)
         // then should have thrown
     }
 
     @Test(expected = ResourceException::class)
-    fun `#get(true) should throw if there is no operator`() {
+    fun `#pull(true) should throw if there is no operator`() {
         // given
         val cluster = TestableClusterResource(endorResource, null, clients, definitions, resourceWatch, observable)
         // when
-        cluster.get(true)
+        cluster.pull(true)
         // then should have thrown
     }
 
@@ -159,7 +159,7 @@ class ClusterResourceTest {
         // given
         val modifiedResource = PodBuilder(endorResourceOnCluster)
                 .editOrNewMetadata()
-                .withNewResourceVersion("resourceVersion-42")
+                .withResourceVersion("resourceVersion-42")
                 .endMetadata()
             .build()
         // when
@@ -173,7 +173,7 @@ class ClusterResourceTest {
         // given
         val differentName = PodBuilder(endorResourceOnCluster)
             .editOrNewMetadata()
-            .withNewName("name-42")
+            .withName("name-42")
             .endMetadata()
             .build()
         // when
@@ -198,7 +198,7 @@ class ClusterResourceTest {
         // given
         val differentNamespace = PodBuilder(endorResource)
             .editOrNewMetadata()
-            .withNewNamespace("namespace-42")
+            .withNamespace("namespace-42")
             .endMetadata()
             .build()
         // when
@@ -349,7 +349,7 @@ class ClusterResourceTest {
     fun `#isOutdated should return true if given null`() {
         // given
         // when
-        val outdated = cluster.isOutdated(null)
+        val outdated = cluster.isOutdated(null as HasMetadata?)
         // then
         assertThat(outdated).isTrue()
     }
@@ -360,7 +360,7 @@ class ClusterResourceTest {
         whenever(operator.get(any()))
             .doReturn(null)
         // when
-        val outdated = cluster.isOutdated(null)
+        val outdated = cluster.isOutdated(null as HasMetadata?)
         // then
         assertThat(outdated).isFalse()
     }
@@ -397,6 +397,78 @@ class ClusterResourceTest {
     }
 
     @Test
+    fun `#isOutdated(String) should return false if cluster has null resource`() {
+        // given
+        val resourceVersion = "42"
+        whenever(operator.get(any()))
+            .doReturn(null)
+        // when
+        val outdated = cluster.isOutdated(resourceVersion)
+        // then
+        assertThat(outdated).isFalse()
+    }
+
+    @Test
+    fun `#isOutdated(String) should return false if resourceVersion is null and cluster has null resource`() {
+        // given
+        val resourceVersion = null
+        whenever(operator.get(any()))
+            .doReturn(null)
+        // when
+        val outdated = cluster.isOutdated(resourceVersion as String?)
+        // then
+        assertThat(outdated).isFalse()
+    }
+
+    @Test
+    fun `#isOutdated(String) should return true if resourceVersion is null and cluster has resource`() {
+        // given
+        val resourceVersion = null
+        whenever(operator.get(any()))
+            .doReturn(endorResourceOnCluster)
+        // when
+        val outdated = cluster.isOutdated(resourceVersion as String?)
+        // then
+        assertThat(outdated).isTrue()
+    }
+
+    @Test
+    fun `#isOutdated(String) should return true if resourceVersion is smaller than cluster resource version`() {
+        // given
+        val resourceVersion = (endorResourceOnCluster.metadata.resourceVersion.toInt() - 1).toString()
+        whenever(operator.get(any()))
+            .doReturn(endorResourceOnCluster)
+        // when
+        val outdated = cluster.isOutdated(resourceVersion as String?)
+        // then
+        assertThat(outdated).isTrue()
+    }
+
+    @Test
+    fun `#isOutdated(String) should return false if resourceVersion is greater than cluster resource version`() {
+        // given
+        val resourceVersion = (endorResourceOnCluster.metadata.resourceVersion.toInt() + 1).toString()
+        whenever(operator.get(any()))
+            .doReturn(endorResourceOnCluster)
+        // when
+        val outdated = cluster.isOutdated(resourceVersion as String?)
+        // then
+        assertThat(outdated).isFalse()
+    }
+
+    @Test
+    fun `#isOutdated(String) should return false if resourceVersion is equal to cluster resource version`() {
+        // given
+        val resourceVersion = endorResourceOnCluster.metadata.resourceVersion
+        whenever(operator.get(any()))
+            .doReturn(endorResourceOnCluster)
+        // when
+        val outdated = cluster.isOutdated(resourceVersion as String?)
+        // then
+        assertThat(outdated).isFalse()
+    }
+
+    @Test
     fun `#isModified should return true if given resource has different kind`() {
         // given
         val modifiedResource = PodBuilder(endorResource)
@@ -425,7 +497,7 @@ class ClusterResourceTest {
         // given
         val modifiedResource = PodBuilder(endorResource)
             .editOrNewMetadata()
-            .withNewNamespace("name-42")
+            .withNamespace("name-42")
             .endMetadata()
             .build()
         // when
@@ -439,7 +511,7 @@ class ClusterResourceTest {
         // given
         val modifiedResource = PodBuilder(endorResource)
             .editOrNewMetadata()
-            .withNewName("name-42")
+            .withName("name-42")
             .endMetadata()
             .build()
         // when
@@ -492,7 +564,7 @@ class ClusterResourceTest {
     @Test
     fun `#watch should notify modified if cluster has modified resource`() {
         // given
-        cluster.get() // initialize updatedResource
+        cluster.pull() // initialize updatedResource
         doReturn(modifiedEndorResourceOnCluster) // request returns modified resource
             .whenever(operator).get(any())
         // when
@@ -504,7 +576,7 @@ class ClusterResourceTest {
     @Test
     fun `#watch should notify removed if resource was removed on cluster`() {
         // given
-        val updated = cluster.get() // initialize updatedResource
+        val updated = cluster.pull() // initialize updatedResource
         doReturn(null) // request returns modified resource
             .whenever(operator).get(any())
         // when
@@ -605,5 +677,10 @@ class ClusterResourceTest {
         public override fun setDeleted(deleted: Boolean) {
             super.setDeleted(deleted)
         }
+
+        public override fun set(resource: HasMetadata?) {
+            super.set(resource)
+        }
+
     }
 }

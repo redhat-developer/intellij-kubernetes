@@ -3,20 +3,26 @@
 
 -> editor has corresponding schema selected (bottom right combo "Schema:")
 
-**Editor title is <resource-name>@<namespace-name>**
+**Editor title is [resource-name]@[namespace-name]**
 1. "Edit..." namespaced resource (ex. Pod)
 
 -> editor title is matching pattern <resource-name>@<namespace-name>
 
-**Editor title is <resource-name>**
+**Editor title is [resource-name]**
 1. "Edit..." non namespaced resource (ex. Namespace)
 
 -> editor title is matching pattern <resource-name>
 
-**Editor title is <filename>**
+**Editor title is [filename]**
 1. File > Open & pick local yaml/json file 
 
 -> editor title displays the filename
+
+**Editor title changes to new name as you type**
+1. "Edit..." resource (ex. Pod)
+2. Change metadata > name
+
+3. -> editor title is changing to new name as you type
 
 **Editor title is not changed, normal behaviour**
 1. File > Open & pick local xml-file OR yml file with non-kubernetes content (ex. helloworld.yml)
@@ -48,24 +54,20 @@
 -> notification disappears
 -> editor title unchanged
 
-**Push notification "update existing" when changing name to existing**
-1. "Edit..." resource
-1. change metadata > name
-1. push to server
-   -> new resource shows up in tree
-1. change metadata > name to initial name
-
--> Push notification changes to "update existing"
--> editor title unchanged
-
 **Push notification "create new"**
 1. "Edit..." resource
-1. change metadata > name / namespace / kind 
-   -> push notification ("create new" not "update existing")
+1. change metadata > name / namespace / kind
+   -> Push notification "create new"
 1. hit "Push"
 
 -> new resource appears in tree (if resource in current namespace was modified)
--> editor title changed to new name OR namespace
+-> notification disappears
+
+**Push notification "update existing" for existing resource**
+1. have 2 resources (ex 2 Pods)
+1. "Edit..." resource 1
+1. change metadata > name to name of resource 2
+   -> Push notification "update existing"
 
 **Can push resource even if current namespace is different**
 1. "Edit..." namespaced resource
@@ -73,7 +75,7 @@
 1. in editor: change metadata > name
 -> push notification "create new"
 1. hit "Push"
--> resource does not appear in tree (current namespace is different)
+   -> resource does not appear in tree (current namespace is different)
 1. "Use Namespace" on initial Namespace
 
 -> new resource is visible in tree
@@ -82,11 +84,13 @@
 1. "Edit..." custom resource
 1. add label 
 
--> push notification ("update existing")
+-> push notification "update existing"
 
 **Push notification for file that contains custom resource without namespace**
-1. File > New > YML file
-2. paste the following into editor
+1. make sure you have tekton installed ([Setup Tekton](https://redhat-scholars.github.io/tekton-tutorial/tekton-tutorial/setup.html))
+1. make sure there's no task "foo" on cluster
+1. File > New > foo.yml
+1. paste the following into editor
 ```
 ---
 kind: "Task"
@@ -116,32 +120,24 @@ spec:
     name: "build-sources"
     resources: {}
 ```
--> push notification ("create new")
+-> push notification "create new"
+
+**Pull notification "update existing" for new file with existing resource**
+1. make sure there's a task "foo" on cluster
+2. File > New > foo.yml
+3. paste yaml in previous use case
+
+-> Pull notification with "Push" link
 
 **Push notification with "update existing" for knative 'Service' custom resource**
-1. Install knative tutorial https://redhat-developer-demos.github.io/knative-tutorial/knative-tutorial/
-1. Make sure have "greeter" service at Custom Resources > services > greeter
-1. "Edit..." Custom Resources > services > greeter
-1. change name (ex. greeter2)
+3. Install knative tutorial https://redhat-developer-demos.github.io/knative-tutorial/knative-tutorial/
+4. Make sure have "greeter" service at Custom Resources > services > greeter
+5. "Edit..." Custom Resources > services > greeter
+6. change name (ex. greeter2)
    -> push notification "create new"
-1. hit "Push"
+7. hit "Push"
 
 -> new Service "greeter2" appears in tree
-
-**Push notification replaced by deleted notification**
-1. "Edit..." resource
-1. change/add label
-1. delete resource (in tree, kubectl or console)
-
--> "Push existing resource" turns "Deleted on Cluster"
-
-**Push notification with "update existing" turns "create new"**
-1. "Edit..." resource
-1. add label
-   -> push notification "update existing" (not "create")
-1. change metadata > name
-
--> push notification with "create new"
 
 **Deleted notification appears on new editor**
 1. "Edit..." resource
@@ -149,28 +145,36 @@ spec:
 
 -> deleted notification appears
 
-**Deleted notification replaced by Push notification**
-1. "Edit..." resource
-1. delete resource (ctx action/console/kubectl)
-   -> deleted notification appears
-1. change name
+**Push "update existing" replaced by Deleted notification**
+1. "Edit..." deployment
+1. change/add label
+   -> notification "Push updated existing" appears 
+1. delete deployment (in tree, kubectl or console)
 
--> Push notification "create new"
-
-**Automatic pull of editor & pulled notification if local copy has no changes**
-1. "Edit..." resource
-1. modify resource externally (console, kubectl)
-
--> editor content is pulled (verify by watching metadata > `resourceVersion`)
--> Pulled notification appears
+-> "Push update existing" replaced by "Deleted on Cluster"
 
 **Push notification appears**
 1. "Edit..." resource
-1. add label 
-
+1. add label
+   -> "Push update existing" notification
 1. modify resource externally (console, kubectl)
 
 -> Push notification appears
+
+**Push "create new" after resource deletion**
+1. "Edit..." deployment
+1. change metadata > name
+   -> "Push create new" appears
+1. delete (initially edited) deployment
+1. change metadata > name to initial name
+
+-> "Push create new" should still be visible
+
+**Pull notification appears**
+1. "Edit..." resource
+1. modify resource externally (console, kubectl)
+
+-> Pull notification appears with links "Pull", "Push", "Ignore"
 
 **Pull -> Push notification disappears**
 1. "Edit..." resource
@@ -273,7 +277,7 @@ spec:
 
 **Change replicas causes new pods to appear in tree**
 1. File > New > YML file
-2. paste the following into editor
+1. paste the following into editor
 ```
 apiVersion: apps/v1
 kind: Deployment
@@ -298,11 +302,11 @@ spec:
         - name: SIMPLE_SERVICE_VERSION
           value: "0.9"
 ```
-3. Push editor to cluster
-4. Identify pod `sise-deploy-xxxx` in all 3 categories
+1. Push editor to cluster
+1. Identify pod `sise-deploy-xxxx` in all 3 categories
  * [context] > Nodes > [node]
  * [context] > Workloads > Deployments > sise-deploy
  * [context] > Workloads > Pods
-6. change `spec > replicas` to 2 & push
+1. change `spec > replicas` to 2 & push
 
 -> 2nd pod `sise-deploy-xxxx` appears in all 3 categories
