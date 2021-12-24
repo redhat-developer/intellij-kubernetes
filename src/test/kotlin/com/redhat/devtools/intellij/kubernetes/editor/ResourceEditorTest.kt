@@ -139,8 +139,8 @@ spec:
         doReturn(emptyList<CustomResourceDefinition>())
             .whenever(this).invoke(any())
     }
-    private val createResource: (editor: FileEditor, definitions: Collection<CustomResourceDefinition>) -> HasMetadata? =
-        mock<(editor: FileEditor, definitions: Collection<CustomResourceDefinition>) -> HasMetadata?>().apply  {
+    private val createResource: (editor: FileEditor, definitions: Collection<CustomResourceDefinition>?) -> HasMetadata? =
+        mock<(editor: FileEditor, definitions: Collection<CustomResourceDefinition>?) -> HasMetadata?>().apply  {
             doReturn(localCopy)
                 .whenever(this).invoke(any(), any())
         }
@@ -148,8 +148,8 @@ spec:
         doReturn(GARGAMELv2)
             .whenever(this).get(any())
     }
-    private val createClusterResource: (HasMetadata, Clients<out KubernetesClient>, Collection<CustomResourceDefinition>) -> ClusterResource =
-        mock<(HasMetadata, Clients<out KubernetesClient>, Collection<CustomResourceDefinition>) -> ClusterResource>().apply {
+    private val createClusterResource: (HasMetadata, Clients<out KubernetesClient>, Collection<CustomResourceDefinition>?) -> ClusterResource =
+        mock<(HasMetadata, Clients<out KubernetesClient>, Collection<CustomResourceDefinition>?) -> ClusterResource>().apply {
             doReturn(clusterResource)
                 .whenever(this).invoke(any(), any(), any())
         }
@@ -201,6 +201,37 @@ spec:
             documentReplaced
         )
     )
+
+    @Test
+    fun `#update should trigger fetching crds`() {
+        // given
+        // when
+        editor.update()
+        // then
+        verify(getCustomResourceDefinitions).invoke(any())
+    }
+
+    @Test
+    fun `#update called 2x should only fetch crds 1x`() {
+        // given
+        // when
+        editor.update()
+        editor.update()
+        // then
+        verify(getCustomResourceDefinitions).invoke(any())
+    }
+
+    @Test
+    fun `#update called 2x should fetch crds 2x if fetch throws`() {
+        // given
+        doThrow(KubernetesClientException::class)
+            .whenever(getCustomResourceDefinitions).invoke(any())
+        // when
+        editor.update()
+        editor.update()
+        // then
+        verify(getCustomResourceDefinitions, times(2)).invoke(any())
+    }
 
     @Test
     fun `#update should hide all notifications when resource on cluster is deleted`() {
@@ -810,8 +841,8 @@ spec:
         project: Project,
         clients: () -> Clients<out KubernetesClient>,
         getDefinitions: (client: KubernetesClient) -> Collection<CustomResourceDefinition>,
-        resourceFactory: (editor: FileEditor, definitions: Collection<CustomResourceDefinition>) -> HasMetadata?,
-        createClusterResource: (HasMetadata, Clients<out KubernetesClient>, Collection<CustomResourceDefinition>) -> ClusterResource,
+        resourceFactory: (editor: FileEditor, definitions: Collection<CustomResourceDefinition>?) -> HasMetadata?,
+        createClusterResource: (HasMetadata, Clients<out KubernetesClient>, Collection<CustomResourceDefinition>?) -> ClusterResource,
         resourceFileForVirtual: (file: VirtualFile?) -> ResourceFile?,
         isTemporary: (file: VirtualFile?) -> Boolean,
         pushNotification: PushNotification,
