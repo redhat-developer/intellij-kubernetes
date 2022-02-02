@@ -16,11 +16,13 @@ import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.fileEditor.FileEditor
 import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.project.ProjectLocator
 import com.intellij.openapi.project.ProjectManager
 import com.intellij.openapi.vfs.VirtualFile
 import com.redhat.devtools.intellij.kubernetes.editor.ResourceFile
 
 fun getProjectAndEditor(file: VirtualFile): ProjectAndEditor? {
+    // ProjectLocator.getInstance().guessProjectForFile(file)
     return ProjectManager.getInstance().openProjects
         .filter { project -> project.isInitialized && !project.isDisposed }
         .flatMap { project ->

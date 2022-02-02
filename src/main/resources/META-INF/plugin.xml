@@ -140,6 +140,10 @@
                     id="com.redhat.devtools.intellij.kubernetes.editor.actions.PullAction"
                     text="Pull from Cluster to the Editor"
                     icon="/icons/download.svg" />
+            <action class="com.redhat.devtools.intellij.kubernetes.editor.actions.DiffAction"
+                    id="com.redhat.devtools.intellij.kubernetes.editor.actions.DiffAction"
+                    text="Diff editor resource with cluster resource"
+                    icon="/icons/diff.svg" />
         </group>
     </actions>
 

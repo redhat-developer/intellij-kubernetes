@@ -14,6 +14,7 @@ import com.intellij.openapi.fileEditor.FileEditor
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Key
 import com.intellij.ui.EditorNotificationPanel
+import com.redhat.devtools.intellij.kubernetes.editor.actions.DiffAction
 import com.redhat.devtools.intellij.kubernetes.editor.actions.PullAction
 import com.redhat.devtools.intellij.kubernetes.editor.actions.PushAction
 import com.redhat.devtools.intellij.kubernetes.editor.hideNotification
@@ -46,10 +47,10 @@ class PullNotification(private val editor: FileEditor, private val project: Proj
         if (canPush) {
             panel.createActionLabel("Push", PushAction.ID)
         }
+        panel.createActionLabel("Diff", DiffAction.ID)
         panel.createActionLabel("Ignore") {
             editor.hideNotification(KEY_PANEL, project)
         }
         return panel
     }
-
 }
