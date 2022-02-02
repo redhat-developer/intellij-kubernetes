@@ -87,7 +87,9 @@ open class ResourceEditor(
     // for mocking purposes
     private val documentChanged: AtomicBoolean = AtomicBoolean(false),
     // for mocking purposes
-    private val resourceVersion: PersistentEditorValue = PersistentEditorValue(editor)
+    private val resourceVersion: PersistentEditorValue = PersistentEditorValue(editor),
+    // for mocking purposes
+    private val diff: ResourceDiff = ResourceDiff(project)
 ) {
 
     companion object {
@@ -245,7 +247,7 @@ open class ResourceEditor(
             val cluster = clusterResource ?: return
             runAsync {
                 val pulled = pull(cluster) ?: return@runAsync
-                resourceVersion.set(pulled.metadata.resourceVersion)
+                saveResourceVersion(pulled)
                 runInUI {
                     replaceDocument(pulled)
                     hideNotifications()
@@ -283,8 +285,7 @@ open class ResourceEditor(
         }
         val manager = getPsiDocumentManager.invoke(project)
         val document = getDocument.invoke(editor) ?: return
-        val file = manager.getPsiFile(document) ?: return
-        val jsonYaml = serialize(resource, file.fileType) ?: return
+        val jsonYaml = serialize(resource, getFileType(document, manager)) ?: return
         if (document.text.trim() != jsonYaml) {
             runWriteCommand {
                 document.replaceString(0, document.textLength, jsonYaml)
@@ -294,7 +295,15 @@ open class ResourceEditor(
         }
     }
 
-    private fun serialize(resource: HasMetadata, fileType: FileType?): CharSequence? {
+    private fun getFileType(document: Document?, manager: PsiDocumentManager): FileType? {
+        if (document == null) {
+            return null
+        }
+        val file = manager.getPsiFile(document) ?: return null
+        return file.fileType
+    }
+
+    private fun serialize(resource: HasMetadata, fileType: FileType?): String? {
         val serializer = when(fileType) {
             YAMLFileType.YML ->
                 Serialization.yamlMapper().writerWithDefaultPrettyPrinter()
@@ -345,6 +354,34 @@ open class ResourceEditor(
              * set [resource], not [updated] so that resource is not modified in later [isModified]
              */
             lastPushedPulled.set(resource)
+        }
+    }
+
+    fun diff() {
+        val clusterResource = clusterResource?.pull() ?: return
+        val manager = getPsiDocumentManager.invoke(project)
+        val file = editor.file ?: return
+        runInUI {
+            val document = getDocument.invoke(editor) ?: return@runInUI
+            val serialized = serialize(clusterResource, getFileType(document, manager)) ?: return@runInUI
+            val documentBeforeDiff = document.text
+            diff.open(file, serialized) { onDiffClosed(clusterResource, documentBeforeDiff) }
+        }
+    }
+
+    /*
+    * Protected visibility for testing purposes:
+    * Tried capturing callback parameter in #diff and running it, but it didn't work.
+    * Document mock didn't return multiple return values (1.doc before diff, 2. doc after diff).
+    * Made callback protected to be able to override it with public visibility in TestableResourceEditor instead
+    * so that tests can call it directly.
+    */
+    protected open fun onDiffClosed(resource: HasMetadata, documentBeforeDiff: String?) {
+        val afterDiff = getDocument.invoke(editor)?.text
+        val modified = (documentBeforeDiff != afterDiff)
+        if (modified) {
+            saveResourceVersion(resource)
+            update()
         }
     }
 
@@ -440,4 +477,3 @@ open class ResourceEditor(
         }
     }
 }
-

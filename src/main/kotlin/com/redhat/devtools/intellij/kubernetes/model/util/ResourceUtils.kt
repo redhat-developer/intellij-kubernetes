@@ -13,9 +13,7 @@ package com.redhat.devtools.intellij.kubernetes.model.util
 import com.intellij.openapi.diagnostic.logger
 import io.fabric8.kubernetes.api.model.GenericKubernetesResource
 import io.fabric8.kubernetes.api.model.HasMetadata
-import io.fabric8.kubernetes.api.model.KubernetesResource
 import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinitionSpec
-import io.fabric8.kubernetes.client.KubernetesClientException
 import io.fabric8.kubernetes.client.utils.ApiVersionUtil
 import io.fabric8.kubernetes.client.utils.KubernetesVersionPriority
 import io.fabric8.kubernetes.client.utils.Serialization
@@ -266,28 +264,6 @@ inline fun <reified T> createResource(jsonYaml: String): T {
 
 fun <T> createResource(jsonYaml: String, clazz: Class<T>): T {
 	return Serialization.unmarshal(jsonYaml, clazz)
-}
-
-/**
- * Returns `true` if the given string contains yaml or json for a kubernetes resource
- *
- * @param jsonYaml the string that should be converted into a [KubernetesResource]
- * @return the [KubernetesResource] for the given string
- */
-fun hasKubernetesResource(jsonYaml: String?): Boolean {
-	if (jsonYaml == null) {
-		return false
-	}
-
-	return try {
-		createResource<KubernetesResource?>(jsonYaml) != null
-	} catch (e: KubernetesClientException) {
-		// invalid yaml/json
-		true
-	} catch (e: ClassCastException) {
-		// not yaml/json
-		false
-	}
 }
 
 /**

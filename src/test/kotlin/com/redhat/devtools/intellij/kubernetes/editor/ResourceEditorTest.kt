@@ -19,6 +19,7 @@ import com.intellij.psi.PsiDocumentManager
 import com.intellij.psi.PsiFile
 import com.intellij.psi.util.PsiUtilCore
 import com.nhaarman.mockitokotlin2.any
+import com.nhaarman.mockitokotlin2.argThat
 import com.nhaarman.mockitokotlin2.argWhere
 import com.nhaarman.mockitokotlin2.atLeastOnce
 import com.nhaarman.mockitokotlin2.clearInvocations
@@ -165,6 +166,7 @@ spec:
     }
     private val documentReplaced: AtomicBoolean = AtomicBoolean(false)
     private val resourceVersion: PersistentEditorValue = mock()
+    private val diff: ResourceDiff = mock()
 
     private val editor =
         TestableResourceEditor(
@@ -183,7 +185,8 @@ spec:
             getPsiDocumentManager,
             getKubernetesResourceInfo,
             documentReplaced,
-            resourceVersion
+            resourceVersion,
+            diff
         )
 
     @Before
@@ -646,6 +649,61 @@ spec:
         verify(clusterResource, atLeastOnce()).stopWatch()
     }
 
+    @Test
+    fun `#diff should open diff with json if editor file is json`() {
+        // given
+        doReturn(JsonFileType.INSTANCE)
+            .whenever(psiFile).getFileType()
+        // when
+        editor.diff()
+        // then
+        verify(diff).open(any(), argThat { startsWith("{") }, any())
+    }
+
+    @Test
+    fun `#diff should open diff with yml if editor file is yml`() {
+        // given
+        doReturn(YAMLFileType.YML)
+            .whenever(psiFile).getFileType()
+        // when
+        editor.diff()
+        // then
+        verify(diff).open(any(), argThat { startsWith("---") }, any())
+    }
+
+    @Test
+    fun `#diff should NOT open diff if editor file type is null`() {
+        // given
+        doReturn(null)
+            .whenever(psiFile).getFileType()
+        // when
+        editor.diff()
+        // then
+        verify(diff, never()).open(any(), any(), any())
+    }
+
+    @Test
+    fun `#onDiffClosed should save resource version if document has changed`() {
+        // given
+        doReturn("{ apiVersion: v2 }")
+            .whenever(document).text
+        // when
+        editor.onDiffClosed(GARGAMEL, "{ apiVersion: v1 }")
+        // then
+        verify(resourceVersion, atLeastOnce()).set(any())
+    }
+
+    @Test
+    fun `#onDiffClosed should NoT save resource version if document has NOT changed`() {
+        // given
+        doReturn("{ apiVersion: v1 }")
+            .whenever(document).text
+        // when
+        editor.onDiffClosed(GARGAMEL, "{ apiVersion: v1 }")
+        // then
+        verify(resourceVersion, never()).set(any())
+    }
+
     private fun verifyHideAllNotifications() {
         verify(errorNotification).hide()
         verify(pullNotification).hide()
@@ -758,7 +816,8 @@ private class TestableResourceEditor(
     psiDocumentManagerProvider: (Project) -> PsiDocumentManager,
     getKubernetesResourceInfo: (VirtualFile?, Project) -> KubernetesResourceInfo,
     documentReplaced: AtomicBoolean,
-    resourceVersion: PersistentEditorValue
+    resourceVersion: PersistentEditorValue,
+    diff: ResourceDiff
 ) : ResourceEditor(
     editor,
     project,
@@ -775,10 +834,16 @@ private class TestableResourceEditor(
     psiDocumentManagerProvider,
     getKubernetesResourceInfo,
     documentReplaced,
-    resourceVersion
+    resourceVersion,
+    diff
 ) {
     public override var lastPushedPulled: ResettableLazyProperty<HasMetadata?> = super.lastPushedPulled
     public override var clusterResource: ClusterResource? = super.clusterResource
+
+    public override fun onDiffClosed(resource: HasMetadata, documentBeforeDiff: String?) {
+        // allow public visibility
+        return super.onDiffClosed(resource, documentBeforeDiff)
+    }
 
     public override fun isModified(): Boolean {
         return super.isModified()
