@@ -128,7 +128,7 @@ abstract class NamespacedResourceOperator<R : HasMetadata, C: Client>(
 
     protected fun resourceOrCurrentNamespace(resource: HasMetadata): String {
         return resource.metadata.namespace ?: this.namespace
-        ?: throw KubernetesClientException("No namespace found, neither in operated resource ${resource.metadata.name} nor in current namespace.")
+        ?: throw KubernetesClientException("No namespace found, neither in operated ${resource.kind} '${resource.metadata.name}' nor in current namespace.")
     }
 
     protected open fun getOperation(): NamespacedOperation<R>? {

@@ -33,7 +33,7 @@ class EditResourceAction: StructureTreeAction() {
         } catch (e: RuntimeException) {
             Notification().error(
                 "Error opening editor ${toEdit.metadata.name}",
-                "Could not open editor for ${toEdit.kind} ${toEdit.metadata.name}."
+                "Could not open editor for ${toEdit.kind} '${toEdit.metadata.name}'."
             )
         }
     }

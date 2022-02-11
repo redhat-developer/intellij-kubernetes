@@ -8,20 +8,20 @@
  * Contributors:
  * Red Hat, Inc. - initial API and implementation
  ******************************************************************************/
-package com.redhat.devtools.intellij.kubernetes.model
+package com.redhat.devtools.intellij.kubernetes.editor
 
 import com.intellij.openapi.diagnostic.logger
+import com.redhat.devtools.intellij.kubernetes.model.Clients
+import com.redhat.devtools.intellij.kubernetes.model.ModelChangeObservable
+import com.redhat.devtools.intellij.kubernetes.model.ResourceException
+import com.redhat.devtools.intellij.kubernetes.model.ResourceWatch
 import com.redhat.devtools.intellij.kubernetes.model.ResourceWatch.WatchListeners
-import com.redhat.devtools.intellij.kubernetes.model.resource.IResourceOperator
-import com.redhat.devtools.intellij.kubernetes.model.resource.OperatorFactory
-import com.redhat.devtools.intellij.kubernetes.model.resource.ResourceKind
-import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.custom.CustomResourceOperatorFactory
 import com.redhat.devtools.intellij.kubernetes.model.util.isGreaterIntThan
-import com.redhat.devtools.intellij.kubernetes.model.util.isOutdated
 import com.redhat.devtools.intellij.kubernetes.model.util.isNotFound
+import com.redhat.devtools.intellij.kubernetes.model.util.isOutdated
 import com.redhat.devtools.intellij.kubernetes.model.util.isSameResource
+import com.redhat.devtools.intellij.kubernetes.model.util.isUnsupported
 import io.fabric8.kubernetes.api.model.HasMetadata
-import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinition
 import io.fabric8.kubernetes.client.KubernetesClient
 import io.fabric8.kubernetes.client.KubernetesClientException
 
@@ -32,15 +32,12 @@ import io.fabric8.kubernetes.client.KubernetesClientException
 open class ClusterResource(
     resource: HasMetadata,
     private val clients: Clients<out KubernetesClient>,
-    private val definitions: Collection<CustomResourceDefinition>,
     private val watch: ResourceWatch<HasMetadata> = ResourceWatch(),
-    private val modelChange: ModelChangeObservable = ModelChangeObservable()
+    private val modelChange: ModelChangeObservable = ModelChangeObservable(),
+    private val operator: ClusterResourceOperator = ClusterResourceOperator(clients.get())
 ) {
     private val initialResource: HasMetadata = resource
     protected open var updatedResource: HasMetadata? = null
-    protected open val operator: IResourceOperator<out HasMetadata>? by lazy {
-        createOperator(resource)
-    }
     protected open val watchListeners = WatchListeners(
         {},
         { removed ->
@@ -82,29 +79,29 @@ open class ClusterResource(
      * @param forceRequest requests from server if set to true, returns the cached value otherwise
      *
      * @return the resource in the cluster
+     * @throws ResourceException
      */
     fun pull(forceRequest: Boolean = false): HasMetadata? {
         synchronized(this) {
             if (forceRequest
                 || updatedResource == null) {
-                this.updatedResource = request()
+                this.updatedResource = requestResource()
             }
             return updatedResource
         }
     }
 
-    private fun request(): HasMetadata? {
+    private fun requestResource(): HasMetadata? {
         return try {
-            val operator = this.operator ?: throw ResourceException(
-                "Unsupported resource kind ${initialResource.kind} in version ${initialResource.apiVersion}."
-            )
-            operator.get(this.initialResource)
+            operator.get(initialResource)
         } catch (e: KubernetesClientException) {
-            if (e.isNotFound()) {
-                null
+            val message = if (e.isUnsupported()) {
+                // api discovery error
+                e.status.message
             } else {
-                throw ResourceException("Error contacting cluster: could not retrieve resource", e)
+                "Could not retrieve ${initialResource.kind} '${initialResource.metadata.name}' in version ${initialResource.apiVersion}"
             }
+            throw ResourceException(message, e)
         }
     }
 
@@ -129,7 +126,9 @@ open class ClusterResource(
             resource == null
                     || (isSameResource(toCompare) && isModified(toCompare))
         } catch (e: ResourceException) {
-            logger<ClusterResource>().warn("Could not request resource ${initialResource.metadata.name} from server ${clients.get().masterUrl}", e)
+            logger<ClusterResource>().warn(
+                "Could not request resource ${initialResource.kind} '${initialResource.metadata.name}' from server ${clients.get().masterUrl}",
+                e)
             false
         }
     }
@@ -144,29 +143,25 @@ open class ClusterResource(
      */
     fun push(resource: HasMetadata): HasMetadata? {
         try {
-            if (operator == null
-                || !initialResource.isSameResource(resource)) {
+            if (!initialResource.isSameResource(resource)) {
                 throw ResourceException(
                     "Unsupported resource kind ${resource.kind} in version ${resource.apiVersion}."
                 )
             }
-            val updated =
-                if (exists()) {
-                    operator?.replace(resource)
-                } else {
-                    operator?.create(resource)
-                }
+            val updated = operator.replace(resource)
             set(updated)
             return updated
         } catch (e: KubernetesClientException) {
             val details = getDetails(e)
             throw ResourceException(details, e)
+        } catch (e: RuntimeException) {
+            // ex. IllegalArgumentException
+            throw ResourceException("Could not push ${resource.kind} '${resource.metadata.name}'", e)
         }
     }
 
     private fun getDetails(e: KubernetesClientException): String? {
         val message = e.message ?: return null
-
         val detailsIdentifier = "Message: "
         val detailsStart = message.indexOf(detailsIdentifier)
         if (detailsStart < 0) {
@@ -234,7 +229,15 @@ open class ClusterResource(
      * @return true if the resource of this instance exists on the cluster
      */
     fun exists(): Boolean {
-        return pull() != null
+        return try {
+            pull() != null
+        } catch (e: ResourceException) {
+            if (true == (e.cause as? KubernetesClientException)?.isNotFound()) {
+                false
+            } else {
+                throw e
+            }
+        }
     }
 
     /**
@@ -247,17 +250,11 @@ open class ClusterResource(
      */
     fun watch() {
         try {
-            if (operator == null) {
-                logger<ClusterResource>().debug(
-                    "Cannot watch ${initialResource.kind} ${initialResource.metadata.name}. No operator present"
-                )
-                return
-            }
-            logger<ClusterResource>().debug("Watching ${initialResource.kind} ${initialResource.metadata.name}.")
+            logger<ClusterResource>().debug("Watching ${initialResource.kind} '${initialResource.metadata.name}'.")
             forcedUpdate()
             watch.watch(
                 initialResource,
-                { watcher -> operator?.watch(initialResource, watcher) },
+                { watcher -> operator.watch(initialResource, watcher) },
                 watchListeners
             )
         } catch (e: KubernetesClientException) {
@@ -301,11 +298,5 @@ open class ClusterResource(
      */
     fun addListener(listener: ModelChangeObservable.IResourceChangeListener) {
         modelChange.addListener(listener)
-    }
-
-    protected open fun createOperator(resource: HasMetadata): IResourceOperator<out HasMetadata>? {
-        val kind = ResourceKind.create(resource)
-        val operator: IResourceOperator<out HasMetadata>? = OperatorFactory.create(kind, clients)
-        return operator ?: CustomResourceOperatorFactory.create(resource, definitions, clients.get())
     }
 }

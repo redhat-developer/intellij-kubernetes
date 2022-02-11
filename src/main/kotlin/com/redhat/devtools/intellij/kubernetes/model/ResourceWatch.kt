@@ -47,7 +47,7 @@ open class ResourceWatch<T>(
 
     open fun watch(
         key: T,
-        watchOperation: (watcher: Watcher<in HasMetadata>) -> Watch?,
+        watchOperation: (watcher: Watcher<HasMetadata>) -> Watch?,
         watchListeners: WatchListeners
     ) {
         watches.computeIfAbsent(key) {
@@ -124,7 +124,7 @@ open class ResourceWatch<T>(
 
     class WatchOperation<out T>(
             val key: T,
-            private val watchOperation: (watcher: Watcher<in HasMetadata>) -> Watch?,
+            private val watchOperation: (watcher: Watcher<HasMetadata>) -> Watch?,
             private val watches: MutableMap<T, Watch?>,
             private val addOperation: (HasMetadata) -> Unit,
             private val removeOperation: (HasMetadata) -> Unit,
@@ -158,7 +158,7 @@ open class ResourceWatch<T>(
     ) : Watcher<HasMetadata> {
         override fun eventReceived(action: Watcher.Action?, resource: HasMetadata) {
             logger<ResourceWatcher>().debug(
-                    """Received $action event for ${resource.kind} ${resource.metadata.name}
+                    """Received $action event for ${resource.kind} '${resource.metadata.name}'
                             |"${if (resource.metadata.namespace != null) "in namespace ${resource.metadata.namespace}" else ""}.""")
             when (action) {
                 Watcher.Action.ADDED ->

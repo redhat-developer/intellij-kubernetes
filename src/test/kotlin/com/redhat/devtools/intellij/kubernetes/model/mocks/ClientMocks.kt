@@ -15,6 +15,7 @@ import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.spy
 import com.nhaarman.mockitokotlin2.whenever
+import com.redhat.devtools.intellij.kubernetes.model.resource.APIResources
 import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.AbstractResourceFactory.Companion.API_VERSION
 import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.AbstractResourceFactory.Companion.CREATION_TIMESTAMP
 import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.AbstractResourceFactory.Companion.GENERATION
@@ -30,6 +31,7 @@ import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.custom.
 import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.custom.GenericCustomResourceFactory.SPEC
 import com.redhat.devtools.intellij.kubernetes.model.util.getApiVersion
 import com.redhat.devtools.intellij.kubernetes.model.util.getHighestPriorityVersion
+import io.fabric8.kubernetes.api.Pluralize
 import io.fabric8.kubernetes.api.model.Context
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.ListOptions
@@ -55,8 +57,8 @@ import io.fabric8.kubernetes.client.dsl.NonNamespaceOperation
 import io.fabric8.kubernetes.client.dsl.PodResource
 import io.fabric8.kubernetes.client.dsl.Resource
 import io.fabric8.kubernetes.client.dsl.internal.RawCustomResourceOperationsImpl
-import org.mockito.ArgumentMatchers
 import java.net.URL
+import org.mockito.ArgumentMatchers
 
 
 typealias NamespaceListOperation =
@@ -340,4 +342,32 @@ object ClientMocks {
             on { getResourceVersion() } doReturn resourceVersion
         }
     }
+
+    fun namespacedApiResource(resource: HasMetadata): APIResources.APIResource {
+        return apiResource(resource, true)
+    }
+
+    fun clusterScopedApiResource(resource: HasMetadata): APIResources.APIResource {
+        return apiResource(resource, false)
+    }
+
+    private fun apiResource(resource: HasMetadata, namespaced: Boolean): APIResources.APIResource {
+        return apiResource(
+            Pluralize.toPlural(resource.kind).toLowerCase(),
+            resource.kind.toLowerCase(),
+            namespaced,
+            resource.kind
+        )
+    }
+
+    fun apiResource(name: String, singularName: String, namespaced: Boolean, kind: String): APIResources.APIResource {
+        return APIResources.APIResource().apply {
+            this.name = name
+            this.singularName = singularName
+            this.namespaced = namespaced
+            this.kind = kind
+        }
+    }
+
+
 }

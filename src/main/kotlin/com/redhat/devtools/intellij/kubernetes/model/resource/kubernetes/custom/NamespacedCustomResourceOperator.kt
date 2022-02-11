@@ -14,20 +14,20 @@ import com.redhat.devtools.intellij.kubernetes.model.resource.INamespacedResourc
 import com.redhat.devtools.intellij.kubernetes.model.resource.NamespacedResourceOperator
 import com.redhat.devtools.intellij.kubernetes.model.resource.ResourceKind
 import io.fabric8.kubernetes.api.model.HasMetadata
-import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinition
 import io.fabric8.kubernetes.client.KubernetesClient
 import io.fabric8.kubernetes.client.Watch
 import io.fabric8.kubernetes.client.Watcher
+import io.fabric8.kubernetes.client.dsl.base.CustomResourceDefinitionContext
 import io.fabric8.kubernetes.client.utils.Serialization
 
 open class NamespacedCustomResourceOperator(
 	override val kind: ResourceKind<GenericCustomResource>,
-	definition: CustomResourceDefinition,
+	context: CustomResourceDefinitionContext,
 	namespace: String?,
 	client: KubernetesClient
 ) : NamespacedResourceOperator<GenericCustomResource, KubernetesClient>(client, namespace), INamespacedResourceOperator<GenericCustomResource, KubernetesClient> {
 
-    private val operation = CustomResourceRawOperation(client, definition)
+    private val operation = CustomResourceRawOperation(client, context)
 
     override fun loadAllResources(namespace: String): List<GenericCustomResource> {
         val resourcesList = operation.get().list(namespace)
@@ -74,7 +74,7 @@ open class NamespacedCustomResourceOperator(
 
 		val inNamespace = resourceOrCurrentNamespace(toReplace)
 		return runWithoutServerSetProperties(toReplace) {
-			 val updated = operation.get().createOrReplace(inNamespace, Serialization.asJson(toReplace))
+			val updated = operation.get().createOrReplace(inNamespace, Serialization.asJson(toReplace))
 			GenericCustomResourceFactory.createResource(updated)
 		}
 	}

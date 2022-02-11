@@ -13,19 +13,19 @@ package com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.custom
 import com.redhat.devtools.intellij.kubernetes.model.resource.NonNamespacedResourceOperator
 import com.redhat.devtools.intellij.kubernetes.model.resource.ResourceKind
 import io.fabric8.kubernetes.api.model.HasMetadata
-import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinition
 import io.fabric8.kubernetes.client.KubernetesClient
 import io.fabric8.kubernetes.client.Watch
 import io.fabric8.kubernetes.client.Watcher
+import io.fabric8.kubernetes.client.dsl.base.CustomResourceDefinitionContext
 import io.fabric8.kubernetes.client.utils.Serialization
 
 class NonNamespacedCustomResourceOperator(
     override val kind: ResourceKind<GenericCustomResource>,
-    definition: CustomResourceDefinition,
+    context: CustomResourceDefinitionContext,
     client: KubernetesClient
 ) : NonNamespacedResourceOperator<GenericCustomResource, KubernetesClient>(client) {
 
-    private val operation = CustomResourceRawOperation(client, definition)
+    private val operation = CustomResourceRawOperation(client, context)
 
     override fun loadAllResources(): List<GenericCustomResource> {
         val resourcesList = operation.get().list()

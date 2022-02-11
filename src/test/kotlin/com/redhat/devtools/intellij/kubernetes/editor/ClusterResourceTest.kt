@@ -8,7 +8,7 @@
  * Contributors:
  * Red Hat, Inc. - initial API and implementation
  ******************************************************************************/
-package com.redhat.devtools.intellij.kubernetes.model
+package com.redhat.devtools.intellij.kubernetes.editor
 
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.doReturn
@@ -19,16 +19,18 @@ import com.nhaarman.mockitokotlin2.never
 import com.nhaarman.mockitokotlin2.times
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.whenever
-import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks
+import com.redhat.devtools.intellij.kubernetes.model.Clients
+import com.redhat.devtools.intellij.kubernetes.model.ModelChangeObservable
+import com.redhat.devtools.intellij.kubernetes.model.ResourceException
+import com.redhat.devtools.intellij.kubernetes.model.ResourceWatch
+import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.client
 import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.resource
 import com.redhat.devtools.intellij.kubernetes.model.mocks.Mocks.namespacedResourceOperator
-import com.redhat.devtools.intellij.kubernetes.model.resource.IResourceOperator
 import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.AllPodsOperator
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.Namespace
 import io.fabric8.kubernetes.api.model.Pod
 import io.fabric8.kubernetes.api.model.PodBuilder
-import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinition
 import io.fabric8.kubernetes.client.KubernetesClient
 import io.fabric8.kubernetes.client.KubernetesClientException
 import io.fabric8.kubernetes.client.Watch
@@ -39,7 +41,7 @@ import org.junit.Test
 class ClusterResourceTest {
 
     private val rebelsNamespace: Namespace = resource("rebels", null, "rebelsUid", "v1")
-    private val client = ClientMocks.client(
+    private val client = client(
         rebelsNamespace.metadata.name,
         arrayOf(rebelsNamespace)
     )
@@ -50,7 +52,7 @@ class ClusterResourceTest {
     private val nabooResource: Pod = resource("Naboo", rebelsNamespace.metadata.name, "nabooUid", "v1", "1")
     private val watch: Watch = mock()
     private val watchOp: (watcher: Watcher<in Pod>) -> Watch? = { watch }
-    private val operator = namespacedResourceOperator<Pod, KubernetesClient>(
+    private val operator2 = namespacedResourceOperator<Pod, KubernetesClient>(
         AllPodsOperator.KIND,
         emptyList(),
         rebelsNamespace,
@@ -58,10 +60,15 @@ class ClusterResourceTest {
         true,
         endorResourceOnCluster
     )
-    private val definitions: Collection<CustomResourceDefinition> = emptyList()
+    private val operator: ClusterResourceOperator = mock {
+        on { get(any()) } doReturn endorResourceOnCluster
+        on { replace(any()) } doReturn endorResourceOnCluster
+        on { watch(any(), any()) } doReturn watch
+    }
+
     private val resourceWatch: ResourceWatch<HasMetadata> = mock()
     private val observable: ModelChangeObservable = mock()
-    private val cluster = TestableClusterResource(endorResource, operator, clients, definitions, resourceWatch, observable)
+    private val cluster = TestableClusterResource(endorResource, clients, resourceWatch, observable, operator)
 
     @Test
     fun `#pull(false) should retrieve from cluster if there is no cached value yet`() {
@@ -104,15 +111,13 @@ class ClusterResourceTest {
         verify(operator, times(1)).get(any())
     }
 
-    @Test
-    fun `#pull(true) should return null if cluster returns 404`() {
+    @Test(expected = ResourceException::class)
+    fun `#pull(true) should throw exception that happens when operator#get throws`() {
         // given
         whenever(operator.get(any()))
-            .doThrow(KubernetesClientException("not found", 404, null))
+            .doThrow(KubernetesClientException("forbidden", 401, null))
         // when
-        val retrieved = cluster.pull(true)
-        // then resource was deleted
-        assertThat(retrieved).isNull()
+        cluster.pull(true)
     }
 
     @Test(expected = ResourceException::class)
@@ -120,15 +125,6 @@ class ClusterResourceTest {
         // given
         whenever(operator.get(any()))
             .doThrow(KubernetesClientException("internal error", 500, null))
-        // when
-        cluster.pull(true)
-        // then should have thrown
-    }
-
-    @Test(expected = ResourceException::class)
-    fun `#pull(true) should throw if there is no operator`() {
-        // given
-        val cluster = TestableClusterResource(endorResource, null, clients, definitions, resourceWatch, observable)
         // when
         cluster.pull(true)
         // then should have thrown
@@ -232,17 +228,17 @@ class ClusterResourceTest {
     }
 
     @Test
-    fun `#push should create if does NOT exist on cluster`() {
+    fun `#push should call operator#replace`() {
         // given
         whenever(operator.get(any()))
             .doReturn(null)
         // when
         cluster.push(endorResourceOnCluster)
         // then
-        verify(operator).create(endorResourceOnCluster)
+        verify(operator).replace(endorResourceOnCluster)
     }
 
-    @Test(expected=ResourceException::class)
+    @Test(expected= ResourceException::class)
     fun `#push should throw if given resource is NOT the same`() {
         // given
         whenever(operator.get(any()))
@@ -463,7 +459,7 @@ class ClusterResourceTest {
         whenever(operator.get(any()))
             .doReturn(endorResourceOnCluster)
         // when
-        val outdated = cluster.isOutdated(resourceVersion as String?)
+        val outdated = cluster.isOutdated(resourceVersion)
         // then
         assertThat(outdated).isFalse()
     }
@@ -549,16 +545,6 @@ class ClusterResourceTest {
         cluster.watch()
         // then
         verify(resourceWatch).watch(eq(endorResource), any(), any())
-    }
-
-    @Test
-    fun `#watch should NOT watch resource if there is no operator`() {
-        // given
-        cluster.operator = null
-        // when
-        cluster.watch()
-        // then
-        verify(resourceWatch, never()).watch(eq(endorResource), any(), any())
     }
 
     @Test
@@ -654,12 +640,11 @@ class ClusterResourceTest {
 
     private class TestableClusterResource(
         resource: HasMetadata,
-        public override var operator: IResourceOperator<out HasMetadata>?,
         clients: Clients<KubernetesClient>,
-        definitions: Collection<CustomResourceDefinition>,
         watch: ResourceWatch<HasMetadata>,
-        observable: ModelChangeObservable
-    ) : ClusterResource(resource, clients, definitions, watch, observable) {
+        observable: ModelChangeObservable,
+        operator: ClusterResourceOperator
+        ) : ClusterResource(resource, clients, watch, observable, operator) {
 
         public override var updatedResource: HasMetadata?
             get(): HasMetadata? {

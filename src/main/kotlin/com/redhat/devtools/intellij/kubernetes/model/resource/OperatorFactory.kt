@@ -10,10 +10,10 @@
  ******************************************************************************/
 package com.redhat.devtools.intellij.kubernetes.model.resource
 
+import com.redhat.devtools.intellij.kubernetes.model.Clients
 import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.AllPodsOperator
 import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.ConfigMapsOperator
 import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.CronJobsOperator
-import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.custom.CustomResourceDefinitionsOperator
 import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.DaemonSetsOperator
 import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.DeploymentsOperator
 import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.EndpointsOperator
@@ -28,13 +28,13 @@ import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.Secrets
 import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.ServicesOperator
 import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.StatefulSetsOperator
 import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.StorageClassesOperator
+import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.custom.CustomResourceDefinitionsOperator
 import com.redhat.devtools.intellij.kubernetes.model.resource.openshift.BuildConfigsOperator
 import com.redhat.devtools.intellij.kubernetes.model.resource.openshift.BuildsOperator
 import com.redhat.devtools.intellij.kubernetes.model.resource.openshift.DeploymentConfigsOperator
 import com.redhat.devtools.intellij.kubernetes.model.resource.openshift.ImageStreamsOperator
 import com.redhat.devtools.intellij.kubernetes.model.resource.openshift.ProjectsOperator
 import com.redhat.devtools.intellij.kubernetes.model.resource.openshift.ReplicationControllersOperator
-import com.redhat.devtools.intellij.kubernetes.model.Clients
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.client.KubernetesClient
 import io.fabric8.openshift.client.OpenShiftClient

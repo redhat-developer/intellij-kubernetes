@@ -14,6 +14,9 @@ import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.client.Watch
 import io.fabric8.kubernetes.client.Watcher
 
+/**
+ * A class that can watch, get, create and replace resources
+ */
 interface IResourceOperator<R: HasMetadata> {
     val kind: ResourceKind<R>
     val allResources: Collection<R>

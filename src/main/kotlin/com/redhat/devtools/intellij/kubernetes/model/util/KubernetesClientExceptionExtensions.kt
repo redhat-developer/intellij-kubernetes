@@ -11,7 +11,16 @@
 package com.redhat.devtools.intellij.kubernetes.model.util
 
 import io.fabric8.kubernetes.client.KubernetesClientException
+import java.net.HttpURLConnection
 
 fun KubernetesClientException.isNotFound(): Boolean {
-    return code == 404
+    return code == HttpURLConnection.HTTP_NOT_FOUND
+}
+
+fun KubernetesClientException.isForbidden(): Boolean {
+    return code == HttpURLConnection.HTTP_FORBIDDEN
+}
+
+fun KubernetesClientException.isUnsupported(): Boolean {
+    return code == HttpURLConnection.HTTP_UNSUPPORTED_TYPE
 }
