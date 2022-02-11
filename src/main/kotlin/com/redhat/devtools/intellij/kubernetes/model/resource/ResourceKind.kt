@@ -16,6 +16,7 @@ import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinition
 import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.custom.GenericCustomResource
 import com.redhat.devtools.intellij.kubernetes.model.util.getApiVersion
 import com.redhat.devtools.intellij.kubernetes.model.util.getHighestPriorityVersion
+import io.fabric8.kubernetes.client.dsl.base.CustomResourceDefinitionContext
 
 data class ResourceKind<R : HasMetadata> private constructor(
 		val version: String,
@@ -47,6 +48,14 @@ data class ResourceKind<R : HasMetadata> private constructor(
 				removeK8sio(getApiVersion(spec.group, version)),
 				GenericCustomResource::class.java,
 				spec.names.kind)
+		}
+
+		@JvmStatic
+		fun create(context: CustomResourceDefinitionContext): ResourceKind<GenericCustomResource>? {
+			return ResourceKind(
+				removeK8sio(getApiVersion(context.group, context.version)),
+				GenericCustomResource::class.java,
+				context.kind)
 		}
 
 		@JvmStatic

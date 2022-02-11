@@ -38,6 +38,7 @@ import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.custom.
 import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.custom.NamespacedCustomResourceOperator
 import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.custom.NonNamespacedCustomResourceOperator
 import com.redhat.devtools.intellij.kubernetes.model.Clients
+import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.custom.CustomResourceDefinitionContextFactory
 import com.redhat.devtools.intellij.kubernetes.model.util.MultiResourceException
 import com.redhat.devtools.intellij.kubernetes.model.util.ResourceException
 import com.redhat.devtools.intellij.kubernetes.model.util.isSameResource
@@ -216,11 +217,12 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
             resourceIn: ResourcesIn)
             : IResourceOperator<GenericCustomResource>? {
         val kind = ResourceKind.create(definition.spec) ?: return null
+        val context = CustomResourceDefinitionContextFactory.create(definition)
         return when(resourceIn) {
             CURRENT_NAMESPACE ->
                 NamespacedCustomResourceOperator(
                     kind,
-                    definition,
+                    context,
                     getCurrentNamespace(),
                     clients.get()
                 )
@@ -228,7 +230,7 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
             NO_NAMESPACE ->
                 NonNamespacedCustomResourceOperator(
                     kind,
-                    definition,
+                    context,
                     clients.get())
         }
     }

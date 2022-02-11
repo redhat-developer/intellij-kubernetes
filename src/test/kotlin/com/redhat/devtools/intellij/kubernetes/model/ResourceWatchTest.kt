@@ -17,20 +17,20 @@ import com.nhaarman.mockitokotlin2.never
 import com.nhaarman.mockitokotlin2.spy
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.whenever
+import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.resource
+import com.redhat.devtools.intellij.kubernetes.model.resource.ResourceKind
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.Namespace
 import io.fabric8.kubernetes.api.model.Pod
 import io.fabric8.kubernetes.client.KubernetesClientException
 import io.fabric8.kubernetes.client.Watch
 import io.fabric8.kubernetes.client.Watcher
-import org.assertj.core.api.Assertions.assertThat
-import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.resource
-import com.redhat.devtools.intellij.kubernetes.model.resource.ResourceKind
-import org.junit.Before
-import org.junit.Test
 import java.util.concurrent.BlockingDeque
 import java.util.concurrent.LinkedBlockingDeque
 import java.util.concurrent.TimeUnit
+import org.assertj.core.api.Assertions.assertThat
+import org.junit.Before
+import org.junit.Test
 
 class ResourceWatchTest {
 
@@ -215,7 +215,7 @@ class ResourceWatchTest {
 
         override fun watch(
             key: ResourceKind<out HasMetadata>,
-            watchOperation: (watcher: Watcher<in HasMetadata>) -> Watch?,
+            watchOperation: (watcher: Watcher<HasMetadata>) -> Watch?,
             watchListeners: WatchListeners
         ) {
             super.watch(key, watchOperation, watchListeners)

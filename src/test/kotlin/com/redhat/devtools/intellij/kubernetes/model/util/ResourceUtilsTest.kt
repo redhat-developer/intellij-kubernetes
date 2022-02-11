@@ -11,10 +11,6 @@
 package com.redhat.devtools.intellij.kubernetes.model.util
 
 import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.resource
-import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.customResourceDefinition
-import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.customResourceDefinitionVersion
-import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.custom.CustomResourceScope
-import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.hasmetadata.HasMetadataResource
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.ObjectMetaBuilder
 import io.fabric8.kubernetes.api.model.Pod
@@ -411,77 +407,6 @@ class ResourceUtilsTest {
 		// then
 		assertThat(groupAndVersion.first).isNull()
 		assertThat(groupAndVersion.second).isEqualTo(version)
-	}
-
-	@Test
-	fun `#isMatchingSpec should return true if crd has spec with same kind, group and version`() {
-		// given
-		val group = null
-		val version = "v1"
-		val neo = resource<HasMetadataResource>("neo", "zion", "uid", getApiVersion(group, version), "1")
-		val kind = neo.kind!!
-		val crd = customResourceDefinition(
-			"cluster crd",
-			"ns",
-			"uid",
-			"apiVersion",
-			listOf(
-				customResourceDefinitionVersion("v42"),
-				customResourceDefinitionVersion(version),
-				customResourceDefinitionVersion("v84")),
-			group,
-			kind,
-			CustomResourceScope.CLUSTER
-		)
-		// when
-		val matching = isMatchingSpec(neo, crd)
-		// then
-		assertThat(matching).isTrue()
-	}
-
-	@Test
-	fun `#isMatchingSpec should return false if crd has spec with different kind`() {
-		// given
-		val group = null
-		val version = "v1"
-		val neo = resource<HasMetadataResource>("neo", "zion", "uid", getApiVersion(group, version), "1")
-		val crd = customResourceDefinition(
-			"cluster crd",
-			"ns",
-			"uid",
-			"apiVersion",
-			listOf(customResourceDefinitionVersion(version)),
-			group,
-			"someOtherKind",
-			CustomResourceScope.CLUSTER
-		)
-		// when
-		val matching = isMatchingSpec(neo, crd)
-		// then
-		assertThat(matching).isFalse()
-	}
-
-	@Test
-	fun `#isMatchingSpec should return false if crd has spec with different version`() {
-		// given
-		val group = null
-		val version = "v1"
-		val neo = resource<Pod>("neo", "zion", "uid", getApiVersion(group, version), "1")
-		val kind = neo.kind
-		val crd = customResourceDefinition(
-			"cluster crd",
-			"ns",
-			"uid",
-			"apiVersion",
-			listOf(customResourceDefinitionVersion("v42")),
-			group,
-			kind,
-			CustomResourceScope.CLUSTER
-		)
-		// when
-		val matching = isMatchingSpec(neo, crd)
-		// then
-		assertThat(matching).isFalse()
 	}
 
 	@Test

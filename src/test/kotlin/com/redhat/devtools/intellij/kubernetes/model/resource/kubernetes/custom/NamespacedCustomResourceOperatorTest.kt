@@ -30,6 +30,7 @@ import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinition
 import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinitionNamesBuilder
 import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinitionSpecBuilder
 import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinitionVersionBuilder
+import io.fabric8.kubernetes.client.dsl.base.CustomResourceDefinitionContext
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test
 import org.mockito.ArgumentCaptor
@@ -57,6 +58,7 @@ class NamespacedCustomResourceOperatorTest {
             .withName("Rebels")
             .build())
         .build()
+    private val context: CustomResourceDefinitionContext = CustomResourceDefinitionContextFactory.create(definition)
     private val kind = ResourceKind.create(spec)!!
     private val customResource = customResource("Ezra", "Endor", definition)
     private val customResourceMap = customResourceMap(customResource)
@@ -68,7 +70,7 @@ class NamespacedCustomResourceOperatorTest {
         doReturn(op)
             .whenever(this).customResource(any())
     }
-    private val operator = spy(NamespacedCustomResourceOperator(kind, definition, currentNamespace, client))
+    private val operator = spy(NamespacedCustomResourceOperator(kind, context, currentNamespace, client))
 
     @Test
     fun `#replace() is removing uid`() {

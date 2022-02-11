@@ -10,16 +10,13 @@
  ******************************************************************************/
 package com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.custom
 
-import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinition
 import io.fabric8.kubernetes.client.KubernetesClient
 import io.fabric8.kubernetes.client.dsl.base.CustomResourceDefinitionContext
 import io.fabric8.kubernetes.client.dsl.internal.RawCustomResourceOperationsImpl
-import com.redhat.devtools.intellij.kubernetes.model.util.createContext
 
 class CustomResourceRawOperation(
 	private val client: KubernetesClient,
-	definition: CustomResourceDefinition,
-	private val context: CustomResourceDefinitionContext = createContext(definition)
+	private val context: CustomResourceDefinitionContext
 ) {
 
 	fun get(): RawCustomResourceOperationsImpl {

@@ -19,6 +19,7 @@ import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.customRes
 import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.resource
 import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.hasmetadata.HasMetadataResource
 import com.redhat.devtools.intellij.kubernetes.model.util.getApiVersion
+import io.fabric8.kubernetes.client.KubernetesClientException
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test
 
@@ -74,19 +75,10 @@ class CustomResourceOperatorFactoryTest {
     }
 
     @Test
-    fun `#create(resource) should return null if no definition is matching resource`() {
-        // given
-        // when
-        val operator = CustomResourceOperatorFactory.create(neo, listOf(CRD_NOT_MATCHING), client)
-        // then
-        assertThat(operator).isNull()
-    }
-
-    @Test
     fun `#create(resource) should return NonNamespacedCustomResourceOperator if resource is matching definition that is cluster scoped`() {
         // given
         // when
-        val operator = CustomResourceOperatorFactory.create(neo, listOf(CRD_CLUSTER_SCOPE), client)
+        val operator = CustomResourceOperatorFactory.create(neo, CRD_CLUSTER_SCOPE, client)
         // then
         assertThat(operator).isInstanceOf(NonNamespacedCustomResourceOperator::class.java)
     }
@@ -95,7 +87,7 @@ class CustomResourceOperatorFactoryTest {
     fun `#create(resource) should return NamespacedCustomResourceOperator if resource is matching definition that is namespace scoped`() {
         // given
         // when
-        val operator = CustomResourceOperatorFactory.create(neo, listOf(CRD_NAMESPACE_SCOPED), client)
+        val operator = CustomResourceOperatorFactory.create(neo, CRD_NAMESPACE_SCOPED, client)
         // then
         assertThat(operator).isInstanceOf(NamespacedCustomResourceOperator::class.java)
     }
@@ -104,7 +96,7 @@ class CustomResourceOperatorFactoryTest {
     fun `#create(resource) should set namespace of resource to NamespacedCustomResourceOperator`() {
         // given
         // when
-        val operator = CustomResourceOperatorFactory.create(neo, listOf(CRD_NAMESPACE_SCOPED), client)
+        val operator = CustomResourceOperatorFactory.create(neo, CRD_NAMESPACE_SCOPED, client)
         // then
         assertThat((operator as? NamespacedCustomResourceOperator)?.namespace).isEqualTo(neo.metadata.namespace)
     }
@@ -114,7 +106,7 @@ class CustomResourceOperatorFactoryTest {
         // given
         val morpheus = resource<HasMetadataResource>("neo", null, "uid", getApiVersion(group, version), "1")
         // when
-        val operator = CustomResourceOperatorFactory.create(morpheus, listOf(CRD_NAMESPACE_SCOPED), client)
+        val operator = CustomResourceOperatorFactory.create(morpheus, CRD_NAMESPACE_SCOPED, client)
         // then
         assertThat((operator as? NamespacedCustomResourceOperator)?.namespace).isEqualTo(client.namespace)
     }
@@ -123,18 +115,17 @@ class CustomResourceOperatorFactoryTest {
     fun `#create(resource) should throw IllegalArgumentException if definition has unknown scope`() {
         // given
         // when
-        CustomResourceOperatorFactory.create(neo, listOf(CRD_UNKNOWN_SCOPE), client)
+        CustomResourceOperatorFactory.create(neo, CRD_UNKNOWN_SCOPE, client)
         // then
         // exception expected
     }
 
-    @Test
-    fun `#create(yaml) should return null if yaml is invalid`() {
+    @Test(expected = KubernetesClientException::class)
+    fun `#create(yaml) should throw if yaml is invalid`() {
         // given
         // when
-        val operator = CustomResourceOperatorFactory.create("{", listOf(CRD_NAMESPACE_SCOPED), client)
+        CustomResourceOperatorFactory.create("{", CRD_NAMESPACE_SCOPED, client)
         // then
-        assertThat(operator).isNull()
     }
 
     @Test
@@ -153,7 +144,7 @@ class CustomResourceOperatorFactoryTest {
 			}
             """.trimIndent()
         // when
-        val operator = CustomResourceOperatorFactory.create(json, listOf(CRD_CLUSTER_SCOPE), client)
+        val operator = CustomResourceOperatorFactory.create(json, CRD_CLUSTER_SCOPE, client)
         // then
         assertThat(operator).isInstanceOf(NonNamespacedCustomResourceOperator::class.java)
     }

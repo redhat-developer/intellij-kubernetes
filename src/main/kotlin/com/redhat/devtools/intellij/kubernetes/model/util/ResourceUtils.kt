@@ -11,12 +11,12 @@
 package com.redhat.devtools.intellij.kubernetes.model.util
 
 import com.intellij.openapi.diagnostic.logger
+import io.fabric8.kubernetes.api.model.GenericKubernetesResource
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.KubernetesResource
-import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinition
 import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinitionSpec
 import io.fabric8.kubernetes.client.KubernetesClientException
-import io.fabric8.kubernetes.client.dsl.base.CustomResourceDefinitionContext
+import io.fabric8.kubernetes.client.utils.ApiVersionUtil
 import io.fabric8.kubernetes.client.utils.KubernetesVersionPriority
 import io.fabric8.kubernetes.client.utils.Serialization
 import io.fabric8.kubernetes.model.annotation.Group
@@ -165,91 +165,9 @@ fun getApiVersion(apiGroup: String?, apiVersion: String): String {
  * @see [io.fabric8.kubernetes.api.model.HasMetadata.getApiVersion]
  */
 fun getApiGroupAndVersion(resource: HasMetadata): Pair<String?, String> {
-    val split = resource.apiVersion.split(API_GROUP_VERSION_DELIMITER)
-    return if (split.size == 1) {
-        Pair(null, split[0])
-    } else {
-        Pair(split[0], split[1])
-    }
-}
-
-/**
- * Returns `true` if the given [HasMetadata] is matching the [CustomResourceDefinitionSpec]
- * of the given [CustomResourceDefinition] in
- * - group
- * - version
- * - kind
- *
- * @param resource the [HasMetadata] to check against the given definition
- * @param definition the [CustomResourceDefinition] to check against the given resource
- * @return true if the given resource is matching the given definition
- *
- * @see HasMetadata
- * @see CustomResourceDefinition
- */
-fun isMatchingSpec(resource: HasMetadata, definition: CustomResourceDefinition): Boolean {
-	val groupAndVersion = getApiGroupAndVersion(resource)
-	return isMatchingSpec(resource.kind, groupAndVersion.first, groupAndVersion.second, definition)
-}
-
-/**
- * Returns `true` if the given [HasMetadata] is matching the given
- * - kind
- * - group
- * - version
- *
- * @param kind the kind to check against the given definition
- * @param apiGroup the apiGroup to check against the given definition
- * @param apiVersion the apiVersion to check against the given definition
- * @param definition the [CustomResourceDefinition] to check against the given resource
- * @return true if the given resource is matching the given kind, apiGroup and apiVersion
- *
- * @see HasMetadata
- * @see CustomResourceDefinition
- */
-fun isMatchingSpec(kind: String, apiGroup: String?, apiVersion: String, definition: CustomResourceDefinition): Boolean {
-	return definition.spec.names.kind == kind
-			&& definition.spec.group == apiGroup
-			&& definition.spec.versions.find { it.name == apiVersion } != null
-}
-
-/**
- * Returns the version for given [CustomResourceDefinitionSpec].
- * The version with the highest priority is chosen if there are several available.
- *
- * @param spec the [CustomResourceDefinitionSpec] to get the version from
- *
- * @return the version for the given [CustomResourceDefinitionSpec]
- */
-fun getHighestPriorityVersion(spec: CustomResourceDefinitionSpec): String? {
-	val versions = spec.versions.map { it.name }
-	val version = KubernetesVersionPriority.highestPriority(versions)
-	if (version == null) {
-		logger<CustomResourceDefinitionSpec>().warn(
-			"Could not find version with highest priority in ${spec.group}/${spec.names.kind}.")
-	}
-	return version
-}
-
-/**
- * Returns a [CustomResourceDefinitionContext] for the given [CustomResourceDefinition].
- * The version with the highest priority among the available ones is used.
- *
- * @param definition [CustomResourceDefinition] to create the context for
- *
- * @return the [CustomResourceDefinitionContext] for the given [CustomResourceDefinition]
- *
- * @see [getHighestPriorityVersion]
- */
-fun createContext(definition: CustomResourceDefinition): CustomResourceDefinitionContext {
-	return CustomResourceDefinitionContext.Builder()
-		.withGroup(definition.spec.group)
-		.withVersion(getHighestPriorityVersion(definition.spec)) // use version with highest priority
-		.withScope(definition.spec.scope)
-		.withName(definition.metadata.name)
-		.withPlural(definition.spec.names.plural)
-		.withKind(definition.spec.names.kind)
-		.build()
+	val group = ApiVersionUtil.trimGroupOrNull(resource.apiVersion)
+	val version = ApiVersionUtil.trimVersion(resource.apiVersion)
+	return Pair(group, version)
 }
 
 fun setDeletionTimestamp(timestamp: String, resource: HasMetadata) {
@@ -318,6 +236,25 @@ fun trimWithEllipsis(value: String?, length: Int): String? {
 }
 
 /**
+ * Returns the version for given [CustomResourceDefinitionSpec].
+ * The version with the highest priority is chosen if there are several available.
+ *
+ * @param spec the [CustomResourceDefinitionSpec] to get the version from
+ *
+ * @return the version for the given [CustomResourceDefinitionSpec]
+ */
+fun getHighestPriorityVersion(spec: CustomResourceDefinitionSpec): String? {
+	val versions = spec.versions.map { it.name }
+	val version = KubernetesVersionPriority.highestPriority(versions)
+	if (version == null) {
+		logger<CustomResourceDefinitionSpec>().warn(
+			"Could not find version with highest priority in ${spec.group}/${spec.names.kind}."
+		)
+	}
+	return version
+}
+
+/**
  * Returns an instance of the given type for the given json or yaml string.
  *
  * @param jsonYaml the string that should be unmarshalled
@@ -325,6 +262,10 @@ fun trimWithEllipsis(value: String?, length: Int): String? {
  */
 inline fun <reified T> createResource(jsonYaml: String): T {
 	return Serialization.unmarshal(jsonYaml, T::class.java)
+}
+
+fun <T> createResource(jsonYaml: String, clazz: Class<T>): T {
+	return Serialization.unmarshal(jsonYaml, clazz)
 }
 
 /**
@@ -347,4 +288,41 @@ fun hasKubernetesResource(jsonYaml: String?): Boolean {
 		// not yaml/json
 		false
 	}
+}
+
+/**
+ * Returns `true` if the given [HasMetadata] instance has [HasMetadata.getApiVersion] that does not match the
+ * @Group and @Version annotations.
+ * This is a **WORKAROUND** for detecting the presence of bug [#3859](https://github.com/fabric8io/kubernetes-client/issues/3859)
+ * that exists in kubernetes-client <= 5.12
+ *
+ * ex. [Serialization.unmarshal] yaml/json for a knative service is deserialized to the k8s service [io.fabric8.kubernetes.api.model.Service]
+ * while it should get unmarshalled to [GenericKubernetesResource].
+ *
+ * @param resource the resource to check
+ * @return `true` if the apiVersion property in the given instance does not match the annotations
+ *
+ * @see Group
+ * @see Version
+ * @see HasMetadata.getApiVersion
+ */
+fun isApiGroupVersionNotMatchingAnnotation(resource: HasMetadata): Boolean {
+	val annotatedGroup = Helper.getAnnotationValue(resource::class.java, Group::class.java)
+	val annotatedVersion = Helper.getAnnotationValue(resource::class.java, Version::class.java)
+	val annotatedApiVersion = ApiVersionUtil.joinApiGroupAndVersion(annotatedGroup, annotatedVersion)
+	return annotatedApiVersion != resource.apiVersion
+}
+
+/**
+ * Returns `true` if the given [HasMetadata] is a custom resource.
+ * This is the case if the class used is [GenericKubernetesResource] or if it was wrongly deserialized to a legacy model class.
+ *
+ * @param resource the resource to check
+ * @return `true` if given instance is a custom resource
+ *
+ * @see [isApiGroupVersionNotMatchingAnnotation]
+ */
+fun isCustomResource(resource: HasMetadata): Boolean {
+	return GenericKubernetesResource::class.java == resource::class.java
+			|| isApiGroupVersionNotMatchingAnnotation(resource)
 }

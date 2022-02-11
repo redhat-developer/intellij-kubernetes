@@ -30,19 +30,15 @@ import com.redhat.devtools.intellij.kubernetes.editor.util.getDocument
 import com.redhat.devtools.intellij.kubernetes.editor.util.isKubernetesResource
 import com.redhat.devtools.intellij.kubernetes.model.ClientConfig
 import com.redhat.devtools.intellij.kubernetes.model.Clients
-import com.redhat.devtools.intellij.kubernetes.model.ClusterResource
 import com.redhat.devtools.intellij.kubernetes.model.ModelChangeObservable
 import com.redhat.devtools.intellij.kubernetes.model.ResourceException
 import com.redhat.devtools.intellij.kubernetes.model.createClients
-import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.custom.CustomResourceDefinitionMapping
 import com.redhat.devtools.intellij.kubernetes.model.util.ResettableLazyProperty
 import com.redhat.devtools.intellij.kubernetes.model.util.causeOrExceptionMessage
 import com.redhat.devtools.intellij.kubernetes.model.util.isGreaterIntThan
 import com.redhat.devtools.intellij.kubernetes.model.util.trimWithEllipsis
 import io.fabric8.kubernetes.api.model.HasMetadata
-import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinition
 import io.fabric8.kubernetes.client.KubernetesClient
-import io.fabric8.kubernetes.client.KubernetesClientException
 import io.fabric8.kubernetes.client.utils.Serialization
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.locks.ReentrantLock
@@ -55,24 +51,14 @@ open class ResourceEditor(
     val editor: FileEditor,
     private val project: Project,
     /* for mocking purposes */
-    private val createClients: () -> Clients<out KubernetesClient> = {
-            val config = ClientConfig {}
-            createClients(config)
-        },
+    private val clients: Clients<out KubernetesClient> = createClients(ClientConfig {}),
     // for mocking purposes
-    private val getCustomResourceDefinitions: (client: KubernetesClient) -> Collection<CustomResourceDefinition> =
-        CustomResourceDefinitionMapping::getDefinitions,
-    // for mocking purposes
-    private val createResource: (editor: FileEditor, definitions: Collection<CustomResourceDefinition>?) -> HasMetadata? =
+    private val createResource: (editor: FileEditor) -> HasMetadata? =
         EditorResourceFactory::create,
     // for mocking purposes
-    private val createClusterResource: (resource: HasMetadata, clients: Clients<out KubernetesClient>, definitions: Collection<CustomResourceDefinition>?) -> ClusterResource? =
-        { resource, clients, definitions ->
-            if (definitions == null) {
-                null
-            } else {
-                ClusterResource(resource, clients, definitions)
-            }
+    private val createClusterResource: (resource: HasMetadata, clients: Clients<out KubernetesClient>) -> ClusterResource? =
+        { resource, clients ->
+                ClusterResource(resource, clients)
         },
     // for mocking purposes
     private val createResourceFileForVirtual: (file: VirtualFile?) -> ResourceFile? =
@@ -108,21 +94,6 @@ open class ResourceEditor(
         const val TITLE_UNKNOWN_NAME = "unknown name"
     }
 
-    private val clients: Clients<out KubernetesClient> by lazy {
-        createClients.invoke()
-    }
-
-    private val definitions: Collection<CustomResourceDefinition>? by lazy {
-        try {
-            getCustomResourceDefinitions.invoke(clients.get())
-        } catch (e: KubernetesClientException) {
-            throw ResourceException(
-                "Error contacting cluster: could not retrieve custom resource definitions for server ${clients.get().masterUrl}",
-                e
-            )
-        }
-    }
-
     /** mutex to exclude concurrent execution of push & watch notification **/
     private val resourceChangeMutex = ReentrantLock()
     private var oldClusterResource: ClusterResource? = null
@@ -144,7 +115,7 @@ open class ResourceEditor(
         }
 
     open var editorResource = ResettableLazyProperty<HasMetadata?> {
-        createResource.invoke(editor, definitions)
+        createResource.invoke(editor)
     }
 
     protected open var lastPushedPulled = ResettableLazyProperty<HasMetadata?> {
@@ -167,9 +138,11 @@ open class ResourceEditor(
         }
         runAsync {
             try {
-                val resource = createResource.invoke(editor, definitions) ?: return@runAsync
+                val resource = createResource.invoke(editor) ?: return@runAsync
                 val cluster = clusterResource ?: return@runAsync
-                resourceChangeMutex.withLock { this.editorResource.set(resource) }
+                resourceChangeMutex.withLock {
+                    this.editorResource.set(resource)
+                }
                 saveResourceVersion(resource)
                 showNotifications(resource, cluster)
             } catch (e: ResourceException) {
@@ -365,7 +338,7 @@ open class ResourceEditor(
         if (resource == null) {
             return null
         }
-        val clusterResource = createClusterResource.invoke(resource, clients, definitions) ?: return null
+        val clusterResource = createClusterResource.invoke(resource, clients) ?: return null
         clusterResource.addListener(onResourceChanged())
         clusterResource.watch()
         return clusterResource

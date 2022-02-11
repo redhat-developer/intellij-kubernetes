@@ -23,15 +23,7 @@ import com.nhaarman.mockitokotlin2.spy
 import com.nhaarman.mockitokotlin2.times
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.whenever
-import io.fabric8.kubernetes.api.model.HasMetadata
-import io.fabric8.kubernetes.api.model.Namespace
-import io.fabric8.kubernetes.api.model.Node
-import io.fabric8.kubernetes.api.model.Pod
-import io.fabric8.kubernetes.api.model.Secret
-import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinition
-import io.fabric8.kubernetes.client.NamespacedKubernetesClient
-import io.fabric8.kubernetes.client.Watcher
-import org.assertj.core.api.Assertions.assertThat
+import com.redhat.devtools.intellij.kubernetes.model.Clients
 import com.redhat.devtools.intellij.kubernetes.model.ModelChangeObservable
 import com.redhat.devtools.intellij.kubernetes.model.Notification
 import com.redhat.devtools.intellij.kubernetes.model.ResourceWatch
@@ -52,13 +44,25 @@ import com.redhat.devtools.intellij.kubernetes.model.resource.INamespacedResourc
 import com.redhat.devtools.intellij.kubernetes.model.resource.INonNamespacedResourceOperator
 import com.redhat.devtools.intellij.kubernetes.model.resource.IResourceOperator
 import com.redhat.devtools.intellij.kubernetes.model.resource.ResourceKind
-import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.*
+import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.AllPodsOperator
+import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.NamespacedPodsOperator
+import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.NamespacesOperator
+import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.NodesOperator
+import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.ServicesOperator
 import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.custom.CustomResourceScope
 import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.custom.GenericCustomResource
-import com.redhat.devtools.intellij.kubernetes.model.Clients
 import com.redhat.devtools.intellij.kubernetes.model.util.MultiResourceException
+import io.fabric8.kubernetes.api.model.HasMetadata
+import io.fabric8.kubernetes.api.model.Namespace
+import io.fabric8.kubernetes.api.model.Node
+import io.fabric8.kubernetes.api.model.Pod
+import io.fabric8.kubernetes.api.model.Secret
+import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinition
 import io.fabric8.kubernetes.client.KubernetesClient
+import io.fabric8.kubernetes.client.NamespacedKubernetesClient
 import io.fabric8.kubernetes.client.Watch
+import io.fabric8.kubernetes.client.Watcher
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
 import org.junit.Test
 import org.mockito.ArgumentMatcher
@@ -189,7 +193,7 @@ class KubernetesContextTest {
 				this@KubernetesContextTest.clients,
 				internalResourcesOperators,
 				extensionResourceOperators,
-				Pair(namespacedCustomResourceOperator, nonNamespacedCustomResourcesOperator!!),
+				Pair(namespacedCustomResourceOperator, nonNamespacedCustomResourcesOperator),
 				resourceWatch,
 				notification)
 		)

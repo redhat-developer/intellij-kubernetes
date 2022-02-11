@@ -27,14 +27,14 @@ import com.redhat.devtools.intellij.kubernetes.model.Notification
 import com.redhat.devtools.intellij.kubernetes.model.util.trimWithEllipsis
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.client.utils.Serialization
-import org.apache.commons.io.FileUtils
-import org.jetbrains.yaml.YAMLFileType
 import java.io.IOException
 import java.nio.charset.StandardCharsets
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
 import java.util.function.Supplier
+import org.apache.commons.io.FileUtils
+import org.jetbrains.yaml.YAMLFileType
 
 /**
  * Helper that offers operations on the [VirtualFile] for a [ResourceEditor]
@@ -72,7 +72,7 @@ open class ResourceFile protected constructor(
                 logger<ResourceFile>().warn("Could not create file: ${e.message}", e)
                 // https://youtrack.jetbrains.com/issue/IDEA-225226
                 Notification()
-                    .error("Could create file", "Could not create file for ${resource.kind} ${resource.metadata.name}: ${trimWithEllipsis(e.message, 50)}. Maybe do File > Invalidate Caches.")
+                    .error("Could create file", "Could not create file for ${resource.kind} '${resource.metadata.name}': ${trimWithEllipsis(e.message, 50)}. Maybe do File > Invalidate Caches.")
                 null
             }
         }

@@ -33,7 +33,6 @@ import com.redhat.devtools.intellij.kubernetes.editor.notification.PullNotificat
 import com.redhat.devtools.intellij.kubernetes.editor.notification.PulledNotification
 import com.redhat.devtools.intellij.kubernetes.editor.notification.PushNotification
 import com.redhat.devtools.intellij.kubernetes.model.Clients
-import com.redhat.devtools.intellij.kubernetes.model.ClusterResource
 import com.redhat.devtools.intellij.kubernetes.model.ResourceException
 import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.NAMESPACE1
 import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.NAMESPACE2
@@ -123,27 +122,25 @@ spec:
                 .whenever(this).invoke(any())
         }
     private val project: Project = mock()
-    private val clients: () -> Clients<KubernetesClient> = {
-        Clients(client(currentNamespace.metadata.name, allNamespaces))
-    }
+    private val clients: Clients<out KubernetesClient> = Clients(client(currentNamespace.metadata.name, allNamespaces))
     private val getCustomResourceDefinitions: (client: KubernetesClient) -> Collection<CustomResourceDefinition> =
         mock<(client: KubernetesClient) -> Collection<CustomResourceDefinition>>().apply {
         doReturn(emptyList<CustomResourceDefinition>())
             .whenever(this).invoke(any())
     }
-    private val createResource: (editor: FileEditor, definitions: Collection<CustomResourceDefinition>?) -> HasMetadata? =
-        mock<(editor: FileEditor, definitions: Collection<CustomResourceDefinition>?) -> HasMetadata?>().apply  {
+    private val createResource: (editor: FileEditor) -> HasMetadata? =
+        mock<(editor: FileEditor) -> HasMetadata?>().apply  {
             doReturn(GARGAMEL)
-                .whenever(this).invoke(any(), any())
+                .whenever(this).invoke(any())
         }
     private val clusterResource: ClusterResource = mock {
         on { pull(any()) } doReturn GARGAMELv2
         on { isSameResource(any()) } doReturn true
     }
-    private val createClusterResource: (HasMetadata, Clients<out KubernetesClient>, Collection<CustomResourceDefinition>?) -> ClusterResource =
-        mock<(HasMetadata, Clients<out KubernetesClient>, Collection<CustomResourceDefinition>?) -> ClusterResource>().apply {
+    private val createClusterResource: (HasMetadata, Clients<out KubernetesClient>) -> ClusterResource =
+        mock<(HasMetadata, Clients<out KubernetesClient>) -> ClusterResource>().apply {
             doReturn(clusterResource)
-                .whenever(this).invoke(any(), any(), any())
+                .whenever(this).invoke(any(), any())
         }
     private val pushNotification: PushNotification = mock()
     private val pullNotification: PullNotification = mock()
@@ -171,7 +168,6 @@ spec:
             fileEditor,
             project,
             clients,
-            getCustomResourceDefinitions,
             createResource,
             createClusterResource,
             createResourceFileForVirtual,
@@ -226,7 +222,7 @@ spec:
         // given
         editor.editorResource.set(GARGAMEL_WITH_LABEL)
         doReturn(GARGAMEL_WITH_LABEL)
-            .whenever(createResource).invoke(any(), any()) // called after pushing
+            .whenever(createResource).invoke(any()) // called after pushing
         editor.lastPushedPulled.set(GARGAMEL)
         assertThat(editor.isModified()).isTrue()
         // when
@@ -245,25 +241,6 @@ spec:
         editor.pull()
         // then
         assertThat(editor.isModified()).isFalse()
-    }
-
-    @Test
-    fun `#update should trigger fetching crds`() {
-        // given
-        // when
-        editor.update()
-        // then
-        verify(getCustomResourceDefinitions).invoke(any())
-    }
-
-    @Test
-    fun `#update called 2x should only fetch crds 1x`() {
-        // given
-        // when
-        editor.update()
-        editor.update()
-        // then
-        verify(getCustomResourceDefinitions).invoke(any())
     }
 
     @Test
@@ -318,7 +295,7 @@ spec:
     fun `#update should show error notification and hide all notifications if creating editor resource throws ResourceException`() {
         // given
         doThrow(ResourceException("resource error", KubernetesClientException("client error")))
-            .whenever(createResource).invoke(any(), any())
+            .whenever(createResource).invoke(any())
         // when
         editor.update()
         // then
@@ -366,7 +343,7 @@ spec:
     fun `#update should save resource version of resource in editor`() {
         // given
         doReturn(GARGAMEL_WITH_LABEL)
-            .whenever(createResource).invoke(any(), any())
+            .whenever(createResource).invoke(any())
         // when
         editor.update()
         // then
@@ -382,7 +359,7 @@ spec:
             .endMetadata()
             .build()
         doReturn(resource)
-            .whenever(createResource).invoke(any(), any())
+            .whenever(createResource).invoke(any())
         // when
         editor.update()
         // then
@@ -401,7 +378,7 @@ spec:
             .endMetadata()
             .build()
         doReturn(resource)
-            .whenever(createResource).invoke(any(), any())
+            .whenever(createResource).invoke(any())
         // when
         editor.update()
         // then
@@ -426,7 +403,7 @@ spec:
         // given
         givenEditorResourceIsModified(false)
         doReturn(AZRAEL)
-            .whenever(createResource).invoke(any(), any())
+            .whenever(createResource).invoke(any())
         // when
         editor.update()
         // then
@@ -537,7 +514,7 @@ spec:
     fun `#push should show error notification if creating cluster resource throws`() {
         // given
         doThrow(ResourceException("resource error", KubernetesClientException("client error")))
-            .whenever(createClusterResource).invoke(any(), any(), any())
+            .whenever(createClusterResource).invoke(any(), any())
         // when
         editor.push()
         // then
@@ -739,7 +716,7 @@ spec:
         editor.lastPushedPulled.set(GARGAMEL)
         editor.editorResource.set(editorResource)
         doReturn(editorResource)
-            .whenever(createResource).invoke(any(), any())
+            .whenever(createResource).invoke(any())
         doReturn(editorResource.metadata.resourceVersion)
             .whenever(resourceVersion).get()
     }
@@ -747,10 +724,9 @@ spec:
     private class TestableResourceEditor(
         editor: FileEditor,
         project: Project,
-        clients: () -> Clients<out KubernetesClient>,
-        getDefinitions: (client: KubernetesClient) -> Collection<CustomResourceDefinition>,
-        resourceFactory: (editor: FileEditor, definitions: Collection<CustomResourceDefinition>?) -> HasMetadata?,
-        createClusterResource: (HasMetadata, Clients<out KubernetesClient>, Collection<CustomResourceDefinition>?) -> ClusterResource,
+        clients: Clients<out KubernetesClient>,
+        resourceFactory: (editor: FileEditor) -> HasMetadata?,
+        createClusterResource: (HasMetadata, Clients<out KubernetesClient>) -> ClusterResource,
         resourceFileForVirtual: (file: VirtualFile?) -> ResourceFile?,
         pushNotification: PushNotification,
         pullNotification: PullNotification,
@@ -766,7 +742,6 @@ spec:
         editor,
         project,
         clients,
-        getDefinitions,
         resourceFactory,
         createClusterResource,
         resourceFileForVirtual,
