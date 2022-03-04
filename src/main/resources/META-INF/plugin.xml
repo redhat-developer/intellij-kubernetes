@@ -11,6 +11,15 @@
     <change-notes>
         <![CDATA[
         <p></p>
+        <h3>0.4.0</h3>
+        <ul>
+            <li><a href="https://github.com/redhat-developer/intellij-kubernetes/issues/319">As a user I want to control if my local file is overwritten from the cluster pull</a></li>
+            <li><a href="https://github.com/redhat-developer/intellij-kubernetes/issues/317">IllegalStateException when creating a new kubernetes yml file without namespace</a></li>
+            <li><a href="https://github.com/redhat-developer/intellij-kubernetes/issues/339">Start/Stop of cluster does not cause tree to change</a></li>
+            <li><a href="https://github.com/redhat-developer/intellij-kubernetes/issues/328">new pipeline does not appear in tree when pushed via editor</a></li>
+            <li><a href="https://github.com/redhat-developer/intellij-kubernetes/issues/326">CRC/OpenShift: deployment does not appear when created</a></li>
+            <li><a href="https://github.com/redhat-developer/intellij-kubernetes/issues/306">Updating deployment won't update available pods</a></li>
+        </ul>
         <h3>0.3.0</h3>
         <ul>
             <li><a href="https://github.com/redhat-developer/intellij-kubernetes/issues/217">Resource editor: should allow to edit files loaded from local disk (File > Open)</a></li>
