@@ -13,13 +13,19 @@ package com.redhat.devtools.intellij.kubernetes.editor
 import com.intellij.openapi.fileEditor.impl.EditorTabTitleProvider
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.VirtualFile
+import com.redhat.devtools.intellij.common.utils.UIHelper
 import com.redhat.devtools.intellij.kubernetes.editor.util.getProjectAndEditor
+import java.util.function.Supplier
 
 class KubernetesEditorTabTitleProvider : EditorTabTitleProvider {
 
     override fun getEditorTabTitle(project: Project, file: VirtualFile): String? {
-        val editor = ResourceEditorFactory.instance.getExistingOrCreate(getProjectAndEditor(file)?.editor, project) ?: return null
-        return editor.getTitle()
+        return UIHelper.executeInUI(
+            Supplier {
+                val editor = ResourceEditorFactory.instance.getExistingOrCreate(getProjectAndEditor(file)?.editor, project)
+                editor?.getTitle()
+            }
+        )
     }
 
 }
