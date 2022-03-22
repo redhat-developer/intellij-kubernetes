@@ -40,16 +40,32 @@ class OpenShiftStructure(model: IResourceModel): AbstractTreeStructureContributi
     }
 
     override val elementsTree: List<ElementNode<*>> = listOf(
-        element<Any> {
-            applicableIf { it == getRootElement() }
-            children {
-                listOf(
-                    PROJECTS
-                )
-            }
-        },
+        *createProjectsElements(),
         *createWorkloadElements()
     )
+
+    private fun createProjectsElements(): Array<ElementNode<*>> {
+        return arrayOf(
+            element<Any> {
+                applicableIf { it == getRootElement() }
+                children {
+                    listOf(
+                        PROJECTS
+                    )
+                }
+            },
+            element<Any> {
+                applicableIf { it == PROJECTS }
+                childrenKind { ProjectsOperator.KIND }
+                children {
+                    model.resources(ProjectsOperator.KIND)
+                        .inNoNamespace()
+                        .list()
+                        .sortedBy(resourceName)
+                }
+            }
+        )
+    }
 
     private fun createWorkloadElements(): Array<ElementNode<*>> {
         return arrayOf(
