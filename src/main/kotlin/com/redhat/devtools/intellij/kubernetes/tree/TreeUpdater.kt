@@ -15,11 +15,8 @@ import com.intellij.ide.util.treeView.NodeDescriptor
 import com.intellij.ui.tree.StructureTreeModel
 import com.intellij.ui.tree.TreePathUtil
 import com.redhat.devtools.intellij.kubernetes.actions.getDescriptor
-import com.redhat.devtools.intellij.kubernetes.actions.getElement
 import com.redhat.devtools.intellij.kubernetes.model.IResourceModel
 import com.redhat.devtools.intellij.kubernetes.model.ModelChangeObservable
-import com.redhat.devtools.intellij.kubernetes.model.util.isSameResource
-import io.fabric8.kubernetes.api.model.HasMetadata
 import javax.swing.tree.DefaultMutableTreeNode
 import javax.swing.tree.TreeNode
 import javax.swing.tree.TreePath
@@ -112,7 +109,7 @@ class TreeUpdater(
             return listOf(rootNode)
         }
         // lookup descriptor that would display new element that's not displayed yet
-        // in case of a 'added' event
+        // in case of an 'added' event
         return getAllNodes(rootNode)
             .filter { node -> structure.isParentDescriptor(node.getDescriptor(), element) }
     }
@@ -147,8 +144,6 @@ class TreeUpdater(
     }
 
     private fun hasElement(element: Any, node: TreeNode): Boolean {
-        return (element is HasMetadata && element.isSameResource(node.getElement())
-                || element == node.getElement())
+        return node.getDescriptor()?.hasElement(element) ?: false
     }
-
 }
