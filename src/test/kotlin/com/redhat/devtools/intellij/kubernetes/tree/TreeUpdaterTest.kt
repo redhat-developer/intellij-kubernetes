@@ -28,18 +28,17 @@ import com.nhaarman.mockitokotlin2.whenever
 import com.redhat.devtools.intellij.kubernetes.actions.getDescriptor
 import com.redhat.devtools.intellij.kubernetes.actions.getElement
 import com.redhat.devtools.intellij.kubernetes.model.IResourceModel
+import com.redhat.devtools.intellij.kubernetes.model.mocks.Fakes.deployment
+import com.redhat.devtools.intellij.kubernetes.model.mocks.Fakes.pod
+import com.redhat.devtools.intellij.kubernetes.tree.TreeStructure.Descriptor
 import io.fabric8.kubernetes.api.model.HasMetadata
-import io.fabric8.kubernetes.api.model.Pod
-import io.fabric8.kubernetes.api.model.PodBuilder
-import io.fabric8.kubernetes.api.model.apps.Deployment
-import io.fabric8.kubernetes.api.model.apps.DeploymentBuilder
+import javax.swing.tree.DefaultMutableTreeNode
+import javax.swing.tree.TreePath
 import org.assertj.core.api.Assertions.assertThat
 import org.jetbrains.concurrency.CancellablePromise
 import org.jetbrains.concurrency.Promise
 import org.junit.Before
 import org.junit.Test
-import javax.swing.tree.DefaultMutableTreeNode
-import javax.swing.tree.TreePath
 
 class TreeUpdaterTest {
 
@@ -61,7 +60,7 @@ class TreeUpdaterTest {
     // not present in the tree, notified as new element (to be added) that should NOT get displayed
     private val calamityJane = pod("Calamity Jane")
 
-    private val parents: MutableMap<HasMetadata, MutableList<TreeStructure.Descriptor<*>>> = mutableMapOf()
+    private val parents: MutableMap<HasMetadata, MutableList<Descriptor<*>>> = mutableMapOf()
     private val structure: TreeStructure = object: TreeStructure(mock(), mock(), mock()) {
         override fun isParentDescriptor(descriptor: NodeDescriptor<*>?, element: Any): Boolean {
             // simplified mock impl of structure: rantanplan is to be displayed in 'Kansas' and 'Dalton City'
@@ -201,8 +200,8 @@ class TreeUpdaterTest {
         // then
         val invalidatedPaths = argumentCaptor<TreePath>() // joeDalton exists 2x in tree
         verify(treeModel, times(2)).invalidate(invalidatedPaths.capture(), eq(true))
-        assertThat(invalidatedPaths.allValues).containsExactlyInAnyOrder(*findNodes(
-            joeDalton))
+        assertThat(invalidatedPaths.allValues)
+            .containsExactlyInAnyOrder(*findNodes(joeDalton))
     }
 
     @Test
@@ -236,29 +235,6 @@ class TreeUpdaterTest {
         }
     }
 
-    private fun deployment(name: String): Deployment {
-        return DeploymentBuilder()
-            .editOrNewMetadata()
-            .withName(name)
-            .endMetadata()
-            .build()
-    }
-
-    private fun pod(name: String): Pod {
-        return PodBuilder()
-            .editOrNewMetadata()
-            .withName(name)
-            .endMetadata()
-            .build()
-    }
-
-    private fun mutableTreeNode(resource: Any?): DefaultMutableTreeNode {
-        val descriptor: TreeStructure.Descriptor<Any> = mock {
-            on { this.element } doReturn resource
-        }
-        return DefaultMutableTreeNode(descriptor)
-    }
-
     private fun node(
         resource: HasMetadata,
         children: List<DefaultMutableTreeNode> = emptyList()
@@ -278,9 +254,30 @@ class TreeUpdaterTest {
         return node
     }
 
+    private fun mutableTreeNode(resource: HasMetadata): DefaultMutableTreeNode {
+        val descriptor = objectIdentityDescriptor(resource)
+        return DefaultMutableTreeNode(descriptor)
+    }
+
+    private fun mutableTreeNode(model: IResourceModel): DefaultMutableTreeNode {
+        val descriptor = objectIdentityDescriptor(model)
+        return DefaultMutableTreeNode(descriptor)
+    }
+
+    private fun <T> objectIdentityDescriptor(element: T): Descriptor<T> {
+        return mock {
+            // mock ResourceDescriptor#hasElement
+            on { hasElement(any()) } doAnswer {
+                val given = it.arguments[0]
+                given === element
+            }
+            on { getElement() } doReturn element
+        }
+    }
+
     private fun saveParent(node: DefaultMutableTreeNode, parent: DefaultMutableTreeNode) {
-        val resource = node.getElement<HasMetadata>()!!
-        val descriptor = parent.getDescriptor()!!
+        val resource = node.getElement<HasMetadata>() ?: return
+        val descriptor = parent.getDescriptor() ?: return
         if (parents[resource] == null) {
             parents[resource] = mutableListOf()
         }
