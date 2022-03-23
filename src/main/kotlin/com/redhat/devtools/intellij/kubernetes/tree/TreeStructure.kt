@@ -21,7 +21,6 @@ import com.intellij.openapi.extensions.ExtensionPointName
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.IconLoader
 import com.intellij.ui.tree.LeafState
-import io.fabric8.kubernetes.api.model.HasMetadata
 import com.redhat.devtools.intellij.kubernetes.model.IResourceModel
 import com.redhat.devtools.intellij.kubernetes.model.context.IActiveContext
 import com.redhat.devtools.intellij.kubernetes.model.context.IContext
@@ -29,6 +28,7 @@ import com.redhat.devtools.intellij.kubernetes.model.resource.ResourceKind
 import com.redhat.devtools.intellij.kubernetes.model.util.hasDeletionTimestamp
 import com.redhat.devtools.intellij.kubernetes.model.util.isSameResource
 import com.redhat.devtools.intellij.kubernetes.model.util.isWillBeDeleted
+import io.fabric8.kubernetes.api.model.HasMetadata
 import javax.swing.Icon
 
 /**
@@ -214,11 +214,24 @@ open class TreeStructure(
             return this.element?.kind == element
         }
 
+        override fun setElement(element: Any): Boolean {
+            return when(element) {
+                is ResourceKind<*> -> {
+                    val current = getElement() ?: return false
+                    super.setElement(Folder(current.label, element))
+                }
+                is Folder ->
+                    super.setElement(element)
+                else ->
+                    false
+            }
+        }
+
         override fun invalidate() {
             model.invalidate(element?.kind)
         }
 
-        override fun getLabel(element: Folder): String? {
+        override fun getLabel(element: Folder): String {
             return element.label
         }
     }
@@ -271,10 +284,11 @@ open class TreeStructure(
         }
 
         override fun hasElement(element: Any?): Boolean {
-            if (element !is HasMetadata) {
-                return super.hasElement(element)
+            return if (element is HasMetadata) {
+                this.element?.isSameResource(element) ?: false
+            } else {
+                super.hasElement(element)
             }
-            return this.element?.isSameResource(element) ?: false
         }
     }
 
@@ -299,7 +313,7 @@ open class TreeStructure(
             return this.element == element
         }
 
-        fun setElement(element: Any): Boolean {
+        open fun setElement(element: Any): Boolean {
             val typed: T = element as? T ?: return false
             this.element = typed
             return true
