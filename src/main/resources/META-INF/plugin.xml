@@ -11,6 +11,11 @@
     <change-notes>
         <![CDATA[
         <p></p>
+        <h3>0.4.1</h3>
+        <ul>
+            <li><a href="https://github.com/redhat-developer/intellij-kubernetes/issues/356">Exception: "Access is allowed from event display thread only"</a></li>
+            <li><a href="https://github.com/redhat-developer/intellij-kubernetes/issues/358">Cannot list Projects in Sandbox (or cluster without admin access)</a></li>
+        </ul>
         <h3>0.4.0</h3>
         <ul>
             <li><a href="https://github.com/redhat-developer/intellij-kubernetes/issues/319">As a user I want to control if my local file is overwritten from the cluster pull</a></li>
