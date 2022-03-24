@@ -10,12 +10,14 @@
  ******************************************************************************/
 package com.redhat.devtools.intellij.kubernetes.editor
 
+import com.intellij.json.JsonFileType
 import com.intellij.openapi.actionSystem.ActionToolbar
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.command.WriteCommandAction
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.editor.Document
 import com.intellij.openapi.fileEditor.FileEditor
+import com.intellij.openapi.fileTypes.FileType
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Key
 import com.intellij.openapi.vfs.VirtualFile
@@ -42,6 +44,7 @@ import io.fabric8.kubernetes.client.KubernetesClient
 import io.fabric8.kubernetes.client.utils.Serialization
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.locks.ReentrantLock
+import org.jetbrains.yaml.YAMLFileType
 import kotlin.concurrent.withLock
 
 /**
@@ -98,7 +101,7 @@ open class ResourceEditor(
     private val resourceChangeMutex = ReentrantLock()
     private var oldClusterResource: ClusterResource? = null
     private var _clusterResource: ClusterResource? = null
-    open protected val clusterResource: ClusterResource?
+    protected open val clusterResource: ClusterResource?
         get() {
             return resourceChangeMutex.withLock {
                 if (_clusterResource == null
@@ -274,16 +277,28 @@ open class ResourceEditor(
         if (resource == null) {
             return
         }
-        val jsonYaml = Serialization.asYaml(resource).trim()
+        val manager = getPsiDocumentManager.invoke(project)
         val document = getDocument.invoke(editor) ?: return
+        val file = manager.getPsiFile(document) ?: return
+        val jsonYaml = serialize(resource, file.fileType) ?: return
         if (document.text.trim() != jsonYaml) {
             runWriteCommand {
                 document.replaceString(0, document.textLength, jsonYaml)
                 documentChanged.set(true)
-                val manager = getPsiDocumentManager.invoke(project)
                 manager.commitDocument(document)
             }
         }
+    }
+
+    private fun serialize(resource: HasMetadata, fileType: FileType): CharSequence? {
+        val serializer = when(fileType) {
+            YAMLFileType.YML ->
+                Serialization.yamlMapper().writerWithDefaultPrettyPrinter()
+            JsonFileType.INSTANCE ->
+                Serialization.jsonMapper().writerWithDefaultPrettyPrinter()
+            else -> null
+        }
+        return serializer?.writeValueAsString(resource)?.trim()
     }
 
     /**

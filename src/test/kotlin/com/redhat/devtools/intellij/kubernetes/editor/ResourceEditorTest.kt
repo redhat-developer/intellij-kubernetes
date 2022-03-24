@@ -10,11 +10,13 @@
  ******************************************************************************/
 package com.redhat.devtools.intellij.kubernetes.editor
 
+import com.intellij.json.JsonFileType
 import com.intellij.openapi.editor.Document
 import com.intellij.openapi.fileEditor.FileEditor
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.PsiDocumentManager
+import com.intellij.psi.PsiFile
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.argWhere
 import com.nhaarman.mockitokotlin2.atLeastOnce
@@ -50,6 +52,7 @@ import io.fabric8.kubernetes.client.KubernetesClientException
 import io.fabric8.kubernetes.client.utils.Serialization
 import java.util.concurrent.atomic.AtomicBoolean
 import org.assertj.core.api.Assertions.assertThat
+import org.jetbrains.yaml.YAMLFileType
 import org.junit.Test
 
 class ResourceEditorTest {
@@ -152,7 +155,12 @@ spec:
             .whenever(this).getText()
     }
     private val getDocument: (FileEditor) -> Document? = { document }
-    private val psiDocumentManager: PsiDocumentManager = mock()
+    private val psiFile: PsiFile = mock {
+        on { fileType } doReturn YAMLFileType.YML
+    }
+    private val psiDocumentManager: PsiDocumentManager = mock {
+        on { getPsiFile(any()) } doReturn psiFile
+    }
     private val getPsiDocumentManager: (Project) -> PsiDocumentManager = { psiDocumentManager }
     private val kubernetesTypeInfo: KubernetesTypeInfo = kubernetesTypeInfo(GARGAMEL.kind, GARGAMEL.apiVersion)
     private val kubernetesResourceInfo: KubernetesResourceInfo =
@@ -418,7 +426,33 @@ spec:
         // when
         editor.pull()
         // then
-        verify(document).replaceString(0, document.textLength - 1, Serialization.asYaml(GARGAMELv2))
+        verify(document).replaceString(0, document.textLength, Serialization.asYaml(GARGAMELv2))
+    }
+
+    @Test
+    fun `#pull should replace document with json if psiFile is json`() {
+        // given
+        doReturn(GARGAMELv2)
+            .whenever(clusterResource).pull(any())
+        doReturn(JsonFileType.INSTANCE)
+            .whenever(psiFile).fileType
+        // when
+        editor.pull()
+        // then
+        verify(document).replaceString(0, document.textLength, Serialization.asJson(GARGAMELv2))
+    }
+
+    @Test
+    fun `#pull should replace document with yaml if psiFile is yaml`() {
+        // given
+        doReturn(GARGAMELv2)
+            .whenever(clusterResource).pull(any())
+        doReturn(YAMLFileType.YML)
+            .whenever(psiFile).fileType
+        // when
+        editor.pull()
+        // then
+        verify(document).replaceString(0, document.textLength, Serialization.asYaml(GARGAMELv2))
     }
 
     @Test
@@ -445,6 +479,17 @@ spec:
         editor.pull()
         // then
         verify(document, never()).replaceString(any(), any(), any())
+    }
+
+    @Test
+    fun `#pull should commit document`() {
+        // given
+        doReturn(GARGAMELv2)
+            .whenever(clusterResource).pull(any())
+        // when
+        editor.pull()
+        // then
+        verify(psiDocumentManager).commitDocument(document)
     }
 
     @Test
@@ -508,17 +553,6 @@ spec:
         editor.push()
         // then
         verify(resourceVersion).set(versionInResponse)
-    }
-
-    @Test
-    fun `#push should show error notification if creating cluster resource throws`() {
-        // given
-        doThrow(ResourceException("resource error", KubernetesClientException("client error")))
-            .whenever(createClusterResource).invoke(any(), any())
-        // when
-        editor.push()
-        // then
-        verify(errorNotification).show(any(), argWhere<String> { it.contains("client error", false) })
     }
 
     @Test
@@ -587,28 +621,6 @@ spec:
         editor.enableNonProjectFileEditing()
         // then
         verify(resourceFile, never()).enableNonProjectFileEditing()
-    }
-
-    @Test
-    fun `#replaceContent should set text of document`() {
-        // given
-        doReturn(GARGAMELv2)
-            .whenever(clusterResource).pull(any())
-        // when
-        editor.pull()
-        // then
-        verify(document).replaceString(0, document.textLength - 1, Serialization.asYaml(GARGAMELv2))
-    }
-
-    @Test
-    fun `#replaceContent should commit document`() {
-        // given
-        doReturn(GARGAMELv2)
-            .whenever(clusterResource).pull(any())
-        // when
-        editor.pull()
-        // then
-        verify(psiDocumentManager).commitDocument(document)
     }
 
     @Test
@@ -725,61 +737,62 @@ spec:
             .whenever(resourceVersion).get()
     }
 
-    private class TestableResourceEditor(
-        editor: FileEditor,
-        project: Project,
-        clients: Clients<out KubernetesClient>,
-        resourceFactory: (editor: FileEditor) -> HasMetadata?,
-        createClusterResource: (HasMetadata, Clients<out KubernetesClient>) -> ClusterResource,
-        resourceFileForVirtual: (file: VirtualFile?) -> ResourceFile?,
-        pushNotification: PushNotification,
-        pullNotification: PullNotification,
-        pulledNotification: PulledNotification,
-        deletedNotification: DeletedNotification,
-        errorNotification: ErrorNotification,
-        documentProvider: (FileEditor) -> Document?,
-        psiDocumentManagerProvider: (Project) -> PsiDocumentManager,
-        getKubernetesResourceInfo: (VirtualFile?, Project) -> KubernetesResourceInfo,
-        documentReplaced: AtomicBoolean,
-        resourceVersion: PersistentEditorValue
-    ) : ResourceEditor(
-        editor,
-        project,
-        clients,
-        resourceFactory,
-        createClusterResource,
-        resourceFileForVirtual,
-        pushNotification,
-        pullNotification,
-        pulledNotification,
-        deletedNotification,
-        errorNotification,
-        documentProvider,
-        psiDocumentManagerProvider,
-        getKubernetesResourceInfo,
-        documentReplaced,
-        resourceVersion
-    ) {
-        public override var lastPushedPulled: ResettableLazyProperty<HasMetadata?> = super.lastPushedPulled
-        public override var clusterResource: ClusterResource? = super.clusterResource
+}
 
-        public override fun isModified(): Boolean {
-            return super.isModified()
-        }
+private class TestableResourceEditor(
+    editor: FileEditor,
+    project: Project,
+    clients: Clients<out KubernetesClient>,
+    resourceFactory: (editor: FileEditor) -> HasMetadata?,
+    createClusterResource: (HasMetadata, Clients<out KubernetesClient>) -> ClusterResource,
+    resourceFileForVirtual: (file: VirtualFile?) -> ResourceFile?,
+    pushNotification: PushNotification,
+    pullNotification: PullNotification,
+    pulledNotification: PulledNotification,
+    deletedNotification: DeletedNotification,
+    errorNotification: ErrorNotification,
+    documentProvider: (FileEditor) -> Document?,
+    psiDocumentManagerProvider: (Project) -> PsiDocumentManager,
+    getKubernetesResourceInfo: (VirtualFile?, Project) -> KubernetesResourceInfo,
+    documentReplaced: AtomicBoolean,
+    resourceVersion: PersistentEditorValue
+) : ResourceEditor(
+    editor,
+    project,
+    clients,
+    resourceFactory,
+    createClusterResource,
+    resourceFileForVirtual,
+    pushNotification,
+    pullNotification,
+    pulledNotification,
+    deletedNotification,
+    errorNotification,
+    documentProvider,
+    psiDocumentManagerProvider,
+    getKubernetesResourceInfo,
+    documentReplaced,
+    resourceVersion
+) {
+    public override var lastPushedPulled: ResettableLazyProperty<HasMetadata?> = super.lastPushedPulled
+    public override var clusterResource: ClusterResource? = super.clusterResource
 
-        override fun runAsync(runnable: () -> Unit) {
-            // dont execute in UI thread
-            runnable.invoke()
-        }
+    public override fun isModified(): Boolean {
+        return super.isModified()
+    }
 
-        override fun runWriteCommand(runnable: () -> Unit) {
-            // dont execute in application thread pool
-            runnable.invoke()
-        }
+    override fun runAsync(runnable: () -> Unit) {
+        // dont execute in UI thread
+        runnable.invoke()
+    }
 
-        override fun runInUI(runnable: () -> Unit) {
-            // dont execute in application thread pool
-            runnable.invoke()
-        }
+    override fun runWriteCommand(runnable: () -> Unit) {
+        // dont execute in application thread pool
+        runnable.invoke()
+    }
+
+    override fun runInUI(runnable: () -> Unit) {
+        // dont execute in application thread pool
+        runnable.invoke()
     }
 }
