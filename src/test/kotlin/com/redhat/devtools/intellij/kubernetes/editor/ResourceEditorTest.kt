@@ -40,6 +40,8 @@ import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.NAMESPACE
 import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.NAMESPACE3
 import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.POD2
 import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.client
+import com.redhat.devtools.intellij.kubernetes.model.mocks.Mocks.kubernetesResourceInfo
+import com.redhat.devtools.intellij.kubernetes.model.mocks.Mocks.kubernetesTypeInfo
 import com.redhat.devtools.intellij.kubernetes.model.util.ResettableLazyProperty
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.PodBuilder
@@ -47,9 +49,9 @@ import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinition
 import io.fabric8.kubernetes.client.KubernetesClient
 import io.fabric8.kubernetes.client.KubernetesClientException
 import io.fabric8.kubernetes.client.utils.Serialization
+import java.util.concurrent.atomic.AtomicBoolean
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test
-import java.util.concurrent.atomic.AtomicBoolean
 
 class ResourceEditorTest {
 
@@ -120,11 +122,6 @@ spec:
             doReturn(resourceFile)
                 .whenever(this).invoke(any())
         }
-    private val isTemporary: (file: VirtualFile?) -> Boolean =
-        mock<(file: VirtualFile?) -> Boolean>().apply {
-            doReturn(true)
-                .whenever(this).invoke(any())
-        }
     private val project: Project = mock()
     private val clients: () -> Clients<KubernetesClient> = {
         Clients(client(currentNamespace.metadata.name, allNamespaces))
@@ -160,16 +157,10 @@ spec:
     private val getDocument: (FileEditor) -> Document? = { document }
     private val psiDocumentManager: PsiDocumentManager = mock()
     private val getPsiDocumentManager: (Project) -> PsiDocumentManager = { psiDocumentManager }
-    private val kubernetesTypeInfo: KubernetesTypeInfo = mock {
-        on { kind } doReturn GARGAMEL.kind
-        on { apiGroup } doReturn GARGAMEL.apiVersion
-    }
-    private val kubernetesResourceInfo: KubernetesResourceInfo = mock {
-        on { typeInfo } doReturn kubernetesTypeInfo
-        on { name } doReturn GARGAMEL.metadata.name
-        on { namespace } doReturn GARGAMEL.metadata.namespace
-    }
-    private val getKubernetesResourceInfo: (FileEditor, Project) -> KubernetesResourceInfo = { editor, project ->
+    private val kubernetesTypeInfo: KubernetesTypeInfo = kubernetesTypeInfo(GARGAMEL.kind, GARGAMEL.apiVersion)
+    private val kubernetesResourceInfo: KubernetesResourceInfo =
+        kubernetesResourceInfo(GARGAMEL.metadata.name, GARGAMEL.metadata.namespace, kubernetesTypeInfo)
+    private val getKubernetesResourceInfo: (VirtualFile?, Project) -> KubernetesResourceInfo = { file, project ->
         kubernetesResourceInfo
     }
     private val documentReplaced: AtomicBoolean = AtomicBoolean(false)
@@ -184,7 +175,6 @@ spec:
             createResource,
             createClusterResource,
             createResourceFileForVirtual,
-            isTemporary,
             pushNotification,
             pullNotification,
             pulledNotification,
@@ -722,63 +712,6 @@ spec:
         verify(fileEditor).putUserData(ResourceEditor.KEY_RESOURCE_EDITOR, null)
     }
 
-    @Test
-    fun `#getTitle should return 'resourcename@namespace' if file is temporary and contains kubernetes resource with namespace`() {
-        // given
-        doReturn(true)
-            .whenever(isTemporary).invoke(any())
-        val resource = GARGAMEL
-        // when
-        val title = editor.getTitle()
-        // then
-        assertThat(title).isEqualTo("${resource.metadata.name}@${resource.metadata.namespace}")
-    }
-
-    @Test
-    fun `#getTitle should return 'name' if local file is temporary and has kubernetes resource without namespace - ex Namespace, Project`() {
-        // given
-        val name = "bogus name"
-        doReturn(true)
-            .whenever(isTemporary).invoke(virtualFile)
-        doReturn(name)
-            .whenever(kubernetesResourceInfo).name
-        doReturn(null)
-            .whenever(kubernetesResourceInfo).namespace
-        // when
-        val title = editor.getTitle()
-        // then
-        assertThat(title).isEqualTo(name)
-    }
-
-    @Test
-    fun `#getTitle should return 'unknown@namespace' if local file is temporary, has kubernetes resource but name not recognized`() {
-        // given
-        val namespace = "bogus namespace"
-        doReturn(true)
-            .whenever(isTemporary).invoke(virtualFile)
-        doReturn(null)
-            .whenever(kubernetesResourceInfo).name
-        doReturn(namespace)
-            .whenever(kubernetesResourceInfo).namespace
-        // when
-        val title = editor.getTitle()
-        // then
-        assertThat(title).isEqualTo("${ResourceEditor.TITLE_UNKNOWN_NAME}@$namespace")
-    }
-
-    @Test
-    fun `#getTitle should return filename if file is NOT temporary`() {
-        // given
-        doReturn(false)
-            .whenever(isTemporary).invoke(virtualFile)
-        doReturn("luke.skywalker")
-            .whenever(virtualFile).name
-        // when
-        val title = editor.getTitle()
-        // then
-        assertThat(title).isEqualTo("luke.skywalker")
-    }
-
     private fun givenClusterResourceIsDeleted(deleted: Boolean) {
         doReturn(deleted)
             .whenever(clusterResource).isDeleted()
@@ -819,7 +752,6 @@ spec:
         resourceFactory: (editor: FileEditor, definitions: Collection<CustomResourceDefinition>?) -> HasMetadata?,
         createClusterResource: (HasMetadata, Clients<out KubernetesClient>, Collection<CustomResourceDefinition>?) -> ClusterResource,
         resourceFileForVirtual: (file: VirtualFile?) -> ResourceFile?,
-        isTemporary: (file: VirtualFile?) -> Boolean,
         pushNotification: PushNotification,
         pullNotification: PullNotification,
         pulledNotification: PulledNotification,
@@ -827,7 +759,7 @@ spec:
         errorNotification: ErrorNotification,
         documentProvider: (FileEditor) -> Document?,
         psiDocumentManagerProvider: (Project) -> PsiDocumentManager,
-        getKubernetesResourceInfo: (FileEditor, Project) -> KubernetesResourceInfo,
+        getKubernetesResourceInfo: (VirtualFile?, Project) -> KubernetesResourceInfo,
         documentReplaced: AtomicBoolean,
         resourceVersion: PersistentEditorValue
     ) : ResourceEditor(
@@ -838,7 +770,6 @@ spec:
         resourceFactory,
         createClusterResource,
         resourceFileForVirtual,
-        isTemporary,
         pushNotification,
         pullNotification,
         pulledNotification,

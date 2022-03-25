@@ -29,7 +29,7 @@ class EditorFocusListener(private val project: Project) : FileEditorManagerListe
     override fun fileClosed(source: FileEditorManager, file: VirtualFile) {
         // editor cannot be found via manager once file was closed
         // deleting file before file was closed (#beforeFileClosed) causes recursion #fileClosed
-        ResourceEditorFactory.instance.getExisting(file)?.close()
+        getExisting(file)?.close()
     }
 
     private fun selectionGained(editor: FileEditor?, project: Project) {
