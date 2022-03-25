@@ -86,7 +86,7 @@
         <postStartupActivity implementation="com.redhat.devtools.intellij.kubernetes.KubernetesPluginInitializer" />
         <!-- >= IC-2020.3 -->
         <notificationGroup displayType="BALLOON" id="Kubernetes Notification Group" isLogByDefault="true"/>
-        <editorTabTitleProvider implementation="com.redhat.devtools.intellij.kubernetes.editor.KubernetesEditorTabTitleProvider"/>
+        <editorTabTitleProvider implementation="com.redhat.devtools.intellij.kubernetes.editor.ResourceEditorTabTitleProvider"/>
     </extensions>
 
     <extensionPoints>

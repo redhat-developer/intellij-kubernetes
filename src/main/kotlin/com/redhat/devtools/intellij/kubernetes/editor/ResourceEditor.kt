@@ -27,7 +27,6 @@ import com.redhat.devtools.intellij.kubernetes.editor.notification.PullNotificat
 import com.redhat.devtools.intellij.kubernetes.editor.notification.PulledNotification
 import com.redhat.devtools.intellij.kubernetes.editor.notification.PushNotification
 import com.redhat.devtools.intellij.kubernetes.editor.util.getDocument
-import com.redhat.devtools.intellij.kubernetes.editor.util.getKubernetesResourceInfo
 import com.redhat.devtools.intellij.kubernetes.editor.util.isKubernetesResource
 import com.redhat.devtools.intellij.kubernetes.model.ClientConfig
 import com.redhat.devtools.intellij.kubernetes.model.Clients
@@ -78,8 +77,6 @@ open class ResourceEditor(
     // for mocking purposes
     private val createResourceFileForVirtual: (file: VirtualFile?) -> ResourceFile? =
         ResourceFile.Factory::create,
-    private val isTemporary: (file: VirtualFile?) -> Boolean? =
-        ResourceFile.Factory::isTemporary,
     // for mocking purposes
     private val pushNotification: PushNotification = PushNotification(editor, project),
     // for mocking purposes
@@ -94,9 +91,8 @@ open class ResourceEditor(
     private val getDocument: (FileEditor) -> Document? = ::getDocument,
     // for mocking purposes
     private val getPsiDocumentManager: (Project) -> PsiDocumentManager = { PsiDocumentManager.getInstance(project) },
-    // for mocking purposes
-    private val getKubernetesResourceInfo: (FileEditor, Project) -> KubernetesResourceInfo? = { editor, project ->
-        getKubernetesResourceInfo(getDocument.invoke(editor), getPsiDocumentManager.invoke(project))
+    private val getKubernetesResourceInfo: (VirtualFile?, Project) -> KubernetesResourceInfo? = {
+            file, project -> com.redhat.devtools.intellij.kubernetes.editor.util.getKubernetesResourceInfo(file,project)
     },
     // for mocking purposes
     private val documentChanged: AtomicBoolean = AtomicBoolean(false),
@@ -413,39 +409,10 @@ open class ResourceEditor(
     fun enableNonProjectFileEditing() {
         if (editor.file == null
             || !isKubernetesResource(
-                getKubernetesResourceInfo.invoke(editor, project))){
+                getKubernetesResourceInfo.invoke(editor.file, project))){
                 return
         }
         createResourceFileForVirtual(editor.file)?.enableNonProjectFileEditing()
-    }
-
-    fun getTitle(): String? {
-        val file = editor.file ?: return null
-        return if (true == isTemporary.invoke(file)) {
-            val resourceInfo = getKubernetesResourceInfo.invoke(editor, project)
-            if (resourceInfo != null
-                && isKubernetesResource(resourceInfo)) {
-                getTitleFor(resourceInfo)
-            } else {
-                TITLE_UNKNOWN_CLUSTERRESOURCE
-            }
-        } else {
-            getTitleFor(file)
-        }
-    }
-
-    private fun getTitleFor(file: VirtualFile): String {
-        return file.name
-    }
-
-    private fun getTitleFor(info: KubernetesResourceInfo): String {
-        val name = info.name ?: TITLE_UNKNOWN_NAME
-        val namespace = info.namespace
-        return if (namespace == null) {
-            name
-        } else {
-            "$name@$namespace"
-        }
     }
 
     fun createToolbar() {

@@ -17,9 +17,11 @@ import com.intellij.json.psi.JsonValue
 import com.intellij.openapi.application.ReadAction
 import com.intellij.openapi.editor.Document
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.PsiDocumentManager
 import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiFile
+import com.intellij.psi.PsiManager
 import com.redhat.devtools.intellij.common.validation.KubernetesResourceInfo
 import org.jetbrains.yaml.YAMLElementGenerator
 import org.jetbrains.yaml.YAMLUtil
@@ -27,8 +29,8 @@ import org.jetbrains.yaml.psi.YAMLFile
 import org.jetbrains.yaml.psi.YAMLKeyValue
 import org.jetbrains.yaml.psi.YAMLValue
 
-const val KEY_METADATA = "metadata"
-const val KEY_RESOURCE_VERSION = "resourceVersion"
+private const val KEY_METADATA = "metadata"
+private const val KEY_RESOURCE_VERSION = "resourceVersion"
 
 /**
  * Returns `true` if the given document for the given psi document manager has a kubernetes resource.
@@ -36,12 +38,12 @@ const val KEY_RESOURCE_VERSION = "resourceVersion"
  * - metadata.name
  * - metadata.namespace
  *
- * @param document the document to check for being a kubernetes resource
- * @param psiDocumentManager the psi document manager to use for inspection
- * @return true if the document has a kubernetes resource
+ * @param file the file to check if it has a kubernetes resource
+ * @param project the project to retrieve the psi manager for
+ * @return true if the file has a kubernetes resource
  */
-fun hasKubernetesResource(document: Document?, psiDocumentManager: PsiDocumentManager): Boolean {
-    return isKubernetesResource(getKubernetesResourceInfo(document, psiDocumentManager))
+fun hasKubernetesResource(file: VirtualFile?, project: Project): Boolean {
+    return isKubernetesResource(getKubernetesResourceInfo(file, project))
 }
 
 /**
@@ -58,40 +60,23 @@ fun isKubernetesResource(resourceInfo: KubernetesResourceInfo?): Boolean {
 }
 
 /**
- * Returns [KubernetesResourceInfo] for the given document and psi document manager
+ * Returns [KubernetesResourceInfo] for the given file and project. Returns `null` if it could not be retrieved.
  *
- * @param document the document to check for being a kubernetes resource
- * @param psiDocumentManager the psi document manager to use for inspection
+ * @param file the virtual file to check for holding a kubernetes resource
+ * @param project the [Project] to retrieve the [PsiManager] for
+ * @return the [KubernetesResourceInfo] for the given file or null
  */
-fun getKubernetesResourceInfo(document: Document?, psiDocumentManager: PsiDocumentManager): KubernetesResourceInfo? {
-    if (document == null) {
+fun getKubernetesResourceInfo(file: VirtualFile?, project: Project): KubernetesResourceInfo? {
+    if (file == null) {
         return null
     }
     return try {
         ReadAction.compute<KubernetesResourceInfo, RuntimeException> {
-            val psiFile = psiDocumentManager.getPsiFile(document)
+            val psiFile = PsiManager.getInstance(project).findFile(file) ?: return@compute null
             KubernetesResourceInfo.extractMeta(psiFile)
         }
     } catch (e: RuntimeException) {
         null
-    }
-}
-
-fun getResourceVersion(document: Document?, manager: PsiDocumentManager): String? {
-    if (document == null) {
-        return null
-    }
-    val file = manager.getPsiFile(document) ?: return null
-    val content = getContent(file) ?: return null
-    val metadata = getMetadata(content) ?: return null
-    return getResourceVersion(metadata)
-}
-
-private fun getResourceVersion(metadata: PsiElement): String? {
-    return when (metadata) {
-        is YAMLKeyValue -> getResourceVersion(metadata)?.value?.text
-        is JsonProperty -> getResourceVersion(metadata)?.value?.text
-        else -> null
     }
 }
 

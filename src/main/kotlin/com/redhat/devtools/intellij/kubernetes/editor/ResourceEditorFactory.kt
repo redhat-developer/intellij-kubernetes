@@ -19,7 +19,6 @@ import com.intellij.openapi.project.ProjectManager
 import com.intellij.openapi.project.ProjectManagerListener
 import com.intellij.openapi.util.Key
 import com.intellij.openapi.vfs.VirtualFile
-import com.intellij.psi.PsiDocumentManager
 import com.redhat.devtools.intellij.kubernetes.editor.notification.ErrorNotification
 import com.redhat.devtools.intellij.kubernetes.editor.util.getKubernetesResourceInfo
 import com.redhat.devtools.intellij.kubernetes.editor.util.hasKubernetesResource
@@ -47,16 +46,14 @@ open class ResourceEditorFactory protected constructor(
     },
     /* for mocking purposes */
     private val hasKubernetesResource: (FileEditor, Project) -> Boolean = { editor, project ->
-        val document = getDocument(editor)
-        val psiDocumentManager = PsiDocumentManager.getInstance(project)
-        hasKubernetesResource(document, psiDocumentManager)
+        hasKubernetesResource(editor.file, project)
     },
     /* for mocking purposes */
     private val createResourceEditor: (FileEditor, Project) -> ResourceEditor =
         { editor, project -> ResourceEditor(editor, project) },
     /* for mocking purposes */
     private val reportTelemetry: (FileEditor, Project, TelemetryMessageBuilder.ActionMessage) -> Unit = { editor, project, telemetry ->
-        val resourceInfo = getKubernetesResourceInfo(getDocument(editor), PsiDocumentManager.getInstance(project))
+        val resourceInfo = getKubernetesResourceInfo(editor.file, project)
         TelemetryService.sendTelemetry(resourceInfo, telemetry)
     },
     /* for mocking purposes */
@@ -123,37 +120,6 @@ open class ResourceEditorFactory protected constructor(
         }
 
         return getExisting(editor) ?: create(editor, project)
-    }
-
-    /**
-     * Returns a [ResourceEditor] for the given [FileEditor] if it exists. Returns `null` otherwise.
-     * The editor exists if it is contained in the user data for the given editor or its file.
-     *
-     * @param editor for which an existing [ResourceEditor] is returned.
-     * @return [ResourceEditor] that exists.
-     *
-     * @see [FileEditor.getUserData]
-     * @see [VirtualFile.getUserData]
-     */
-    private fun getExisting(editor: FileEditor?): ResourceEditor? {
-        if (editor == null) {
-            return null
-        }
-        return editor.getUserData(ResourceEditor.KEY_RESOURCE_EDITOR)
-            ?: getExisting(editor.file)
-    }
-
-    /**
-     * Returns a [ResourceEditor] for the given [VirtualFile] if it exists. Returns `null` otherwise.
-     * The editor exists if it is contained in the user data for the given file.
-     *
-     * @param file for which an existing [VirtualFile] is returned.
-     * @return [ResourceEditor] that exists.
-     *
-     * @see [VirtualFile.getUserData]
-     */
-    fun getExisting(file: VirtualFile?): ResourceEditor? {
-        return file?.getUserData(ResourceEditor.KEY_RESOURCE_EDITOR)
     }
 
     private fun create(editor: FileEditor, project: Project): ResourceEditor? {
