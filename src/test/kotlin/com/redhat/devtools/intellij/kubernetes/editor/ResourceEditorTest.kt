@@ -623,6 +623,8 @@ spec:
     @Test
     fun `#stopWatch should stop watching the cluster`() {
         // given
+        // force create cluster resource
+        editor.clusterResource
         // when
         editor.stopWatch()
         // then
@@ -656,6 +658,8 @@ spec:
     @Test
     fun `#close should close cluster resource`() {
         // given
+        // force creation of cluster resource
+        editor.clusterResource
         // when
         editor.close()
         // then
@@ -757,6 +761,7 @@ spec:
         resourceVersion
     ) {
         public override var lastPushedPulled: ResettableLazyProperty<HasMetadata?> = super.lastPushedPulled
+        public override var clusterResource: ClusterResource? = super.clusterResource
 
         public override fun isModified(): Boolean {
             return super.isModified()

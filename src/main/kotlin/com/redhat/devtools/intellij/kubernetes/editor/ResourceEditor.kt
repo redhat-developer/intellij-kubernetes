@@ -98,7 +98,7 @@ open class ResourceEditor(
     private val resourceChangeMutex = ReentrantLock()
     private var oldClusterResource: ClusterResource? = null
     private var _clusterResource: ClusterResource? = null
-    private val clusterResource: ClusterResource?
+    open protected val clusterResource: ClusterResource?
         get() {
             return resourceChangeMutex.withLock {
                 if (_clusterResource == null
@@ -331,7 +331,8 @@ open class ResourceEditor(
     }
 
     fun stopWatch() {
-        clusterResource?.stopWatch()
+        // use backing variable to prevent accidental creation
+        _clusterResource?.stopWatch()
     }
 
     private fun createClusterResource(resource: HasMetadata?, clients: Clients<out KubernetesClient>): ClusterResource? {
@@ -368,7 +369,8 @@ open class ResourceEditor(
      * Closes this instance. Closes the resource watch and deletes the temporary file if one was created.
      */
     fun close() {
-        clusterResource?.close()
+        // use backing variable to prevent accidental creation
+        _clusterResource?.close()
         editor.putUserData(KEY_RESOURCE_EDITOR, null)
         editor.file?.putUserData(KEY_RESOURCE_EDITOR, null)
         createResourceFileForVirtual.invoke(editor.file)?.deleteTemporary()
