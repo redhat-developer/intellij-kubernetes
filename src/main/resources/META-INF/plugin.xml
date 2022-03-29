@@ -11,6 +11,10 @@
     <change-notes>
         <![CDATA[
         <p></p>
+        <h3>0.4.2</h3>
+        <ul>
+            <li><a href="https://github.com/redhat-developer/intellij-kubernetes/issues/365">IllegalStateException when binary plugin is installed in IDEA 2021.3.3"</a></li>
+        </ul>
         <h3>0.4.1</h3>
         <ul>
             <li><a href="https://github.com/redhat-developer/intellij-kubernetes/issues/356">Exception: "Access is allowed from event display thread only"</a></li>
