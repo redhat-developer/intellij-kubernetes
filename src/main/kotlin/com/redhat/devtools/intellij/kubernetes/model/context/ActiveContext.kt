@@ -14,12 +14,7 @@ import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.extensions.ExtensionPointName
 import com.redhat.devtools.intellij.common.kubernetes.ClusterHelper
 import com.redhat.devtools.intellij.common.kubernetes.ClusterInfo
-import io.fabric8.kubernetes.api.model.HasMetadata
-import io.fabric8.kubernetes.api.model.NamedContext
-import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinition
-import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinitionSpec
-import io.fabric8.kubernetes.client.KubernetesClient
-import io.fabric8.kubernetes.client.KubernetesClientException
+import com.redhat.devtools.intellij.kubernetes.model.Clients
 import com.redhat.devtools.intellij.kubernetes.model.IModelChangeObservable
 import com.redhat.devtools.intellij.kubernetes.model.Notification
 import com.redhat.devtools.intellij.kubernetes.model.ResourceWatch
@@ -33,18 +28,23 @@ import com.redhat.devtools.intellij.kubernetes.model.resource.INonNamespacedReso
 import com.redhat.devtools.intellij.kubernetes.model.resource.IResourceOperator
 import com.redhat.devtools.intellij.kubernetes.model.resource.IResourceOperatorFactory
 import com.redhat.devtools.intellij.kubernetes.model.resource.ResourceKind
+import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.custom.CustomResourceDefinitionContextFactory
 import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.custom.CustomResourceScope
 import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.custom.GenericCustomResource
 import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.custom.NamespacedCustomResourceOperator
 import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.custom.NonNamespacedCustomResourceOperator
-import com.redhat.devtools.intellij.kubernetes.model.Clients
-import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.custom.CustomResourceDefinitionContextFactory
 import com.redhat.devtools.intellij.kubernetes.model.util.MultiResourceException
 import com.redhat.devtools.intellij.kubernetes.model.util.ResourceException
 import com.redhat.devtools.intellij.kubernetes.model.util.isSameResource
 import com.redhat.devtools.intellij.kubernetes.model.util.setWillBeDeleted
 import com.redhat.devtools.intellij.kubernetes.model.util.toMessage
+import io.fabric8.kubernetes.api.model.HasMetadata
+import io.fabric8.kubernetes.api.model.NamedContext
+import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinition
+import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinitionSpec
 import io.fabric8.kubernetes.client.Config
+import io.fabric8.kubernetes.client.KubernetesClient
+import io.fabric8.kubernetes.client.KubernetesClientException
 import java.net.URL
 
 abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
@@ -453,7 +453,7 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
         val operator = getOperator(kind, scope)
         if (operator == null) {
             logger<ActiveContext<*,*>>().warn("""Could not delete $kind resources: ${toMessage(resources, -1)}.
-                |No operator found for in scope $scope.""".trimMargin())
+                |No operator found for $kind in scope $scope.""".trimMargin())
             return
         }
         try {
