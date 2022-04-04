@@ -290,7 +290,7 @@ open class ResourceEditor(
         }
     }
 
-    private fun serialize(resource: HasMetadata, fileType: FileType): CharSequence? {
+    private fun serialize(resource: HasMetadata, fileType: FileType?): CharSequence? {
         val serializer = when(fileType) {
             YAMLFileType.YML ->
                 Serialization.yamlMapper().writerWithDefaultPrettyPrinter()
