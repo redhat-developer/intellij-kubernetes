@@ -17,6 +17,7 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.PsiDocumentManager
 import com.intellij.psi.PsiFile
+import com.intellij.psi.util.PsiUtilCore
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.argWhere
 import com.nhaarman.mockitokotlin2.atLeastOnce
@@ -25,6 +26,7 @@ import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.doThrow
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.never
+import com.nhaarman.mockitokotlin2.spy
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.whenever
 import com.redhat.devtools.intellij.common.validation.KubernetesResourceInfo
@@ -46,13 +48,13 @@ import com.redhat.devtools.intellij.kubernetes.model.mocks.Mocks.kubernetesTypeI
 import com.redhat.devtools.intellij.kubernetes.model.util.ResettableLazyProperty
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.PodBuilder
-import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinition
 import io.fabric8.kubernetes.client.KubernetesClient
 import io.fabric8.kubernetes.client.KubernetesClientException
 import io.fabric8.kubernetes.client.utils.Serialization
 import java.util.concurrent.atomic.AtomicBoolean
 import org.assertj.core.api.Assertions.assertThat
 import org.jetbrains.yaml.YAMLFileType
+import org.junit.Before
 import org.junit.Test
 
 class ResourceEditorTest {
@@ -126,11 +128,6 @@ spec:
         }
     private val project: Project = mock()
     private val clients: Clients<out KubernetesClient> = Clients(client(currentNamespace.metadata.name, allNamespaces))
-    private val getCustomResourceDefinitions: (client: KubernetesClient) -> Collection<CustomResourceDefinition> =
-        mock<(client: KubernetesClient) -> Collection<CustomResourceDefinition>>().apply {
-        doReturn(emptyList<CustomResourceDefinition>())
-            .whenever(this).invoke(any())
-    }
     private val createResource: (editor: FileEditor) -> HasMetadata? =
         mock<(editor: FileEditor) -> HasMetadata?>().apply  {
             doReturn(GARGAMEL)
@@ -155,12 +152,10 @@ spec:
             .whenever(this).getText()
     }
     private val getDocument: (FileEditor) -> Document? = { document }
-    private val psiFile: PsiFile = mock {
-        on { fileType } doReturn YAMLFileType.YML
-    }
-    private val psiDocumentManager: PsiDocumentManager = mock {
-        on { getPsiFile(any()) } doReturn psiFile
-    }
+    // using a mock of PsiFile made tests fail with a NoClassDefFoundError on github
+    // https://github.com/redhat-developer/intellij-kubernetes/pull/364#issuecomment-1087628732
+    private val psiFile: PsiFile = spy(PsiUtilCore.NULL_PSI_FILE)
+    private val psiDocumentManager: PsiDocumentManager = mock()
     private val getPsiDocumentManager: (Project) -> PsiDocumentManager = { psiDocumentManager }
     private val kubernetesTypeInfo: KubernetesTypeInfo = kubernetesTypeInfo(GARGAMEL.kind, GARGAMEL.apiVersion)
     private val kubernetesResourceInfo: KubernetesResourceInfo =
@@ -190,6 +185,14 @@ spec:
             documentReplaced,
             resourceVersion
         )
+
+    @Before
+    fun before() {
+        doReturn(YAMLFileType.YML)
+            .whenever(psiFile).getFileType()
+        doReturn(psiFile)
+            .whenever(psiDocumentManager).getPsiFile(any())
+    }
 
     @Test
     fun `#isModified should return true if editor resource doesn't exist on cluster`() {
