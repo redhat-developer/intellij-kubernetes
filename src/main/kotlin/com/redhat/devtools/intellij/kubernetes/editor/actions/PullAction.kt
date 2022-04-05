@@ -14,6 +14,7 @@ import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.CommonDataKeys
 import com.intellij.openapi.progress.Progressive
+import com.redhat.devtools.intellij.kubernetes.actions.run
 import com.redhat.devtools.intellij.kubernetes.editor.ResourceEditorFactory
 import com.redhat.devtools.intellij.kubernetes.editor.util.getSelectedFileEditor
 import com.redhat.devtools.intellij.kubernetes.model.Notification
@@ -31,7 +32,7 @@ class PullAction: AnAction() {
         val project = e.dataContext.getData(CommonDataKeys.PROJECT) ?: return
         val editor = getSelectedFileEditor(project)
         val telemetry = TelemetryService.instance.action(NAME_PREFIX_EDITOR + "pull")
-        com.redhat.devtools.intellij.kubernetes.actions.run("Reloading...", true,
+        run("Pulling...", true,
             Progressive {
                 try {
                     val editor = ResourceEditorFactory.instance.getExistingOrCreate(editor, project) ?: return@Progressive
