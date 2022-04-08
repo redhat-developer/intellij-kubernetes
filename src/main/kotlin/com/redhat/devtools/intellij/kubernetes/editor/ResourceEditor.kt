@@ -142,11 +142,11 @@ open class ResourceEditor(
         runAsync {
             try {
                 val resource = createResource.invoke(editor) ?: return@runAsync
-                val cluster = clusterResource ?: return@runAsync
                 resourceChangeMutex.withLock {
                     this.editorResource.set(resource)
                 }
                 saveResourceVersion(resource)
+                val cluster = clusterResource ?: return@runAsync
                 showNotifications(resource, cluster)
             } catch (e: ResourceException) {
                 runInUI {
