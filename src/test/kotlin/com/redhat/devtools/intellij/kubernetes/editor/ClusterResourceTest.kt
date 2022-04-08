@@ -25,8 +25,6 @@ import com.redhat.devtools.intellij.kubernetes.model.ResourceException
 import com.redhat.devtools.intellij.kubernetes.model.ResourceWatch
 import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.client
 import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.resource
-import com.redhat.devtools.intellij.kubernetes.model.mocks.Mocks.namespacedResourceOperator
-import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.AllPodsOperator
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.Namespace
 import io.fabric8.kubernetes.api.model.Pod
@@ -52,14 +50,6 @@ class ClusterResourceTest {
     private val nabooResource: Pod = resource("Naboo", rebelsNamespace.metadata.name, "nabooUid", "v1", "1")
     private val watch: Watch = mock()
     private val watchOp: (watcher: Watcher<in Pod>) -> Watch? = { watch }
-    private val operator2 = namespacedResourceOperator<Pod, KubernetesClient>(
-        AllPodsOperator.KIND,
-        emptyList(),
-        rebelsNamespace,
-        watchOp,
-        true,
-        endorResourceOnCluster
-    )
     private val operator: ClusterResourceOperator = mock {
         on { get(any()) } doReturn endorResourceOnCluster
         on { replace(any()) } doReturn endorResourceOnCluster
@@ -321,75 +311,6 @@ class ClusterResourceTest {
         val same = cluster.isSameResource(nabooResource)
         // then
         assertThat(same).isFalse()
-    }
-
-    @Test
-    fun `#isOutdated should return false if given same resource`() {
-        // given
-        // when
-        val outdated = cluster.isOutdated(endorResourceOnCluster)
-        // then
-        assertThat(outdated).isFalse()
-    }
-
-    @Test
-    fun `#isOutdated should return false if given different resource`() {
-        // given
-        // when
-        val outdated = cluster.isOutdated(nabooResource)
-        // then
-        assertThat(outdated).isFalse()
-    }
-
-    @Test
-    fun `#isOutdated should return true if given null`() {
-        // given
-        // when
-        val outdated = cluster.isOutdated(null as HasMetadata?)
-        // then
-        assertThat(outdated).isTrue()
-    }
-
-    @Test
-    fun `#isOutdated should return false if given null and cluster does NOT have updated resource`() {
-        // given
-        whenever(operator.get(any()))
-            .doReturn(null)
-        // when
-        val outdated = cluster.isOutdated(null as HasMetadata?)
-        // then
-        assertThat(outdated).isFalse()
-    }
-
-    @Test
-    fun `#isOutdated should return true if given outdated resource`() {
-        // given
-        // when
-        val outdated = cluster.isOutdated(endorResource)
-        // then
-        assertThat(outdated).isTrue()
-    }
-
-    @Test
-    fun `#isOutdated should return false if given resource is updated and cluster has outdated resource`() {
-        // given
-        whenever(operator.get(any()))
-            .doReturn(endorResource)
-        // when
-        val outdated = cluster.isOutdated(endorResourceOnCluster)
-        // then
-        assertThat(outdated).isFalse()
-    }
-
-    @Test
-    fun `#isOutdated should return false if cluster has null resource`() {
-        // given
-        whenever(operator.get(any()))
-            .doReturn(null)
-        // when
-        val outdated = cluster.isOutdated(endorResource)
-        // then
-        assertThat(outdated).isFalse()
     }
 
     @Test

@@ -12,6 +12,9 @@ package com.redhat.devtools.intellij.kubernetes.model.resource
 
 import com.intellij.openapi.diagnostic.logger
 import com.redhat.devtools.intellij.kubernetes.model.util.isSameNamespace
+import com.redhat.devtools.intellij.kubernetes.model.util.removeResourceVersion
+import com.redhat.devtools.intellij.kubernetes.model.util.removeUid
+import com.redhat.devtools.intellij.kubernetes.model.util.runWithoutServerSetProperties
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.KubernetesResourceList
 import io.fabric8.kubernetes.client.Client

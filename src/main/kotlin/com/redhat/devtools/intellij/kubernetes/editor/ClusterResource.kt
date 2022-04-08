@@ -18,7 +18,6 @@ import com.redhat.devtools.intellij.kubernetes.model.ResourceWatch
 import com.redhat.devtools.intellij.kubernetes.model.ResourceWatch.WatchListeners
 import com.redhat.devtools.intellij.kubernetes.model.util.isGreaterIntThan
 import com.redhat.devtools.intellij.kubernetes.model.util.isNotFound
-import com.redhat.devtools.intellij.kubernetes.model.util.isOutdated
 import com.redhat.devtools.intellij.kubernetes.model.util.isSameResource
 import com.redhat.devtools.intellij.kubernetes.model.util.isUnsupported
 import io.fabric8.kubernetes.api.model.HasMetadata
@@ -171,27 +170,14 @@ open class ClusterResource(
     }
 
     /**
-     * Returns `true` if the given resource is outdated compared to the latest resource on the cluster.
-     * A resource is considered outdated if it is the same resource and is an older version of the (latest) resource in the cluster.
-     * The latest resource form cluster is retrieved to make sure the most accurate response is given.
-     * Returns `true` if the given resource is `null` and the resource on the cluster isn't.
-     * Returns `false` if the given resource is not `null` but the resource on the cluster is `null`.
+     * Returns `true` if the given resource version is outdated when compared to the version of the resource on the cluster.
      *
-     * @param toCompare the resource to compare to the latest cluster resource
-     * @return true if the given resource is outdated compared to the latest cluster resource
+     * @param resourceVersion the resource version to compare to the version of the cluster resource
+     * @return true if the given resource version > ressource version of the cluster resource
      *
-     * @see HasMetadata.isSameResource
-     * @see HasMetadata.isOutdated
+     * @see io.fabric8.kubernetes.api.model.ObjectMeta.resourceVersion
+     * @see String.isGreaterIntThan
      */
-    fun isOutdated(toCompare: HasMetadata?): Boolean {
-        val resource = pull()
-        return if (toCompare == null) {
-            resource != null
-        } else {
-            true == resource?.isOutdated(toCompare)
-        }
-    }
-
     fun isOutdated(resourceVersion: String?): Boolean {
         val resource = pull()
         val clusterVersion = resource?.metadata?.resourceVersion ?: return false

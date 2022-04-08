@@ -422,4 +422,107 @@ class ResourceUtilsTest {
 		// then
 		assertThat(isWillBeDeleted(neo)).isTrue()
 	}
+
+	@Test
+	fun `#runWithoutServerSetProperties should have NO uid NOR resourceVersion when running lambda`() {
+		// given
+		val withResourceVersion = PodBuilder()
+			.withNewMetadata()
+				.withUid("yoda")
+				.withResourceVersion("42")
+			.endMetadata()
+			.build()
+		assertThat(withResourceVersion.metadata.resourceVersion).isNotNull()
+		// when
+		var hasNoResourceVersionAndUid: Boolean? = null
+		runWithoutServerSetProperties(withResourceVersion) {
+			// has no resource version nor uid when running in this lambda
+			hasNoResourceVersionAndUid = withResourceVersion.metadata.resourceVersion == null
+					&& withResourceVersion.metadata.uid == null
+			withResourceVersion
+		}
+		// then
+		assertThat(hasNoResourceVersionAndUid).isTrue()
+	}
+
+	@Test
+	fun `#runWithoutServerSetProperties should have resourceVersion & uid after lambda was run`() {
+		// given
+		val withResourceVersion = PodBuilder()
+			.withNewMetadata()
+			.withUid("yoda")
+			.withResourceVersion("42")
+			.endMetadata()
+			.build()
+		assertThat(withResourceVersion.metadata.resourceVersion).isNotNull()
+		// when
+		runWithoutServerSetProperties(withResourceVersion) {
+			// has no resource version nor uid when running in this lambda
+			withResourceVersion
+		}
+		// then
+		assertThat(withResourceVersion.metadata.resourceVersion).isEqualTo("42")
+		assertThat(withResourceVersion.metadata.uid).isEqualTo("yoda")
+	}
+
+	@Test
+	fun `#runWithoutServerSetProperties(resource1, resource2) should have NO uid NOR resourceVersion when running lambda`() {
+		// given
+		val resource1 = PodBuilder()
+			.withNewMetadata()
+			.withUid("yoda")
+			.withResourceVersion("42")
+			.endMetadata()
+			.build()
+		assertThat(resource1.metadata.resourceVersion).isNotNull()
+		val resource2 = PodBuilder()
+			.withNewMetadata()
+			.withUid("obiwan")
+			.withResourceVersion("21")
+			.endMetadata()
+			.build()
+		assertThat(resource2.metadata.resourceVersion).isNotNull()
+		// when
+		var resource1HasNoResourceVersionAndUid: Boolean? = null
+		var resource2HasNoResourceVersionAndUid: Boolean? = null
+		runWithoutServerSetProperties(resource1, resource2) {
+			// has no resource version nor uid when running in this lambda
+			resource1HasNoResourceVersionAndUid = resource1.metadata.resourceVersion == null
+					&& resource1.metadata.uid == null
+			resource2HasNoResourceVersionAndUid = resource2.metadata.resourceVersion == null
+					&& resource2.metadata.uid == null
+			resource1
+		}
+		// then
+		assertThat(resource1HasNoResourceVersionAndUid).isTrue()
+		assertThat(resource2HasNoResourceVersionAndUid).isTrue()
+	}
+
+	@Test
+	fun `#runWithoutServerSetProperties(resource1, resource2) should have uid and resourceVersion after running lambda`() {
+		// given
+		val resource1 = PodBuilder()
+			.withNewMetadata()
+			.withUid("yoda")
+			.withResourceVersion("42")
+			.endMetadata()
+			.build()
+		assertThat(resource1.metadata.resourceVersion).isNotNull()
+		val resource2 = PodBuilder()
+			.withNewMetadata()
+			.withUid("obiwan")
+			.withResourceVersion("21")
+			.endMetadata()
+			.build()
+		assertThat(resource2.metadata.resourceVersion).isNotNull()
+		// when
+		runWithoutServerSetProperties(resource1, resource2) {
+			true
+		}
+		// then
+		assertThat(resource1.metadata.resourceVersion).isEqualTo("42")
+		assertThat(resource1.metadata.uid).isEqualTo("yoda")
+		assertThat(resource2.metadata.resourceVersion).isEqualTo("21")
+		assertThat(resource2.metadata.uid).isEqualTo("obiwan")
+	}
 }

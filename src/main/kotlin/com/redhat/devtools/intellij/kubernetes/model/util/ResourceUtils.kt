@@ -326,3 +326,61 @@ fun isCustomResource(resource: HasMetadata): Boolean {
 	return GenericKubernetesResource::class.java == resource::class.java
 			|| isApiGroupVersionNotMatchingAnnotation(resource)
 }
+
+fun <R: HasMetadata?> runWithoutServerSetProperties(resource: R, operation: () -> R): R {
+	// remove properties
+	val resourceVersion = removeResourceVersion(resource)
+	val uid = removeUid(resource)
+	val value = operation.invoke()
+	// restore properties
+	setResourceVersion(resourceVersion, resource)
+	setUid(uid, resource)
+	return value
+}
+
+fun <T: HasMetadata?, R: Any?> runWithoutServerSetProperties(thisResource: T?, thatResource: T?, operation: () -> R): R {
+	// remove properties
+	val thisResourceVersion = removeResourceVersion(thisResource)
+	val thatResourceVersion = removeResourceVersion(thatResource)
+	val thisUid = removeUid(thisResource)
+	val thatUid = removeUid(thatResource)
+	val result = operation.invoke()
+	// restore properties
+	setResourceVersion(thisResourceVersion, thisResource)
+	setResourceVersion(thatResourceVersion, thatResource)
+	setUid(thisUid, thisResource)
+	setUid(thatUid, thatResource)
+	return result
+}
+
+fun <R: HasMetadata?> removeResourceVersion(resource: R): String? {
+	if (resource == null) {
+		return null
+	}
+	val value = resource.metadata.resourceVersion
+	resource.metadata.resourceVersion = null
+	return value
+}
+
+fun <R: HasMetadata?> setResourceVersion(resourceVersion: String?, resource: R) {
+	if (resource == null) {
+		return
+	}
+	resource.metadata.resourceVersion = resourceVersion
+}
+
+fun <R: HasMetadata?> removeUid(resource: R): String? {
+	if (resource == null) {
+		return null
+	}
+	val value = resource.metadata.uid
+	resource.metadata.uid = null
+	return value
+}
+
+fun <R: HasMetadata?> setUid(uid: String?, resource: R) {
+	if (resource == null) {
+		return
+	}
+	resource.metadata.uid = uid
+}
