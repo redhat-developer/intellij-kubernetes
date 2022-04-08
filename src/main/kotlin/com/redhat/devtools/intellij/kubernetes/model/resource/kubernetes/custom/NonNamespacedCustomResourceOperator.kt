@@ -12,6 +12,7 @@ package com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.custom
 
 import com.redhat.devtools.intellij.kubernetes.model.resource.NonNamespacedResourceOperator
 import com.redhat.devtools.intellij.kubernetes.model.resource.ResourceKind
+import com.redhat.devtools.intellij.kubernetes.model.util.runWithoutServerSetProperties
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.client.KubernetesClient
 import io.fabric8.kubernetes.client.Watch

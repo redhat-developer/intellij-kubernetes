@@ -11,8 +11,8 @@
 package com.redhat.devtools.intellij.kubernetes.model.resource
 
 import com.intellij.openapi.diagnostic.logger
-import io.fabric8.kubernetes.api.model.HasMetadata
 import com.redhat.devtools.intellij.kubernetes.model.util.isSameResource
+import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.client.Client
 
 abstract class AbstractResourceOperator<R : HasMetadata, C : Client>(protected val client: C) : IResourceOperator<R> {
@@ -74,37 +74,6 @@ abstract class AbstractResourceOperator<R : HasMetadata, C : Client>(protected v
         @Suppress("UNCHECKED_CAST")
         _allResources[indexOf] = replaceBy as R
         return true
-    }
-
-    protected fun runWithoutServerSetProperties(resource: R, operation: () -> R?): R? {
-        // remove properties
-        val resourceVersion = removeResourceVersion(resource)
-        val uid = removeUid(resource)
-        val value = operation.invoke()
-        // restore properties
-        setResourceVersion(resourceVersion, resource)
-        setUid(uid, resource)
-        return value
-    }
-
-    protected fun removeResourceVersion(toCreate: R): String? {
-        val value = toCreate.metadata.resourceVersion
-        toCreate.metadata.resourceVersion = null
-        return value
-    }
-
-    protected fun setResourceVersion(resourceVersion: String?, toCreate: R) {
-        toCreate.metadata.resourceVersion = resourceVersion
-    }
-
-    protected fun removeUid(toCreate: R): String? {
-        val value = toCreate.metadata.uid
-        toCreate.metadata.uid = null
-        return value
-    }
-
-    protected fun setUid(uid: String?, toCreate: R) {
-        toCreate.metadata.uid = uid
     }
 
     private fun isCorrectKind(resource: HasMetadata): Boolean {

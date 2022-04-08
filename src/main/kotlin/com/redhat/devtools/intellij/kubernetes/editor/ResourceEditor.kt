@@ -38,6 +38,7 @@ import com.redhat.devtools.intellij.kubernetes.model.createClients
 import com.redhat.devtools.intellij.kubernetes.model.util.ResettableLazyProperty
 import com.redhat.devtools.intellij.kubernetes.model.util.causeOrExceptionMessage
 import com.redhat.devtools.intellij.kubernetes.model.util.isGreaterIntThan
+import com.redhat.devtools.intellij.kubernetes.model.util.runWithoutServerSetProperties
 import com.redhat.devtools.intellij.kubernetes.model.util.trimWithEllipsis
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.client.KubernetesClient
@@ -228,7 +229,10 @@ open class ResourceEditor(
      */
     protected open fun isModified(): Boolean {
         return resourceChangeMutex.withLock {
-            editorResource.get() != lastPushedPulled.get()
+            val thisResource: HasMetadata? = editorResource.get()
+            val thatResource: HasMetadata? = lastPushedPulled.get()
+            // dont compare resource version, uid
+            runWithoutServerSetProperties(thisResource, thatResource) { thisResource != thatResource }
         }
     }
 
@@ -305,15 +309,16 @@ open class ResourceEditor(
      * Pushes the editor content to the cluster.
      */
     fun push() {
+        runInUI {
+            // hide before running push. Push may take quite some time on remote cluster
+            hideNotifications()
+        }
         runAsync {
             try {
                 resourceChangeMutex.withLock {
                     val cluster = clusterResource ?: return@runAsync
                     val resource = editorResource.get() ?: return@runAsync
                     push(resource, cluster)
-                }
-                runInUI {
-                    hideNotifications()
                 }
             } catch (e: ResourceException) {
                 logger<ResourceEditor>().warn(e)
@@ -330,12 +335,15 @@ open class ResourceEditor(
 
     private fun push(resource: HasMetadata, clusterResource: ClusterResource) {
         val updated = clusterResource.push(resource)
-        saveResourceVersion(updated)
         /**
          * set editor resource now,
          * resource change notification can get in before document was replaced
          */
+        saveResourceVersion(updated)
         resourceChangeMutex.withLock {
+            /**
+             * set [resource], not [updated] so that resource is not modified in later [isModified]
+             */
             lastPushedPulled.set(resource)
         }
     }
