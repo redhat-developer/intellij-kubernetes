@@ -253,7 +253,7 @@ open class ResourceEditor(
             runInUI {
                 hideNotifications()
                 errorNotification.show(
-                    "Could not pull ${editorResource.get()?.kind} ${editorResource.get()?.metadata?.name}",
+                    "Could not pull ${editorResource.get()?.kind} ${editorResource.get()?.metadata?.name ?: ""}",
                     trimWithEllipsis(causeOrExceptionMessage(e), 300)
                 )
             }
@@ -320,7 +320,7 @@ open class ResourceEditor(
                 runInUI {
                     hideNotifications()
                     errorNotification.show(
-                        "Could not push ${editorResource.get()?.kind} ${editorResource.get()?.metadata?.name}",
+                        "Could not push ${editorResource.get()?.kind} ${editorResource.get()?.metadata?.name ?: ""}",
                         trimWithEllipsis(causeOrExceptionMessage(e), 300)
                     )
                 }

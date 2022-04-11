@@ -584,6 +584,16 @@ class ClusterResourceTest {
         verify(observable, never()).fireRemoved(endorResourceOnCluster)
     }
 
+    @Test(expected = ResourceException::class)
+    fun `#watch should throw ResourceException if watch throws IllegalArgumentException`() {
+        // given
+        whenever(resourceWatch.watch(any(), any(), any()))
+            .doThrow(IllegalArgumentException())
+        // when
+        cluster.watch()
+        // then
+    }
+
     @Test
     fun `watchListener#removed should set cached resource to null`() {
         // given
