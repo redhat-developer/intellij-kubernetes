@@ -156,7 +156,7 @@ open class ClusterResource(
             throw ResourceException(details, e)
         } catch (e: RuntimeException) {
             // ex. IllegalArgumentException
-            throw ResourceException("Could not push ${resource.kind} '${resource.metadata.name}'", e)
+            throw ResourceException("Could not push ${resource.kind} ${resource.metadata.name ?: ""}", e)
         }
     }
 
@@ -260,6 +260,12 @@ open class ClusterResource(
         } catch (e: KubernetesClientException) {
             val details = getDetails(e)
             throw ResourceException(details, e)
+        } catch (e: java.lang.RuntimeException) {
+            throw ResourceException(
+                "Could not watch ${initialResource.kind} ${
+                    initialResource.metadata?.name ?: ""
+                }", e
+            )
         }
     }
 
