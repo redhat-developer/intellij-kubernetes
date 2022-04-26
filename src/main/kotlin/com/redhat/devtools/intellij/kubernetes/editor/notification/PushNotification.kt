@@ -14,9 +14,6 @@ import com.intellij.openapi.fileEditor.FileEditor
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Key
 import com.intellij.ui.EditorNotificationPanel
-import com.redhat.devtools.intellij.kubernetes.editor.actions.DiffAction
-import com.redhat.devtools.intellij.kubernetes.editor.actions.PullAction
-import com.redhat.devtools.intellij.kubernetes.editor.actions.PushAction
 import com.redhat.devtools.intellij.kubernetes.editor.hideNotification
 import com.redhat.devtools.intellij.kubernetes.editor.showNotification
 import javax.swing.JComponent
@@ -31,14 +28,14 @@ class PushNotification(private val editor: FileEditor, private val project: Proj
     }
 
     fun show(existsOnCluster: Boolean, isOutdated: Boolean) {
-        editor.showNotification(KEY_PANEL, { createPanel(editor, project, existsOnCluster, isOutdated) }, project)
+        editor.showNotification(KEY_PANEL, { createPanel(existsOnCluster, isOutdated) }, project)
     }
 
     fun hide() {
         editor.hideNotification(KEY_PANEL, project)
     }
 
-    private fun createPanel(editor: FileEditor, project: Project, existsOnCluster: Boolean, isOutdated: Boolean): EditorNotificationPanel {
+    private fun createPanel(existsOnCluster: Boolean, isOutdated: Boolean): EditorNotificationPanel {
         val panel = EditorNotificationPanel()
         panel.setText(
             "Push local changes, ${
@@ -49,15 +46,15 @@ class PushNotification(private val editor: FileEditor, private val project: Proj
                 }
             } resource on cluster?"
         )
-        panel.createActionLabel("Push", PushAction.ID)
+        addPush(panel)
         if (isOutdated) {
-            panel.createActionLabel("Pull", PullAction.ID)
+            addPull(panel)
         }
         if (existsOnCluster) {
-            panel.createActionLabel("Diff", DiffAction.ID)
+            addDiff(panel)
         }
-        panel.createActionLabel("Ignore") {
-            editor.hideNotification(PullNotification.KEY_PANEL, project)
+        addIgnore(panel) {
+            hide()
         }
 
         return panel

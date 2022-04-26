@@ -14,7 +14,6 @@ import com.intellij.openapi.fileEditor.FileEditor
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Key
 import com.intellij.ui.EditorNotificationPanel
-import com.redhat.devtools.intellij.kubernetes.editor.actions.PushAction
 import com.redhat.devtools.intellij.kubernetes.editor.hideNotification
 import com.redhat.devtools.intellij.kubernetes.editor.showNotification
 import io.fabric8.kubernetes.api.model.HasMetadata
@@ -30,19 +29,19 @@ class DeletedNotification(private val editor: FileEditor, private val project: P
     }
 
     fun show(resource: HasMetadata) {
-        editor.showNotification(KEY_PANEL, { createPanel(editor, resource, project) }, project)
+        editor.showNotification(KEY_PANEL, { createPanel(resource) }, project)
     }
 
     fun hide() {
         editor.hideNotification(KEY_PANEL, project)
     }
 
-    private fun createPanel(editor: FileEditor, resource: HasMetadata, project: Project): EditorNotificationPanel {
+    private fun createPanel(resource: HasMetadata): EditorNotificationPanel {
         val panel = EditorNotificationPanel()
         panel.setText("${resource.kind} '${resource.metadata.name}' was deleted on cluster. Push to Cluster?")
-        panel.createActionLabel("Push", PushAction.ID)
-        panel.createActionLabel("Ignore") {
-            editor.hideNotification(KEY_PANEL, project)
+        addPush(panel)
+        addIgnore(panel) {
+            hide()
         }
 
         return panel
