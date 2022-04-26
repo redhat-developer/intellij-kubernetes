@@ -14,9 +14,6 @@ import com.intellij.openapi.fileEditor.FileEditor
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Key
 import com.intellij.ui.EditorNotificationPanel
-import com.redhat.devtools.intellij.kubernetes.editor.actions.DiffAction
-import com.redhat.devtools.intellij.kubernetes.editor.actions.PullAction
-import com.redhat.devtools.intellij.kubernetes.editor.actions.PushAction
 import com.redhat.devtools.intellij.kubernetes.editor.hideNotification
 import com.redhat.devtools.intellij.kubernetes.editor.showNotification
 import io.fabric8.kubernetes.api.model.HasMetadata
@@ -33,23 +30,23 @@ class PullNotification(private val editor: FileEditor, private val project: Proj
     }
 
     fun show(resource: HasMetadata, canPush: Boolean) {
-        editor.showNotification(KEY_PANEL, { createPanel(editor, resource, project, canPush) }, project)
+        editor.showNotification(KEY_PANEL, { createPanel(resource, canPush) }, project)
     }
 
     fun hide() {
         editor.hideNotification(KEY_PANEL, project)
     }
 
-    private fun createPanel(editor: FileEditor, resource: HasMetadata, project: Project, canPush: Boolean): EditorNotificationPanel {
+    private fun createPanel(resource: HasMetadata, canPush: Boolean): EditorNotificationPanel {
         val panel = EditorNotificationPanel()
         panel.setText("${resource.kind} '${resource.metadata.name}' changed on cluster. Pull?")
-        panel.createActionLabel("Pull", PullAction.ID)
+        addPull(panel)
         if (canPush) {
-            panel.createActionLabel("Push", PushAction.ID)
+            addPush(panel)
         }
-        panel.createActionLabel("Diff", DiffAction.ID)
-        panel.createActionLabel("Ignore") {
-            editor.hideNotification(KEY_PANEL, project)
+        addDiff(panel)
+        addIgnore(panel) {
+            hide()
         }
         return panel
     }

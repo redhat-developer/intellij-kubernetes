@@ -29,14 +29,14 @@ class PulledNotification(private val editor: FileEditor, private val project: Pr
     }
 
     fun show(resource: HasMetadata) {
-        editor.showNotification(KEY_PANEL, { createPanel(editor, resource, project) }, project)
+        editor.showNotification(KEY_PANEL, { createPanel(resource) }, project)
     }
 
     fun hide() {
         editor.hideNotification(KEY_PANEL, project)
     }
 
-    private fun createPanel(editor: FileEditor, resource: HasMetadata, project: Project): EditorNotificationPanel {
+    private fun createPanel(resource: HasMetadata): EditorNotificationPanel {
         val panel = EditorNotificationPanel()
         panel.setText(
             "Pulled changed ${resource.kind} '${resource.metadata.name}' ${
@@ -47,8 +47,8 @@ class PulledNotification(private val editor: FileEditor, private val project: Pr
                 }
             }"
         )
-        panel.createActionLabel("Ignore") {
-            editor.hideNotification(KEY_PANEL, project)
+        addIgnore(panel) {
+            hide()
         }
         return panel
     }
