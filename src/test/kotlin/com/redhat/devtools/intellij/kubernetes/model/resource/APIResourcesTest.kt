@@ -238,7 +238,7 @@ class APIResourcesTest {
     @Test
     fun `#get for unknown kind should return null`() {
         // given
-        createResponseForCall(coreResourcesCall!!, coreApiResourceList, HttpURLConnection.HTTP_OK)
+        createResponseForCall(extensionResourcesCall!!, coreApiResourceList, HttpURLConnection.HTTP_OK)
         // when
         val found = APIResources(client!!).get("Yoda", "rebels", version)
         // then
@@ -274,7 +274,7 @@ class APIResourcesTest {
             on {
                 newCall(any())
             } doAnswer {
-                val request: Request = it.getArgument<Request>(0)
+                val request: Request = it.getArgument(0)
                 val url = request.url.toString()
                 when {
                     // core resources api
