@@ -29,7 +29,7 @@ import com.intellij.util.ui.UIUtil
 /**
  * A provider that can diff the content of a file with a given String.
  */
-class ResourceDiff(private val project: Project) {
+open class ResourceDiff(private val project: Project) {
 
     /**
      * Opens a diff (window) that compares the given file with the given String.

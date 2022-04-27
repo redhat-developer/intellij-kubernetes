@@ -314,6 +314,7 @@ open class TreeStructure(
         }
 
         open fun setElement(element: Any): Boolean {
+            @Suppress("UNCHECKED_CAST")
             val typed: T = element as? T ?: return false
             this.element = typed
             return true
