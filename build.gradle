@@ -67,7 +67,7 @@ dependencies {
     )
     testImplementation(
             "org.assertj:assertj-core:3.19.0",
-            "org.mockito:mockito-inline:3.9.0",
+            "org.mockito:mockito-inline:4.5.1",
             "com.nhaarman.mockitokotlin2:mockito-kotlin:2.2.0",
             "org.jetbrains.kotlin:kotlin-test-junit"
     )
