@@ -216,8 +216,6 @@ class KubernetesContextTest {
 	@Test
 	fun `#setCurrentNamespace should watch all namespaced operators that it stopped before`() {
 		// given
-		val captor =
-			argumentCaptor<Collection<Pair<ResourceKind<out HasMetadata>, (Watcher<in HasMetadata>) -> Watch?>>>()
 		val stopped: Collection<ResourceKind<out HasMetadata>> =
 			context.namespacedOperators.values
 				.map { it.kind }
@@ -227,10 +225,13 @@ class KubernetesContextTest {
 		// when
 		context.setCurrentNamespace(NAMESPACE1.metadata.name)
 		// then
-		verify(context.watch).watchAll(captor.capture(), any())
-		assertThat(captor.firstValue).isNotEmpty
-		val reWatched = captor.firstValue.map { it.first }
-		assertThat(reWatched).containsOnly(*stopped.toTypedArray())
+		val matcher = ArgumentMatcher<Collection<Pair<ResourceKind<out HasMetadata>, (watcher: Watcher<in HasMetadata>) -> Watch?>>> {
+				watched ->
+				val watchedKinds: List<ResourceKind<out HasMetadata>>? = watched?.map { pair -> pair.first }
+				(true == watchedKinds?.containsAll(stopped)
+						&& watched.size == stopped.size)
+			}
+		verify(context.watch).watchAll(argThat(matcher), any())
 	}
 
 	@Test
