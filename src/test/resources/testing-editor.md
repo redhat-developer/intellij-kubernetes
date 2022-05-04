@@ -67,7 +67,7 @@
 1. have 2 resources (ex 2 Pods)
 1. "Edit..." resource 1
 1. change metadata > name to name of resource 2
-   -> Push notification "update existing"
+   -> Push or Pull notification is shown
 
 **Can push resource even if current namespace is different**
 1. "Edit..." namespaced resource
