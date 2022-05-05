@@ -33,12 +33,12 @@ import com.redhat.devtools.intellij.kubernetes.editor.util.isKubernetesResource
 import com.redhat.devtools.intellij.kubernetes.model.ClientConfig
 import com.redhat.devtools.intellij.kubernetes.model.Clients
 import com.redhat.devtools.intellij.kubernetes.model.ModelChangeObservable
-import com.redhat.devtools.intellij.kubernetes.model.ResourceException
 import com.redhat.devtools.intellij.kubernetes.model.createClients
 import com.redhat.devtools.intellij.kubernetes.model.util.ResettableLazyProperty
-import com.redhat.devtools.intellij.kubernetes.model.util.causeOrExceptionMessage
 import com.redhat.devtools.intellij.kubernetes.model.util.isGreaterIntThan
 import com.redhat.devtools.intellij.kubernetes.model.util.runWithoutServerSetProperties
+import com.redhat.devtools.intellij.kubernetes.model.util.toMessage
+import com.redhat.devtools.intellij.kubernetes.model.util.toTitle
 import com.redhat.devtools.intellij.kubernetes.model.util.trimWithEllipsis
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.client.KubernetesClient
@@ -151,12 +151,12 @@ open class ResourceEditor(
                 saveResourceVersion(resource)
                 val cluster = clusterResource ?: return@runAsync
                 showNotifications(resource, cluster)
-            } catch (e: ResourceException) {
+            } catch (e: Exception) {
                 runInUI {
                     hideNotifications()
                     errorNotification.show(
-                        e.message ?: "Invalid kubernetes yaml/json",
-                        trimWithEllipsis(causeOrExceptionMessage(e), 300) ?: ""
+                        toTitle(e),
+                        trimWithEllipsis(toMessage(e), 300) ?: ""
                     )
                 }
             }
@@ -243,9 +243,9 @@ open class ResourceEditor(
      * Does nothing if it doesn't exist.
      */
     fun pull() {
-        try {
-            val cluster = clusterResource ?: return
-            runAsync {
+        val cluster = clusterResource ?: return
+        runAsync {
+            try {
                 val pulled = pull(cluster) ?: return@runAsync
                 saveResourceVersion(pulled)
                 runInUI {
@@ -253,15 +253,15 @@ open class ResourceEditor(
                     hideNotifications()
                     pulledNotification.show(pulled)
                 }
-            }
-        } catch (e: ResourceException) {
-            logger<ResourceEditor>().warn(e)
-            runInUI {
-                hideNotifications()
-                errorNotification.show(
-                    "Could not pull ${editorResource.get()?.kind} ${editorResource.get()?.metadata?.name ?: ""}",
-                    trimWithEllipsis(causeOrExceptionMessage(e), 300)
-                )
+            } catch (e: Exception) {
+                logger<ResourceEditor>().warn(e)
+                runInUI {
+                    hideNotifications()
+                    errorNotification.show(
+                        "Could not pull ${editorResource.get()?.kind} ${editorResource.get()?.metadata?.name ?: ""}",
+                        trimWithEllipsis(toMessage(e), 300)
+                    )
+                }
             }
         }
     }
@@ -329,13 +329,13 @@ open class ResourceEditor(
                     val resource = editorResource.get() ?: return@runAsync
                     push(resource, cluster)
                 }
-            } catch (e: ResourceException) {
+            } catch (e: Exception) {
                 logger<ResourceEditor>().warn(e)
                 runInUI {
                     hideNotifications()
                     errorNotification.show(
                         "Could not push ${editorResource.get()?.kind} ${editorResource.get()?.metadata?.name ?: ""}",
-                        trimWithEllipsis(causeOrExceptionMessage(e), 300)
+                        trimWithEllipsis(toMessage(e), 300)
                     )
                 }
             }
