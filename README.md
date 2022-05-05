@@ -72,7 +72,7 @@ User can push the local changes made to the cluster in order to update an existi
 The editor is saving the changes to the current context (cluster, namespace and user) that's defined in the kubeconfig.
 There is a `Push` button available in the editor toolbar to make the action more discoverable.
 
-![editor toolbar](images/editor-toolbar-push.png)
+![editor toolbar push](images/editor-toolbar-push.png)
 
 Alternatively the editor notifies you whenever you may push your content to the cluster.
 Clicking the "Push" link in the editor notification saves your editor to the cluster.
@@ -95,6 +95,18 @@ You can either overwrite the cluster by pushing the editor to the cluster.
 Alternatively you can replace your local version with the one on the cluster and pull it.
 
 ![editor pull or push](images/editor-pull-push.png)
+
+#### Diff
+
+The editor allows to you to compare its content with the resource on the cluster.
+The toolbar holds an action that opens up a fully editable diff that highlights the differences.   
+
+![editor toolbar diff](images/editor-toolbar-diff.png)
+
+The very same dialog may also be opened with a link that's present in the notification toolbar.
+
+![editor diff](images/editor-diff.png)
+
 
 #### Delete Resources
 You may delete any resource that is listed in the resource tree by choosing "Delete" in the context menu.
