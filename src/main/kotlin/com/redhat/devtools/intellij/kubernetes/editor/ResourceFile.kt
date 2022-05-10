@@ -147,8 +147,8 @@ open class ResourceFile protected constructor(
     }
 
     /**
-     * Deletes this resource file if it is temporary.
-     * Does nothing if it's not temporary.
+     * Deletes this resource file if it is a temporary file.
+     * Does nothing if it's not.
      *
      * @see [isTemporary]
      */

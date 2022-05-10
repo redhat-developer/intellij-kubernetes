@@ -8,9 +8,8 @@
  * Contributors:
  * Red Hat, Inc. - initial API and implementation
  ******************************************************************************/
-package com.redhat.devtools.intellij.kubernetes.editor
+package com.redhat.devtools.intellij.kubernetes.model.resource
 
-import com.redhat.devtools.intellij.kubernetes.model.resource.APIResources
 import com.redhat.devtools.intellij.kubernetes.model.resource.APIResources.APIResource
 import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.custom.CustomResourceDefinitionContextFactory
 import com.redhat.devtools.intellij.kubernetes.model.util.isCustomResource
@@ -33,7 +32,7 @@ import java.net.HttpURLConnection
  * retrieve, create, replace or watch a resource on the current cluster.
  * API discovery is executed and a [KubernetesClientException] is thrown if resource kind and version are not supported.
  */
-class ClusterResourceOperator(private val client: KubernetesClient, private val api: APIResources = APIResources(client)) {
+class NonCachingSingleResourceOperator(private val client: KubernetesClient, private val api: APIResources = APIResources(client)) {
 
     /**
      * Returns the latest version of the given resource from cluster. Returns `null` if none was found.

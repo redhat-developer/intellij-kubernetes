@@ -23,6 +23,7 @@ import com.redhat.devtools.intellij.kubernetes.editor.notification.ErrorNotifica
 import com.redhat.devtools.intellij.kubernetes.editor.util.getKubernetesResourceInfo
 import com.redhat.devtools.intellij.kubernetes.editor.util.hasKubernetesResource
 import com.redhat.devtools.intellij.kubernetes.model.ResourceException
+import com.redhat.devtools.intellij.kubernetes.model.ResourceModel
 import com.redhat.devtools.intellij.kubernetes.model.util.isSameResource
 import com.redhat.devtools.intellij.kubernetes.telemetry.TelemetryService
 import com.redhat.devtools.intellij.telemetry.core.service.TelemetryMessageBuilder
@@ -50,7 +51,7 @@ open class ResourceEditorFactory protected constructor(
     },
     /* for mocking purposes */
     private val createResourceEditor: (FileEditor, Project) -> ResourceEditor =
-        { editor, project -> ResourceEditor(editor, project) },
+        { editor, project -> ResourceEditor(editor, ResourceModel.getInstance(), project) },
     /* for mocking purposes */
     private val reportTelemetry: (FileEditor, Project, TelemetryMessageBuilder.ActionMessage) -> Unit = { editor, project, telemetry ->
         val resourceInfo = getKubernetesResourceInfo(editor.file, project)

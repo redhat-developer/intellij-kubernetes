@@ -12,6 +12,7 @@ package com.redhat.devtools.intellij.kubernetes.model
 
 interface IModelChangeObservable {
     fun addListener(listener: ModelChangeObservable.IResourceChangeListener)
+    fun removeListener(listener: ModelChangeObservable.IResourceChangeListener)
     fun fireCurrentNamespace(namespace: String?)
     fun fireRemoved(removed: Any)
     fun fireAdded(added: Any)
@@ -34,6 +35,13 @@ open class ModelChangeObservable: IModelChangeObservable {
             return
         }
         listeners.add(listener)
+    }
+
+    override fun removeListener(listener: IResourceChangeListener) {
+        if (!listeners.contains(listener)) {
+            return
+        }
+        listeners.remove(listener)
     }
 
     override fun fireRemoved(removed: Any) {

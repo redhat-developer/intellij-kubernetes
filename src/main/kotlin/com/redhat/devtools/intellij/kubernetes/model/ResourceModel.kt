@@ -10,7 +10,9 @@
  ******************************************************************************/
 package com.redhat.devtools.intellij.kubernetes.model
 
+import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.diagnostic.logger
+import com.redhat.devtools.intellij.kubernetes.model.ModelChangeObservable.IResourceChangeListener
 import com.redhat.devtools.intellij.kubernetes.model.context.IActiveContext
 import com.redhat.devtools.intellij.kubernetes.model.context.IActiveContext.ResourcesIn
 import com.redhat.devtools.intellij.kubernetes.model.context.IContext
@@ -38,7 +40,8 @@ interface IResourceModel {
     fun stopWatch(definition: CustomResourceDefinition)
     fun invalidate(element: Any?)
     fun delete(resources: List<HasMetadata>)
-    fun addListener(listener: ModelChangeObservable.IResourceChangeListener)
+    fun addListener(listener: IResourceChangeListener)
+    fun removeListener(listener: IResourceChangeListener)
 }
 
 /**
@@ -51,6 +54,12 @@ interface IResourceModel {
  * @see [com.redhat.devtools.intellij.kubernetes.actions.getResourceModel]
  */
 open class ResourceModel : IResourceModel {
+
+    companion object Factory {
+        fun getInstance(): IResourceModel {
+            return ApplicationManager.getApplication().getService(IResourceModel::class.java)
+        }
+    }
 
     protected open val observable: IModelChangeObservable by lazy {
         ModelChangeObservable()
@@ -74,8 +83,12 @@ open class ResourceModel : IResourceModel {
         return contexts.all
     }
 
-    override fun addListener(listener: ModelChangeObservable.IResourceChangeListener) {
+    override fun addListener(listener: IResourceChangeListener) {
         observable.addListener(listener)
+    }
+
+    override fun removeListener(listener: IResourceChangeListener) {
+        observable.removeListener(listener)
     }
 
     override fun setCurrentNamespace(namespace: String) {

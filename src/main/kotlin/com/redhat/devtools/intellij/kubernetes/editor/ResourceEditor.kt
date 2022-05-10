@@ -30,10 +30,9 @@ import com.redhat.devtools.intellij.kubernetes.editor.notification.PulledNotific
 import com.redhat.devtools.intellij.kubernetes.editor.notification.PushNotification
 import com.redhat.devtools.intellij.kubernetes.editor.util.getDocument
 import com.redhat.devtools.intellij.kubernetes.editor.util.isKubernetesResource
-import com.redhat.devtools.intellij.kubernetes.model.ClientConfig
-import com.redhat.devtools.intellij.kubernetes.model.Clients
-import com.redhat.devtools.intellij.kubernetes.model.ModelChangeObservable
-import com.redhat.devtools.intellij.kubernetes.model.createClients
+import com.redhat.devtools.intellij.kubernetes.model.IResourceModel
+import com.redhat.devtools.intellij.kubernetes.model.ModelChangeObservable.IResourceChangeListener
+import com.redhat.devtools.intellij.kubernetes.model.context.IActiveContext
 import com.redhat.devtools.intellij.kubernetes.model.util.ResettableLazyProperty
 import com.redhat.devtools.intellij.kubernetes.model.util.isGreaterIntThan
 import com.redhat.devtools.intellij.kubernetes.model.util.runWithoutServerSetProperties
@@ -53,17 +52,14 @@ import kotlin.concurrent.withLock
  */
 open class ResourceEditor(
     val editor: FileEditor,
+    private val resourceModel: IResourceModel,
     private val project: Project,
-    /* for mocking purposes */
-    private val clients: Clients<out KubernetesClient> = createClients(ClientConfig {}),
     // for mocking purposes
     private val createResource: (editor: FileEditor) -> HasMetadata? =
         EditorResourceFactory::create,
     // for mocking purposes
-    private val createClusterResource: (resource: HasMetadata, clients: Clients<out KubernetesClient>) -> ClusterResource? =
-        { resource, clients ->
-                ClusterResource(resource, clients)
-        },
+    private val clusterResourceFactory: (resource: HasMetadata?, context: IActiveContext<out HasMetadata, out KubernetesClient>?) -> ClusterResource? =
+        ClusterResource.Factory::create,
     // for mocking purposes
     private val createResourceFileForVirtual: (file: VirtualFile?) -> ResourceFile? =
         ResourceFile.Factory::create,
@@ -90,7 +86,11 @@ open class ResourceEditor(
     private val resourceVersion: PersistentEditorValue = PersistentEditorValue(editor),
     // for mocking purposes
     private val diff: ResourceDiff = ResourceDiff(project)
-) {
+): IResourceChangeListener {
+
+    init {
+        resourceModel.addListener(this)
+    }
 
     companion object {
         val KEY_RESOURCE_EDITOR = Key<ResourceEditor>(ResourceEditor::class.java.name)
@@ -108,12 +108,13 @@ open class ResourceEditor(
         get() {
             return resourceChangeMutex.withLock {
                 if (_clusterResource == null
+                    || true == _clusterResource?.isClosed()
                     // create new cluster resource if editor has different resource (name, kind, etc. changed)
                     || false == _clusterResource?.isSameResource(editorResource.get())
                 ) {
                     oldClusterResource = _clusterResource
                     oldClusterResource?.close()
-                    _clusterResource = createClusterResource(editorResource.get(), clients)
+                    _clusterResource = createClusterResource(editorResource.get(), resourceModel.getCurrentContext())
                     lastPushedPulled.reset()
                 }
                 _clusterResource
@@ -135,9 +136,11 @@ open class ResourceEditor(
     /**
      * Updates this editor notifications and title. Does nothing if is called right after [replaceDocument].
      *
+     * @param deletedOnCluster `true` if resource was deleted on cluster, `false` otherwise
+     *
      * @see [replaceDocument]
      */
-    fun update() {
+    fun update(deletedOnCluster: Boolean = false) {
         if (documentChanged.compareAndSet(true, false)) {
             /** update triggered by change in document [replaceDocument] */
             return
@@ -150,7 +153,7 @@ open class ResourceEditor(
                 }
                 saveResourceVersion(resource)
                 val cluster = clusterResource ?: return@runAsync
-                showNotifications(resource, cluster)
+                showNotifications(deletedOnCluster, resource, cluster)
             } catch (e: Exception) {
                 runInUI {
                     hideNotifications()
@@ -173,9 +176,10 @@ open class ResourceEditor(
         resourceVersion.set(version)
     }
 
-    private fun showNotifications(resource: HasMetadata, clusterResource: ClusterResource) {
+    private fun showNotifications(deleted: Boolean, resource: HasMetadata, clusterResource: ClusterResource) {
         when {
-            clusterResource.isDeleted() ->
+            //clusterResource.isDeleted() ->
+            deleted ->
                 showDeletedNotification(resource)
             isModified() ->
                 showPushNotification(resourceVersion.get())
@@ -231,10 +235,10 @@ open class ResourceEditor(
      */
     protected open fun isModified(): Boolean {
         return resourceChangeMutex.withLock {
-            val thisResource: HasMetadata? = editorResource.get()
-            val thatResource: HasMetadata? = lastPushedPulled.get()
+            val editorResource: HasMetadata? = this.editorResource.get()
+            val lastPushedPulled: HasMetadata? = this.lastPushedPulled.get()
             // dont compare resource version, uid
-            runWithoutServerSetProperties(thisResource, thatResource) { thisResource != thatResource }
+            runWithoutServerSetProperties(editorResource, lastPushedPulled) { editorResource != lastPushedPulled }
         }
     }
 
@@ -351,7 +355,7 @@ open class ResourceEditor(
         saveResourceVersion(updated)
         resourceChangeMutex.withLock {
             /**
-             * set [resource], not [updated] so that resource is not modified in later [isModified]
+             * save pushed [resource] so that resource is not modified in later [isModified]
              */
             lastPushedPulled.set(resource)
         }
@@ -395,32 +399,25 @@ open class ResourceEditor(
         _clusterResource?.stopWatch()
     }
 
-    private fun createClusterResource(resource: HasMetadata?, clients: Clients<out KubernetesClient>): ClusterResource? {
-        if (resource == null) {
-            return null
-        }
-        val clusterResource = createClusterResource.invoke(resource, clients) ?: return null
+    private fun createClusterResource(resource: HasMetadata?, context: IActiveContext<out HasMetadata, out KubernetesClient>?): ClusterResource? {
+        val clusterResource = clusterResourceFactory.invoke(resource, context) ?: return null
         clusterResource.addListener(onResourceChanged())
         clusterResource.watch()
         return clusterResource
     }
 
-    private fun onResourceChanged(): ModelChangeObservable.IResourceChangeListener {
-        return object : ModelChangeObservable.IResourceChangeListener {
+    private fun onResourceChanged(): IResourceChangeListener {
+        return object : IResourceChangeListener {
             override fun added(added: Any) {
                 // ignore
             }
 
             override fun removed(removed: Any) {
-                runAsync {
-                    update()
-                }
+                update(true)
             }
 
             override fun modified(modified: Any) {
-                runAsync {
-                    update()
-                }
+                update()
             }
         }
     }
@@ -429,6 +426,7 @@ open class ResourceEditor(
      * Closes this instance. Closes the resource watch and deletes the temporary file if one was created.
      */
     fun close() {
+        resourceModel.removeListener(this)
         // use backing variable to prevent accidental creation
         _clusterResource?.close()
         editor.putUserData(KEY_RESOURCE_EDITOR, null)
@@ -456,6 +454,32 @@ open class ResourceEditor(
             editorToolbar = EditorToolbarFactory.create(ID_TOOLBAR, editor, project)
             editor.putUserData(KEY_TOOLBAR, editorToolbar)
         }
+    }
+
+    override fun modified(modified: Any) {
+        if (modified is IResourceModel) {
+            // active context changed, recreate cluster resource
+            recreateClusterResource()
+        }
+    }
+
+    override fun currentNamespace(namespace: String?) {
+        // current namespace in same context has changed, recreate cluster resource
+        recreateClusterResource()
+    }
+
+    /**
+     * Closes the current [clusterResource] so that a new one is created when it is accessed (ex. in [update]).
+     * Then [update] is called to update the notifications to be shown in the editor.
+     *
+     * @see clusterResource
+     * @see update
+     */
+    private fun recreateClusterResource() {
+        resourceChangeMutex.withLock {
+            clusterResource?.close()
+        }
+        update()
     }
 
     /** for testing purposes */

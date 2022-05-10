@@ -10,7 +10,6 @@
  ******************************************************************************/
 package com.redhat.devtools.intellij.kubernetes.model
 
-import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.diagnostic.logger
 import com.redhat.devtools.intellij.common.utils.ExecHelper
 import com.redhat.devtools.intellij.kubernetes.model.context.Context
@@ -89,11 +88,13 @@ open class Contexts(
 
 	override fun setCurrentNamespace(namespace: String): Boolean {
 		synchronized(this) {
-			if (current == null
-				|| !current!!.setCurrentNamespace(namespace)) {
+			val old = current
+			if (old == null
+				|| !old.setCurrentNamespace(namespace)) {
 				return false
 			}
 			config.setCurrentNamespace(namespace)
+            // triggers config change event
 			config.save()
 		}
 		return true
@@ -113,7 +114,7 @@ open class Contexts(
 	}
 
 	protected open fun getResourceModel(): IResourceModel {
-		return ApplicationManager.getApplication().getService(IResourceModel::class.java)
+		return ResourceModel.getInstance()
 	}
 
 	private fun closeCurrent(): Boolean {

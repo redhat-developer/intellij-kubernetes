@@ -8,7 +8,7 @@
  * Contributors:
  * Red Hat, Inc. - initial API and implementation
  ******************************************************************************/
-package com.redhat.devtools.intellij.kubernetes.editor
+package com.redhat.devtools.intellij.kubernetes.model.resource
 
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.anyOrNull
@@ -21,7 +21,6 @@ import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.whenever
 import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.clusterScopedApiResource
 import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.namespacedApiResource
-import com.redhat.devtools.intellij.kubernetes.model.resource.APIResources
 import com.redhat.devtools.intellij.kubernetes.model.resource.APIResources.APIResource
 import io.fabric8.kubernetes.api.model.GenericKubernetesResource
 import io.fabric8.kubernetes.api.model.GenericKubernetesResourceList
@@ -40,7 +39,7 @@ import io.fabric8.kubernetes.model.Scope
 import org.junit.Test
 import org.mockito.ArgumentMatchers.anyString
 
-class ClusterResourceOperatorTest {
+class NonCachingSingleResourceOperatorTest {
 
     private val clientNamespace = "theForce"
 
@@ -99,7 +98,7 @@ class ClusterResourceOperatorTest {
     fun `#get should call client#genericKubernetesResource(context) if resource is GenericKubernetesResource`() {
         // given
         val apiResource = namespacedApiResource(namespacedCustomResource)
-        val operator = ClusterResourceOperator(client, createAPIResources(apiResource))
+        val operator = NonCachingSingleResourceOperator(client, createAPIResources(apiResource))
         // when
         operator.get(namespacedCustomResource)
         // then
@@ -116,7 +115,7 @@ class ClusterResourceOperatorTest {
     fun `#get should call client#genericKubernetesResources()#inNamespace(resourceNamespace) if custom resource is namespaced and has namespace`() {
         // given
         val apiResource = namespacedApiResource(namespacedCustomResource)
-        val operator = ClusterResourceOperator(client, createAPIResources(apiResource))
+        val operator = NonCachingSingleResourceOperator(client, createAPIResources(apiResource))
         // when
         operator.get(namespacedCustomResource)
         // then
@@ -131,7 +130,7 @@ class ClusterResourceOperatorTest {
             .build()
         namespacedCustomResource.metadata = noNamespace
         val apiResource = namespacedApiResource(namespacedCustomResource)
-        val operator = ClusterResourceOperator(client, createAPIResources(apiResource))
+        val operator = NonCachingSingleResourceOperator(client, createAPIResources(apiResource))
         // when
         operator.get(namespacedCustomResource)
         // then
@@ -142,7 +141,7 @@ class ClusterResourceOperatorTest {
     fun `#get should NOT call client#genericKubernetesResources()#inNamespace() if custom resource is cluster scoped`() {
         // given
         val apiResource = clusterScopedApiResource(clusterCustomResource)
-        val operator = ClusterResourceOperator(client, createAPIResources(apiResource))
+        val operator = NonCachingSingleResourceOperator(client, createAPIResources(apiResource))
         // when
         operator.get(clusterCustomResource)
         // then
@@ -153,7 +152,7 @@ class ClusterResourceOperatorTest {
     fun `#get should call custom resource operation if resource is custom resource deserialized to wrong class`() {
         // given
         val apiResource = namespacedApiResource(customResourceInLegacyClass)
-        val operator = ClusterResourceOperator(client, createAPIResources(apiResource))
+        val operator = NonCachingSingleResourceOperator(client, createAPIResources(apiResource))
         // when
         operator.get(customResourceInLegacyClass)
         // then
@@ -163,7 +162,7 @@ class ClusterResourceOperatorTest {
     @Test(expected = KubernetesClientException::class)
     fun `#get should throw if custom resource is unknown api`() {
         // given
-        val operator = ClusterResourceOperator(client, createAPIResources(null))
+        val operator = NonCachingSingleResourceOperator(client, createAPIResources(null))
         // when
         operator.get(customResourceInLegacyClass)
         // then
@@ -173,7 +172,7 @@ class ClusterResourceOperatorTest {
     fun `#get should call legacy resource operation if resource is legacy resource`() {
         // given
         val apiResource = namespacedApiResource(legacyResource)
-        val operator = ClusterResourceOperator(client, createAPIResources(apiResource))
+        val operator = NonCachingSingleResourceOperator(client, createAPIResources(apiResource))
         // when
         operator.get(legacyResource)
         // then
@@ -184,7 +183,7 @@ class ClusterResourceOperatorTest {
     fun `#get should call client#resource()#inNamespace(resourceNamespace) if legacy resource is namespaced`() {
         // given
         val apiResource = namespacedApiResource(legacyResource)
-        val operator = ClusterResourceOperator(client, createAPIResources(apiResource))
+        val operator = NonCachingSingleResourceOperator(client, createAPIResources(apiResource))
         // when
         operator.get(legacyResource)
         // then
@@ -199,7 +198,7 @@ class ClusterResourceOperatorTest {
             .build()
         legacyResource.metadata = noNamespace
         val apiResource = namespacedApiResource(legacyResource)
-        val operator = ClusterResourceOperator(client, createAPIResources(apiResource))
+        val operator = NonCachingSingleResourceOperator(client, createAPIResources(apiResource))
         // when
         operator.get(legacyResource)
         // then
@@ -209,7 +208,7 @@ class ClusterResourceOperatorTest {
     @Test(expected = KubernetesClientException::class)
     fun `#get should throw if legacy resource is unknown api`() {
         // given
-        val operator = ClusterResourceOperator(client, createAPIResources(null))
+        val operator = NonCachingSingleResourceOperator(client, createAPIResources(null))
         // when
         operator.get(legacyResource)
         // then

@@ -11,11 +11,11 @@
 package com.redhat.devtools.intellij.kubernetes.editor
 
 import com.intellij.openapi.diagnostic.logger
-import com.redhat.devtools.intellij.kubernetes.model.Clients
 import com.redhat.devtools.intellij.kubernetes.model.ModelChangeObservable
 import com.redhat.devtools.intellij.kubernetes.model.ResourceException
 import com.redhat.devtools.intellij.kubernetes.model.ResourceWatch
 import com.redhat.devtools.intellij.kubernetes.model.ResourceWatch.WatchListeners
+import com.redhat.devtools.intellij.kubernetes.model.context.IActiveContext
 import com.redhat.devtools.intellij.kubernetes.model.util.isGreaterIntThan
 import com.redhat.devtools.intellij.kubernetes.model.util.isNotFound
 import com.redhat.devtools.intellij.kubernetes.model.util.isSameResource
@@ -30,11 +30,22 @@ import io.fabric8.kubernetes.client.KubernetesClientException
  */
 open class ClusterResource(
     resource: HasMetadata,
-    private val clients: Clients<out KubernetesClient>,
+    private val context: IActiveContext<out HasMetadata, out KubernetesClient>,
     private val watch: ResourceWatch<HasMetadata> = ResourceWatch(),
-    private val modelChange: ModelChangeObservable = ModelChangeObservable(),
-    private val operator: ClusterResourceOperator = ClusterResourceOperator(clients.get())
+    private val modelChange: ModelChangeObservable = ModelChangeObservable()
 ) {
+    companion object Factory {
+        fun create(resource: HasMetadata?, context: IActiveContext<out HasMetadata, out KubernetesClient>?): ClusterResource? {
+            return if (resource != null
+                && context != null) {
+                ClusterResource(resource, context)
+            } else {
+                logger<ResourceEditor>().warn("Could not create ClusterResource: no resource or context (resource = $resource, context = $context)")
+                null
+            }
+        }
+    }
+
     private val initialResource: HasMetadata = resource
     protected open var updatedResource: HasMetadata? = null
     protected open val watchListeners = WatchListeners(
@@ -50,6 +61,7 @@ open class ClusterResource(
             modelChange.fireModified(changed)
         })
     private var isDeleted: Boolean = false
+    private var closed: Boolean = false
 
     /**
      * Sets the given resource as the current value in this instance.
@@ -92,7 +104,7 @@ open class ClusterResource(
 
     private fun requestResource(): HasMetadata? {
         return try {
-            operator.get(initialResource)
+            context.get(initialResource)
         } catch (e: KubernetesClientException) {
             val message = if (e.isUnsupported()) {
                 // api discovery error
@@ -116,6 +128,12 @@ open class ClusterResource(
         }
     }
 
+    fun isClosed(): Boolean {
+        synchronized(this) {
+            return this.closed
+        }
+    }
+
     fun canPush(toCompare: HasMetadata?): Boolean {
         if (toCompare == null) {
             return true
@@ -126,7 +144,7 @@ open class ClusterResource(
                     || (isSameResource(toCompare) && isModified(toCompare))
         } catch (e: ResourceException) {
             logger<ClusterResource>().warn(
-                "Could not request resource ${initialResource.kind} '${initialResource.metadata.name}' from server ${clients.get().masterUrl}",
+                "Could not request resource ${initialResource.kind} '${initialResource.metadata.name}' from server ${context.masterUrl}",
                 e)
             false
         }
@@ -147,7 +165,7 @@ open class ClusterResource(
                     "Unsupported resource kind ${resource.kind} in version ${resource.apiVersion}."
                 )
             }
-            val updated = operator.replace(resource)
+            val updated = context.replace(resource)
             set(updated)
             return updated
         } catch (e: KubernetesClientException) {
@@ -240,7 +258,7 @@ open class ClusterResource(
             forcedUpdate()
             watch.watch(
                 initialResource,
-                { watcher -> operator.watch(initialResource, watcher) },
+                { watcher -> context.watch(initialResource, watcher) },
                 watchListeners
             )
         } catch (e: KubernetesClientException) {
@@ -279,7 +297,13 @@ open class ClusterResource(
      * Closes this instance and stops the watches.
      */
     fun close() {
-        watch.close()
+        synchronized(this) {
+            if (closed) {
+                return
+            }
+            this.closed = true
+            watch.close()
+        }
     }
 
     /**

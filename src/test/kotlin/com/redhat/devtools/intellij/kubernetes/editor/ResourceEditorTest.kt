@@ -37,13 +37,10 @@ import com.redhat.devtools.intellij.kubernetes.editor.notification.ErrorNotifica
 import com.redhat.devtools.intellij.kubernetes.editor.notification.PullNotification
 import com.redhat.devtools.intellij.kubernetes.editor.notification.PulledNotification
 import com.redhat.devtools.intellij.kubernetes.editor.notification.PushNotification
-import com.redhat.devtools.intellij.kubernetes.model.Clients
+import com.redhat.devtools.intellij.kubernetes.model.IResourceModel
 import com.redhat.devtools.intellij.kubernetes.model.ResourceException
-import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.NAMESPACE1
-import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.NAMESPACE2
-import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.NAMESPACE3
+import com.redhat.devtools.intellij.kubernetes.model.context.IActiveContext
 import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.POD2
-import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.client
 import com.redhat.devtools.intellij.kubernetes.model.mocks.Mocks.kubernetesResourceInfo
 import com.redhat.devtools.intellij.kubernetes.model.mocks.Mocks.kubernetesTypeInfo
 import com.redhat.devtools.intellij.kubernetes.model.util.ResettableLazyProperty
@@ -79,12 +76,6 @@ spec:
          - "echo kube"
       restartPolicy: Never
 """
-    private val allNamespaces = arrayOf(
-        NAMESPACE1,
-        NAMESPACE2,
-        NAMESPACE3)
-    private val currentNamespace = NAMESPACE2
-
     // need real resources, not mocks - #equals used to track changes
     private val GARGAMEL = PodBuilder(POD2)
         .editMetadata()
@@ -127,8 +118,11 @@ spec:
             doReturn(resourceFile)
                 .whenever(this).invoke(any())
         }
+    private val context: IActiveContext<out HasMetadata, out KubernetesClient> = mock()
+    private val resourceModel: IResourceModel = mock {
+        on { getCurrentContext() } doReturn context
+    }
     private val project: Project = mock()
-    private val clients: Clients<out KubernetesClient> = Clients(client(currentNamespace.metadata.name, allNamespaces))
     private val createResource: (editor: FileEditor) -> HasMetadata? =
         mock<(editor: FileEditor) -> HasMetadata?>().apply  {
             doReturn(GARGAMEL)
@@ -138,8 +132,8 @@ spec:
         on { pull(any()) } doReturn GARGAMELv2
         on { isSameResource(any()) } doReturn true
     }
-    private val createClusterResource: (HasMetadata, Clients<out KubernetesClient>) -> ClusterResource =
-        mock<(HasMetadata, Clients<out KubernetesClient>) -> ClusterResource>().apply {
+    private val clusterResourceFactory: (resource: HasMetadata?, context: IActiveContext<out HasMetadata, out KubernetesClient>?) -> ClusterResource? =
+        mock<(HasMetadata?, IActiveContext<out HasMetadata, out KubernetesClient>?) -> ClusterResource?>().apply {
             doReturn(clusterResource)
                 .whenever(this).invoke(any(), any())
         }
@@ -171,10 +165,10 @@ spec:
     private val editor =
         TestableResourceEditor(
             fileEditor,
+            resourceModel,
             project,
-            clients,
             createResource,
-            createClusterResource,
+            clusterResourceFactory,
             createResourceFileForVirtual,
             pushNotification,
             pullNotification,
@@ -195,6 +189,14 @@ spec:
             .whenever(psiFile).getFileType()
         doReturn(psiFile)
             .whenever(psiDocumentManager).getPsiFile(any())
+    }
+
+    @Test
+    fun `should add listener to resourceModel when created`() {
+        // given
+        // when
+        // then
+        verify(resourceModel).addListener(editor)
     }
 
     @Test
@@ -260,11 +262,10 @@ spec:
     @Test
     fun `#update should hide all notifications when resource on cluster is deleted`() {
         // given
-        givenClusterResourceIsDeleted(true)
         givenEditorResourceIsModified(false)
         givenEditorResourceIsOutdated(false)
         // when
-        editor.update()
+        editor.update(true)
         // then
         verifyHideAllNotifications()
     }
@@ -272,7 +273,6 @@ spec:
     @Test
     fun `#update should hide all notifications when resource is modified`() {
         // given
-        givenClusterResourceIsDeleted(false)
         givenEditorResourceIsModified(true)
         givenEditorResourceIsOutdated(false)
         // when
@@ -284,7 +284,6 @@ spec:
     @Test
     fun `#update should hide all notifications when resource is outdated`() {
         // given
-        givenClusterResourceIsDeleted(false)
         givenEditorResourceIsModified(false)
         givenEditorResourceIsOutdated(true)
         // when
@@ -294,9 +293,8 @@ spec:
     }
 
     @Test
-    fun `#update should hide all notifications when editor resource is NOT deleted nor modified nor outdated`() {
+    fun `#update should hide all notifications when editor resource is NOT modified NOR outdated`() {
         // given
-        givenClusterResourceIsDeleted(false)
         givenEditorResourceIsModified(false)
         givenEditorResourceIsOutdated(false)
         // when
@@ -320,11 +318,10 @@ spec:
     @Test
     fun `#update should show deleted notification if resource on cluster is deleted`() {
         // given
-        givenClusterResourceIsDeleted(true)
         givenEditorResourceIsModified(false)
         givenEditorResourceIsOutdated(false)
         // when
-        editor.update()
+        editor.update(true)
         // then
         verify(deletedNotification).show(any())
     }
@@ -332,7 +329,6 @@ spec:
     @Test
     fun `#update should show push notification if resource is modified`() {
         // given
-        givenClusterResourceIsDeleted(false)
         givenEditorResourceIsModified(true)
         givenEditorResourceIsOutdated(false)
         // when
@@ -344,7 +340,6 @@ spec:
     @Test
     fun `#update should show pull notification if resource is outdated`() {
         // given
-        givenClusterResourceIsDeleted(false)
         givenEditorResourceIsModified(false)
         givenEditorResourceIsOutdated(true)
         // when
@@ -766,9 +761,46 @@ spec:
         verify(fileEditor).putUserData(ResourceEditor.KEY_RESOURCE_EDITOR, null)
     }
 
-    private fun givenClusterResourceIsDeleted(deleted: Boolean) {
-        doReturn(deleted)
-            .whenever(clusterResource).isDeleted()
+    @Test
+    fun `#close should remove listener from resourceModel`() {
+        // given
+        // when
+        editor.close()
+        // then
+        verify(resourceModel).removeListener(editor)
+    }
+
+    @Test
+    fun `#modified should close clusterResource if context changed`() {
+        // given
+        whenever(clusterResource.isClosed())
+            .doReturn(false)
+        // when
+        editor.modified(resourceModel)
+        // then
+        verify(clusterResource).close()
+    }
+
+    @Test
+    fun `#modified should NOT close clusterResource if resource changed (only if context changed)`() {
+        // given
+        whenever(clusterResource.isClosed())
+            .doReturn(false)
+        // when
+        editor.modified(GARGAMEL)
+        // then
+        verify(clusterResource, never()).close()
+    }
+
+    @Test
+    fun `#modified should recreate cluster resource`() {
+        // given
+        whenever(clusterResource.isClosed())
+            .doReturn(false)
+        // when
+        editor.modified(resourceModel)
+        // then
+        verify(clusterResourceFactory).invoke(any(), any())
     }
 
     private fun givenEditorResourceIsOutdated(outdated: Boolean) {
@@ -802,10 +834,10 @@ spec:
 
 private class TestableResourceEditor(
     editor: FileEditor,
+    resourceModel: IResourceModel,
     project: Project,
-    clients: Clients<out KubernetesClient>,
     resourceFactory: (editor: FileEditor) -> HasMetadata?,
-    createClusterResource: (HasMetadata, Clients<out KubernetesClient>) -> ClusterResource,
+    clusterResourceFactory: (resource: HasMetadata?, context: IActiveContext<out HasMetadata, out KubernetesClient>?) -> ClusterResource?,
     resourceFileForVirtual: (file: VirtualFile?) -> ResourceFile?,
     pushNotification: PushNotification,
     pullNotification: PullNotification,
@@ -820,10 +852,10 @@ private class TestableResourceEditor(
     diff: ResourceDiff
 ) : ResourceEditor(
     editor,
+    resourceModel,
     project,
-    clients,
     resourceFactory,
-    createClusterResource,
+    clusterResourceFactory,
     resourceFileForVirtual,
     pushNotification,
     pullNotification,
