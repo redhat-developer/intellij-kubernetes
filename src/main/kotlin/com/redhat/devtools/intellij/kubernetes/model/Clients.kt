@@ -13,7 +13,6 @@ package com.redhat.devtools.intellij.kubernetes.model
 import io.fabric8.kubernetes.client.AppsAPIGroupClient
 import io.fabric8.kubernetes.client.BatchAPIGroupClient
 import io.fabric8.kubernetes.client.Client
-import io.fabric8.kubernetes.client.ExtensionsAPIGroupClient
 import io.fabric8.kubernetes.client.NetworkAPIGroupClient
 import io.fabric8.kubernetes.client.StorageAPIGroupClient
 import io.fabric8.openshift.client.OpenShiftClient

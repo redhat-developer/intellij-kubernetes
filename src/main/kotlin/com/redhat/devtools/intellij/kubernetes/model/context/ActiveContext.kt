@@ -14,6 +14,7 @@ import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.extensions.ExtensionPointName
 import com.redhat.devtools.intellij.common.kubernetes.ClusterHelper
 import com.redhat.devtools.intellij.common.kubernetes.ClusterInfo
+import com.redhat.devtools.intellij.kubernetes.model.resource.NonCachingSingleResourceOperator
 import com.redhat.devtools.intellij.kubernetes.model.Clients
 import com.redhat.devtools.intellij.kubernetes.model.IModelChangeObservable
 import com.redhat.devtools.intellij.kubernetes.model.Notification
@@ -45,12 +46,15 @@ import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinition
 import io.fabric8.kubernetes.client.Config
 import io.fabric8.kubernetes.client.KubernetesClient
 import io.fabric8.kubernetes.client.KubernetesClientException
+import io.fabric8.kubernetes.client.Watch
+import io.fabric8.kubernetes.client.Watcher
 import java.net.URL
 
 abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
     private val modelChange: IModelChangeObservable,
     private val clients: Clients<C>,
-    context: NamedContext
+    context: NamedContext,
+    private val singleResourceOperator: NonCachingSingleResourceOperator = NonCachingSingleResourceOperator(clients.get())
 ) : Context(context), IActiveContext<N, C> {
 
     override val active: Boolean = true
@@ -255,6 +259,14 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
         }
     }
 
+    override fun get(resource: HasMetadata): HasMetadata? {
+        return singleResourceOperator.get(resource)
+    }
+
+    override fun replace(resource: HasMetadata): HasMetadata? {
+        return singleResourceOperator.replace(resource)
+    }
+
     override fun watch(kind: ResourceKind<out HasMetadata>) {
         logger<ActiveContext<*, *>>().debug("Watching $kind resources.")
         watch(namespacedOperators[kind])
@@ -279,6 +291,10 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
         }
 
         watch.watch(operator.kind, operator::watchAll, watchListener)
+    }
+
+    override fun watch(resource: HasMetadata, watcher: Watcher<HasMetadata>): Watch? {
+        return singleResourceOperator.watch(resource, watcher)
     }
 
     override fun stopWatch(kind: ResourceKind<out HasMetadata>) {

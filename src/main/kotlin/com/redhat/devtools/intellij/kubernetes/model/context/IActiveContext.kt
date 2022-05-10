@@ -16,6 +16,8 @@ import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.custom.
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinition
 import io.fabric8.kubernetes.client.KubernetesClient
+import io.fabric8.kubernetes.client.Watch
+import io.fabric8.kubernetes.client.Watcher
 import java.net.URL
 
 interface IActiveContext<N: HasMetadata, C: KubernetesClient>: IContext {
@@ -97,6 +99,24 @@ interface IActiveContext<N: HasMetadata, C: KubernetesClient>: IContext {
     fun getAllResources(definition: CustomResourceDefinition): Collection<GenericCustomResource>
 
     /**
+     * Returns the latest version of the given resource from cluster. Returns `null` if none was found.
+     *
+     * @param resource which is to be requested from cluster
+     *
+     * @return resource that was retrieved from cluster
+     */
+    fun get(resource: HasMetadata): HasMetadata?
+
+    /**
+     * Replaces the given resource on the cluster if it exists. Creates a new one if it doesn't.
+     *
+     * @param resource that shall be replaced on the cluster
+     *
+     * @return the resource that was created
+     */
+    fun replace(resource: HasMetadata): HasMetadata?
+
+    /**
      * Watches all resources of the given resource kind
      *
      * @param kind the kind of resources to ignore
@@ -109,6 +129,15 @@ interface IActiveContext<N: HasMetadata, C: KubernetesClient>: IContext {
      * @param definition the custom resource definition that specifies the custom resources to watch
      */
     fun watch(definition: CustomResourceDefinition)
+
+    /**
+     * Creates a watch for the given resource.
+     *
+     * @param resource that shall be replaced on the cluster
+     *
+     * @return the resource that was created
+     */
+    fun watch(resource: HasMetadata, watcher: Watcher<HasMetadata>): Watch?
 
     /**
      * Stops watching resources of the given resource kind

@@ -10,10 +10,10 @@
  ******************************************************************************/
 package com.redhat.devtools.intellij.kubernetes.model
 
-import io.fabric8.kubernetes.api.model.Namespace
-import org.assertj.core.api.Assertions.assertThat
 import com.redhat.devtools.intellij.kubernetes.model.ModelChangeObservable.IResourceChangeListener
 import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.resource
+import io.fabric8.kubernetes.api.model.Namespace
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
 import org.junit.Test
 
@@ -63,16 +63,43 @@ class ModelChangeObservableTest {
     }
 
     @Test
-    fun `#addListener should not add listener that is not contained yet`() {
+    fun `#addListener should add listener that is not contained yet`() {
         // given
-        assertThat(observable.listeners.contains(listener)).isTrue()
         val sizeBeforeAdd = observable.listeners.size
         val newListener = object: IResourceChangeListener {}
+        assertThat(observable.listeners.contains(newListener)).isFalse()
         // when
         observable.addListener(newListener)
         // then
         assertThat(observable.listeners.size).isEqualTo(sizeBeforeAdd + 1)
         assertThat(observable.listeners.contains(newListener)).isTrue()
+    }
+
+    @Test
+    fun `#removeListener should remove listener that is contained`() {
+        // given
+        val newListener = object: IResourceChangeListener {}
+        observable.addListener(newListener)
+        assertThat(observable.listeners.contains(newListener)).isTrue()
+        val sizeBeforeRemove = observable.listeners.size
+        // when
+        observable.removeListener(newListener)
+        // then
+        assertThat(observable.listeners.size).isEqualTo(sizeBeforeRemove - 1)
+        assertThat(observable.listeners.contains(newListener)).isFalse()
+    }
+
+    @Test
+    fun `#removeListener should NOT remove listener that is NOT contained`() {
+        // given
+        val newListener = object: IResourceChangeListener {}
+        assertThat(observable.listeners.contains(newListener)).isFalse()
+        val sizeBeforeRemove = observable.listeners.size
+        // when
+        observable.removeListener(newListener)
+        // then
+        assertThat(observable.listeners.size).isEqualTo(sizeBeforeRemove)
+        assertThat(observable.listeners.contains(newListener)).isFalse()
     }
 
     @Test

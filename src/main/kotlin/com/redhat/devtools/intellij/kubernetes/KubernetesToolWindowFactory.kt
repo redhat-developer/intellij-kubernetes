@@ -12,7 +12,6 @@ package com.redhat.devtools.intellij.kubernetes
 
 import com.intellij.ide.util.treeView.NodeRenderer
 import com.intellij.openapi.actionSystem.ActionPlaces
-import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.wm.ToolWindow
 import com.intellij.openapi.wm.ToolWindowFactory
@@ -25,7 +24,7 @@ import com.redhat.devtools.intellij.common.tree.StructureTreeModelFactory
 import com.redhat.devtools.intellij.kubernetes.actions.addDoubleClickListener
 import com.redhat.devtools.intellij.kubernetes.actions.getElement
 import com.redhat.devtools.intellij.kubernetes.editor.ResourceEditorFactory
-import com.redhat.devtools.intellij.kubernetes.model.IResourceModel
+import com.redhat.devtools.intellij.kubernetes.model.ResourceModel
 import com.redhat.devtools.intellij.kubernetes.tree.ResourceWatchController
 import com.redhat.devtools.intellij.kubernetes.tree.TreeStructure
 import com.redhat.devtools.intellij.kubernetes.tree.TreeUpdater
@@ -49,7 +48,7 @@ class KubernetesToolWindowFactory: ToolWindowFactory {
     }
 
     private fun createTree(project: Project): Tree {
-        val resourceModel = ApplicationManager.getApplication().getService(IResourceModel::class.java)
+        val resourceModel = ResourceModel.getInstance()
         val structure = TreeStructure(project, resourceModel)
         val treeModel = StructureTreeModelFactory.create(structure, project)
         val tree = Tree(AsyncTreeModel(treeModel, project))
