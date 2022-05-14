@@ -28,7 +28,7 @@ import io.fabric8.kubernetes.client.KubernetesClientException
  * A resource that exists on the cluster. May be [pull], [set] etc.
  * Notifies listeners of addition, removal and modification if [watch]
  */
-open class ClusterResource(
+open class ClusterResource protected constructor(
     resource: HasMetadata,
     private val context: IActiveContext<out HasMetadata, out KubernetesClient>,
     private val watch: ResourceWatch<HasMetadata> = ResourceWatch(),
