@@ -98,7 +98,7 @@ Alternatively you can replace your local version with the one on the cluster and
 
 #### Diff
 
-The editor allows to you to compare its content with the resource on the cluster.
+The editor allows you to compare the local content with the resource content on the cluster.
 The toolbar holds an action that opens up a fully editable diff that highlights the differences.   
 
 ![editor toolbar diff](images/editor-toolbar-diff.png)
