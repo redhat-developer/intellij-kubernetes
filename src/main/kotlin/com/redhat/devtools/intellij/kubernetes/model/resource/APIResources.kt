@@ -77,7 +77,7 @@ class APIResources(private val client: KubernetesClient) {
 
     private fun request(url: String, client: KubernetesClient): ResponseBody? {
         // only base client exposes httpClient
-        val baseClient = client as? BaseClient ?: return null
+        val baseClient = client as? BaseClient? ?: return null
         val httpClient = client.httpClient
         val config = baseClient.configuration
         val request = Request.Builder()
