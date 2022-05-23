@@ -12,7 +12,7 @@ package com.redhat.devtools.intellij.kubernetes.model.context
 
 import com.redhat.devtools.intellij.common.kubernetes.ClusterInfo
 import com.redhat.devtools.intellij.kubernetes.model.resource.ResourceKind
-import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.custom.GenericCustomResource
+import io.fabric8.kubernetes.api.model.GenericKubernetesResource
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinition
 import io.fabric8.kubernetes.client.KubernetesClient
@@ -96,7 +96,7 @@ interface IActiveContext<N: HasMetadata, C: KubernetesClient>: IContext {
      * @see [io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinition]
      * @see [io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinitionSpec]
      */
-    fun getAllResources(definition: CustomResourceDefinition): Collection<GenericCustomResource>
+    fun getAllResources(definition: CustomResourceDefinition): Collection<GenericKubernetesResource>
 
     /**
      * Returns the latest version of the given resource from cluster. Returns `null` if none was found.

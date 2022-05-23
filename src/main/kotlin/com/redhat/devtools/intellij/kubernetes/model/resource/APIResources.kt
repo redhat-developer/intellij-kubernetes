@@ -85,6 +85,7 @@ class APIResources(private val client: KubernetesClient) {
             .addHeader(KEY_HEADER_AUTHORIZATION, "$VALUE_HEADER_BEARER ${config.oauthToken}")
             .build()
 
+        // IDEA complains about elvis operator always returning left portion. This is wrong, #newCall can return null
         val response = httpClient.newCall(request).execute() ?: return null
         // doesn't compile in IDEA but does in gradle: IJ is using okhttp 3, gradle okhttp 4
         return when (response.code) {

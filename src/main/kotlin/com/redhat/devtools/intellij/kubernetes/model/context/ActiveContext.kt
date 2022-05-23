@@ -14,7 +14,6 @@ import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.extensions.ExtensionPointName
 import com.redhat.devtools.intellij.common.kubernetes.ClusterHelper
 import com.redhat.devtools.intellij.common.kubernetes.ClusterInfo
-import com.redhat.devtools.intellij.kubernetes.model.resource.NonCachingSingleResourceOperator
 import com.redhat.devtools.intellij.kubernetes.model.Clients
 import com.redhat.devtools.intellij.kubernetes.model.IModelChangeObservable
 import com.redhat.devtools.intellij.kubernetes.model.Notification
@@ -28,10 +27,9 @@ import com.redhat.devtools.intellij.kubernetes.model.resource.INamespacedResourc
 import com.redhat.devtools.intellij.kubernetes.model.resource.INonNamespacedResourceOperator
 import com.redhat.devtools.intellij.kubernetes.model.resource.IResourceOperator
 import com.redhat.devtools.intellij.kubernetes.model.resource.IResourceOperatorFactory
+import com.redhat.devtools.intellij.kubernetes.model.resource.NonCachingSingleResourceOperator
 import com.redhat.devtools.intellij.kubernetes.model.resource.ResourceKind
 import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.custom.CustomResourceDefinitionContextFactory
-import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.custom.CustomResourceScope
-import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.custom.GenericCustomResource
 import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.custom.NamespacedCustomResourceOperator
 import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.custom.NonNamespacedCustomResourceOperator
 import com.redhat.devtools.intellij.kubernetes.model.util.MultiResourceException
@@ -39,6 +37,7 @@ import com.redhat.devtools.intellij.kubernetes.model.util.ResourceException
 import com.redhat.devtools.intellij.kubernetes.model.util.isSameResource
 import com.redhat.devtools.intellij.kubernetes.model.util.setWillBeDeleted
 import com.redhat.devtools.intellij.kubernetes.model.util.toMessage
+import io.fabric8.kubernetes.api.model.GenericKubernetesResource
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.NamedContext
 import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinition
@@ -48,6 +47,7 @@ import io.fabric8.kubernetes.client.KubernetesClient
 import io.fabric8.kubernetes.client.KubernetesClientException
 import io.fabric8.kubernetes.client.Watch
 import io.fabric8.kubernetes.client.Watcher
+import io.fabric8.kubernetes.model.Scope
 import java.net.URL
 
 abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
@@ -161,7 +161,7 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
 
     private fun setOperator(
         operator: IResourceOperator<out HasMetadata>,
-        kind: ResourceKind<GenericCustomResource>,
+        kind: ResourceKind<GenericKubernetesResource>,
         resourcesIn: ResourcesIn
     ) {
         when (resourcesIn) {
@@ -188,11 +188,11 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
         }
     }
 
-    private fun getOperator(definition: CustomResourceDefinition): IResourceOperator<GenericCustomResource>? {
+    private fun getOperator(definition: CustomResourceDefinition): IResourceOperator<GenericKubernetesResource>? {
         val kind = ResourceKind.create(definition.spec) ?: return null
         val resourcesIn = toResourcesIn(definition.spec)
         synchronized(this) {
-            var operator: IResourceOperator<GenericCustomResource>? = getOperator(kind, resourcesIn)
+            var operator: IResourceOperator<GenericKubernetesResource>? = getOperator(kind, resourcesIn)
             if (operator == null) {
                 operator = createCustomResourcesOperator(definition, kind)
             }
@@ -200,14 +200,14 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
         }
     }
 
-    override fun getAllResources(definition: CustomResourceDefinition): Collection<GenericCustomResource> {
+    override fun getAllResources(definition: CustomResourceDefinition): Collection<GenericKubernetesResource> {
         return getOperator(definition)?.allResources ?: return emptyList()
     }
 
     private fun createCustomResourcesOperator(
             definition: CustomResourceDefinition,
-            kind: ResourceKind<GenericCustomResource>)
-            : IResourceOperator<GenericCustomResource>? {
+            kind: ResourceKind<GenericKubernetesResource>)
+            : IResourceOperator<GenericKubernetesResource>? {
         synchronized(this) {
             val resourceIn = toResourcesIn(definition.spec)
             val operator = createCustomResourcesOperator(definition, resourceIn) ?: return null
@@ -219,7 +219,7 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
     protected open fun createCustomResourcesOperator(
             definition: CustomResourceDefinition,
             resourceIn: ResourcesIn)
-            : IResourceOperator<GenericCustomResource>? {
+            : IResourceOperator<GenericKubernetesResource>? {
         val kind = ResourceKind.create(definition.spec) ?: return null
         val context = CustomResourceDefinitionContextFactory.create(definition)
         return when(resourceIn) {
@@ -252,8 +252,8 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
 
     private fun toResourcesIn(spec: CustomResourceDefinitionSpec): ResourcesIn {
         return when (spec.scope) {
-            CustomResourceScope.CLUSTER -> NO_NAMESPACE
-            CustomResourceScope.NAMESPACED -> CURRENT_NAMESPACE
+            Scope.CLUSTER.value() -> NO_NAMESPACE
+            Scope.NAMESPACED.value() -> CURRENT_NAMESPACE
             else -> throw IllegalArgumentException(
                     "Could not determine scope in spec for custom resource definition ${spec.names.kind}")
         }

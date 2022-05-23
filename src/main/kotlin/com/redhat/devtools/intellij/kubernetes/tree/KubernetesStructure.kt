@@ -37,7 +37,6 @@ import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.Service
 import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.StatefulSetsOperator
 import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.StorageClassesOperator
 import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.custom.CustomResourceDefinitionsOperator
-import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.custom.GenericCustomResource
 import com.redhat.devtools.intellij.kubernetes.model.resourceName
 import com.redhat.devtools.intellij.kubernetes.tree.KubernetesStructure.Folders.CONFIGURATION
 import com.redhat.devtools.intellij.kubernetes.tree.KubernetesStructure.Folders.CONFIG_MAPS
@@ -62,6 +61,7 @@ import com.redhat.devtools.intellij.kubernetes.tree.KubernetesStructure.Folders.
 import com.redhat.devtools.intellij.kubernetes.tree.KubernetesStructure.Folders.WORKLOADS
 import com.redhat.devtools.intellij.kubernetes.tree.TreeStructure.Folder
 import io.fabric8.kubernetes.api.model.ConfigMap
+import io.fabric8.kubernetes.api.model.GenericKubernetesResource
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.Namespace
 import io.fabric8.kubernetes.api.model.Node
@@ -464,7 +464,7 @@ class KubernetesStructure(model: IResourceModel) : AbstractTreeStructureContribu
 			is Namespace,
 			is Endpoint,
 			is StorageClass,
-			is GenericCustomResource -> LeafState.ALWAYS
+			is GenericKubernetesResource -> LeafState.ALWAYS
 			else -> null
 		}
 	}

@@ -20,6 +20,7 @@ import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.resource
 import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.hasmetadata.HasMetadataResource
 import com.redhat.devtools.intellij.kubernetes.model.util.getApiVersion
 import io.fabric8.kubernetes.client.KubernetesClientException
+import io.fabric8.kubernetes.model.Scope
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test
 
@@ -40,7 +41,7 @@ class CustomResourceOperatorFactoryTest {
             ),
             group,
             kind,
-            CustomResourceScope.CLUSTER
+            Scope.CLUSTER.value()
         )
         private val CRD_CLUSTER_SCOPE = customResourceDefinition(
             "crd1", "ns1", "uid1", "apiVersion1",
@@ -49,7 +50,7 @@ class CustomResourceOperatorFactoryTest {
             ),
             group,
             kind,
-            CustomResourceScope.CLUSTER
+            Scope.CLUSTER.value()
         )
 
         private val CRD_NAMESPACE_SCOPED = customResourceDefinition(
@@ -59,7 +60,7 @@ class CustomResourceOperatorFactoryTest {
             ),
             group,
             kind,
-            CustomResourceScope.NAMESPACED
+            Scope.NAMESPACED.value()
         )
 
         private val CRD_UNKNOWN_SCOPE = customResourceDefinition(

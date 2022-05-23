@@ -49,9 +49,8 @@ import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.Namespa
 import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.NamespacesOperator
 import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.NodesOperator
 import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.ServicesOperator
-import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.custom.CustomResourceScope
-import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.custom.GenericCustomResource
 import com.redhat.devtools.intellij.kubernetes.model.util.MultiResourceException
+import io.fabric8.kubernetes.api.model.GenericKubernetesResource
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.Namespace
 import io.fabric8.kubernetes.api.model.Node
@@ -62,6 +61,7 @@ import io.fabric8.kubernetes.client.KubernetesClient
 import io.fabric8.kubernetes.client.NamespacedKubernetesClient
 import io.fabric8.kubernetes.client.Watch
 import io.fabric8.kubernetes.client.Watcher
+import io.fabric8.kubernetes.model.Scope
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
 import org.junit.Test
@@ -123,7 +123,7 @@ class KubernetesContextTest {
 		"version1",
 		"group1",
 		"namespaced-crd",
-		CustomResourceScope.NAMESPACED)
+		Scope.NAMESPACED.value())
 	private val clusterwideDefinition = customResourceDefinition(
 		"cluster crd",
 		"ns2",
@@ -132,7 +132,7 @@ class KubernetesContextTest {
 		"version2",
 		"group2",
 		"cluster-crd",
-		CustomResourceScope.CLUSTER)
+		Scope.CLUSTER.value())
 	private val customResourceDefinitionsOperator: INonNamespacedResourceOperator<CustomResourceDefinition, NamespacedKubernetesClient> =
 		nonNamespacedResourceOperator(
 			crdKind,
@@ -148,23 +148,23 @@ class KubernetesContextTest {
 		namespacedDefinition)
 
 	private val namespacedCustomResourceWatch = mock<Watch>()
-	private val namespacedCustomResourceWatchOp: (watcher: Watcher<in GenericCustomResource>) -> Watch? = { namespacedCustomResourceWatch }
-	private val namespacedCustomResourceOperator: INamespacedResourceOperator<GenericCustomResource, KubernetesClient> =
+	private val namespacedCustomResourceWatchOp: (watcher: Watcher<in GenericKubernetesResource>) -> Watch? = { namespacedCustomResourceWatch }
+	private val namespacedCustomResourceOperator: INamespacedResourceOperator<GenericKubernetesResource, KubernetesClient> =
 		namespacedResourceOperator(
 			ResourceKind.create(namespacedDefinition.spec),
 			listOf(namespacedCustomResource1, namespacedCustomResource2),
 			currentNamespace,
 			namespacedCustomResourceWatchOp
 		)
-	private val nonNamespacedCustomResource = resource<GenericCustomResource>(
+	private val nonNamespacedCustomResource = resource<GenericKubernetesResource>(
 		"genericCustomResource1",
 		"smurfington",
 		"uid",
 		"v1")
-	private val nonNamespacedCustomResourceWatchOp: (watcher: Watcher<in GenericCustomResource>) -> Watch? = { null }
-	private val nonNamespacedCustomResourcesOperator: INonNamespacedResourceOperator<GenericCustomResource, KubernetesClient> =
+	private val nonNamespacedCustomResourceWatchOp: (watcher: Watcher<in GenericKubernetesResource>) -> Watch? = { null }
+	private val nonNamespacedCustomResourcesOperator: INonNamespacedResourceOperator<GenericKubernetesResource, KubernetesClient> =
 		nonNamespacedResourceOperator(
-			ResourceKind.create(GenericCustomResource::class.java),
+			ResourceKind.create(GenericKubernetesResource::class.java),
 			listOf(nonNamespacedCustomResource),
 			nonNamespacedCustomResourceWatchOp
 		)
@@ -1015,7 +1015,7 @@ class KubernetesContextTest {
 	private fun givenCustomResourceOperatorInContext(
 		definition: CustomResourceDefinition,
 		definitionOperator: IResourceOperator<CustomResourceDefinition>,
-		resourceOperator: IResourceOperator<GenericCustomResource>?) {
+		resourceOperator: IResourceOperator<GenericKubernetesResource>?) {
 		whenever(definitionOperator.removed(definition))
 			.doReturn(true)
 
@@ -1046,8 +1046,8 @@ class KubernetesContextTest {
         private val internalResourceOperators: List<IResourceOperator<out HasMetadata>>,
         private val extensionResourceOperators: List<IResourceOperator<out HasMetadata>>,
         private val customResourcesOperators: Pair<
-					INamespacedResourceOperator<GenericCustomResource, KubernetesClient>,
-					INonNamespacedResourceOperator<GenericCustomResource, KubernetesClient>>,
+					INamespacedResourceOperator<GenericKubernetesResource, KubernetesClient>,
+					INonNamespacedResourceOperator<GenericKubernetesResource, KubernetesClient>>,
         public override var watch: ResourceWatch<ResourceKind<out HasMetadata>>,
         override val notification: Notification)
 		: KubernetesContext(observable, clients, mock()) {
@@ -1077,7 +1077,7 @@ class KubernetesContextTest {
 		public override fun createCustomResourcesOperator(
 			definition: CustomResourceDefinition,
 			resourceIn: ResourcesIn)
-				: IResourceOperator<GenericCustomResource> {
+				: IResourceOperator<GenericKubernetesResource> {
 			return when(resourceIn) {
 				ResourcesIn.CURRENT_NAMESPACE ->
 					customResourcesOperators.first
