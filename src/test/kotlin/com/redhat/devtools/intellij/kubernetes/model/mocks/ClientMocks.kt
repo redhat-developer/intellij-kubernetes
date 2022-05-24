@@ -13,28 +13,15 @@ package com.redhat.devtools.intellij.kubernetes.model.mocks
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.mock
-import com.nhaarman.mockitokotlin2.spy
 import com.nhaarman.mockitokotlin2.whenever
 import com.redhat.devtools.intellij.kubernetes.model.resource.APIResources
-import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.AbstractResourceFactory.Companion.API_VERSION
-import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.AbstractResourceFactory.Companion.CREATION_TIMESTAMP
-import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.AbstractResourceFactory.Companion.GENERATION
-import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.AbstractResourceFactory.Companion.KIND
-import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.AbstractResourceFactory.Companion.LABELS
-import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.AbstractResourceFactory.Companion.METADATA
-import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.AbstractResourceFactory.Companion.NAME
-import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.AbstractResourceFactory.Companion.NAMESPACE
-import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.AbstractResourceFactory.Companion.RESOURCE_VERSION
-import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.AbstractResourceFactory.Companion.SELF_LINK
-import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.AbstractResourceFactory.Companion.UID
-import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.custom.GenericCustomResource
-import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.custom.GenericCustomResourceFactory.SPEC
 import com.redhat.devtools.intellij.kubernetes.model.util.getApiVersion
 import com.redhat.devtools.intellij.kubernetes.model.util.getHighestPriorityVersion
 import io.fabric8.kubernetes.api.Pluralize
 import io.fabric8.kubernetes.api.model.Context
+import io.fabric8.kubernetes.api.model.GenericKubernetesResource
+import io.fabric8.kubernetes.api.model.GenericKubernetesResourceList
 import io.fabric8.kubernetes.api.model.HasMetadata
-import io.fabric8.kubernetes.api.model.ListOptions
 import io.fabric8.kubernetes.api.model.NamedContext
 import io.fabric8.kubernetes.api.model.Namespace
 import io.fabric8.kubernetes.api.model.NamespaceList
@@ -56,7 +43,6 @@ import io.fabric8.kubernetes.client.dsl.MixedOperation
 import io.fabric8.kubernetes.client.dsl.NonNamespaceOperation
 import io.fabric8.kubernetes.client.dsl.PodResource
 import io.fabric8.kubernetes.client.dsl.Resource
-import io.fabric8.kubernetes.client.dsl.internal.RawCustomResourceOperationsImpl
 import java.net.URL
 import org.mockito.ArgumentMatchers
 
@@ -201,13 +187,6 @@ object ClientMocks {
             .whenever(config).currentContext
     }
 
-    fun apiConfig(currentContext: String, contexts: List<NamedContext>): io.fabric8.kubernetes.api.model.Config {
-        return mock {
-            on { mock.currentContext } doReturn currentContext
-            on { mock.contexts } doReturn contexts
-        }
-    }
-
     fun customResourceDefinition(
         name: String,
         namespace: String,
@@ -278,7 +257,7 @@ object ClientMocks {
         definition: CustomResourceDefinition,
         uid: String? = System.currentTimeMillis().toString(),
         resourceVersion: String = System.currentTimeMillis().toString()
-    ): GenericCustomResource {
+    ): GenericKubernetesResource {
         val metadata = objectMeta(name, namespace, uid, resourceVersion)
         val apiVersion = getApiVersion(
             definition.spec.group,
@@ -292,40 +271,22 @@ object ClientMocks {
         }
     }
 
-    fun customResourceMap(customResource: GenericCustomResource): Map<String, Any?> {
-        return mapOf(
-            KIND to customResource.kind as String,
-            API_VERSION to customResource.apiVersion as String,
-            METADATA to metadataMap(customResource.metadata),
-            SPEC to customResource.spec
-        )
-    }
-
-    private fun metadataMap(objectMeta: ObjectMeta): Map<String, Any> {
-        return mapOf(
-            CREATION_TIMESTAMP to objectMeta.creationTimestamp,
-            GENERATION to objectMeta.generation,
-            NAME to objectMeta.name,
-            NAMESPACE to objectMeta.namespace,
-            RESOURCE_VERSION to objectMeta.resourceVersion,
-            SELF_LINK to objectMeta.selfLink,
-            UID to objectMeta.uid,
-            LABELS to objectMeta.labels
-        )
-    }
-
-    fun namespacedCustomResourceOperation(resource: Map<String, Any?>, resources: Map<String, Any?>, watch: Watch): RawCustomResourceOperationsImpl {
-        val op = spy(RawCustomResourceOperationsImpl(mock(), mock(), mock()))
+    fun namespacedCustomResourceOperation(
+        resource: GenericKubernetesResource,
+        resources: List<GenericKubernetesResource>,
+        watch: Watch
+    ): MixedOperation<GenericKubernetesResource, GenericKubernetesResourceList, Resource<GenericKubernetesResource>> {
+        val op = mock<MixedOperation<GenericKubernetesResource, GenericKubernetesResourceList, Resource<GenericKubernetesResource>>>()
         doReturn(resources)
-            .whenever(op).list(any<String>())
+            .whenever(op).list()
         doReturn(watch)
-            .whenever(op).watch(any(), any(), any<Map<String, String>>(), any<ListOptions>(), any<Watcher<String>>())
+            .whenever(op).watch(any<Watcher<GenericKubernetesResource>>())
+        doReturn(resources)
+            .whenever(op).list()
         doReturn(resource)
-            .whenever(op).list(any<String>())
-        doReturn(resource)
-            .whenever(op).createOrReplace(any(), any<String>())
+            .whenever(op).createOrReplace(any())
         doReturn(true)
-            .whenever(op).delete(any(), any<String>())
+            .whenever(op).delete(any<List<GenericKubernetesResource>>())
         return op
     }
 

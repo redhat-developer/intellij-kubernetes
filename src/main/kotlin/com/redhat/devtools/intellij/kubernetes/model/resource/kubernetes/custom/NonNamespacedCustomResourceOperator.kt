@@ -10,65 +10,55 @@
  ******************************************************************************/
 package com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.custom
 
+import com.redhat.devtools.intellij.kubernetes.model.resource.NonNamespacedOperation
 import com.redhat.devtools.intellij.kubernetes.model.resource.NonNamespacedResourceOperator
 import com.redhat.devtools.intellij.kubernetes.model.resource.ResourceKind
 import com.redhat.devtools.intellij.kubernetes.model.util.runWithoutServerSetProperties
+import io.fabric8.kubernetes.api.model.GenericKubernetesResource
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.client.KubernetesClient
 import io.fabric8.kubernetes.client.Watch
 import io.fabric8.kubernetes.client.Watcher
 import io.fabric8.kubernetes.client.dsl.base.CustomResourceDefinitionContext
-import io.fabric8.kubernetes.client.utils.Serialization
 
 class NonNamespacedCustomResourceOperator(
-    override val kind: ResourceKind<GenericCustomResource>,
-    context: CustomResourceDefinitionContext,
+    override val kind: ResourceKind<GenericKubernetesResource>,
+    private val context: CustomResourceDefinitionContext,
     client: KubernetesClient
-) : NonNamespacedResourceOperator<GenericCustomResource, KubernetesClient>(client) {
+) : NonNamespacedResourceOperator<GenericKubernetesResource, KubernetesClient>(client) {
 
-    private val operation = CustomResourceRawOperation(client, context)
-
-    override fun loadAllResources(): List<GenericCustomResource> {
-        val resourcesList = operation.get().list()
-        return GenericCustomResourceFactory.createResources(resourcesList)
+    override fun loadAllResources(): List<GenericKubernetesResource> {
+        return getOperation()?.list()?.items ?: emptyList()
     }
 
-    override fun watch(resource: HasMetadata, watcher: Watcher<in GenericCustomResource>): Watch? {
-        return watch(resource.metadata.namespace, resource.metadata.name, watcher)
+    override fun watch(resource: HasMetadata, watcher: Watcher<in GenericKubernetesResource>): Watch? {
+        val typedWatcher = watcher as? Watcher<GenericKubernetesResource> ?: return null
+        return getOperation()?.withName(resource.metadata.name)?.watch(typedWatcher)
     }
 
-    override fun watchAll(watcher: Watcher<in GenericCustomResource>): Watch? {
-        return watch(null, null, watcher)
-    }
-
-    private fun watch(namespace: String?, name: String?, watcher: Watcher<in GenericCustomResource>): Watch? {
-        @Suppress("UNCHECKED_CAST")
-        val typedWatcher = watcher as? Watcher<GenericCustomResource> ?: return null
-        val watchableWrapper = GenericCustomResourceWatchable { options, customResourceWatcher ->
-            operation.get().watch(namespace, name, null, options, customResourceWatcher)
-        }
-        return watchableWrapper.watch(typedWatcher)
+    override fun watchAll(watcher: Watcher<in GenericKubernetesResource>): Watch? {
+        val typedWatcher = watcher as? Watcher<GenericKubernetesResource> ?: return null
+        return getOperation()?.watch(typedWatcher)
     }
 
     override fun delete(resources: List<HasMetadata>): Boolean {
         @Suppress("UNCHECKED_CAST")
-        val toDelete = resources as? List<GenericCustomResource> ?: return false
+        val toDelete = resources as? List<GenericKubernetesResource> ?: return false
         return toDelete.stream()
             .map { delete(it.metadata.name) }
             .reduce(false ) { thisDelete, thatDelete -> thisDelete || thatDelete }
     }
 
     private fun delete(name: String): Boolean {
-        operation.get().delete(name)
+        getOperation()?.withName(name)?.delete()
         return true
     }
 
     override fun replace(resource: HasMetadata): HasMetadata? {
-        val toReplace = resource as? GenericCustomResource ?: return null
+        val toReplace = resource as? GenericKubernetesResource ?: return null
 
         return runWithoutServerSetProperties(toReplace) {
-            val updated = operation.get().createOrReplace(resource.metadata.name, Serialization.asJson(resource))
-            GenericCustomResourceFactory.createResource(updated)
+            getOperation()?.withName(resource.metadata.name)?.createOrReplace(resource)
         }
     }
 
@@ -77,8 +67,10 @@ class NonNamespacedCustomResourceOperator(
     }
 
     override fun get(resource: HasMetadata): HasMetadata? {
-        val updated = operation.get().get(null, resource.metadata.name)
-        return GenericCustomResourceFactory.createResource(updated)
+        return getOperation()?.withName(resource.metadata.name)?.get()
     }
 
+    override fun getOperation(): NonNamespacedOperation<GenericKubernetesResource>? {
+        return client.genericKubernetesResources(context)
+    }
 }

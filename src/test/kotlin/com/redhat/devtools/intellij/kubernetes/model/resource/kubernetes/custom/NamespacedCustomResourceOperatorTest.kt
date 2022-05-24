@@ -21,10 +21,8 @@ import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.NAMESPACE
 import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.NAMESPACE3
 import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.client
 import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.customResource
-import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.customResourceMap
 import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.namespacedCustomResourceOperation
 import com.redhat.devtools.intellij.kubernetes.model.resource.ResourceKind
-import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.AbstractResourceFactory.Companion.ITEMS
 import io.fabric8.kubernetes.api.model.ObjectMetaBuilder
 import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinitionBuilder
 import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinitionNamesBuilder
@@ -37,7 +35,6 @@ import org.mockito.ArgumentCaptor
 
 
 class NamespacedCustomResourceOperatorTest {
-
     private val currentNamespace = NAMESPACE2.metadata.name
     private val spec = CustomResourceDefinitionSpecBuilder()
         .withGroup("rebels")
@@ -61,14 +58,11 @@ class NamespacedCustomResourceOperatorTest {
     private val context: CustomResourceDefinitionContext = CustomResourceDefinitionContextFactory.create(definition)
     private val kind = ResourceKind.create(spec)!!
     private val customResource = customResource("Ezra", "Endor", definition)
-    private val customResourceMap = customResourceMap(customResource)
-    private val resources = mapOf<String, Any>(
-        ITEMS to listOf(customResourceMap)
-    )
-    private val op = namespacedCustomResourceOperation(customResourceMap, resources, mock())
+    private val resources = listOf(customResource)
+    private val op = namespacedCustomResourceOperation(customResource, resources, mock())
     private val client = client(currentNamespace, arrayOf(NAMESPACE1, NAMESPACE2, NAMESPACE3)).apply {
         doReturn(op)
-            .whenever(this).customResource(any())
+            .whenever(this).genericKubernetesResources(any())
     }
     private val operator = spy(NamespacedCustomResourceOperator(kind, context, currentNamespace, client))
 
@@ -106,7 +100,7 @@ class NamespacedCustomResourceOperatorTest {
         // when
         operator.replace(customResource)
         // then
-        verify(op).createOrReplace(namespaceUsed.capture(), any<String>())
+        verify(op).inNamespace(namespaceUsed.capture())
         assertThat(namespaceUsed.value).isEqualTo(customResource.metadata.namespace)
     }
 
@@ -120,7 +114,7 @@ class NamespacedCustomResourceOperatorTest {
         // when
         operator.replace(noNamespace)
         // then
-        verify(op).createOrReplace(namespaceUsed.capture(), any<String>())
+        verify(op).inNamespace(namespaceUsed.capture())
         assertThat(namespaceUsed.value).isEqualTo(operator.namespace)
     }
 
@@ -132,7 +126,7 @@ class NamespacedCustomResourceOperatorTest {
         // when
         operator.create(customResource)
         // then
-        verify(op).createOrReplace(namespaceUsed.capture(), any<String>())
+        verify(op).inNamespace(namespaceUsed.capture())
         assertThat(namespaceUsed.value).isEqualTo(customResource.metadata.namespace)
     }
 
@@ -146,7 +140,7 @@ class NamespacedCustomResourceOperatorTest {
         // when
         operator.create(noNamespace)
         // then
-        verify(op).createOrReplace(namespaceUsed.capture(), any<String>())
+        verify(op).inNamespace(namespaceUsed.capture())
         assertThat(namespaceUsed.value).isEqualTo(operator.namespace)
     }
 
@@ -158,7 +152,7 @@ class NamespacedCustomResourceOperatorTest {
         // when
         operator.delete(listOf(customResource))
         // then
-        verify(op).delete(namespaceUsed.capture(), any<String>())
+        verify(op).inNamespace(namespaceUsed.capture())
         assertThat(namespaceUsed.value).isEqualTo(customResource.metadata.namespace)
     }
 
@@ -172,7 +166,7 @@ class NamespacedCustomResourceOperatorTest {
         // when
         operator.delete(listOf(noNamespace))
         // then
-        verify(op).delete(namespaceUsed.capture(), any<String>())
+        verify(op).inNamespace(namespaceUsed.capture())
         assertThat(namespaceUsed.value).isEqualTo(operator.namespace)
     }
 }

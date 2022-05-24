@@ -10,12 +10,10 @@
  ******************************************************************************/
 package com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.hasmetadata
 
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.ObjectMeta
 
-@JsonDeserialize(using = HasMetadataResourceDeserializer::class)
-open class HasMetadataResource(
+abstract class HasMetadataResource(
 	private val kind: String?,
 	private var apiVersion: String?,
 	private var metadata: ObjectMeta

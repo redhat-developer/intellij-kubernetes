@@ -15,8 +15,16 @@ import com.intellij.ide.util.treeView.NodeDescriptor
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.IconLoader
 import com.intellij.ui.SimpleTextAttributes
+import com.redhat.devtools.intellij.kubernetes.model.IResourceModel
+import com.redhat.devtools.intellij.kubernetes.model.context.KubernetesContext
+import com.redhat.devtools.intellij.kubernetes.model.resource.ResourceKind
+import com.redhat.devtools.intellij.kubernetes.model.util.getHighestPriorityVersion
+import com.redhat.devtools.intellij.kubernetes.tree.AbstractTreeStructureContribution.DescriptorFactory
+import com.redhat.devtools.intellij.kubernetes.tree.TreeStructure.ResourceDescriptor
+import com.redhat.devtools.intellij.kubernetes.tree.TreeStructure.ResourcePropertyDescriptor
 import io.fabric8.kubernetes.api.model.ConfigMap
 import io.fabric8.kubernetes.api.model.Endpoints
+import io.fabric8.kubernetes.api.model.GenericKubernetesResource
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.Namespace
 import io.fabric8.kubernetes.api.model.Node
@@ -29,18 +37,10 @@ import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinition
 import io.fabric8.kubernetes.api.model.apps.DaemonSet
 import io.fabric8.kubernetes.api.model.apps.Deployment
 import io.fabric8.kubernetes.api.model.apps.StatefulSet
-import io.fabric8.kubernetes.api.model.batch.v1beta1.CronJob
 import io.fabric8.kubernetes.api.model.batch.v1.Job
-import io.fabric8.kubernetes.api.model.storage.StorageClass
-import com.redhat.devtools.intellij.kubernetes.model.IResourceModel
-import com.redhat.devtools.intellij.kubernetes.model.context.KubernetesContext
-import com.redhat.devtools.intellij.kubernetes.model.resource.ResourceKind
-import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.custom.GenericCustomResource
-import com.redhat.devtools.intellij.kubernetes.model.util.getHighestPriorityVersion
-import com.redhat.devtools.intellij.kubernetes.tree.AbstractTreeStructureContribution.DescriptorFactory
-import com.redhat.devtools.intellij.kubernetes.tree.TreeStructure.ResourceDescriptor
-import com.redhat.devtools.intellij.kubernetes.tree.TreeStructure.ResourcePropertyDescriptor
+import io.fabric8.kubernetes.api.model.batch.v1beta1.CronJob
 import io.fabric8.kubernetes.api.model.networking.v1.Ingress
+import io.fabric8.kubernetes.api.model.storage.StorageClass
 import io.fabric8.kubernetes.client.utils.PodStatusUtil
 import javax.swing.Icon
 
@@ -68,7 +68,7 @@ object KubernetesDescriptors {
 			is StorageClass,
 			is ConfigMap,
 			is Secret,
-			is GenericCustomResource ->
+			is GenericKubernetesResource ->
 				ResourceDescriptor(element as HasMetadata, childrenKind, parent, model, project)
 			is CustomResourceDefinition ->
 				CustomResourceDefinitionDescriptor(element, parent, model, project)

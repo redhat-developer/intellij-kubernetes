@@ -11,54 +11,48 @@
 package com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.custom
 
 import com.redhat.devtools.intellij.kubernetes.model.resource.INamespacedResourceOperator
+import com.redhat.devtools.intellij.kubernetes.model.resource.NamespacedOperation
 import com.redhat.devtools.intellij.kubernetes.model.resource.NamespacedResourceOperator
 import com.redhat.devtools.intellij.kubernetes.model.resource.ResourceKind
 import com.redhat.devtools.intellij.kubernetes.model.util.runWithoutServerSetProperties
+import io.fabric8.kubernetes.api.model.GenericKubernetesResource
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.client.KubernetesClient
 import io.fabric8.kubernetes.client.Watch
 import io.fabric8.kubernetes.client.Watcher
 import io.fabric8.kubernetes.client.dsl.base.CustomResourceDefinitionContext
-import io.fabric8.kubernetes.client.utils.Serialization
 
 open class NamespacedCustomResourceOperator(
-	override val kind: ResourceKind<GenericCustomResource>,
-	context: CustomResourceDefinitionContext,
+	override val kind: ResourceKind<GenericKubernetesResource>,
+	private val context: CustomResourceDefinitionContext,
 	namespace: String?,
 	client: KubernetesClient
-) : NamespacedResourceOperator<GenericCustomResource, KubernetesClient>(client, namespace), INamespacedResourceOperator<GenericCustomResource, KubernetesClient> {
+) : NamespacedResourceOperator<GenericKubernetesResource, KubernetesClient>(client, namespace), INamespacedResourceOperator<GenericKubernetesResource, KubernetesClient> {
 
-    private val operation = CustomResourceRawOperation(client, context)
-
-    override fun loadAllResources(namespace: String): List<GenericCustomResource> {
-        val resourcesList = operation.get().list(namespace)
-        return GenericCustomResourceFactory.createResources(resourcesList)
+    override fun loadAllResources(namespace: String): List<GenericKubernetesResource> {
+        return getOperation()?.inNamespace(namespace)?.list()?.items ?: emptyList()
     }
 
-    override fun watchAll(watcher: Watcher<in GenericCustomResource>): Watch? {
+    override fun watchAll(watcher: Watcher<in GenericKubernetesResource>): Watch? {
 		return watch(namespace, null, watcher)
     }
 
-	override fun watch(resource: HasMetadata, watcher: Watcher<in GenericCustomResource>): Watch? {
+	override fun watch(resource: HasMetadata, watcher: Watcher<in GenericKubernetesResource>): Watch? {
 		val inNamespace = resourceOrCurrentNamespace(resource)
 		return watch(inNamespace, resource.metadata.name, watcher)
 	}
 
-	private fun watch(namespace: String?, name: String?, watcher: Watcher<in GenericCustomResource>): Watch? {
+	private fun watch(namespace: String?, name: String?, watcher: Watcher<in GenericKubernetesResource>): Watch? {
 		if (namespace == null) {
 			return null
 		}
-		@Suppress("UNCHECKED_CAST")
-		val typedWatcher = watcher as? Watcher<GenericCustomResource> ?: return null
-		val watchableWrapper = GenericCustomResourceWatchable { options, customResourceWatcher ->
-			operation.get().watch(namespace, name, null, options, customResourceWatcher)
-		}
-		return watchableWrapper.watch(typedWatcher)
+		val typedWatcher = watcher as? Watcher<GenericKubernetesResource>? ?: return null
+		return getOperation()?.inNamespace(namespace)?.withName(name)?.watch(typedWatcher)
 	}
 
 	override fun delete(resources: List<HasMetadata>): Boolean {
 		@Suppress("UNCHECKED_CAST")
-		val toDelete = resources as? List<GenericCustomResource> ?: return false
+		val toDelete = resources as? List<GenericKubernetesResource> ?: return false
 		return toDelete.stream()
 			.map { delete(it) }
 			.reduce(false) { thisDelete, thatDelete -> thisDelete || thatDelete }
@@ -66,17 +60,16 @@ open class NamespacedCustomResourceOperator(
 
 	private fun delete(resource: HasMetadata): Boolean {
 		val inNamespace = resourceOrCurrentNamespace(resource)
-		operation.get().delete(inNamespace, resource.metadata.name)
+		getOperation()?.inNamespace(inNamespace)?.withName(resource.metadata.name)?.delete()
 		return true
 	}
 
 	override fun replace(resource: HasMetadata): HasMetadata? {
-		val toReplace = resource as? GenericCustomResource ?: return null
+		val toReplace = resource as? GenericKubernetesResource? ?: return null
 
 		val inNamespace = resourceOrCurrentNamespace(toReplace)
 		return runWithoutServerSetProperties(toReplace) {
-			val updated = operation.get().createOrReplace(inNamespace, Serialization.asJson(toReplace))
-			GenericCustomResourceFactory.createResource(updated)
+			getOperation()?.inNamespace(inNamespace)?.createOrReplace(toReplace)
 		}
 	}
 
@@ -86,8 +79,11 @@ open class NamespacedCustomResourceOperator(
 
 	override fun get(resource: HasMetadata): HasMetadata? {
 		val inNamespace = resourceOrCurrentNamespace(resource)
-		val updated = operation.get().get(inNamespace, resource.metadata.name)
-		return GenericCustomResourceFactory.createResource(updated)
+		return getOperation()?.inNamespace(inNamespace)?.withName(resource.metadata.name)?.get()
+	}
+
+	override fun getOperation(): NamespacedOperation<GenericKubernetesResource>? {
+		return client.genericKubernetesResources(context)
 	}
 
 }
