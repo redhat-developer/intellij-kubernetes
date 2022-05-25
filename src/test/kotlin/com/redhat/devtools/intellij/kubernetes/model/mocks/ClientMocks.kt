@@ -14,10 +14,10 @@ import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.whenever
-import com.redhat.devtools.intellij.kubernetes.model.resource.APIResources
 import com.redhat.devtools.intellij.kubernetes.model.util.getApiVersion
 import com.redhat.devtools.intellij.kubernetes.model.util.getHighestPriorityVersion
 import io.fabric8.kubernetes.api.Pluralize
+import io.fabric8.kubernetes.api.model.APIResource
 import io.fabric8.kubernetes.api.model.Context
 import io.fabric8.kubernetes.api.model.GenericKubernetesResource
 import io.fabric8.kubernetes.api.model.GenericKubernetesResourceList
@@ -304,15 +304,15 @@ object ClientMocks {
         }
     }
 
-    fun namespacedApiResource(resource: HasMetadata): APIResources.APIResource {
+    fun namespacedApiResource(resource: HasMetadata): APIResource {
         return apiResource(resource, true)
     }
 
-    fun clusterScopedApiResource(resource: HasMetadata): APIResources.APIResource {
+    fun clusterScopedApiResource(resource: HasMetadata): APIResource {
         return apiResource(resource, false)
     }
 
-    private fun apiResource(resource: HasMetadata, namespaced: Boolean): APIResources.APIResource {
+    private fun apiResource(resource: HasMetadata, namespaced: Boolean): APIResource {
         return apiResource(
             Pluralize.toPlural(resource.kind).toLowerCase(),
             resource.kind.toLowerCase(),
@@ -321,8 +321,8 @@ object ClientMocks {
         )
     }
 
-    fun apiResource(name: String, singularName: String, namespaced: Boolean, kind: String): APIResources.APIResource {
-        return APIResources.APIResource().apply {
+    fun apiResource(name: String, singularName: String, namespaced: Boolean, kind: String): APIResource {
+        return APIResource().apply {
             this.name = name
             this.singularName = singularName
             this.namespaced = namespaced

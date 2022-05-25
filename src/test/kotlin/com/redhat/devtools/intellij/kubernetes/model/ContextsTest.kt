@@ -23,7 +23,6 @@ import com.redhat.devtools.intellij.kubernetes.model.mocks.Mocks
 import com.redhat.devtools.intellij.kubernetes.model.mocks.Mocks.activeContext
 import com.redhat.devtools.intellij.kubernetes.model.mocks.Mocks.context
 import org.junit.Test
-import org.mockito.ArgumentMatcher
 import org.mockito.Mockito
 
 class ContextsTest {

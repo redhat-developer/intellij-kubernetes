@@ -10,9 +10,9 @@
  ******************************************************************************/
 package com.redhat.devtools.intellij.kubernetes.model.resource
 
-import com.redhat.devtools.intellij.kubernetes.model.resource.APIResources.APIResource
 import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.custom.CustomResourceDefinitionContextFactory
 import com.redhat.devtools.intellij.kubernetes.model.util.isCustomResource
+import io.fabric8.kubernetes.api.model.APIResource
 import io.fabric8.kubernetes.api.model.GenericKubernetesResource
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.StatusBuilder
