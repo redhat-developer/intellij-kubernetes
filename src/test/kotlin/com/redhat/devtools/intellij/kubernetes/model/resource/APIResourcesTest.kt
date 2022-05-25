@@ -11,291 +11,218 @@
 package com.redhat.devtools.intellij.kubernetes.model.resource
 
 import com.nhaarman.mockitokotlin2.any
+import com.nhaarman.mockitokotlin2.argThat
 import com.nhaarman.mockitokotlin2.doAnswer
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.spy
 import com.nhaarman.mockitokotlin2.whenever
-import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.apiResource
-import io.fabric8.kubernetes.client.BaseClient
+import io.fabric8.kubernetes.api.model.APIResourceBuilder
+import io.fabric8.kubernetes.api.model.APIResourceList
+import io.fabric8.kubernetes.api.model.APIResourceListBuilder
 import io.fabric8.kubernetes.client.DefaultKubernetesClient
 import io.fabric8.kubernetes.client.KubernetesClient
 import io.fabric8.kubernetes.client.KubernetesClientException
+import io.fabric8.kubernetes.client.http.HttpClient
+import io.fabric8.kubernetes.client.http.HttpRequest
+import io.fabric8.kubernetes.client.http.HttpResponse
+import io.fabric8.kubernetes.client.utils.Serialization
+import java.io.ByteArrayInputStream
+import java.io.InputStream
 import java.net.HttpURLConnection
-import okhttp3.Call
-import okhttp3.OkHttpClient
-import okhttp3.Request
-import okhttp3.Response
-import okhttp3.ResponseBody
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
 import org.junit.Test
+import org.mockito.ArgumentCaptor
+import org.mockito.ArgumentMatcher
 
 class APIResourcesTest {
 
     private val version = "v1"
 
-    private val coreApiResourceList = """
-        {
-          "kind": "APIResourceList",
-          "groupVersion": "$version",
-          "resources": [
-                {
-                  "name": "pods",
-                  "singularName": "",
-                  "namespaced": true,
-                  "kind": "Pod",
-                  "verbs": [
-                      "create",
-                      "delete",
-                      "deletecollection",
-                      "get",
-                      "list",
-                      "patch",
-                      "update",
-                      "watch"
-                  ],
-                  "shortNames": [
-                      "po"
-                  ],
-                  "categories": [
-                      "all"
-                  ],
-                  "storageVersionHash": "xPOwRZ+Yhw8="
-                },
-                {
-                    "name": "nodes",
-                    "singularName": "",
-                    "namespaced": false,
-                    "kind": "Node",
-                    "verbs": [
-                        "create",
-                        "delete",
-                        "deletecollection",
-                        "get",
-                        "list",
-                        "patch",
-                        "update",
-                        "watch"
-                    ],
-                    "shortNames": [
-                        "no"
-                    ],
-                    "storageVersionHash": "XwShjMxG9Fs="
-                }
-          ]
-        }
-    """.trimIndent()
+    private val podsApiResource = APIResourceBuilder()
+        .withName("pods")
+        .withSingularName("")
+        .withNamespaced(true)
+        .withKind("Pod")
+        .withVerbs("create",
+            "delete",
+            "deletecollection",
+            "get",
+            "list",
+            "patch",
+            "update",
+            "watch" )
+        .withShortNames("po")
+        .withCategories("all")
+        .withStorageVersionHash("xPOwRZ+Yhw8=")
+        .build()
+    private val nodesApiResource = APIResourceBuilder()
+        .withName("nodes")
+        .withSingularName("")
+        .withNamespaced(false)
+        .withKind("Node")
+        .withVerbs("create",
+            "delete",
+            "deletecollection",
+            "get",
+            "list",
+            "patch",
+            "update",
+            "watch" )
+        .withShortNames("no")
+        .withStorageVersionHash("XwShjMxG9Fs")
+        .build()
 
-    private val extensionsApiResourceList = """
-        {
-          "kind": "APIResourceList",
-          "apiVersion": "$version",
-          "groupVersion": "serving.knative.dev/$version",
-          "resources": [
-                {
-                  "name": "services",
-                  "singularName": "service",
-                  "namespaced": true,
-                  "kind": "Service",
-                  "verbs": [
-                    "delete",
-                    "deletecollection",
-                    "get",
-                    "list",
-                    "patch",
-                    "create",
-                    "update",
-                    "watch"
-                  ],
-                  "shortNames": [
-                    "kservice",
-                    "ksvc"
-                  ],
-                  "categories": [
-                    "all",
-                    "knative",
-                    "serving"
-                  ],
-                  "storageVersionHash": "vqppxVmf8h0="
-                },
-                {
-                  "name": "services/status",
-                  "singularName": "",
-                  "namespaced": true,
-                  "kind": "Service",
-                  "verbs": [
-                    "get",
-                    "patch",
-                    "update"
-                  ]
-                },
-                {
-                  "name": "configurations",
-                  "singularName": "configuration",
-                  "namespaced": true,
-                  "kind": "Configuration",
-                  "verbs": [
-                    "delete",
-                    "deletecollection",
-                    "get",
-                    "list",
-                    "patch",
-                    "create",
-                    "update",
-                    "watch"
-                  ],
-                  "shortNames": [
-                    "config",
-                    "cfg"
-                  ],
-                  "categories": [
-                    "all",
-                    "knative",
-                    "serving"
-                  ],
-                  "storageVersionHash": "wVwjm9dp8dc="
-                }
-          ]
-        }
-    """.trimIndent()
+    private val coreApiResourceList = APIResourceListBuilder()
+        .withKind("APIResourceList")
+        .withGroupVersion(version)
+        .withResources(podsApiResource, nodesApiResource)
+        .build()
 
-    private var coreResourcesCall: Call? = null // core resources api (pod, deployment, etc.)
-    private var extensionResourcesCall: Call? = null // extension resources api (job, etc.)
-    private var notFoundCall: Call? = null // call for unknown resources api
-    private var httpClient: OkHttpClient? = null
+    private var response: HttpResponse<InputStream>? = null
     private var client: KubernetesClient? = null
+    private var api: APIResources? = null
 
     @Before
     fun before() {
-        this.coreResourcesCall = createCall()
-        this.extensionResourcesCall = createCall()
-        this.notFoundCall = createCall()
-        this.httpClient = createHttpClient()
+        this.response = mock()
+        val httpClient = createHttpClient(response!!)
         this.client = createClient(httpClient)
+        this.api = APIResources(client!!)
     }
 
     @Test
-    fun `#get should return null if response is null`() {
+    fun `#get should return null if unsupported version is requested`() {
         // given
         // when
-        val apiResource = APIResources(client!!).get("bogusKind", "bogusGroup", "bogusVersion")
+        val apiResource = api!!.get("pod", null, "bogusVersion")
         // then
         assertThat(apiResource).isNull()
     }
-
     @Test
-    fun `#get should return null if response has code 404`() {
+    fun `#get should return APIResource if Pod in existing version is requested`() {
         // given
-        createResponseForCall(notFoundCall!!, "{}", HttpURLConnection.HTTP_NOT_FOUND)
         // when
-        val apiResource = APIResources(client!!).get("bogusKind", "bogusGroup", "bogusVersion")
+        val found = api!!.get("Pod", null, version)
         // then
-        assertThat(apiResource).isNull()
+        assertThat(found).isEqualTo(podsApiResource)
     }
 
     @Test(expected = KubernetesClientException::class)
     fun `#get should throw KubernetesClientException if response has code is NOT 200 NOR 404`() {
         // given
-        createResponseForCall(notFoundCall!!, "{}", HttpURLConnection.HTTP_FORBIDDEN)
+        mockResponseContent("{}", HttpURLConnection.HTTP_FORBIDDEN, response!!)
         // when
-        APIResources(client!!).get("aKind", "aGroup", "aVersion")
-        // then
-    }
-
-    @Test
-    fun `#get for Pod should return null if unknown version`() {
-        // given
-        createResponseForCall(coreResourcesCall!!, coreApiResourceList, HttpURLConnection.HTTP_OK)
-        // when
-        val apiResource = APIResources(client!!).get("Pod", null, "vBogus")
-        // then
-        assertThat(apiResource).isNull()
-    }
-
-    @Test
-    fun `#get for Pod should return pod APIResource`() {
-        // given
-        val expected = apiResource("pods", "", true, "Pod")
-        createResponseForCall(coreResourcesCall!!, coreApiResourceList, HttpURLConnection.HTTP_OK)
-        // when
-        val found = APIResources(client!!).get("Pod", null, version)
-        // then
-        assertThat(found).isEqualTo(expected)
+        api!!.get("aKind", "aGroup", "aVersion")
+        // then exception is thrown
     }
 
     @Test
     fun `#get for knative Service should return knative Service APIResource`() {
         // given
-        val expected = apiResource("services", "service", true, "Service")
-        createResponseForCall(extensionResourcesCall!!, extensionsApiResourceList, HttpURLConnection.HTTP_OK)
+        val expected = APIResourceBuilder()
+            .withName("services")
+            .withSingularName("service")
+            .withNamespaced(true)
+            .withKind("Service")
+            .build()
         // when
-        val found = APIResources(client!!).get("Service", "serving.knative.dev", version)
+        val found = api!!.get("Service", "serving.knative.dev", version)
         // then
         assertThat(found).isEqualTo(expected)
     }
 
+
     @Test
     fun `#get for unknown kind should return null`() {
         // given
-        createResponseForCall(extensionResourcesCall!!, coreApiResourceList, HttpURLConnection.HTTP_OK)
         // when
         val found = APIResources(client!!).get("Yoda", "rebels", version)
         // then
         assertThat(found).isNull()
     }
 
-    private fun createCall(): Call {
-        return mock()
+    private fun mockResponseContent(body: String, responseCode: Int, response: HttpResponse<InputStream>) {
+        doReturn(ByteArrayInputStream(body.toByteArray()))
+            .whenever(response).body()
+        doReturn(responseCode)
+            .whenever(response).code()
+        doReturn(HttpResponse.isSuccessful(responseCode))
+            .whenever(response).isSuccessful
     }
 
-    private fun createResponseForCall(call: Call, body: String, responseCode: Int) {
-        doReturn(createResponse(body, responseCode))
-            .whenever(call).execute()
-    }
-
-    private fun createResponse(body: String, responseCode: Int): Response {
-        val responseBody = createResponseBody(body)
-        return mock {
-            on { this.body } doReturn responseBody
-            on { this.code } doReturn responseCode
+    private fun createHttpClient(response: HttpResponse<InputStream>): HttpClient {
+        val request: HttpRequest = mock()
+        val uriArgument = ArgumentCaptor.forClass(String::class.java)
+        val builder: HttpRequest.Builder = mock {
+            on { uri(uriArgument.capture()) } doReturn mock
+            on { build() } doReturn request
         }
-    }
-
-    private fun createResponseBody(body: String): ResponseBody {
-        return mock {
-            on { bytes() } doReturn body.toByteArray()
-            on { string() } doReturn body
-        }
-    }
-
-    private fun createHttpClient(): OkHttpClient {
-        return mock {
-            on {
-                newCall(any())
-            } doAnswer {
-                val request: Request = it.getArgument(0)
-                val url = request.url.toString()
-                when {
-                    // core resources api
-                    url.contains("/${APIResources.URL_API}/")
-                                && url.endsWith("$version") ->
-                        coreResourcesCall
-                    // extension resources api
-                    url.contains("/${APIResources.URL_APIS}/")
-                                && url.endsWith("$version") ->
-                        extensionResourcesCall
-                    else ->
-                        notFoundCall
-                }
+        val client: HttpClient = mock()
+        doReturn(builder)
+            .whenever(client).newHttpRequestBuilder()
+        doAnswer {
+            val uri = uriArgument.value
+            if (uri != null && uri.endsWith("/api/$version")) {
+                response
+            } else {
+                throw KubernetesClientException(
+                    "did not request core resources at /api/$version",
+                    HttpURLConnection.HTTP_NOT_FOUND,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null
+                )
             }
-        }
+        }.whenever(client).send(any(), any<Class<InputStream>>())
+        return client
     }
 
-    private fun createClient(httpClient: OkHttpClient?): KubernetesClient {
+    private fun createClient(httpClient: HttpClient): KubernetesClient {
         val client = spy(DefaultKubernetesClient())
         doReturn(httpClient)
-            .whenever(client as BaseClient).httpClient
+            .whenever(client).httpClient
+        mockCoreApiResources(coreApiResourceList, response!!)
+        mockExtensionApiResources(version, client)
         return client
+    }
+
+    private fun mockCoreApiResources(apiResources: APIResourceList, response: HttpResponse<InputStream>) {
+        mockResponseContent(Serialization.asJson(apiResources), HttpURLConnection.HTTP_OK, response)
+    }
+
+    private fun mockExtensionApiResources(version: String, client: KubernetesClient) {
+        val services = APIResourceBuilder()
+            .withName("services")
+            .withSingularName("service")
+            .withKind("Service")
+            .withNamespaced(true)
+            .build()
+        val servicesStatus = APIResourceBuilder()
+            .withName("services/status")
+            .withSingularName("") // empty singular name
+            .withKind("Service")
+            .withNamespaced(true)
+            .build()
+        val configurations = APIResourceBuilder()
+            .withName("configurations")
+            .withSingularName("configuration")
+            .withKind("Configuration")
+            .withNamespaced(true)
+            .build()
+        val resourceList = APIResourceListBuilder()
+            .withKind("APIResourceList")
+            .withApiVersion(version)
+            .addToResources(services)
+            .addToResources(servicesStatus)
+            .addToResources(configurations)
+            .build()
+        doReturn(resourceList)
+            .whenever(client).getApiResources(argThat(ArgumentMatcher {
+                it.endsWith("/$version") // ex. serving.knative.dev/v1
+            }))
     }
 }

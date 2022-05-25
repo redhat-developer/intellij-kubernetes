@@ -10,8 +10,8 @@
  ******************************************************************************/
 package com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.custom
 
-import com.redhat.devtools.intellij.kubernetes.model.resource.APIResources.APIResource
 import com.redhat.devtools.intellij.kubernetes.model.util.getHighestPriorityVersion
+import io.fabric8.kubernetes.api.model.APIResource
 import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinition
 import io.fabric8.kubernetes.client.dsl.base.CustomResourceDefinitionContext
 import io.fabric8.kubernetes.model.Scope

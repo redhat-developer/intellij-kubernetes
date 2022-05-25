@@ -227,9 +227,9 @@ class KubernetesContextTest {
 		// then
 		val matcher = ArgumentMatcher<Collection<Pair<ResourceKind<out HasMetadata>, (watcher: Watcher<in HasMetadata>) -> Watch?>>> {
 				watched ->
-				val watchedKinds: List<ResourceKind<out HasMetadata>>? = watched?.map { pair -> pair.first }
-				(true == watchedKinds?.containsAll(stopped)
-						&& watched.size == stopped.size)
+					val watchedKinds: List<ResourceKind<out HasMetadata>>? = watched?.map { pair -> pair.first }
+					(true == watchedKinds?.containsAll(stopped)
+							&& watched.size == stopped.size)
 			}
 		verify(context.watch).watchAll(argThat(matcher), any())
 	}

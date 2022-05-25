@@ -10,17 +10,13 @@
  ******************************************************************************/
 package com.redhat.devtools.intellij.kubernetes.model.resource
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties
-import com.fasterxml.jackson.databind.ObjectMapper
 import io.fabric8.kubernetes.api.Pluralize
-import io.fabric8.kubernetes.client.BaseClient
+import io.fabric8.kubernetes.api.model.APIResource
+import io.fabric8.kubernetes.api.model.APIResourceList
 import io.fabric8.kubernetes.client.KubernetesClient
 import io.fabric8.kubernetes.client.KubernetesClientException
-import io.fabric8.kubernetes.client.dsl.base.OperationSupport.createStatus
-import java.net.HttpURLConnection
-import okhttp3.Request
-import okhttp3.Response
-import okhttp3.ResponseBody
+import io.fabric8.kubernetes.client.dsl.base.OperationSupport
+import io.fabric8.kubernetes.client.utils.ApiVersionUtil
 
 /**
  * Class that allows API discovery by querying cluster api resources.
@@ -29,12 +25,8 @@ import okhttp3.ResponseBody
 class APIResources(private val client: KubernetesClient) {
 
     companion object {
-        const val URL_APIS = "apis"
-        const val URL_API = "api"
-        private const val KEY_HEADER_AUTHORIZATION = "Authorization"
-        private const val VALUE_HEADER_BEARER = "Bearer"
+        const val PATH_API = "/api"
     }
-
     /**
      * Returns the [APIResource] for the given kind, group and version.
      * Returns `null` if it doesn't exist.
@@ -49,23 +41,29 @@ class APIResources(private val client: KubernetesClient) {
     fun get(kind: String, group: String?, version: String): APIResource? {
         val resources =
             if (group == null) {
-                // core api resources
-                requestResources("$URL_API/$version", client)
+                requestCoreResources(version, client)
             } else {
-                // additional api resources
-                requestResources("$URL_APIS/$group/$version", client)
+                requestExtensionResources(group, version, client)
             }
-            ?: return null
         return getByKind(kind, resources)
     }
 
-    private fun requestResources(url: String, client: KubernetesClient): List<APIResource>? {
-        // can be replaced by OperationSupport.restCall(Class, String) in kubernetes-client >= 5.8.0
-        request(url, client).use { response ->
-            // auto-close response body
-            val json = response?.bytes() ?: return null
-            return ObjectMapper().readValue(json, APIResourceList::class.java)?.resources
-        }
+    private fun requestExtensionResources(group: String, version: String, client: KubernetesClient): List<APIResource> {
+        return client.getApiResources(
+            ApiVersionUtil.joinApiGroupAndVersion(group, version))?.resources
+            ?: emptyList()
+    }
+
+    /**
+     * Returns the core resources. Returns an empty list if none are found.
+     * **Note:** this "workaround" will be obsolete once
+     * (fix #4065: use Client.getAPIResources("v1") for core/legacy resources )[https://github.com/fabric8io/kubernetes-client/pull/4066]
+     * lands in a release (6.0 expected)
+     */
+    private fun requestCoreResources(version: String, client: KubernetesClient): List<APIResource> {
+        return OperationSupport(client.httpClient, client.configuration)
+            .restCall(APIResourceList::class.java, PATH_API, version)?.resources
+            ?: emptyList()
     }
 
     private fun getByKind(kind: String, resources: List<APIResource>): APIResource? {
@@ -74,56 +72,4 @@ class APIResources(private val client: KubernetesClient) {
             plural == it.name
         }
     }
-
-    private fun request(url: String, client: KubernetesClient): ResponseBody? {
-        // only base client exposes httpClient
-        val baseClient = client as? BaseClient? ?: return null
-        val httpClient = client.httpClient
-        val config = baseClient.configuration
-        val request = Request.Builder()
-            .url("${baseClient.masterUrl}$url")
-            .addHeader(KEY_HEADER_AUTHORIZATION, "$VALUE_HEADER_BEARER ${config.oauthToken}")
-            .build()
-
-        // IDEA complains about elvis operator always returning left portion. This is wrong, #newCall can return null
-        @Suppress("USELESS_ELVIS") // compiler warning is wrong, execute may return null
-        val response = httpClient.newCall(request).execute() ?: return null
-        // doesn't compile in IDEA but does in gradle: IJ is using okhttp 3, gradle okhttp 4
-        return when (response.code) {
-            HttpURLConnection.HTTP_OK ->
-                // doesn't compile in IDEA but does in gradle: IJ is using okhttp 3, gradle okhttp 4
-                return response.body
-            HttpURLConnection.HTTP_NOT_FOUND ->
-                null
-            else ->
-                throw createException(url, response)
-        }
-    }
-
-    private fun createException(url: String, response: Response): KubernetesClientException {
-        val status = createStatus(response)
-        val message = "Could not retrieve api resources at $url${
-            if (true == status.message?.isNotBlank()) {
-                ": ${status.message}"
-            } else {
-                ""
-            }
-        }"
-        return KubernetesClientException(message, status.code, status)
-    }
-
-    @JsonIgnoreProperties(ignoreUnknown = true)
-    data class APIResourceList(
-        var apiVersion: String? = null,
-        var groupVersion: String? = null,
-        var resources: List<APIResource> = mutableListOf()
-    )
-
-    @JsonIgnoreProperties(ignoreUnknown = true)
-    data class APIResource(
-        var name: String? = null,
-        var singularName: String? = null,
-        var namespaced: Boolean = false,
-        var kind: String? = null
-    )
 }
