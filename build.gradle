@@ -13,10 +13,6 @@ buildscript {
         ext.kotlinVersion = kotlinVersionIdea221
         ext.kotlinStdlib = kotlinStdlibIdea221
         ext.java_version = "11"
-    } else if (ext.sinceIdeaBuild >= 203 && ext.sinceIdeaBuild < 221) {
-        ext.kotlinVersion = kotlinVersionIdea203
-        ext.kotlinStdlib = kotlinStdlibIdea203
-        ext.java_version = "11"
     } else {
         ext.kotlinVersion = kotlinVersion
         ext.kotlinStdlib = kotlinStdlib
