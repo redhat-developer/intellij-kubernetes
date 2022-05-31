@@ -18,6 +18,11 @@ import com.redhat.devtools.intellij.kubernetes.editor.util.isKubernetesResource
 
 open class ResourceEditorTabTitleProvider : EditorTabTitleProvider {
 
+    companion object {
+        const val TITLE_UNKNOWN_CLUSTERRESOURCE = "Unknown Cluster Resource"
+        const val TITLE_UNKNOWN_NAME = "unknown name"
+    }
+
     override fun getEditorTabTitle(project: Project, file: VirtualFile): String? {
         return if (isTemporary(file)) {
             val resourceInfo = getKubernetesResourceInfo(file, project)
@@ -26,7 +31,7 @@ open class ResourceEditorTabTitleProvider : EditorTabTitleProvider {
             ) {
                 getTitleFor(resourceInfo)
             } else {
-                ResourceEditor.TITLE_UNKNOWN_CLUSTERRESOURCE
+                TITLE_UNKNOWN_CLUSTERRESOURCE
             }
         } else {
             getTitleFor(file)
@@ -38,7 +43,7 @@ open class ResourceEditorTabTitleProvider : EditorTabTitleProvider {
     }
 
     private fun getTitleFor(info: KubernetesResourceInfo): String {
-        val name = info.name ?: ResourceEditor.TITLE_UNKNOWN_NAME
+        val name = info.name ?: TITLE_UNKNOWN_NAME
         val namespace = info.namespace
         return if (namespace == null) {
             name

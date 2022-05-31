@@ -96,8 +96,6 @@ open class ResourceEditor(
         val KEY_RESOURCE_EDITOR = Key<ResourceEditor>(ResourceEditor::class.java.name)
         val KEY_TOOLBAR = Key<ActionToolbar>(ActionToolbar::class.java.name)
         const val ID_TOOLBAR = "Kubernetes.Editor.Toolbar"
-        const val TITLE_UNKNOWN_CLUSTERRESOURCE = "Unknown Cluster Resource"
-        const val TITLE_UNKNOWN_NAME = "unknown name"
     }
 
     /** mutex to exclude concurrent execution of push & watch notification **/

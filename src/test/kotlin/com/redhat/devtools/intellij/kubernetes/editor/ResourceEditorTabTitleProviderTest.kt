@@ -16,6 +16,7 @@ import com.intellij.openapi.vfs.VirtualFile
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.mock
 import com.redhat.devtools.intellij.common.validation.KubernetesResourceInfo
+import com.redhat.devtools.intellij.kubernetes.editor.ResourceEditorTabTitleProvider.Companion.TITLE_UNKNOWN_NAME
 import com.redhat.devtools.intellij.kubernetes.model.mocks.Mocks.kubernetesResourceInfo
 import com.redhat.devtools.intellij.kubernetes.model.mocks.Mocks.kubernetesTypeInfo
 import org.assertj.core.api.Assertions.assertThat
@@ -66,7 +67,7 @@ class ResourceEditorTabTitleProviderTest {
         // when
         val title = provider.getEditorTabTitle(mock(), mock())
         // then
-        assertThat(title).isEqualTo("${ResourceEditor.TITLE_UNKNOWN_NAME}@$namespace")
+        assertThat(title).isEqualTo("$TITLE_UNKNOWN_NAME@$namespace")
     }
 
     @Test
