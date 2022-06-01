@@ -22,7 +22,6 @@ import com.intellij.ui.EditorNotificationPanel
 import com.intellij.ui.awt.RelativePoint
 import com.redhat.devtools.intellij.kubernetes.editor.hideNotification
 import com.redhat.devtools.intellij.kubernetes.editor.showNotification
-import com.redhat.devtools.intellij.kubernetes.model.util.trimWithEllipsis
 import java.awt.Point
 import javax.swing.JComponent
 
@@ -63,7 +62,13 @@ class ErrorNotification(private val editor: FileEditor, private val project: Pro
         panel.createActionLabel("Details") {
             val balloonBuilder = JBPopupFactory.getInstance()
                 .createHtmlTextBalloonBuilder(
-                    trimWithEllipsis(message.replace("\n", ""), 170) ?: "Unknown error",
+                    """<html>
+                        <body>
+                            <div>
+                               ${message.replace("\n", "<br>")}
+                            </div>
+                        </body>
+                       </html>""".trimMargin(),
                     MessageType.ERROR,
                     null)
             val balloon = balloonBuilder
