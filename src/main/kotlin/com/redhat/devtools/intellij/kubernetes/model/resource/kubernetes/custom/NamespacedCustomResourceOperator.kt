@@ -46,6 +46,7 @@ open class NamespacedCustomResourceOperator(
 		if (namespace == null) {
 			return null
 		}
+		@Suppress("UNCHECKED_CAST")
 		val typedWatcher = watcher as? Watcher<GenericKubernetesResource>? ?: return null
 		return getOperation()?.inNamespace(namespace)?.withName(name)?.watch(typedWatcher)
 	}

@@ -77,6 +77,7 @@ open class ResourceEditor(
     private val getDocument: (FileEditor) -> Document? = ::getDocument,
     // for mocking purposes
     private val getPsiDocumentManager: (Project) -> PsiDocumentManager = { PsiDocumentManager.getInstance(project) },
+    @Suppress("NAME_SHADOWING")
     private val getKubernetesResourceInfo: (VirtualFile?, Project) -> KubernetesResourceInfo? = {
             file, project -> com.redhat.devtools.intellij.kubernetes.editor.util.getKubernetesResourceInfo(file,project)
     },

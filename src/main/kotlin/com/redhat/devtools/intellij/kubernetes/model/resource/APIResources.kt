@@ -86,6 +86,7 @@ class APIResources(private val client: KubernetesClient) {
             .build()
 
         // IDEA complains about elvis operator always returning left portion. This is wrong, #newCall can return null
+        @Suppress("USELESS_ELVIS") // compiler warning is wrong, execute may return null
         val response = httpClient.newCall(request).execute() ?: return null
         // doesn't compile in IDEA but does in gradle: IJ is using okhttp 3, gradle okhttp 4
         return when (response.code) {
