@@ -30,12 +30,12 @@ class PullAction: AnAction() {
 
     override fun actionPerformed(e: AnActionEvent) {
         val project = e.dataContext.getData(CommonDataKeys.PROJECT) ?: return
-        val editor = getSelectedFileEditor(project)
+        val fileEditor = getSelectedFileEditor(project)
         val telemetry = TelemetryService.instance.action(NAME_PREFIX_EDITOR + "pull")
         run("Pulling...", true,
             Progressive {
                 try {
-                    val editor = ResourceEditorFactory.instance.getExistingOrCreate(editor, project) ?: return@Progressive
+                    val editor = ResourceEditorFactory.instance.getExistingOrCreate(fileEditor, project) ?: return@Progressive
                     editor.pull()
                     sendTelemetry(editor.editorResource.get(), telemetry)
                 } catch (e: Exception) {

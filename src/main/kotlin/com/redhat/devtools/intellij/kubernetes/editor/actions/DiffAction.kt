@@ -26,12 +26,12 @@ class DiffAction: AnAction() {
 
     override fun actionPerformed(e: AnActionEvent) {
         val project = e.project ?: return
-        val editor = getSelectedFileEditor(project) ?: return
+        val fileEditor = getSelectedFileEditor(project) ?: return
         val telemetry = TelemetryService.instance.action(TelemetryService.NAME_PREFIX_EDITOR + "diff")
         com.redhat.devtools.intellij.kubernetes.actions.run("Showing diff...", true,
             Progressive {
                 try {
-                    val editor = ResourceEditorFactory.instance.getExistingOrCreate(editor, project) ?: return@Progressive
+                    val editor = ResourceEditorFactory.instance.getExistingOrCreate(fileEditor, project) ?: return@Progressive
                     editor.diff()
                     TelemetryService.sendTelemetry(editor.editorResource.get(), telemetry)
                 } catch (e: Exception) {

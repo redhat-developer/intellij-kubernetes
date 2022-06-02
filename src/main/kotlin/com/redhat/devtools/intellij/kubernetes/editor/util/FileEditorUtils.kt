@@ -16,7 +16,6 @@ import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.fileEditor.FileEditor
 import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.project.Project
-import com.intellij.openapi.project.ProjectLocator
 import com.intellij.openapi.project.ProjectManager
 import com.intellij.openapi.vfs.VirtualFile
 import com.redhat.devtools.intellij.kubernetes.editor.ResourceFile
@@ -45,7 +44,7 @@ fun getResourceFile(document: Document): VirtualFile? {
 }
 
 fun getSelectedFileEditor(project: Project): FileEditor? {
-    return FileEditorManager.getInstance(project).selectedEditor ?: return null
+    return FileEditorManager.getInstance(project).selectedEditor
 }
 
 fun getDocument(editor: FileEditor): Document? {

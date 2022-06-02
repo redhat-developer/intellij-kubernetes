@@ -32,11 +32,13 @@ class NonNamespacedCustomResourceOperator(
     }
 
     override fun watch(resource: HasMetadata, watcher: Watcher<in GenericKubernetesResource>): Watch? {
+        @Suppress("UNCHECKED_CAST")
         val typedWatcher = watcher as? Watcher<GenericKubernetesResource> ?: return null
         return getOperation()?.withName(resource.metadata.name)?.watch(typedWatcher)
     }
 
     override fun watchAll(watcher: Watcher<in GenericKubernetesResource>): Watch? {
+        @Suppress("UNCHECKED_CAST")
         val typedWatcher = watcher as? Watcher<GenericKubernetesResource> ?: return null
         return getOperation()?.watch(typedWatcher)
     }
