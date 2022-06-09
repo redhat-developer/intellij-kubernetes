@@ -38,7 +38,7 @@ class DeleteResourceAction: StructureTreeAction() {
         if (!userConfirmed(toDelete)) {
             return
         }
-        run("Deleting...", true,
+        run("Deleting ${toMessage(toDelete, 30)}...", true,
             Progressive {
                 val telemetry = TelemetryService.instance.action("delete resource")
                     .property(PROP_RESOURCE_KIND, getKinds(toDelete))
