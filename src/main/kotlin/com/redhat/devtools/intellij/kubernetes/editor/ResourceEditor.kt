@@ -38,7 +38,6 @@ import com.redhat.devtools.intellij.kubernetes.model.util.isGreaterIntThan
 import com.redhat.devtools.intellij.kubernetes.model.util.runWithoutServerSetProperties
 import com.redhat.devtools.intellij.kubernetes.model.util.toMessage
 import com.redhat.devtools.intellij.kubernetes.model.util.toTitle
-import com.redhat.devtools.intellij.kubernetes.model.util.trimWithEllipsis
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.client.KubernetesClient
 import io.fabric8.kubernetes.client.utils.Serialization
@@ -160,7 +159,7 @@ open class ResourceEditor(
                     hideNotifications()
                     errorNotification.show(
                         toTitle(e),
-                        trimWithEllipsis(toMessage(e), 300) ?: ""
+                        toMessage(e)
                     )
                 }
             }
@@ -264,7 +263,7 @@ open class ResourceEditor(
                     hideNotifications()
                     errorNotification.show(
                         "Could not pull ${editorResource.get()?.kind} ${editorResource.get()?.metadata?.name ?: ""}",
-                        trimWithEllipsis(toMessage(e), 300)
+                        toMessage(e)
                     )
                 }
             }
@@ -340,7 +339,7 @@ open class ResourceEditor(
                     hideNotifications()
                     errorNotification.show(
                         "Could not push ${editorResource.get()?.kind} ${editorResource.get()?.metadata?.name ?: ""}",
-                        trimWithEllipsis(toMessage(e), 300)
+                        toMessage(e)
                     )
                 }
             }
