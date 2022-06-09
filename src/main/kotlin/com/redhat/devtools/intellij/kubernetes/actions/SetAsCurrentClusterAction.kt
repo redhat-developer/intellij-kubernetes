@@ -26,7 +26,7 @@ class SetAsCurrentClusterAction: StructureTreeAction(IContext::class.java) {
         val context: IContext = selectedNode?.getElement() ?: return
         val telemetry = TelemetryService.instance
             .action(NAME_PREFIX_CONTEXT + "switch")
-        run("Setting $context as current cluster...", true,
+        run("Setting ${context.context.name} as current cluster...", true,
             Progressive {
                 try {
                     getResourceModel()?.setCurrentContext(context)
