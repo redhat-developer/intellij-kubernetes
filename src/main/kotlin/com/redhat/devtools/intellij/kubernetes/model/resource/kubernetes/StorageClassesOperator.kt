@@ -10,13 +10,13 @@
  ******************************************************************************/
 package com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes
 
+import com.redhat.devtools.intellij.kubernetes.model.Clients
 import com.redhat.devtools.intellij.kubernetes.model.resource.NonNamespacedOperation
-import io.fabric8.kubernetes.api.model.storage.StorageClass
-import io.fabric8.kubernetes.client.StorageAPIGroupClient
 import com.redhat.devtools.intellij.kubernetes.model.resource.NonNamespacedResourceOperator
 import com.redhat.devtools.intellij.kubernetes.model.resource.ResourceKind
-import com.redhat.devtools.intellij.kubernetes.model.Clients
+import io.fabric8.kubernetes.api.model.storage.StorageClass
 import io.fabric8.kubernetes.client.KubernetesClient
+import io.fabric8.kubernetes.client.StorageAPIGroupClient
 
 class StorageClassesOperator(clients: Clients<out KubernetesClient>)
     : NonNamespacedResourceOperator<StorageClass, StorageAPIGroupClient>(clients.getStorage()) {
@@ -27,7 +27,7 @@ class StorageClassesOperator(clients: Clients<out KubernetesClient>)
 
     override val kind = KIND
 
-    override fun getOperation(): NonNamespacedOperation<StorageClass>? {
+    override fun getOperation(): NonNamespacedOperation<StorageClass> {
         return client.storageClasses()
     }
 

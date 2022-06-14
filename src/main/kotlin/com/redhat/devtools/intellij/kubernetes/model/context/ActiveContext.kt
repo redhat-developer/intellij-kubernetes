@@ -23,6 +23,7 @@ import com.redhat.devtools.intellij.kubernetes.model.context.IActiveContext.Reso
 import com.redhat.devtools.intellij.kubernetes.model.context.IActiveContext.ResourcesIn.ANY_NAMESPACE
 import com.redhat.devtools.intellij.kubernetes.model.context.IActiveContext.ResourcesIn.CURRENT_NAMESPACE
 import com.redhat.devtools.intellij.kubernetes.model.context.IActiveContext.ResourcesIn.NO_NAMESPACE
+import com.redhat.devtools.intellij.kubernetes.model.resource.ILogWatcher
 import com.redhat.devtools.intellij.kubernetes.model.resource.INamespacedResourceOperator
 import com.redhat.devtools.intellij.kubernetes.model.resource.INonNamespacedResourceOperator
 import com.redhat.devtools.intellij.kubernetes.model.resource.IResourceOperator
@@ -47,7 +48,9 @@ import io.fabric8.kubernetes.client.KubernetesClient
 import io.fabric8.kubernetes.client.KubernetesClientException
 import io.fabric8.kubernetes.client.Watch
 import io.fabric8.kubernetes.client.Watcher
+import io.fabric8.kubernetes.client.dsl.LogWatch
 import io.fabric8.kubernetes.model.Scope
+import java.io.OutputStream
 import java.net.URL
 
 abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
@@ -200,13 +203,9 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
         }
     }
 
-    override fun getAllResources(definition: CustomResourceDefinition): Collection<GenericKubernetesResource> {
-        return getOperator(definition)?.allResources ?: return emptyList()
-    }
-
     private fun createCustomResourcesOperator(
-            definition: CustomResourceDefinition,
-            kind: ResourceKind<GenericKubernetesResource>)
+        definition: CustomResourceDefinition,
+        kind: ResourceKind<GenericKubernetesResource>)
             : IResourceOperator<GenericKubernetesResource>? {
         synchronized(this) {
             val resourceIn = toResourcesIn(definition.spec)
@@ -214,6 +213,10 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
             setOperator(operator, kind, resourceIn)
             return operator
         }
+    }
+
+    override fun getAllResources(definition: CustomResourceDefinition): Collection<GenericKubernetesResource> {
+        return getOperator(definition)?.allResources ?: return emptyList()
     }
 
     protected open fun createCustomResourcesOperator(
@@ -366,6 +369,7 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
 
     override fun removed(resource: HasMetadata): Boolean {
         val removed = if (resource is CustomResourceDefinition) {
+            // implicit cast to CustomResourceDefinition
             removeResource(resource)
         } else {
             removeResource(resource)
@@ -468,8 +472,9 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
     private fun delete(kind: ResourceKind<out HasMetadata>, scope: ResourcesIn, resources: List<HasMetadata>) {
         val operator = getOperator(kind, scope)
         if (operator == null) {
-            logger<ActiveContext<*,*>>().warn("""Could not delete $kind resources: ${toMessage(resources, -1)}.
-                |No operator found for $kind in scope $scope.""".trimMargin())
+            logger<ActiveContext<*,*>>().warn(
+                "Could not delete $kind resources: ${toMessage(resources, -1)}."
+                + "No operator found for $kind in scope $scope.)")
             return
         }
         try {
@@ -485,10 +490,31 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
         }
     }
 
+    override fun <T: HasMetadata> watchLog(resource: T, out: OutputStream): LogWatch? {
+        try {
+            return getLogWatchOperator<T>(resource)?.watchLog(resource, out)
+        } catch(e: KubernetesClientException) {
+            throw ResourceException("Could not watch log of ${toMessage(resource, -1)}", e)
+        }
+    }
+
+    override fun <T: HasMetadata> canWatchLog(resource: T): Boolean {
+        return getLogWatchOperator<T>(resource) != null
+    }
+
     override fun close() {
         logger<ActiveContext<*, *>>().debug("Closing context ${context.name}.")
         watch.close()
         clients.close()
+    }
+
+    private fun <T: HasMetadata> getLogWatchOperator(resource: HasMetadata): ILogWatcher<T>? {
+        val kind = ResourceKind.create(resource::class.java)
+        @Suppress("UNCHECKED_CAST")
+        return getAllResourceOperators(ILogWatcher::class.java)
+            .filter { it.key == kind }
+            .map { it.value }
+            .firstOrNull() as? ILogWatcher<T>
     }
 
     private fun <P: IResourceOperator<out HasMetadata>> getAllResourceOperators(type: Class<P>)

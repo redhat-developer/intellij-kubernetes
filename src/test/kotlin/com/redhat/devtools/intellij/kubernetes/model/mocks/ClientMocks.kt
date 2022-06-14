@@ -44,7 +44,6 @@ import io.fabric8.kubernetes.client.dsl.NonNamespaceOperation
 import io.fabric8.kubernetes.client.dsl.PodResource
 import io.fabric8.kubernetes.client.dsl.Resource
 import java.net.URL
-import org.mockito.ArgumentMatchers
 
 
 typealias NamespaceListOperation =
@@ -106,11 +105,10 @@ object ClientMocks {
         }
     }
 
-
     fun inNamespace(mixedOp: MixedOperation<Pod, PodList, PodResource<Pod>>)
             : NonNamespaceOperation<Pod, PodList, PodResource<Pod>> {
         val nonNamespaceOperation: NonNamespaceOperation<Pod, PodList, PodResource<Pod>> = mock()
-        whenever(mixedOp.inNamespace(ArgumentMatchers.anyString()))
+        whenever(mixedOp.inNamespace(any()))
             .doReturn(nonNamespaceOperation)
         return nonNamespaceOperation
     }

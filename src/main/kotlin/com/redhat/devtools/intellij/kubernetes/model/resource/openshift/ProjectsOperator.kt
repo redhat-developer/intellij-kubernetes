@@ -10,10 +10,10 @@
  ******************************************************************************/
 package com.redhat.devtools.intellij.kubernetes.model.resource.openshift
 
+import com.redhat.devtools.intellij.kubernetes.model.Clients
 import com.redhat.devtools.intellij.kubernetes.model.resource.NonNamespacedOperation
 import com.redhat.devtools.intellij.kubernetes.model.resource.NonNamespacedResourceOperator
 import com.redhat.devtools.intellij.kubernetes.model.resource.ResourceKind
-import com.redhat.devtools.intellij.kubernetes.model.Clients
 import io.fabric8.openshift.api.model.Project
 import io.fabric8.openshift.client.OpenShiftClient
 
@@ -26,7 +26,7 @@ class ProjectsOperator(clients: Clients<out OpenShiftClient>)
 
     override val kind = KIND
 
-    override fun getOperation(): NonNamespacedOperation<Project>? {
+    override fun getOperation(): NonNamespacedOperation<Project> {
         return client.projects()
     }
 }

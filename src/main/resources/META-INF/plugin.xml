@@ -102,8 +102,13 @@
     <extensions defaultExtensionNs="com.intellij">
         <toolWindow id="Kubernetes"
                     anchor="left"
-                    factoryClass="com.redhat.devtools.intellij.kubernetes.KubernetesToolWindowFactory"
+                    factoryClass="com.redhat.devtools.intellij.kubernetes.tree.ResourceTreeToolWindowFactory"
                     icon="/META-INF/pluginIcon13x13.svg"/>
+        <toolWindow id="Kubernetes Logs"
+                    anchor="bottom"
+                    factoryClass="com.redhat.devtools.intellij.kubernetes.logs.LogsToolWindowFactory"
+                    canCloseContents="true"
+                    icon="/icons/logs.svg"/>
         <applicationService serviceInterface="com.redhat.devtools.intellij.kubernetes.model.IResourceModel"
                             serviceImplementation="com.redhat.devtools.intellij.kubernetes.model.ResourceModel"/>
         <nonProjectFileWritingAccessExtension implementation="com.redhat.devtools.intellij.common.editor.AllowNonProjectEditing" />
@@ -147,6 +152,10 @@
                     id="com.redhat.devtools.intellij.kubernetes.actions.RefreshAction"
                     text="Refresh"
                     icon="AllIcons.Actions.Refresh"/>
+            <action class="com.redhat.devtools.intellij.kubernetes.actions.FollowLogsAction"
+                    id="com.redhat.devtools.intellij.kubernetes.actions.ShowLogsAction"
+                    text="Follow Log"
+                    icon="/icons/logs.svg"/>
         </group>
 
         <group id="Kubernetes.Editor.Toolbar" class="com.intellij.openapi.actionSystem.DefaultActionGroup">
@@ -160,7 +169,7 @@
                     icon="/icons/download.svg" />
             <action class="com.redhat.devtools.intellij.kubernetes.editor.actions.DiffAction"
                     id="com.redhat.devtools.intellij.kubernetes.editor.actions.DiffAction"
-                    text="Diff editor resource with cluster resource"
+                    text="Diff Editor Resource with Cluster Resource"
                     icon="/icons/diff.svg" />
         </group>
     </actions>

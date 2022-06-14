@@ -24,6 +24,8 @@ import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinition
 import io.fabric8.kubernetes.client.KubernetesClient
 import io.fabric8.kubernetes.client.KubernetesClientException
+import io.fabric8.kubernetes.client.dsl.LogWatch
+import java.io.OutputStream
 import java.util.function.Predicate
 
 interface IResourceModel {
@@ -41,6 +43,8 @@ interface IResourceModel {
     fun stopWatch(definition: CustomResourceDefinition)
     fun invalidate(element: Any?)
     fun delete(resources: List<HasMetadata>)
+    fun watchLog(resource: HasMetadata, out: OutputStream): LogWatch?
+    fun canFollowLogs(resource: HasMetadata): Boolean
     fun addListener(listener: IResourceChangeListener)
     fun removeListener(listener: IResourceChangeListener)
 }
@@ -51,7 +55,7 @@ interface IResourceModel {
  * <h3>WARNING<h3>: no argument constructor required because this class is instantiated by IJ ServiceManager
  *
  * @see [issue 180](https://github.com/redhat-developer/intellij-kubernetes/issues/180)
- * @see [com.redhat.devtools.intellij.kubernetes.KubernetesToolWindowFactory.createTree]
+ * @see [com.redhat.devtools.intellij.kubernetes.TreeToolWindowFactory.createTree]
  * @see [com.redhat.devtools.intellij.kubernetes.actions.getResourceModel]
  */
 open class ResourceModel : IResourceModel {
@@ -194,4 +198,13 @@ open class ResourceModel : IResourceModel {
     override fun delete(resources: List<HasMetadata>) {
         contexts.current?.delete(resources)
     }
+
+    override fun watchLog(resource: HasMetadata, out: OutputStream): LogWatch? {
+        return contexts.current?.watchLog(resource, out)
+    }
+
+    override fun canFollowLogs(resource: HasMetadata): Boolean {
+        return true == contexts.current?.canWatchLog(resource)
+    }
+
 }

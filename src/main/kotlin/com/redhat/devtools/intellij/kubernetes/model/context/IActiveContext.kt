@@ -18,6 +18,8 @@ import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinition
 import io.fabric8.kubernetes.client.KubernetesClient
 import io.fabric8.kubernetes.client.Watch
 import io.fabric8.kubernetes.client.Watcher
+import io.fabric8.kubernetes.client.dsl.LogWatch
+import java.io.OutputStream
 import java.net.URL
 
 interface IActiveContext<N: HasMetadata, C: KubernetesClient>: IContext {
@@ -74,6 +76,10 @@ interface IActiveContext<N: HasMetadata, C: KubernetesClient>: IContext {
      * Deletes the given resources.
      */
     fun delete(resources: List<HasMetadata>)
+
+    fun <T: HasMetadata> watchLog(resource: T, out: OutputStream): LogWatch?
+
+    fun <T: HasMetadata> canWatchLog(resource: T): Boolean
 
     /**
      * Returns all resources of the given kind in the given scope.

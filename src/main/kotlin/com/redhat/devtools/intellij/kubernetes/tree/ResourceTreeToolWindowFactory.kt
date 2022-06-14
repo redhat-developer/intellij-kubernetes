@@ -8,7 +8,7 @@
  * Contributors:
  * Red Hat, Inc. - initial API and implementation
  ******************************************************************************/
-package com.redhat.devtools.intellij.kubernetes
+package com.redhat.devtools.intellij.kubernetes.tree
 
 import com.intellij.ide.util.treeView.NodeRenderer
 import com.intellij.openapi.actionSystem.ActionPlaces
@@ -25,9 +25,6 @@ import com.redhat.devtools.intellij.kubernetes.actions.addDoubleClickListener
 import com.redhat.devtools.intellij.kubernetes.actions.getElement
 import com.redhat.devtools.intellij.kubernetes.editor.ResourceEditorFactory
 import com.redhat.devtools.intellij.kubernetes.model.ResourceModel
-import com.redhat.devtools.intellij.kubernetes.tree.ResourceWatchController
-import com.redhat.devtools.intellij.kubernetes.tree.TreeStructure
-import com.redhat.devtools.intellij.kubernetes.tree.TreeUpdater
 import io.fabric8.kubernetes.api.model.HasMetadata
 import java.awt.Point
 import java.awt.event.MouseAdapter
@@ -37,7 +34,11 @@ import javax.swing.JTree
 import javax.swing.tree.MutableTreeNode
 
 
-class KubernetesToolWindowFactory: ToolWindowFactory {
+class ResourceTreeToolWindowFactory: ToolWindowFactory {
+
+    companion object {
+        const val ID = "Kubernetes"
+    }
 
     override fun createToolWindowContent(project: Project, toolWindow: ToolWindow) {
         val tree = createTree(project)

@@ -14,24 +14,28 @@ import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.anyOrNull
 import com.nhaarman.mockitokotlin2.doAnswer
 import com.nhaarman.mockitokotlin2.doReturn
+import com.nhaarman.mockitokotlin2.eq
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.whenever
 import com.redhat.devtools.intellij.common.validation.KubernetesResourceInfo
 import com.redhat.devtools.intellij.common.validation.KubernetesTypeInfo
+import com.redhat.devtools.intellij.kubernetes.model.IModelChangeObservable
+import com.redhat.devtools.intellij.kubernetes.model.IResourceModel
+import com.redhat.devtools.intellij.kubernetes.model.context.IActiveContext
+import com.redhat.devtools.intellij.kubernetes.model.context.IContext
+import com.redhat.devtools.intellij.kubernetes.model.resource.ILogWatcher
+import com.redhat.devtools.intellij.kubernetes.model.resource.INamespacedResourceOperator
+import com.redhat.devtools.intellij.kubernetes.model.resource.INonNamespacedResourceOperator
+import com.redhat.devtools.intellij.kubernetes.model.resource.ResourceKind
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.NamedContext
 import io.fabric8.kubernetes.api.model.Namespace
 import io.fabric8.kubernetes.client.Client
 import io.fabric8.kubernetes.client.KubernetesClient
-import io.fabric8.kubernetes.client.Watcher
-import com.redhat.devtools.intellij.kubernetes.model.IModelChangeObservable
-import com.redhat.devtools.intellij.kubernetes.model.IResourceModel
-import com.redhat.devtools.intellij.kubernetes.model.context.IActiveContext
-import com.redhat.devtools.intellij.kubernetes.model.context.IContext
-import com.redhat.devtools.intellij.kubernetes.model.resource.INamespacedResourceOperator
-import com.redhat.devtools.intellij.kubernetes.model.resource.INonNamespacedResourceOperator
-import com.redhat.devtools.intellij.kubernetes.model.resource.ResourceKind
 import io.fabric8.kubernetes.client.Watch
+import io.fabric8.kubernetes.client.Watcher
+import io.fabric8.kubernetes.client.dsl.LogWatch
+import java.io.OutputStream
 import org.mockito.Mockito
 
 object Mocks {
@@ -77,21 +81,59 @@ object Mocks {
         crossinline watchOperation: (watcher: Watcher<in T>) -> Watch? = { null },
         deleteSuccess: Boolean = true,
         getReturnValue: T? = null
-    ): INamespacedResourceOperator<T, C> {
-        return mock {
-            doReturn(namespace.metadata.name)
-                .whenever(mock).namespace
-            on { this.kind } doReturn kind!!
-            on { allResources } doReturn resources
-            on { watch(any(), any()) } doAnswer { invocation ->
-                watchOperation.invoke(invocation.getArgument(0))
-            }
-            on { watchAll(any()) } doAnswer { invocation ->
-                watchOperation.invoke(invocation.getArgument(0))
-            }
-            on { delete(any()) } doReturn deleteSuccess
-            on { get(any()) } doReturn getReturnValue
+    ): INamespacedResourceOperator<T, C>  {
+        val mock = mock<INamespacedResourceOperator<T, C>>()
+        mockNamespacedOperatorMethods(namespace, kind, resources, watchOperation, deleteSuccess, getReturnValue, mock)
+        return mock
+    }
+
+    inline fun <reified T : HasMetadata, C : Client> logWatchingNamespacedResourceOperator(
+        kind: ResourceKind<T>?,
+        resources: Collection<T>,
+        namespace: Namespace,
+        crossinline watchOperation: (watcher: Watcher<in T>) -> Watch? = { null },
+        deleteSuccess: Boolean = true,
+        getReturnValue: T? = null,
+        out: OutputStream = mock()
+    ): INamespacedResourceOperator<T, C>  {
+        val mock = mock<INamespacedResourceOperator<T, C>>(arrayOf(ILogWatcher::class))
+        mockNamespacedOperatorMethods(namespace, kind, resources, watchOperation, deleteSuccess, getReturnValue, mock)
+        @Suppress("UNCHECKED_CAST")
+        val logWatcher = mock as ILogWatcher<T>
+        val logWatch: LogWatch = mock()
+        doReturn(logWatch)
+            .whenever(logWatcher).watchLog(any(), eq(out))
+        return mock
+    }
+
+    inline fun <C : Client, reified T : HasMetadata> mockNamespacedOperatorMethods(
+        namespace: Namespace,
+        kind: ResourceKind<T>?,
+        resources: Collection<T>,
+        crossinline watchOperation: (watcher: Watcher<in T>) -> Watch?,
+        deleteSuccess: Boolean,
+        getReturnValue: T?,
+        mock: INamespacedResourceOperator<T, C>
+        ) {
+        doReturn(namespace.metadata.name)
+            .whenever(mock).namespace
+        doReturn(kind)
+            .whenever(mock).kind
+        doReturn(resources)
+            .whenever(mock).allResources
+        doAnswer { invocation ->
+            watchOperation.invoke(invocation.getArgument(0))
         }
+            .whenever(mock).watch(any(), any())
+        doAnswer { invocation ->
+            watchOperation.invoke(invocation.getArgument(0))
+        }
+            .whenever(mock).watchAll(any())
+
+        doReturn(deleteSuccess)
+            .whenever(mock).delete(any())
+        doReturn(getReturnValue)
+            .whenever(mock).get(any())
     }
 
     inline fun <reified T : HasMetadata, C : Client> nonNamespacedResourceOperator(

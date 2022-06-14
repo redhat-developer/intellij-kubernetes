@@ -38,13 +38,16 @@ import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.client
 import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.customResource
 import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.customResourceDefinition
 import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.resource
+import com.redhat.devtools.intellij.kubernetes.model.mocks.Mocks.logWatchingNamespacedResourceOperator
 import com.redhat.devtools.intellij.kubernetes.model.mocks.Mocks.namespacedResourceOperator
 import com.redhat.devtools.intellij.kubernetes.model.mocks.Mocks.nonNamespacedResourceOperator
+import com.redhat.devtools.intellij.kubernetes.model.resource.ILogWatcher
 import com.redhat.devtools.intellij.kubernetes.model.resource.INamespacedResourceOperator
 import com.redhat.devtools.intellij.kubernetes.model.resource.INonNamespacedResourceOperator
 import com.redhat.devtools.intellij.kubernetes.model.resource.IResourceOperator
 import com.redhat.devtools.intellij.kubernetes.model.resource.ResourceKind
 import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.AllPodsOperator
+import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.DeploymentsOperator
 import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.NamespacedPodsOperator
 import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.NamespacesOperator
 import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.NodesOperator
@@ -57,11 +60,13 @@ import io.fabric8.kubernetes.api.model.Node
 import io.fabric8.kubernetes.api.model.Pod
 import io.fabric8.kubernetes.api.model.Secret
 import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinition
+import io.fabric8.kubernetes.api.model.apps.Deployment
 import io.fabric8.kubernetes.client.KubernetesClient
 import io.fabric8.kubernetes.client.NamespacedKubernetesClient
 import io.fabric8.kubernetes.client.Watch
 import io.fabric8.kubernetes.client.Watcher
 import io.fabric8.kubernetes.model.Scope
+import java.io.OutputStream
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
 import org.junit.Test
@@ -169,6 +174,17 @@ class KubernetesContextTest {
 			nonNamespacedCustomResourceWatchOp
 		)
 
+	private val podLogWatchingOperator = logWatchingNamespacedResourceOperator<Pod, KubernetesClient>(
+		NamespacedPodsOperator.KIND,
+		allPods.toList(),
+		currentNamespace
+	)
+	private val deploymentLogWatchingOperator = logWatchingNamespacedResourceOperator<Deployment, KubernetesClient>(
+		DeploymentsOperator.KIND,
+		emptyList(),
+		currentNamespace
+	)
+
 	private val resourceWatch: ResourceWatch<ResourceKind<out HasMetadata>> = mock()
 	private val notification: Notification = mock()
 
@@ -176,18 +192,18 @@ class KubernetesContextTest {
 
 	@Before
 	fun before() {
-		context = createContext()
+		val internalResourcesOperators = mutableListOf(
+			namespacesOperator,
+			nodesOperator,
+			namespacedPodsOperator,
+			allPodsOperator,
+			customResourceDefinitionsOperator)
+		val extensionResourceOperators = mutableListOf(
+			hasMetadataOperator)
+		context = createContext(internalResourcesOperators, extensionResourceOperators)
 	}
 
-	private fun createContext(): TestableKubernetesContext {
-		val internalResourcesOperators = mutableListOf(
-				namespacesOperator,
-				nodesOperator,
-				namespacedPodsOperator,
-				allPodsOperator,
-				customResourceDefinitionsOperator)
-		val extensionResourceOperators = mutableListOf(
-				hasMetadataOperator)
+	private fun createContext(internalResourcesOperators: List<IResourceOperator<*>>, extensionResourceOperators: List<IResourceOperator<*>>): TestableKubernetesContext {
 		return spy(TestableKubernetesContext(
 				modelChange,
 				this@KubernetesContextTest.clients,
@@ -534,6 +550,64 @@ class KubernetesContextTest {
 		}
 		// then
 		verify(modelChange, never()).fireModified(toDelete)
+	}
+
+	@Test
+	fun `#watchLog should call #watchLog on the first operator that supports given kind and watching the log`() {
+		// given
+		val internalResourcesOperators = mutableListOf(
+			namespacesOperator,
+			podLogWatchingOperator,
+			deploymentLogWatchingOperator
+		)
+		@Suppress("UNCHECKED_CAST")
+		val expected = podLogWatchingOperator as ILogWatcher<Pod>
+		val context = createContext(internalResourcesOperators, emptyList())
+		val out: OutputStream = mock()
+		// when
+		context.watchLog(POD2, out)
+		// then
+		verify(expected).watchLog(POD2, out)
+	}
+
+	@Test
+	fun `#watchLog should return null if no operator was found that supports watching the log`() {
+		// given
+		val internalResourcesOperators = mutableListOf(
+			namespacesOperator,
+			namespacedPodsOperator)
+		val context = createContext(internalResourcesOperators, emptyList())
+		// when
+		val log = context.watchLog(POD2, mock())
+		// then
+		assertThat(log).isNull()
+	}
+
+	@Test
+	fun `#canWatchLog should return true if there is an operator that supports given kind and watching the log`() {
+		// given
+		val internalResourcesOperators = mutableListOf(
+			namespacesOperator,
+			podLogWatchingOperator,
+			deploymentLogWatchingOperator
+		)
+		val context = createContext(internalResourcesOperators, emptyList())
+		// when
+		val canWatchLog = context.canWatchLog(POD2)
+		// then
+		assertThat(canWatchLog).isTrue()
+	}
+
+	@Test
+	fun `#canWatchLog should false if no operator exists that supports watching the log for the given pod`() {
+		// given
+		val internalResourcesOperators = mutableListOf(
+			namespacesOperator)
+		val context = createContext(internalResourcesOperators, emptyList())
+		// when
+		val canWatchLog = context.canWatchLog(POD2)
+		// then
+		assertThat(canWatchLog).isFalse()
 	}
 
 	@Test

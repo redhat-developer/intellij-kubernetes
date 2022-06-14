@@ -10,10 +10,10 @@
  ******************************************************************************/
 package com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes
 
+import com.redhat.devtools.intellij.kubernetes.model.Clients
 import com.redhat.devtools.intellij.kubernetes.model.resource.NonNamespacedOperation
 import com.redhat.devtools.intellij.kubernetes.model.resource.NonNamespacedResourceOperator
 import com.redhat.devtools.intellij.kubernetes.model.resource.ResourceKind
-import com.redhat.devtools.intellij.kubernetes.model.Clients
 import io.fabric8.kubernetes.api.model.Namespace
 import io.fabric8.kubernetes.client.KubernetesClient
 
@@ -26,7 +26,7 @@ class NamespacesOperator(clients: Clients<out KubernetesClient>)
 
     override val kind = KIND
 
-    override fun getOperation(): NonNamespacedOperation<Namespace>? {
+    override fun getOperation(): NonNamespacedOperation<Namespace> {
         return client.namespaces()
     }
 }

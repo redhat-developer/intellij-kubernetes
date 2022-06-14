@@ -26,7 +26,7 @@ class ImageStreamsOperator(clients: Clients<out OpenShiftClient>)
 
     override val kind = KIND
 
-    override fun getOperation(): NamespacedOperation<ImageStream>? {
+    override fun getOperation(): NamespacedOperation<ImageStream> {
         return client.imageStreams()
     }
 }

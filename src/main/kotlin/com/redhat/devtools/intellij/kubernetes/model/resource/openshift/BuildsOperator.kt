@@ -10,15 +10,18 @@
  ******************************************************************************/
 package com.redhat.devtools.intellij.kubernetes.model.resource.openshift
 
+import com.redhat.devtools.intellij.kubernetes.model.Clients
+import com.redhat.devtools.intellij.kubernetes.model.resource.ILogWatcher
 import com.redhat.devtools.intellij.kubernetes.model.resource.NamespacedOperation
 import com.redhat.devtools.intellij.kubernetes.model.resource.NamespacedResourceOperator
 import com.redhat.devtools.intellij.kubernetes.model.resource.ResourceKind
-import com.redhat.devtools.intellij.kubernetes.model.Clients
+import io.fabric8.kubernetes.client.dsl.LogWatch
 import io.fabric8.openshift.api.model.Build
 import io.fabric8.openshift.client.OpenShiftClient
+import java.io.OutputStream
 
 class BuildsOperator(clients: Clients<out OpenShiftClient>)
-    : NamespacedResourceOperator<Build, OpenShiftClient>(clients.get()) {
+    : NamespacedResourceOperator<Build, OpenShiftClient>(clients.get()), ILogWatcher<Build> {
 
     companion object {
         val KIND = ResourceKind.create(Build::class.java)
@@ -26,7 +29,11 @@ class BuildsOperator(clients: Clients<out OpenShiftClient>)
 
     override val kind = KIND
 
-    override fun getOperation(): NamespacedOperation<Build>? {
+    override fun getOperation(): NamespacedOperation<Build> {
         return client.builds()
+    }
+
+    override fun watchLog(resource: Build, out: OutputStream): LogWatch? {
+        return watchLogWhenReady(resource, out)
     }
 }

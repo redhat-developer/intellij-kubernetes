@@ -55,6 +55,7 @@ import org.jetbrains.yaml.YAMLFileType
 import org.junit.Before
 import org.junit.Test
 
+@Suppress("UNUSED_ANONYMOUS_PARAMETER")
 class ResourceEditorTest {
 
     private val job: String = """
