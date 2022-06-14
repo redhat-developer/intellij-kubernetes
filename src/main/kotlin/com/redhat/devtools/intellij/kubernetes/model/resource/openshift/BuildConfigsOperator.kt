@@ -10,12 +10,12 @@
  ******************************************************************************/
 package com.redhat.devtools.intellij.kubernetes.model.resource.openshift
 
+import com.redhat.devtools.intellij.kubernetes.model.Clients
 import com.redhat.devtools.intellij.kubernetes.model.resource.NamespacedOperation
-import io.fabric8.openshift.api.model.BuildConfig
-import io.fabric8.openshift.client.OpenShiftClient
 import com.redhat.devtools.intellij.kubernetes.model.resource.NamespacedResourceOperator
 import com.redhat.devtools.intellij.kubernetes.model.resource.ResourceKind
-import com.redhat.devtools.intellij.kubernetes.model.Clients
+import io.fabric8.openshift.api.model.BuildConfig
+import io.fabric8.openshift.client.OpenShiftClient
 
 class BuildConfigsOperator(clients: Clients<out OpenShiftClient>)
     : NamespacedResourceOperator<BuildConfig, OpenShiftClient>(clients.get()) {
@@ -26,7 +26,7 @@ class BuildConfigsOperator(clients: Clients<out OpenShiftClient>)
 
     override val kind = KIND
 
-    override fun getOperation(): NamespacedOperation<BuildConfig>? {
+    override fun getOperation(): NamespacedOperation<BuildConfig> {
         return client.buildConfigs()
     }
 }

@@ -15,10 +15,10 @@ import java.net.UnknownHostException
 
 private const val DEFAULT_KUBECLIENT_ERRORMESSAGE = "An error has occurred"
 
-fun toTitle(e: Throwable): String {
+fun toTitle(e: Throwable?): String {
     return noCurrentContextMessage(e)
-        ?: e.message
-        ?: e.cause?.message
+        ?: e?.message
+        ?: e?.cause?.message
         ?: "Error"
 }
 

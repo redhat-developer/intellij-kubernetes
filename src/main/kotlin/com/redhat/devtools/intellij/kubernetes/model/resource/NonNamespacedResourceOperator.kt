@@ -20,8 +20,10 @@ import io.fabric8.kubernetes.api.model.KubernetesResourceList
 import io.fabric8.kubernetes.client.Client
 import io.fabric8.kubernetes.client.Watch
 import io.fabric8.kubernetes.client.Watcher
+import io.fabric8.kubernetes.client.dsl.LogWatch
 import io.fabric8.kubernetes.client.dsl.NonNamespaceOperation
 import io.fabric8.kubernetes.client.dsl.Resource
+import java.io.OutputStream
 
 typealias NonNamespacedOperation<R> = NonNamespaceOperation<R, out KubernetesResourceList<R>, out Resource<R>>
 
@@ -117,5 +119,12 @@ abstract class NonNamespacedResourceOperator<R : HasMetadata, C : Client>(
             spec.isSameNamespace(resource) -> resource // same namespace
             else -> null
         }
+    }
+
+    protected fun watchLogWhenReady(resource: R, out: OutputStream): LogWatch? {
+        val op = getOperation()
+            ?.withName(resource.metadata.name)
+            ?: return null
+        return super.watchLogWhenReady(op, out)
     }
 }

@@ -10,10 +10,10 @@
  ******************************************************************************/
 package com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes
 
+import com.redhat.devtools.intellij.kubernetes.model.Clients
 import com.redhat.devtools.intellij.kubernetes.model.resource.NamespacedOperation
 import com.redhat.devtools.intellij.kubernetes.model.resource.NamespacedResourceOperator
 import com.redhat.devtools.intellij.kubernetes.model.resource.ResourceKind
-import com.redhat.devtools.intellij.kubernetes.model.Clients
 import io.fabric8.kubernetes.api.model.Secret
 import io.fabric8.kubernetes.client.KubernetesClient
 
@@ -26,7 +26,7 @@ class SecretsOperator(clients: Clients<out KubernetesClient>)
 
     override val kind = KIND
 
-    override fun getOperation(): NamespacedOperation<Secret>? {
+    override fun getOperation(): NamespacedOperation<Secret> {
         return client.secrets()
     }
 }

@@ -10,10 +10,10 @@
  ******************************************************************************/
 package com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes
 
+import com.redhat.devtools.intellij.kubernetes.model.Clients
 import com.redhat.devtools.intellij.kubernetes.model.resource.NamespacedOperation
 import com.redhat.devtools.intellij.kubernetes.model.resource.NamespacedResourceOperator
 import com.redhat.devtools.intellij.kubernetes.model.resource.ResourceKind
-import com.redhat.devtools.intellij.kubernetes.model.Clients
 import io.fabric8.kubernetes.api.model.apps.StatefulSet
 import io.fabric8.kubernetes.client.AppsAPIGroupClient
 import io.fabric8.kubernetes.client.KubernetesClient
@@ -27,7 +27,7 @@ class StatefulSetsOperator(clients: Clients<out KubernetesClient>)
 
     override val kind = KIND
 
-    override fun getOperation(): NamespacedOperation<StatefulSet>? {
+    override fun getOperation(): NamespacedOperation<StatefulSet> {
         return client.statefulSets()
     }
 }

@@ -18,8 +18,10 @@ import io.fabric8.kubernetes.client.Client
 import io.fabric8.kubernetes.client.KubernetesClientException
 import io.fabric8.kubernetes.client.Watch
 import io.fabric8.kubernetes.client.Watcher
+import io.fabric8.kubernetes.client.dsl.LogWatch
 import io.fabric8.kubernetes.client.dsl.MixedOperation
 import io.fabric8.kubernetes.client.dsl.Resource
+import java.io.OutputStream
 
 typealias NamespacedOperation<R> = MixedOperation<R, out KubernetesResourceList<R>, out Resource<R>>
 
@@ -57,7 +59,10 @@ abstract class NamespacedResourceOperator<R : HasMetadata, C: Client>(
 
     protected open fun loadAllResources(namespace: String): List<R> {
         logger<NamespacedResourceOperator<*, *>>().debug("Loading $kind resources in namespace $namespace.")
-        return getOperation()?.inNamespace(namespace)?.list()?.items ?: emptyList()
+        return getOperation()
+            ?.inNamespace(namespace)
+            ?.list()
+            ?.items ?: emptyList()
     }
 
     override fun watchAll(watcher: Watcher<in R>): Watch? {
@@ -135,4 +140,13 @@ abstract class NamespacedResourceOperator<R : HasMetadata, C: Client>(
     protected open fun getOperation(): NamespacedOperation<R>? {
         return null
     }
+
+    protected fun watchLogWhenReady(resource: R, out: OutputStream): LogWatch? {
+        val op = getOperation()
+            ?.inNamespace(resourceOrCurrentNamespace(resource))
+            ?.withName(resource.metadata.name)
+            ?: return null
+        return super.watchLogWhenReady(op, out)
+    }
+
 }

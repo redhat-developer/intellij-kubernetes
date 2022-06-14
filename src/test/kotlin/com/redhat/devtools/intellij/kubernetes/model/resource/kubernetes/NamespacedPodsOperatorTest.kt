@@ -512,13 +512,10 @@ class NamespacedPodsOperatorTest {
     fun `#get() is using resource namespace if exists`() {
         // given
         val pod = PodBuilder(POD2).build()
-        operator.namespace =  "smurfville" // should not use it
         clearInvocations(operator)
         // when
         operator.get(pod)
         // then
-        verify(clients.get().pods())
-            .inNamespace(pod.metadata.namespace)
         verify(clients.get().pods().inNamespace(operator.namespace))
             .withName(pod.metadata.name)
     }
@@ -535,10 +532,46 @@ class NamespacedPodsOperatorTest {
         // when
         operator.get(pod)
         // then
-        verify(clients.get().pods())
-            .inNamespace(operator.namespace)
         verify(clients.get().pods().inNamespace(operator.namespace))
             .withName(pod.metadata.name)
+    }
+
+    @Test
+    fun `#watchLog() is using resource namespace if exists`() {
+        // given
+        val pod = PodBuilder(POD2).build()
+        clearInvocations(operator)
+        // when
+        operator.watch(pod, mock())
+        // then
+        verify(clients.get().pods().inNamespace(operator.namespace))
+            .withName(pod.metadata.name)
+    }
+
+    @Test
+    fun `#watchLog() is using operator namespace if resource namespace is null`() {
+        // given
+        val pod = PodBuilder(POD2).editMetadata()
+            .withNamespace(null) // no namespace in pod
+            .endMetadata()
+            .build()
+        operator.namespace =  "smurfington" // should use it
+        clearInvocations(operator)
+        // when
+        operator.watchLog(pod, mock())
+        // then
+        verify(clients.get().pods().inNamespace(operator.namespace))
+            .withName(pod.metadata.name)
+    }
+
+    @Test
+    fun `#watchLog() is waiting for pod to become ready`() {
+        // given
+        // when
+        operator.watchLog(POD2, mock())
+        // then
+        verify(clients.get().pods().inNamespace(POD2.metadata.namespace).withName(POD2.metadata.name))
+            .waitUntilReady(any(), any())
     }
 
     class TestablePodsOperator(clients: Clients<KubernetesClient>): NamespacedPodsOperator(clients) {

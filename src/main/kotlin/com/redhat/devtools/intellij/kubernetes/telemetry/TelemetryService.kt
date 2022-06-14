@@ -8,14 +8,14 @@
  * Contributors:
  * Red Hat, Inc. - initial API and implementation
  ******************************************************************************/
-package com.redhat.devtools.intellij.kubernetes.telemetry;
+package com.redhat.devtools.intellij.kubernetes.telemetry
 
 import com.redhat.devtools.intellij.common.validation.KubernetesResourceInfo
 import com.redhat.devtools.intellij.common.validation.KubernetesTypeInfo
-import com.redhat.devtools.intellij.kubernetes.model.resource.ResourceKind;
+import com.redhat.devtools.intellij.kubernetes.model.resource.ResourceKind
 import com.redhat.devtools.intellij.kubernetes.tree.util.getResourceKind
-import com.redhat.devtools.intellij.telemetry.core.service.TelemetryMessageBuilder;
-import io.fabric8.kubernetes.api.model.HasMetadata;
+import com.redhat.devtools.intellij.telemetry.core.service.TelemetryMessageBuilder
+import io.fabric8.kubernetes.api.model.HasMetadata
 
 object TelemetryService {
 
@@ -53,7 +53,7 @@ object TelemetryService {
             .joinToString()
     }
 
-    private fun kindOrUnknown(kind: ResourceKind<*>?): String {
+    fun kindOrUnknown(kind: ResourceKind<*>?): String {
         return if (kind != null) {
             "${kind.version}/${kind.kind}"
         } else {
@@ -61,12 +61,11 @@ object TelemetryService {
         }
     }
 
-    private fun kindOrUnknown(info: KubernetesTypeInfo?): String {
+    fun kindOrUnknown(info: KubernetesTypeInfo?): String {
         return if (info != null) {
             "${info.apiGroup}/${info.kind}"
         } else {
             "unknown"
         }
     }
-
 }

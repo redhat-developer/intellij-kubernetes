@@ -30,6 +30,7 @@ import io.fabric8.kubernetes.api.model.HasMetadata
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test
 
+@Suppress("UNUSED_ANONYMOUS_PARAMETER")
 class ResourceEditorFactoryTest {
 
     private val deployment = """

@@ -10,10 +10,10 @@
  ******************************************************************************/
 package com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes
 
+import com.redhat.devtools.intellij.kubernetes.model.Clients
 import com.redhat.devtools.intellij.kubernetes.model.resource.NamespacedOperation
 import com.redhat.devtools.intellij.kubernetes.model.resource.NamespacedResourceOperator
 import com.redhat.devtools.intellij.kubernetes.model.resource.ResourceKind
-import com.redhat.devtools.intellij.kubernetes.model.Clients
 import io.fabric8.kubernetes.api.model.apps.DaemonSet
 import io.fabric8.kubernetes.client.AppsAPIGroupClient
 import io.fabric8.kubernetes.client.KubernetesClient
@@ -27,7 +27,7 @@ class DaemonSetsOperator(clients: Clients<out KubernetesClient>)
 
 	override val kind = KIND
 
-	override fun getOperation(): NamespacedOperation<DaemonSet>? {
+	override fun getOperation(): NamespacedOperation<DaemonSet> {
 		return client.daemonSets()
 	}
 
