@@ -421,7 +421,11 @@ open class ResourceEditor(
     }
 
     /**
-     * Closes this instance. Closes the resource watch and deletes the temporary file if one was created.
+     * Closes this instance and cleans up references to it.
+     * - Removes the resource model listener,
+     * - closes the [clusterResource],
+     * - removes the references in editor- and editor file-userdata
+     * - saves the resource version
      */
     fun close() {
         resourceModel.removeListener(this)
@@ -429,7 +433,6 @@ open class ResourceEditor(
         _clusterResource?.close()
         editor.putUserData(KEY_RESOURCE_EDITOR, null)
         editor.file?.putUserData(KEY_RESOURCE_EDITOR, null)
-        createResourceFileForVirtual.invoke(editor.file)?.deleteTemporary()
         resourceVersion.save()
     }
 
