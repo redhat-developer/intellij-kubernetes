@@ -735,15 +735,6 @@ spec:
     }
 
     @Test
-    fun `#close should delete temporary resource file`() {
-        // given
-        // when
-        editor.close()
-        // then
-        verify(resourceFile).deleteTemporary()
-    }
-
-    @Test
     fun `#close should remove editor from virtual file user data`() {
         // given
         // when
@@ -768,6 +759,15 @@ spec:
         editor.close()
         // then
         verify(resourceModel).removeListener(editor)
+    }
+
+    @Test
+    fun `#close should save resource version`() {
+        // given
+        // when
+        editor.close()
+        // then
+        verify(resourceVersion).save()
     }
 
     @Test

@@ -25,14 +25,14 @@ import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.whenever
 import com.redhat.devtools.intellij.common.editor.AllowNonProjectEditing
 import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.POD3
-import org.assertj.core.api.Assertions.assertThat
-import org.jetbrains.yaml.YAMLFileType
-import org.junit.Test
 import java.io.ByteArrayInputStream
 import java.io.File
 import java.io.InputStream
 import java.nio.charset.Charset
 import java.nio.file.Path
+import org.assertj.core.api.Assertions.assertThat
+import org.jetbrains.yaml.YAMLFileType
+import org.junit.Test
 
 class ResourceFileTest {
 
@@ -224,12 +224,34 @@ spec:
     }
 
     @Test
-    fun `#deleteTemporary() should delete virtual file`() {
+    fun `#deleteTemporary() should delete temporary virtual file if it's valid`() {
         // given
         // when
         resourceFile.deleteTemporary()
         // then
         verify(temporaryVirtualFile).delete(any())
+    }
+
+    @Test
+    fun `#deleteTemporary() should NOT delete temporary virtual file if it's NOT valid`() {
+        // given
+        doReturn(false)
+            .whenever(temporaryVirtualFile).isValid
+        // when
+        resourceFile.deleteTemporary()
+        // then
+        verify(temporaryVirtualFile, never()).delete(any())
+    }
+
+    @Test
+    fun `#deleteTemporary() should NOT delete temporary virtual file if it doesn't exist`() {
+        // given
+        doReturn(false)
+            .whenever(temporaryVirtualFile).exists()
+        // when
+        resourceFile.deleteTemporary()
+        // then
+        verify(temporaryVirtualFile, never()).delete(any())
     }
 
     @Test
@@ -276,6 +298,8 @@ spec:
             on { path } doReturn filePath.toString()
             on { isInLocalFileSystem() } doReturn inLocalFileSystem
             on { getInputStream() } doReturn inputStream
+            on { isValid() } doReturn true
+            on { exists() } doReturn true
         }
     }
 }

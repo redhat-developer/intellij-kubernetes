@@ -157,7 +157,14 @@ open class ResourceFile protected constructor(
             return
         }
         executeWriteAction {
-            virtualFile.delete(this)
+            try {
+                if (virtualFile.isValid
+                    && virtualFile.exists()) {
+                    virtualFile.delete(this)
+                }
+            } catch (t: Exception) {
+                logger<ResourceFile>().warn("Could not delete virtual file ${virtualFile.path}, e")
+            }
         }
     }
 
