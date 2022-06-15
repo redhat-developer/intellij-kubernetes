@@ -148,17 +148,6 @@ class NonCachingSingleResourceOperatorTest {
         verify(customResourceOperation, never()).inNamespace(any())
     }
 
-    @Test
-    fun `#get should call custom resource operation if resource is custom resource deserialized to wrong class`() {
-        // given
-        val apiResource = namespacedApiResource(customResourceInLegacyClass)
-        val operator = NonCachingSingleResourceOperator(client, createAPIResources(apiResource))
-        // when
-        operator.get(customResourceInLegacyClass)
-        // then
-        verify(client).genericKubernetesResources(any())
-    }
-
     @Test(expected = KubernetesClientException::class)
     fun `#get should throw if custom resource is unknown api`() {
         // given
