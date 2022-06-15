@@ -267,29 +267,6 @@ fun <T> createResource(jsonYaml: String, clazz: Class<T>): T {
 }
 
 /**
- * Returns `true` if the given [HasMetadata] instance has [HasMetadata.getApiVersion] that does not match the
- * @Group and @Version annotations.
- * This is a **WORKAROUND** for detecting the presence of bug [#3859](https://github.com/fabric8io/kubernetes-client/issues/3859)
- * that exists in kubernetes-client <= 5.12
- *
- * ex. [Serialization.unmarshal] yaml/json for a knative service is deserialized to the k8s service [io.fabric8.kubernetes.api.model.Service]
- * while it should get unmarshalled to [GenericKubernetesResource].
- *
- * @param resource the resource to check
- * @return `true` if the apiVersion property in the given instance does not match the annotations
- *
- * @see Group
- * @see Version
- * @see HasMetadata.getApiVersion
- */
-fun isApiGroupVersionNotMatchingAnnotation(resource: HasMetadata): Boolean {
-	val annotatedGroup = Helper.getAnnotationValue(resource::class.java, Group::class.java)
-	val annotatedVersion = Helper.getAnnotationValue(resource::class.java, Version::class.java)
-	val annotatedApiVersion = ApiVersionUtil.joinApiGroupAndVersion(annotatedGroup, annotatedVersion)
-	return annotatedApiVersion != resource.apiVersion
-}
-
-/**
  * Returns `true` if the given [HasMetadata] is a custom resource.
  * This is the case if the class used is [GenericKubernetesResource] or if it was wrongly deserialized to a legacy model class.
  *
@@ -300,7 +277,6 @@ fun isApiGroupVersionNotMatchingAnnotation(resource: HasMetadata): Boolean {
  */
 fun isCustomResource(resource: HasMetadata): Boolean {
 	return GenericKubernetesResource::class.java == resource::class.java
-			|| isApiGroupVersionNotMatchingAnnotation(resource)
 }
 
 fun <R: HasMetadata?> runWithoutServerSetProperties(resource: R, operation: () -> R): R {
