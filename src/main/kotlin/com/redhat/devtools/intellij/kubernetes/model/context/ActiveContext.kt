@@ -456,7 +456,7 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
                     delete(it.key.first, it.key.second, it.value)
                     null
                 } catch (e: KubernetesClientException) {
-                    ResourceException(it.value, "Could not delete ${it.key.first} resource(s) ${toMessage(resources, -1)}", e)
+                    ResourceException("Could not delete ${it.key.first} resource(s) ${toMessage(resources, -1)}", e, it.value)
                 }
             }
         if (exceptions.isNotEmpty()) {
