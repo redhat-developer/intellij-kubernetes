@@ -38,12 +38,12 @@ import com.redhat.devtools.intellij.kubernetes.editor.notification.PullNotificat
 import com.redhat.devtools.intellij.kubernetes.editor.notification.PulledNotification
 import com.redhat.devtools.intellij.kubernetes.editor.notification.PushNotification
 import com.redhat.devtools.intellij.kubernetes.model.IResourceModel
-import com.redhat.devtools.intellij.kubernetes.model.util.ResourceException
 import com.redhat.devtools.intellij.kubernetes.model.context.IActiveContext
 import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.POD2
 import com.redhat.devtools.intellij.kubernetes.model.mocks.Mocks.kubernetesResourceInfo
 import com.redhat.devtools.intellij.kubernetes.model.mocks.Mocks.kubernetesTypeInfo
 import com.redhat.devtools.intellij.kubernetes.model.util.ResettableLazyProperty
+import com.redhat.devtools.intellij.kubernetes.model.util.ResourceException
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.PodBuilder
 import io.fabric8.kubernetes.client.KubernetesClient
@@ -557,25 +557,14 @@ spec:
     }
 
     @Test
-    fun `#push should show error notification with message of exception if pushing to cluster throws ResourceException`() {
+    fun `#push should show error notification with message of cause if pushing to cluster throws ResourceException`() {
         // given
-        doThrow(ResourceException("resource error"))
+        doThrow(ResourceException("didnt work", RuntimeException("resource error")))
             .whenever(clusterResource).push(any())
         // when
         editor.push()
         // then
         verify(errorNotification).show(any(), argWhere<String> { it.contains("resource error") })
-    }
-
-    @Test
-    fun `#push should show error notification with message of cause if pushing to cluster throws ResourceException`() {
-        // given
-        doThrow(ResourceException("client error", KubernetesClientException("client error")))
-            .whenever(clusterResource).push(any())
-        // when
-        editor.push()
-        // then
-        verify(errorNotification).show(any(), argWhere<String> { it.contains("client error") })
     }
 
     @Test

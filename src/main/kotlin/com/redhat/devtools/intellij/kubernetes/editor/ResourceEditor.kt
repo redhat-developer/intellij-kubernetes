@@ -150,14 +150,14 @@ open class ResourceEditor(
                     this.editorResource.set(resource)
                 }
                 saveResourceVersion(resource)
-                val cluster = clusterResource ?: return@runAsync
+                val cluster = clusterResource
                 showNotifications(deletedOnCluster, resource, cluster)
             } catch (e: Exception) {
                 runInUI {
                     hideNotifications()
                     errorNotification.show(
                         toTitle(e),
-                        toMessage(e)
+                        toMessage(e.cause)
                     )
                 }
             }
@@ -174,9 +174,10 @@ open class ResourceEditor(
         resourceVersion.set(version)
     }
 
-    private fun showNotifications(deleted: Boolean, resource: HasMetadata, clusterResource: ClusterResource) {
+    private fun showNotifications(deleted: Boolean, resource: HasMetadata, clusterResource: ClusterResource?) {
         when {
-            //clusterResource.isDeleted() ->
+            clusterResource == null ->
+                showClusterErrorNotification()
             deleted ->
                 showDeletedNotification(resource)
             isModified() ->
@@ -187,6 +188,16 @@ open class ResourceEditor(
                 runInUI {
                     hideNotifications()
                 }
+        }
+    }
+
+    private fun showClusterErrorNotification() {
+        runInUI {
+            hideNotifications()
+            errorNotification.show(
+                "Error contacting cluster. Make sure it's reachable, current context set, etc.",
+                null
+            )
         }
     }
 
@@ -261,7 +272,7 @@ open class ResourceEditor(
                     hideNotifications()
                     errorNotification.show(
                         "Could not pull ${editorResource.get()?.kind} ${editorResource.get()?.metadata?.name ?: ""}",
-                        toMessage(e)
+                        toMessage(e.cause)
                     )
                 }
             }
@@ -337,7 +348,7 @@ open class ResourceEditor(
                     hideNotifications()
                     errorNotification.show(
                         "Could not push ${editorResource.get()?.kind} ${editorResource.get()?.metadata?.name ?: ""}",
-                        toMessage(e)
+                        toMessage(e.cause)
                     )
                 }
             }
