@@ -188,7 +188,7 @@ fun isWillBeDeleted(resource: HasMetadata?): Boolean {
  * Returns a message listing the given resources by name while using ',' as delimiter.
  * Duplicate resources are ignored. Names that are longer than 20 characters are trimmed.
  *
- * @see toMessage
+ * @see toCauseMessage
  * @see trim
  */
 fun toMessage(resources: Collection<HasMetadata>, maxLength: Int): String {
