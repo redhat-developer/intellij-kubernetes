@@ -109,15 +109,6 @@ class APIResourcesTest {
         assertThat(found).isEqualTo(podsApiResource)
     }
 
-    @Test(expected = KubernetesClientException::class)
-    fun `#get should throw KubernetesClientException if response has code is NOT 200 NOR 404`() {
-        // given
-        mockResponseContent("{}", HttpURLConnection.HTTP_FORBIDDEN, response!!)
-        // when
-        api!!.get("aKind", "aGroup", "aVersion")
-        // then exception is thrown
-    }
-
     @Test
     fun `#get for knative Service should return knative Service APIResource`() {
         // given
