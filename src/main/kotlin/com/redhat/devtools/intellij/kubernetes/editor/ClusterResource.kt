@@ -105,13 +105,16 @@ open class ClusterResource protected constructor(
     private fun requestResource(): HasMetadata? {
         return try {
             context.get(initialResource)
-        } catch (e: KubernetesClientException) {
-            val message = if (e.isUnsupported()) {
-                // api discovery error
-                e.status.message
-            } else {
-                "Could not retrieve ${initialResource.kind} '${initialResource.metadata.name}' in version ${initialResource.apiVersion}"
-            }
+        } catch (e: RuntimeException) {
+            val message =
+                if (e is KubernetesClientException
+                    && e.isUnsupported()
+                ) {
+                    // api discovery error
+                    e.status.message
+                } else {
+                    "Could not retrieve ${initialResource.kind} ${initialResource.metadata?.name ?: ""} in version ${initialResource.apiVersion} from server"
+                }
             throw ResourceException(message, e)
         }
     }
@@ -144,7 +147,7 @@ open class ClusterResource protected constructor(
                     || (isSameResource(toCompare) && isModified(toCompare))
         } catch (e: ResourceException) {
             logger<ClusterResource>().warn(
-                "Could not request resource ${initialResource.kind} '${initialResource.metadata.name}' from server ${context.masterUrl}",
+                "Could not request resource ${initialResource.kind} ${initialResource.metadata?.name ?: ""} from server ${context.masterUrl}",
                 e)
             false
         }
@@ -254,7 +257,7 @@ open class ClusterResource protected constructor(
      */
     fun watch() {
         try {
-            logger<ClusterResource>().debug("Watching ${initialResource.kind} '${initialResource.metadata.name}'.")
+            logger<ClusterResource>().debug("Watching ${initialResource.kind} ${initialResource.metadata?.name ?: ""}.")
             forcedUpdate()
             watch.watch(
                 initialResource,
@@ -289,7 +292,7 @@ open class ClusterResource protected constructor(
      */
     fun stopWatch() {
         // use the resource passed in initially, updated resource can have become null (deleted)
-        logger<ClusterResource>().debug("Stopping watch for ${initialResource.kind} ${initialResource.metadata.name}.")
+        logger<ClusterResource>().debug("Stopping watch for ${initialResource.kind} ${ initialResource.metadata?.name ?: "" }.")
         watch.stopWatch(initialResource)
     }
 
