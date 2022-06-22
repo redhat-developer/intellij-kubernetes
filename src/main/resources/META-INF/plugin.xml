@@ -10,6 +10,12 @@
     </description>
     <change-notes>
         <![CDATA[
+        <h3>0.5.1</h3>
+        <ul>
+            <li><a href="https://github.com/redhat-developer/intellij-kubernetes/issues/336">As a user I would like to see full error message</a></li>
+            <li><a href="https://github.com/redhat-developer/intellij-kubernetes/issues/416">Fatal error when closing opened editor tabs</a></li>
+            <li><a href="https://github.com/redhat-developer/intellij-kubernetes/commit/a554519c76fba50c260f803012ce7aedd43388e2">bump min IDEA version to IC-2021.1</a></li>
+        </ul>
         <p></p>
         <h3>0.5.0</h3>
         <ul>
