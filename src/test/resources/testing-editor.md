@@ -240,6 +240,23 @@ metadata:
 
 -> error notification disappears
 
+**Error notification appears for resource without name**
+1. File > New > YML file
+2. paste the following resource without name
+```
+apiVersion: v1
+metadata:
+  labels:
+    jedi: yoda
+data:
+  username: YWRtaW4=222
+  password: MWYyZDFlMmU2N2Rm
+kind: Secret
+type: Opaque
+```
+
+-> Error notification resource could not be retrieved (details: name missing)
+
 **Push notification appears for local file**
 1. File > New > YML file
 2. paste the following into editor

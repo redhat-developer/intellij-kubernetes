@@ -40,11 +40,8 @@ class EditorFocusListener(private val project: Project) : FileEditorManagerListe
             ResourceEditorFactory.instance.getExistingOrCreate(editor, project)
                 ?.startWatch()
                 ?.update()
-        } catch (e: ResourceException) {
-            ErrorNotification(editor, project).show(
-                "Error contacting cluster. Make sure it's reachable, api version supported, etc.",
-                e.cause ?: e
-            )
+        } catch (e: RuntimeException) {
+            showErrorNotification(e, editor, project)
         }
     }
 
@@ -55,6 +52,21 @@ class EditorFocusListener(private val project: Project) : FileEditorManagerListe
         try {
             ResourceEditorFactory.instance.getExistingOrCreate(editor, project)?.stopWatch()
         } catch (e: RuntimeException) {
+            showErrorNotification(e, editor, project)
+        }
+    }
+
+    private fun showErrorNotification(
+        e: RuntimeException,
+        editor: FileEditor,
+        project: Project
+    ) {
+        if (e is ResourceException) {
+            ErrorNotification(editor, project).show(
+                e.message ?: "Undefined error",
+                e
+            )
+        } else {
             ErrorNotification(editor, project).show(
                 "Error contacting cluster. Make sure it's reachable, api version supported, etc.",
                 e.cause ?: e
