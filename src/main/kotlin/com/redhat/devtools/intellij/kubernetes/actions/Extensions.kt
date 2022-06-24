@@ -19,12 +19,13 @@ import com.intellij.openapi.progress.Task
 import com.intellij.openapi.project.Project
 import com.redhat.devtools.intellij.kubernetes.model.IResourceModel
 import com.redhat.devtools.intellij.kubernetes.tree.TreeStructure.Descriptor
-import org.jetbrains.annotations.NotNull
 import java.awt.event.MouseAdapter
 import java.awt.event.MouseEvent
 import java.awt.event.MouseListener
 import javax.swing.JTree
+import javax.swing.SwingUtilities
 import javax.swing.tree.DefaultMutableTreeNode
+import org.jetbrains.annotations.NotNull
 
 fun AnAction.getResourceModel(): IResourceModel? {
     return ApplicationManager.getApplication().getService(IResourceModel::class.java)
@@ -56,7 +57,8 @@ fun JTree.addDoubleClickListener(listener: MouseListener) {
     this.addMouseListener(object: MouseAdapter() {
         override fun mouseClicked(event: MouseEvent) {
             if (event.source !is JTree
-                || 2 != event.clickCount) {
+                || 2 != event.clickCount
+                || !SwingUtilities.isLeftMouseButton(event)) {
                 return
             }
             listener.mouseClicked(event)
