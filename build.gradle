@@ -16,7 +16,7 @@ buildscript {
     } else {
         ext.kotlinVersion = kotlinVersion
         ext.kotlinStdlib = kotlinStdlib
-        ext.java_version = "1.8"
+        ext.java_version = "11"
     }
 }
 
@@ -78,19 +78,19 @@ configurations {
         exclude group: 'org.slf4j', module: 'slf4j-api'
     }
     compileOptions {
-        sourceCompatibility = 1.8
-        targetCompatibility = 1.8
+        sourceCompatibility = 11
+        targetCompatibility = 11
     }
 
     compileKotlin {
         kotlinOptions {
-            jvmTarget = "1.8"
+            jvmTarget = "11"
         }
     }
 
     compileTestKotlin {
         kotlinOptions {
-            jvmTarget = "1.8"
+            jvmTarget = "11"
         }
     }
 
