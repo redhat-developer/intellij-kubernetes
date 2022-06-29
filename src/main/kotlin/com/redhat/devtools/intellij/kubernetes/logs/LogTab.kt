@@ -27,6 +27,7 @@ import java.util.concurrent.atomic.AtomicReference
 import javax.swing.JComponent
 import javax.swing.JLabel
 import javax.swing.JPanel
+import org.jetbrains.concurrency.runAsync
 
 open class LogTab<T: HasMetadata>(private val resource: T, private val model: IResourceModel, private val project: Project): Disposable {
 
