@@ -112,7 +112,7 @@ test {
 intellij {
     version = ideaVersion //for a full list of Jetbrains IDEA releases please see https://www.jetbrains.com/intellij-repository/releases
     pluginName = 'Kubernetes by Red Hat'
-    plugins = ['yaml', 'com.redhat.devtools.intellij.telemetry:0.0.2.18' ]
+    plugins = ['yaml', 'com.redhat.devtools.intellij.telemetry:0.0.3.33' ]
     updateSinceUntilBuild = false
 }
 
