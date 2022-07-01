@@ -11,7 +11,6 @@
 package com.redhat.devtools.intellij.kubernetes.model.util
 
 import com.intellij.openapi.diagnostic.logger
-import io.fabric8.kubernetes.api.model.GenericKubernetesResource
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinitionSpec
 import io.fabric8.kubernetes.client.utils.ApiVersionUtil
@@ -266,19 +265,6 @@ fun <T> createResource(jsonYaml: String, clazz: Class<T>): T {
 	return Serialization.unmarshal(jsonYaml, clazz)
 }
 
-/**
- * Returns `true` if the given [HasMetadata] is a custom resource.
- * This is the case if the class used is [GenericKubernetesResource] or if it was wrongly deserialized to a legacy model class.
- *
- * @param resource the resource to check
- * @return `true` if given instance is a custom resource
- *
- * @see [isApiGroupVersionNotMatchingAnnotation]
- */
-fun isCustomResource(resource: HasMetadata): Boolean {
-	return GenericKubernetesResource::class.java == resource::class.java
-}
-
 fun <R: HasMetadata?> runWithoutServerSetProperties(resource: R, operation: () -> R): R {
 	// remove properties
 	val resourceVersion = removeResourceVersion(resource)
@@ -335,4 +321,26 @@ fun <R: HasMetadata?> setUid(uid: String?, resource: R) {
 		return
 	}
 	resource.metadata.uid = uid
+}
+
+/**
+ * Returns `true` if the given resource has a non-empty property `generateName`. Returns `false` otherwise.
+ *
+ * @param resource the resource to check if it has a generateName property
+ *
+ * @see [io.fabric8.kubernetes.api.model.ObjectMeta.generateName]
+ */
+fun <R: HasMetadata> hasGenerateName(resource: R): Boolean {
+	return true == resource.metadata.generateName?.isNotEmpty()
+}
+
+/**
+ * Returns `true` if the given resource has a non-empty property `name`. Returns `false` otherwise.
+ *
+ * @param resource the resource to check if it has a name property
+ *
+ * @see [io.fabric8.kubernetes.api.model.ObjectMeta.name]
+ */
+fun <R: HasMetadata> hasName(resource: R): Boolean {
+	return true == resource.metadata.name?.isNotEmpty()
 }

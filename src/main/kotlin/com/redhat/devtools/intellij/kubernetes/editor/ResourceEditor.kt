@@ -163,11 +163,10 @@ open class ResourceEditor(
     }
 
     private fun showNotifications(deleted: Boolean, resource: HasMetadata, clusterResource: ClusterResource?) {
-
         when {
             clusterResource == null ->
                 showClusterErrorNotification()
-                deleted ->
+            deleted ->
                 showDeletedNotification(resource)
             isModified() ->
                 showPushNotification(resourceVersion.get())
