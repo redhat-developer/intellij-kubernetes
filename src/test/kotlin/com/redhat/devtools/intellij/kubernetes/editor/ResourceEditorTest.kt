@@ -365,25 +365,6 @@ spec:
     }
 
     @Test
-    fun `#update should NOT save resource version if resource in editor has smaller resource version than previously saved version`() {
-        // given
-        doReturn(GARGAMEL.metadata.resourceVersion)
-            .whenever(resourceVersion).get()
-        val smallerVersion = (GARGAMEL.metadata.resourceVersion.toInt() - 1).toString()
-        val resource = PodBuilder(GARGAMEL)
-            .editMetadata()
-            .withResourceVersion(smallerVersion)
-            .endMetadata()
-            .build()
-        doReturn(resource)
-            .whenever(createResource).invoke(any())
-        // when
-        editor.update()
-        // then
-        verify(resourceVersion, never()).set(any())
-    }
-
-    @Test
     fun `#update after a #pull should do nothing bcs it was triggered by #replaceDocument (replace triggers editor transaction listener and thus #update)`() {
         // given
         doReturn(GARGAMELv2)
@@ -749,10 +730,8 @@ spec:
     }
 
     @Test
-    fun `#modified should close clusterResource if context changed`() {
+    fun `#modified should close cluster resource`() {
         // given
-        whenever(clusterResource.isClosed())
-            .doReturn(false)
         // when
         editor.modified(resourceModel)
         // then
@@ -760,25 +739,41 @@ spec:
     }
 
     @Test
-    fun `#modified should NOT close clusterResource if resource changed (only if context changed)`() {
+    fun `#modified should NOT close cluster resource if modified object is NOT IResourceModel`() {
         // given
-        whenever(clusterResource.isClosed())
-            .doReturn(false)
         // when
-        editor.modified(GARGAMEL)
+        editor.modified(mock())
         // then
         verify(clusterResource, never()).close()
     }
 
     @Test
-    fun `#modified should recreate cluster resource`() {
+    fun `#modified should clear saved resourceVersion`() {
+        // given
+        // when
+        editor.modified(mock<IResourceModel>())
+        // then
+        verify(resourceVersion).set(null)
+    }
+
+    @Test
+    fun `#currentNamespace should recreate cluster resource`() {
         // given
         whenever(clusterResource.isClosed())
             .doReturn(false)
         // when
-        editor.modified(resourceModel)
+        editor.currentNamespace("castle gargamel")
         // then
         verify(clusterResourceFactory).invoke(any(), any())
+    }
+
+    @Test
+    fun `#currentNamespace should clear saved resourceVersion`() {
+        // given
+        // when
+        editor.currentNamespace("castle gargamel")
+        // then
+        verify(resourceVersion).set(null)
     }
 
     private fun givenEditorResourceIsOutdated(outdated: Boolean) {
