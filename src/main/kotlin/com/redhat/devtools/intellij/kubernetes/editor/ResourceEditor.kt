@@ -461,12 +461,14 @@ open class ResourceEditor(
         if (modified is IResourceModel) {
             // active context changed, recreate cluster resource
             recreateClusterResource()
+            resourceVersion.set(null)
         }
     }
 
     override fun currentNamespace(namespace: String?) {
         // current namespace in same context has changed, recreate cluster resource
         recreateClusterResource()
+        resourceVersion.set(null)
     }
 
     private fun saveResourceVersion(resource: HasMetadata?) {
