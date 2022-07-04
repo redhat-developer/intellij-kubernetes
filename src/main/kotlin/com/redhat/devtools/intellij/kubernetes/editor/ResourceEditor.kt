@@ -34,7 +34,6 @@ import com.redhat.devtools.intellij.kubernetes.model.IResourceModel
 import com.redhat.devtools.intellij.kubernetes.model.ModelChangeObservable.IResourceChangeListener
 import com.redhat.devtools.intellij.kubernetes.model.context.IActiveContext
 import com.redhat.devtools.intellij.kubernetes.model.util.ResettableLazyProperty
-import com.redhat.devtools.intellij.kubernetes.model.util.isGreaterIntThan
 import com.redhat.devtools.intellij.kubernetes.model.util.runWithoutServerSetProperties
 import com.redhat.devtools.intellij.kubernetes.model.util.toMessage
 import com.redhat.devtools.intellij.kubernetes.model.util.toTitle
@@ -149,7 +148,6 @@ open class ResourceEditor(
                 resourceChangeMutex.withLock {
                     this.editorResource.set(resource)
                 }
-                saveResourceVersion(resource)
                 val cluster = clusterResource
                 showNotifications(deletedOnCluster, resource, cluster)
             } catch (e: Exception) {
@@ -164,21 +162,12 @@ open class ResourceEditor(
         }
     }
 
-    private fun saveResourceVersion(resource: HasMetadata?) {
-        val version = resource?.metadata?.resourceVersion ?: return
-        val storedVersion = resourceVersion.get()
-        if (!version.isGreaterIntThan(storedVersion)) {
-            // don't get back in version
-            return
-        }
-        resourceVersion.set(version)
-    }
-
     private fun showNotifications(deleted: Boolean, resource: HasMetadata, clusterResource: ClusterResource?) {
+
         when {
             clusterResource == null ->
                 showClusterErrorNotification()
-            deleted ->
+                deleted ->
                 showDeletedNotification(resource)
             isModified() ->
                 showPushNotification(resourceVersion.get())
@@ -478,6 +467,11 @@ open class ResourceEditor(
     override fun currentNamespace(namespace: String?) {
         // current namespace in same context has changed, recreate cluster resource
         recreateClusterResource()
+    }
+
+    private fun saveResourceVersion(resource: HasMetadata?) {
+        val version = resource?.metadata?.resourceVersion ?: return
+        resourceVersion.set(version)
     }
 
     /**

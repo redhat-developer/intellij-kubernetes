@@ -20,10 +20,10 @@ import com.nhaarman.mockitokotlin2.times
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.whenever
 import com.redhat.devtools.intellij.kubernetes.model.ModelChangeObservable
-import com.redhat.devtools.intellij.kubernetes.model.util.ResourceException
 import com.redhat.devtools.intellij.kubernetes.model.ResourceWatch
 import com.redhat.devtools.intellij.kubernetes.model.context.IActiveContext
 import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.resource
+import com.redhat.devtools.intellij.kubernetes.model.util.ResourceException
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.Namespace
 import io.fabric8.kubernetes.api.model.Pod
@@ -353,15 +353,16 @@ class ClusterResourceTest {
     }
 
     @Test
-    fun `#isOutdated(String) should return false if resourceVersion is greater than cluster resource version`() {
+    fun `#isOutdated(String) should return true if resourceVersion is greater than cluster resource version`() {
         // given
         val resourceVersion = (endorResourceOnCluster.metadata.resourceVersion.toInt() + 1).toString()
         whenever(context.get(any()))
             .doReturn(endorResourceOnCluster)
         // when
         val outdated = cluster.isOutdated(resourceVersion as String?)
-        // then
-        assertThat(outdated).isFalse()
+        // then - resourceVersion is alphanumeric, no numeric comparison is possible
+        // see https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions
+        assertThat(outdated).isTrue()
     }
 
     @Test
