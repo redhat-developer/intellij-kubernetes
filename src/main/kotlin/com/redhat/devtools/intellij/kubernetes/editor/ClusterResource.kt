@@ -16,7 +16,6 @@ import com.redhat.devtools.intellij.kubernetes.model.ResourceWatch
 import com.redhat.devtools.intellij.kubernetes.model.ResourceWatch.WatchListeners
 import com.redhat.devtools.intellij.kubernetes.model.context.IActiveContext
 import com.redhat.devtools.intellij.kubernetes.model.util.ResourceException
-import com.redhat.devtools.intellij.kubernetes.model.util.isGreaterIntThan
 import com.redhat.devtools.intellij.kubernetes.model.util.isNotFound
 import com.redhat.devtools.intellij.kubernetes.model.util.isSameResource
 import com.redhat.devtools.intellij.kubernetes.model.util.isUnsupported
@@ -192,17 +191,23 @@ open class ClusterResource protected constructor(
 
     /**
      * Returns `true` if the given resource version is outdated when compared to the version of the resource on the cluster.
+     * A given resourceVersion is considered outdated if it is not equal to the resourceVersion of the resource on the cluster.
+     * Resource versions are specified as alphanumeric so no numeric comparison is possible. The docs state at
+     * (Resource versions)[https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions]:
+     *
+     * "You must not assume resource versions are numeric or collatable. API clients may only compare two resource
+     * versions for equality (this means that you must not compare resource versions for greater-than or less-than
+     * relationships)."
      *
      * @param resourceVersion the resource version to compare to the version of the cluster resource
-     * @return true if the given resource version > ressource version of the cluster resource
+     * @return true if the given resource version != resource version of the cluster resource
      *
      * @see io.fabric8.kubernetes.api.model.ObjectMeta.resourceVersion
-     * @see String.isGreaterIntThan
      */
     fun isOutdated(resourceVersion: String?): Boolean {
         val resource = pull()
         val clusterVersion = resource?.metadata?.resourceVersion ?: return false
-        return clusterVersion.isGreaterIntThan(resourceVersion)
+        return clusterVersion != resourceVersion
     }
 
     /**

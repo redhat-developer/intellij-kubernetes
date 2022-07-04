@@ -349,17 +349,6 @@ spec:
     }
 
     @Test
-    fun `#update should save resource version of resource in editor`() {
-        // given
-        doReturn(GARGAMEL_WITH_LABEL)
-            .whenever(createResource).invoke(any())
-        // when
-        editor.update()
-        // then
-        verify(resourceVersion).set(GARGAMEL_WITH_LABEL.metadata.resourceVersion)
-    }
-
-    @Test
     fun `#update should NOT save resource version if resource in editor has no resource version`() {
         // given
         val resource = PodBuilder(GARGAMEL)
@@ -678,7 +667,7 @@ spec:
     }
 
     @Test
-    fun `#onDiffClosed should NoT save resource version if document has NOT changed`() {
+    fun `#onDiffClosed should NOT save resource version if document has NOT changed`() {
         // given
         doReturn("{ apiVersion: v1 }")
             .whenever(document).text
