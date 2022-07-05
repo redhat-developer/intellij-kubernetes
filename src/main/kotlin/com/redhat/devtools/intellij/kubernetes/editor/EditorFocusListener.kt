@@ -50,7 +50,7 @@ class EditorFocusListener(private val project: Project) : FileEditorManagerListe
             return
         }
         try {
-            ResourceEditorFactory.instance.getExistingOrCreate(editor, project)?.stopWatch()
+            getExisting(editor)?.stopWatch()
         } catch (e: RuntimeException) {
             showErrorNotification(e, editor, project)
         }
