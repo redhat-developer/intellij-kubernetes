@@ -17,6 +17,7 @@ It is available for install from the [JetBrains Marketplace](https://plugins.jet
  - Support Creation and Deletion of new Kubernetes resources on Cluster
  - Navigate into Kubernetes workloads, services, pods and nodes
  - Switching contexts and namespaces within Kubernetes
+ - Follow logs from the connected cluster resource
 
 ## Features
 
@@ -110,6 +111,13 @@ The very same dialog may also be opened with a link that's present in the notifi
 
 #### Delete Resources
 You may delete any resource that is listed in the resource tree by choosing "Delete" in the context menu.
+
+#### Follow logs
+
+IntelliJ-Kubernetes extension allows you to follow logs of the cluster resources such as Pods, Jobs and Builds. 
+There is a dedicated tab to display the log messages for the selected Kubernetes resource.
+
+![logs](images/logs.png)
 
 ## Data and Telemetry
 The JetBrains IntelliJ Kubernetes plugin collects anonymous [usage data](https://github.com/redhat-developer/intellij-kubernetes/blob/master/USAGE_DATA.md) and sends it to Red Hat servers to help improve our products and services.
