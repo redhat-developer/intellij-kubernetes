@@ -10,6 +10,16 @@
     </description>
     <change-notes>
         <![CDATA[
+        <h3>0.6.0</h3>
+        <ul>
+            <li><a href="https://github.com/redhat-developer/intellij-kubernetes/issues/215">As a user I want to be able to follow the logs</a></li>
+            <li><a href="https://github.com/redhat-developer/intellij-kubernetes/issues/437">Allow to push resources with generateName instead of name field</a></li>
+            <li><a href="https://github.com/redhat-developer/intellij-kubernetes/issues/446">Fatal IDE error when deleting file that is opened in editor</a></li>
+            <li><a href="https://github.com/redhat-developer/intellij-kubernetes/issues/426">Editor should error if there's no current context</a></li>
+            <li><a href="https://github.com/redhat-developer/intellij-kubernetes/issues/444">Pull notification disappears when I bump the resourceVersion</a></li>
+            <li><a href="https://github.com/redhat-developer/intellij-kubernetes/issues/432">clicking left and then right on a resource in the tree opens it in an editor</a></li>
+        </ul>
+        <p></p>
         <h3>0.5.1</h3>
         <ul>
             <li><a href="https://github.com/redhat-developer/intellij-kubernetes/issues/336">As a user I would like to see full error message</a></li>
