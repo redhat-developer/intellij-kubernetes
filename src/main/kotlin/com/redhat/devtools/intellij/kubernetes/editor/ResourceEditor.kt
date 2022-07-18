@@ -13,6 +13,7 @@ package com.redhat.devtools.intellij.kubernetes.editor
 import com.intellij.json.JsonFileType
 import com.intellij.openapi.actionSystem.ActionToolbar
 import com.intellij.openapi.application.ApplicationManager
+import com.intellij.openapi.application.ReadAction
 import com.intellij.openapi.command.WriteCommandAction
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.editor.Document
@@ -22,6 +23,7 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Key
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.PsiDocumentManager
+import com.redhat.devtools.intellij.common.utils.MetadataClutter
 import com.redhat.devtools.intellij.common.validation.KubernetesResourceInfo
 import com.redhat.devtools.intellij.kubernetes.editor.notification.DeletedNotification
 import com.redhat.devtools.intellij.kubernetes.editor.notification.ErrorNotification
@@ -300,8 +302,10 @@ open class ResourceEditor(
         if (document == null) {
             return null
         }
-        val file = manager.getPsiFile(document) ?: return null
-        return file.fileType
+        return runReadCommand {
+            val file = manager.getPsiFile(document)
+            file?.fileType
+        }
     }
 
     private fun serialize(resource: HasMetadata, fileType: FileType?): String? {
@@ -394,6 +398,15 @@ open class ResourceEditor(
     fun stopWatch() {
         // use backing variable to prevent accidental creation
         _clusterResource?.stopWatch()
+    }
+
+    fun removeClutter() {
+        val resource = editorResource.get() ?: return
+        MetadataClutter.remove(resource.metadata)
+        replaceDocument(resource)
+        runInUI {
+            hideNotifications()
+        }
     }
 
     private fun createClusterResource(resource: HasMetadata?, context: IActiveContext<out HasMetadata, out KubernetesClient>?): ClusterResource? {
@@ -497,6 +510,11 @@ open class ResourceEditor(
     /** for testing purposes */
     protected open fun runWriteCommand(runnable: () -> Unit) {
         WriteCommandAction.runWriteCommandAction(project, runnable)
+    }
+
+    /** for testing purposes */
+    protected open fun <R: Any> runReadCommand(runnable: () -> R?): R? {
+        return ReadAction.compute<R, Exception>(runnable)
     }
 
     /** for testing purposes */
