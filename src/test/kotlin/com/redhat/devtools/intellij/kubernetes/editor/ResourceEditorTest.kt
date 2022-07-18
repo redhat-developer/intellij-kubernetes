@@ -659,6 +659,34 @@ spec:
         verify(resourceVersion, never()).set(any())
     }
 
+    @Test
+    fun `#removeClutter should replace document`() {
+        // given
+        // when
+        editor.removeClutter()
+        // then
+        verify(document).replaceString(0, document.textLength, Serialization.asYaml(GARGAMEL))
+    }
+
+    @Test
+    fun `#removeClutter should NOT replace document if there's no resource`() {
+        // given
+        editor.editorResource.set(null)
+        // when
+        editor.removeClutter()
+        // then
+        verify(document, never()).replaceString(any(), any(), any())
+    }
+
+    @Test
+    fun `#removeClutter should hide all notifications`() {
+        // given
+        // when
+        editor.removeClutter()
+        // then
+        verifyHideAllNotifications()
+    }
+
     private fun verifyHideAllNotifications() {
         verify(errorNotification).hide()
         verify(pullNotification).hide()
@@ -856,17 +884,22 @@ private class TestableResourceEditor(
     }
 
     override fun runAsync(runnable: () -> Unit) {
-        // dont execute in UI thread
+        // don't execute in application thread pool
         runnable.invoke()
     }
 
     override fun runWriteCommand(runnable: () -> Unit) {
-        // dont execute in application thread pool
+        // don't execute in IDE write context, which doesn't exist in unit test
         runnable.invoke()
     }
 
+    override fun <R : Any> runReadCommand(runnable: () -> R?): R? {
+        // don't execute in IDE read context, which doesn't exist in unit test
+        return runnable.invoke()
+    }
+
     override fun runInUI(runnable: () -> Unit) {
-        // dont execute in application thread pool
+        // don't execute UI thread
         runnable.invoke()
     }
 }

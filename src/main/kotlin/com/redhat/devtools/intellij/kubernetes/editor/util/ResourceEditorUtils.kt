@@ -95,9 +95,7 @@ fun setResourceVersion(resourceVersion: String?, document: Document?, manager: P
         || document == null) {
         return
     }
-    val file = manager.getPsiFile(document) ?: return
-    val content = getContent(file) ?: return
-    val metadata = getMetadata(content) ?: return
+    val metadata = getMetadata(document, manager) ?: return
     createOrUpdateResourceVersion(resourceVersion, metadata, project)
 }
 
@@ -149,6 +147,16 @@ private fun getContent(file: PsiFile): PsiElement? {
         else -> null
     }
 }
+
+fun getMetadata(document: Document?, psi: PsiDocumentManager): PsiElement? {
+    if (document == null) {
+        return null
+    }
+    val file = psi.getPsiFile(document) ?: return null
+    val content = getContent(file) ?: return null
+    return getMetadata(content) ?: return null
+}
+
 private fun getMetadata(content: PsiElement): PsiElement? {
     return when (content) {
         is YAMLValue ->

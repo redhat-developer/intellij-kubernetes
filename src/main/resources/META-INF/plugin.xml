@@ -186,6 +186,10 @@
                     id="com.redhat.devtools.intellij.kubernetes.editor.actions.DiffAction"
                     text="Diff Editor Resource with Cluster Resource"
                     icon="/icons/diff.svg" />
+            <action class="com.redhat.devtools.intellij.kubernetes.editor.actions.RemoveClutterAction"
+                    id="com.redhat.devtools.intellij.kubernetes.editor.actions.RemoveClutterAction"
+                    text="Remove Metadata Clutter in Editor"
+                    icon="/icons/remove-clutter.svg" />
         </group>
     </actions>
 

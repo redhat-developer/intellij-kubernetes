@@ -213,7 +213,6 @@ private def colorize(String color, String message) {
 }
 
 repositories {
-    mavenLocal()
     mavenCentral()
     maven {
         url 'https://repository.jboss.org'
