@@ -15,11 +15,13 @@ import com.redhat.devtools.intellij.kubernetes.model.util.isSameNamespace
 import com.redhat.devtools.intellij.kubernetes.model.util.removeResourceVersion
 import com.redhat.devtools.intellij.kubernetes.model.util.removeUid
 import com.redhat.devtools.intellij.kubernetes.model.util.runWithoutServerSetProperties
+import io.fabric8.kubernetes.api.model.Container
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.KubernetesResourceList
 import io.fabric8.kubernetes.client.Client
 import io.fabric8.kubernetes.client.Watch
 import io.fabric8.kubernetes.client.Watcher
+import io.fabric8.kubernetes.client.dsl.ExecWatch
 import io.fabric8.kubernetes.client.dsl.LogWatch
 import io.fabric8.kubernetes.client.dsl.NonNamespaceOperation
 import io.fabric8.kubernetes.client.dsl.Resource
@@ -32,6 +34,9 @@ interface INonNamespacedResourceOperator<R: HasMetadata, C: Client>: IResourceOp
 abstract class NonNamespacedResourceOperator<R : HasMetadata, C : Client>(
     client: C
 ) : AbstractResourceOperator<R, C>(client), INonNamespacedResourceOperator<R, C> {
+
+    private val logWatcher = LogWatcher<R>()
+    private val execWatcher = ExecWatcher<R>()
 
     override val allResources: List<R>
         get() {
@@ -57,7 +62,19 @@ abstract class NonNamespacedResourceOperator<R : HasMetadata, C : Client>(
     override fun watch(resource: HasMetadata, watcher: Watcher<in R>): Watch? {
         @Suppress("UNCHECKED_CAST")
         val typedWatcher = watcher as? Watcher<R> ?: return null
-        return getOperation()?.withName(resource.metadata.name)?.watch(typedWatcher)
+        return getOperation()
+            ?.withName(resource.metadata.name)
+            ?.watch(typedWatcher)
+    }
+
+    open fun watchLog(container: Container?, resource: R, out: OutputStream): LogWatch? {
+        val operation = getOperation()?.withName(resource.metadata.name) ?: return null
+        return logWatcher.watch(container, resource, out, operation)
+    }
+
+    open fun watchExec(container: Container?, resource: R): ExecWatch? {
+        val operation = getOperation()?.withName(resource.metadata.name) ?: return null
+        return execWatcher.watch(container, resource, operation)
     }
 
     override fun delete(resources: List<HasMetadata>): Boolean {
@@ -92,10 +109,12 @@ abstract class NonNamespacedResourceOperator<R : HasMetadata, C : Client>(
     override fun get(resource: HasMetadata): HasMetadata? {
         @Suppress("UNCHECKED_CAST")
         val toGet = resource as? R ?: return null
-        return getOperation()?.withName(toGet.metadata.name)?.get()
+        return getOperation()
+            ?.withName(toGet.metadata.name)
+            ?.get()
     }
 
-    protected open fun getOperation(): NonNamespacedOperation<R>? {
+    open fun getOperation(): NonNamespacedOperation<R>? {
         // default nop implementation
         return null
     }
@@ -121,10 +140,4 @@ abstract class NonNamespacedResourceOperator<R : HasMetadata, C : Client>(
         }
     }
 
-    protected fun watchLogWhenReady(resource: R, out: OutputStream): LogWatch? {
-        val op = getOperation()
-            ?.withName(resource.metadata.name)
-            ?: return null
-        return super.watchLogWhenReady(op, out)
-    }
 }

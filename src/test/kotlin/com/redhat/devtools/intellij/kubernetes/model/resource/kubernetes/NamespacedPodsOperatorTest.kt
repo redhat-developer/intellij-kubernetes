@@ -21,6 +21,7 @@ import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.whenever
 import com.redhat.devtools.intellij.kubernetes.model.client.ClientAdapter
 import com.redhat.devtools.intellij.kubernetes.model.client.KubeClientAdapter
+import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks
 import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.NAMESPACE1
 import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.NAMESPACE2
 import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.NAMESPACE3
@@ -28,6 +29,7 @@ import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.POD1
 import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.POD2
 import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.POD3
 import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.client
+import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.container
 import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.inNamespace
 import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.items
 import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.list
@@ -48,11 +50,15 @@ class NamespacedPodsOperatorTest {
     private val client = KubeClientAdapter(client(currentNamespace, arrayOf(NAMESPACE1, NAMESPACE2, NAMESPACE3)))
     private val operator = spy(TestablePodsOperator(client))
     private val op = inNamespace(pods(client.get()))
+    private val container1 = container("clones")
+    private val container2 = container("supplies")
 
     @Before
     fun before() {
         items(list(op), POD1, POD2, POD3) // list
-        withName(op, POD2) // create, replace, get
+        val podResource = withName(op, POD2) // create, replace, get
+        ClientMocks.inContainer(podResource, container1)
+        ClientMocks.inContainer(podResource, container2)
         operator.namespace = currentNamespace
     }
 
@@ -117,28 +123,35 @@ class NamespacedPodsOperatorTest {
         verify(operator).invalidate()
     }
 
+
     @Test
     fun `#replaced(pod) replaces pod if pod which is same resource already exist`() {
         // given
-        val pod = resource<Pod>(POD2.metadata.name, POD2.metadata.namespace, POD2.metadata.uid, POD2.apiVersion)
+        val pod = resource<Pod>(
+            POD2.metadata.name,
+            POD2.metadata.namespace,
+            POD2.metadata.uid, POD2.apiVersion)
         assertThat(operator.allResources).doesNotContain(pod)
         // when
         val replaced = operator.replaced(pod)
         // then
-        assertThat(replaced).isTrue()
+        assertThat(replaced).isTrue
         assertThat(operator.allResources).contains(pod)
     }
 
     @Test
     fun `#replaced(pod) does NOT replace pod if pod has different name`() {
         // given
-        val pod = resource<Pod>("darth vader", POD2.metadata.namespace, POD2.metadata.uid, POD2.apiVersion)
+        val pod = resource<Pod>(
+            "darth vader",
+            POD2.metadata.namespace,
+            POD2.metadata.uid,
+            POD2.apiVersion)
         assertThat(operator.allResources).doesNotContain(pod)
         // when
         val replaced = operator.replaced(pod)
         // then
-        assertThat(replaced).isFalse()
-        assertThat(operator.allResources).doesNotContain(pod)
+        assertThat(replaced).isFalse
     }
 
     @Test
@@ -146,11 +159,12 @@ class NamespacedPodsOperatorTest {
         // given
         val pod = resource<Pod>(POD2.metadata.name, "sith", POD2.metadata.uid, POD2.apiVersion)
         assertThat(operator.allResources).doesNotContain(pod)
+        val elementsBefore = operator.allResources.toTypedArray()
         // when
         val replaced = operator.replaced(pod)
         // then
-        assertThat(replaced).isFalse()
-        assertThat(operator.allResources).doesNotContain(pod)
+        assertThat(replaced).isFalse
+        assertThat(operator.allResources).containsExactly(*elementsBefore)
     }
 
     @Test
@@ -165,15 +179,14 @@ class NamespacedPodsOperatorTest {
     }
 
     @Test
-    fun `#added(pod) does not add if pod is already contained`() {
+    fun `#added(pod) does NOT add if pod is already contained`() {
         // given
         val pod = operator.allResources.elementAt(0)
+        val elementsBefore = operator.allResources.toTypedArray()
         // when
-        val size = operator.allResources.size
         operator.added(pod)
         // then
-        assertThat(operator.allResources).contains(pod)
-        assertThat(operator.allResources.size).isEqualTo(size)
+        assertThat(operator.allResources).containsExactly(*elementsBefore)
     }
 
     @Test
@@ -195,10 +208,13 @@ class NamespacedPodsOperatorTest {
         // given
         val pod = resource<Pod>("papa-smurf", "ns1", "papaUid", "v1")
         assertThat(operator.allResources).doesNotContain(pod)
+        val elementsBefore = listOf(*operator.allResources.toTypedArray())
         // when
         val added = operator.added(pod)
         // then
-        assertThat(added).isTrue()
+        assertThat(added).isTrue
+        assertThat(operator.allResources).contains(pod)
+        assertThat(operator.allResources).containsAll(elementsBefore)
     }
 
     @Test
@@ -208,7 +224,7 @@ class NamespacedPodsOperatorTest {
         // when
         val added = operator.added(pod)
         // then
-        assertThat(added).isFalse()
+        assertThat(added).isFalse
     }
 
     @Test
@@ -247,12 +263,12 @@ class NamespacedPodsOperatorTest {
         // given
         val pod = resource<Pod>("papa-smurf", "ns1", "papaUid", "v1")
         assertThat(operator.allResources).doesNotContain(pod)
+        val elementsBefore = operator.allResources.toTypedArray()
         // when
-        val size = operator.allResources.size
         operator.removed(pod)
         // then
         assertThat(operator.allResources).doesNotContain(pod)
-        assertThat(operator.allResources.size).isEqualTo(size)
+        assertThat(operator.allResources).containsExactly(*elementsBefore)
     }
 
     @Test
@@ -262,7 +278,7 @@ class NamespacedPodsOperatorTest {
         // when
         val removed = operator.removed(pod)
         // then
-        assertThat(removed).isFalse()
+        assertThat(removed).isFalse
     }
 
     @Test
@@ -304,7 +320,7 @@ class NamespacedPodsOperatorTest {
     }
 
     @Test
-    fun `#delete() deletes given pods in client`() {
+    fun `#delete(pod) deletes given pods in client`() {
         // given
         // when
         val toDelete = listOf(POD2)
@@ -314,7 +330,7 @@ class NamespacedPodsOperatorTest {
     }
 
     @Test
-    fun `#delete() won't delete if namespace is null`() {
+    fun `#delete(pods) won't delete if namespace is null`() {
         // given
         operator.namespace =  null
         clearInvocations(operator)
@@ -325,7 +341,7 @@ class NamespacedPodsOperatorTest {
     }
 
     @Test
-    fun `#delete() returns true if client could delete`() {
+    fun `#delete(pods) returns true if client could delete`() {
         // given
         clearInvocations(operator)
         whenever(client.get().pods().delete(any<List<Pod>>()))
@@ -333,11 +349,11 @@ class NamespacedPodsOperatorTest {
         // when
         val success = operator.delete(listOf(POD2))
         // then
-        assertThat(success).isTrue()
+        assertThat(success).isTrue
     }
 
     @Test
-    fun `#delete() returns false if client could NOT delete`() {
+    fun `#delete(pods) returns false if client could NOT delete`() {
         // given
         clearInvocations(operator)
         whenever(client.get().pods().delete(any<List<Pod>>()))
@@ -345,7 +361,7 @@ class NamespacedPodsOperatorTest {
         // when
         val success = operator.delete(listOf(POD2))
         // then
-        assertThat(success).isFalse()
+        assertThat(success).isFalse
     }
 
     @Test
@@ -436,8 +452,8 @@ class NamespacedPodsOperatorTest {
         // when
         operator.create(pod)
         // then
-        verify(pod.metadata).resourceVersion = null
-        verify(pod.metadata).resourceVersion = resourceVersion
+        verify(pod.metadata).resourceVersion = null // 1st call: clear before sending
+        verify(pod.metadata).resourceVersion = resourceVersion // 2nd call: restore after sending
     }
 
     @Test
@@ -449,12 +465,12 @@ class NamespacedPodsOperatorTest {
         // when
         operator.create(pod)
         // then
-        verify(pod.metadata).uid = null
-        verify(pod.metadata).uid = uid
+        verify(pod.metadata).uid = null // 1st call: clear before sending
+        verify(pod.metadata).uid = uid // 2nd call: restore after sending
     }
 
     @Test
-    fun `#create() is creating even if namespace is null`() {
+    fun `#create() is creating if operator namespace is null but resource has namespace`() {
         // given
         operator.namespace =  null
         clearInvocations(operator)
@@ -468,7 +484,7 @@ class NamespacedPodsOperatorTest {
     }
 
     @Test
-    fun `#create() returns new pod if client created`() {
+    fun `#create() returns new pod if client has successfully created`() {
         // given
         clearInvocations(operator)
         whenever(client.get().pods()
@@ -512,70 +528,178 @@ class NamespacedPodsOperatorTest {
     @Test
     fun `#get() is using resource namespace if exists`() {
         // given
-        val pod = PodBuilder(POD2).build()
+        val pod = PodBuilder()
+            .withNewMetadata()
+                .withName("Princess Leia")
+                .withNamespace("Alderaan")
+            .endMetadata()
+            .build()
+
         clearInvocations(operator)
         // when
         operator.get(pod)
         // then
-        verify(client.get().pods().inNamespace(operator.namespace))
+        verify(client.get().pods()
+            .inNamespace(operator.namespace))
             .withName(pod.metadata.name)
     }
 
     @Test
     fun `#get() is using operator namespace if resource namespace is null`() {
         // given
-        val pod = PodBuilder(POD2).editMetadata()
-            .withNamespace(null) // no namespace in pod
+        val pod = PodBuilder()
+            .withNewMetadata()
+                .withName("Princess Leia")
+                .withNamespace(null) // no namespace in pod
             .endMetadata()
             .build()
-        operator.namespace =  "smurfington" // should use it
+        operator.namespace =  "Alderaan" // should use it
         clearInvocations(operator)
         // when
         operator.get(pod)
         // then
-        verify(client.get().pods().inNamespace(operator.namespace))
-            .withName(pod.metadata.name)
+        verify(client.get().pods())
+            .inNamespace(operator.namespace)
+    }
+
+    @Test
+    fun `#get() is using resource by name`() {
+        // given
+        operator.namespace =  "smurfington" // should use it
+        clearInvocations(operator)
+        // when
+        operator.get(POD1)
+        // then
+        verify(client.get().pods()
+            .inNamespace(operator.namespace))
+            .withName(POD1.metadata.name)
     }
 
     @Test
     fun `#watchLog() is using resource namespace if exists`() {
         // given
-        val pod = PodBuilder(POD2).build()
         clearInvocations(operator)
         // when
-        operator.watch(pod, mock())
+        operator.watchLog(container1, POD2, mock())
         // then
-        verify(client.get().pods().inNamespace(operator.namespace))
-            .withName(pod.metadata.name)
+        verify(client.get().pods())
+            .inNamespace(POD2.metadata.namespace)
     }
 
     @Test
     fun `#watchLog() is using operator namespace if resource namespace is null`() {
         // given
-        val pod = PodBuilder(POD2).editMetadata()
-            .withNamespace(null) // no namespace in pod
+        val pod = PodBuilder()
+            .withNewMetadata()
+                .withName("Princess Leia")
+                .withNamespace(null) // no namespace in pod
             .endMetadata()
             .build()
-        operator.namespace =  "smurfington" // should use it
+        operator.namespace =  "Alderaan" // should use it
         clearInvocations(operator)
         // when
-        operator.watchLog(pod, mock())
+        operator.watchLog(container1, pod, mock())
         // then
-        verify(client.get().pods().inNamespace(operator.namespace))
+        verify(client.get().pods())
+            .inNamespace(operator.namespace)
+    }
+
+    @Test
+    fun `#watchLog() is using resource by name`() {
+        // given
+        val pod = PodBuilder()
+            .withNewMetadata()
+                .withName("Princess Leia")
+                .withNamespace(null) // no namespace in pod
+            .endMetadata()
+            .build()
+        operator.namespace =  "Alderaan" // should use it
+        clearInvocations(operator)
+        // when
+        operator.watchLog(container1, pod, mock())
+        // then
+        verify(client.get().pods()
+            .inNamespace(operator.namespace))
             .withName(pod.metadata.name)
     }
 
     @Test
-    fun `#watchLog() is waiting for pod to become ready`() {
+    fun `#watchLog() is using resource by container name`() {
         // given
+        val pod = PodBuilder()
+            .withNewMetadata()
+                .withName(POD2.metadata.name)
+                .withNamespace(null) // no namespace in pod
+            .endMetadata()
+            .build()
+        operator.namespace =  "Alderaan" // should use it
+        clearInvocations(operator)
         // when
-        operator.watchLog(POD2, mock())
+        operator.watchLog(container1, pod, mock())
         // then
-        verify(client.get().pods().inNamespace(POD2.metadata.namespace).withName(POD2.metadata.name))
-            .waitUntilReady(any(), any())
+        verify(client.get().pods()
+            .inNamespace(operator.namespace)
+            .withName(pod.metadata.name))
+            .inContainer(container1.name)
     }
 
-    class TestablePodsOperator  (client: ClientAdapter<out KubernetesClient>): NamespacedPodsOperator(client) {
+    @Test
+    fun `#watchExec() is using resource namespace if exists`() {
+        // given
+        clearInvocations(operator)
+        // when
+        operator.watchExec(container1, POD2)
+        // then
+        verify(client.get().pods())
+            .inNamespace(POD2.metadata.namespace)
+    }
+
+    @Test
+    fun `#watchExec() is using operator namespace if resource namespace is null`() {
+        // given
+        val pod = PodBuilder()
+            .withNewMetadata()
+                .withName("Princess Leia")
+                .withNamespace(null) // no namespace in pod
+            .endMetadata()
+            .build()
+        operator.namespace =  "Ando" // should use it
+        clearInvocations(operator)
+        // when
+        operator.watchExec(container1, pod)
+        // then
+        verify(client.get().pods())
+            .inNamespace(operator.namespace)
+    }
+
+    @Test
+    fun `#watchExec() is using resource by name`() {
+        // given
+        operator.namespace =  "Alderaan" // should use it
+        clearInvocations(operator)
+        // when
+        operator.watchExec(container1, POD1)
+        // then
+        verify(client.get().pods()
+            .inNamespace(operator.namespace))
+            .withName(POD1.metadata.name)
+    }
+
+    @Test
+    fun `#watchExec() is using container by name`() {
+        // given
+        operator.namespace =  "Alderaan" // should use it
+        clearInvocations(operator)
+        // when
+        operator.watchExec(container1, POD2)
+        // then
+        verify(client.get().pods()
+            .inNamespace(operator.namespace)
+            .withName(POD2.metadata.name))
+            .inContainer(container1.name)
+    }
+
+    class TestablePodsOperator(client: ClientAdapter<out KubernetesClient>): NamespacedPodsOperator(client) {
 
         public override fun loadAllResources(namespace: String): List<Pod> {
             return super.loadAllResources(namespace)

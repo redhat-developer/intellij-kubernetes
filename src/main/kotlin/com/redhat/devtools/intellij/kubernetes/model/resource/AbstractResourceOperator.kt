@@ -14,12 +14,6 @@ import com.intellij.openapi.diagnostic.logger
 import com.redhat.devtools.intellij.kubernetes.model.util.isSameResource
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.client.Client
-import io.fabric8.kubernetes.client.KubernetesClientTimeoutException
-import io.fabric8.kubernetes.client.dsl.LogWatch
-import io.fabric8.kubernetes.client.dsl.Loggable
-import io.fabric8.kubernetes.client.dsl.Waitable
-import java.io.OutputStream
-import java.util.concurrent.TimeUnit
 
 abstract class AbstractResourceOperator<R : HasMetadata, C : Client>(protected val client: C) : IResourceOperator<R> {
 
@@ -86,17 +80,4 @@ abstract class AbstractResourceOperator<R : HasMetadata, C : Client>(protected v
         return kind.clazz.isAssignableFrom(resource::class.java)
     }
 
-    protected fun watchLogWhenReady(operation: Waitable<R, *>, out: OutputStream): LogWatch? {
-        try {
-            operation.waitUntilReady(10, TimeUnit.SECONDS)
-        } catch(e: KubernetesClientTimeoutException) {
-            logger<AbstractResourceOperator<*, *>>().warn("Failed to wait resource to become ready.", e)
-        }
-        @Suppress("UNCHECKED_CAST")
-        /**
-         * [io.fabric8.kubernetes.client.dsl.Loggable] is added in the last subclass of [io.fabric8.kubernetes.client.dsl.Resource].
-         * There's thus no generic superclass that also includes [Loggable.watchLog].
-         */
-        return (operation as? Loggable<LogWatch>)?.watchLog(out)
-    }
 }

@@ -38,7 +38,7 @@ open class NamespacedCustomResourceOperator(
     }
 
 	override fun watch(resource: HasMetadata, watcher: Watcher<in GenericKubernetesResource>): Watch? {
-		val inNamespace = resourceOrCurrentNamespace(resource)
+		val inNamespace = resourceNamespaceOrCurrent(resource)
 		return watch(inNamespace, resource.metadata.name, watcher)
 	}
 
@@ -60,7 +60,7 @@ open class NamespacedCustomResourceOperator(
 	}
 
 	private fun delete(resource: HasMetadata): Boolean {
-		val inNamespace = resourceOrCurrentNamespace(resource)
+		val inNamespace = resourceNamespaceOrCurrent(resource)
 		getOperation()?.inNamespace(inNamespace)?.withName(resource.metadata.name)?.delete()
 		return true
 	}
@@ -68,7 +68,7 @@ open class NamespacedCustomResourceOperator(
 	override fun replace(resource: HasMetadata): HasMetadata? {
 		val toReplace = resource as? GenericKubernetesResource? ?: return null
 
-		val inNamespace = resourceOrCurrentNamespace(toReplace)
+		val inNamespace = resourceNamespaceOrCurrent(toReplace)
 		return runWithoutServerSetProperties(toReplace) {
 			getOperation()?.inNamespace(inNamespace)?.createOrReplace(toReplace)
 		}
@@ -79,7 +79,7 @@ open class NamespacedCustomResourceOperator(
 	}
 
 	override fun get(resource: HasMetadata): HasMetadata? {
-		val inNamespace = resourceOrCurrentNamespace(resource)
+		val inNamespace = resourceNamespaceOrCurrent(resource)
 		return getOperation()?.inNamespace(inNamespace)?.withName(resource.metadata.name)?.get()
 	}
 

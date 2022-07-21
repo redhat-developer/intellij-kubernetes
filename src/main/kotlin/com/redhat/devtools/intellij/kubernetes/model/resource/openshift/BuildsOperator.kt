@@ -11,17 +11,20 @@
 package com.redhat.devtools.intellij.kubernetes.model.resource.openshift
 
 import com.redhat.devtools.intellij.kubernetes.model.client.ClientAdapter
+import com.redhat.devtools.intellij.kubernetes.model.resource.IExecWatcher
 import com.redhat.devtools.intellij.kubernetes.model.resource.ILogWatcher
 import com.redhat.devtools.intellij.kubernetes.model.resource.NamespacedOperation
 import com.redhat.devtools.intellij.kubernetes.model.resource.NamespacedResourceOperator
 import com.redhat.devtools.intellij.kubernetes.model.resource.ResourceKind
+import io.fabric8.kubernetes.api.model.Container
+import io.fabric8.kubernetes.client.dsl.ExecWatch
 import io.fabric8.kubernetes.client.dsl.LogWatch
 import io.fabric8.openshift.api.model.Build
 import io.fabric8.openshift.client.OpenShiftClient
 import java.io.OutputStream
 
 class BuildsOperator(client: ClientAdapter<out OpenShiftClient>)
-    : NamespacedResourceOperator<Build, OpenShiftClient>(client.get()), ILogWatcher<Build> {
+    : NamespacedResourceOperator<Build, OpenShiftClient>(client.get()), ILogWatcher<Build>, IExecWatcher<Build> {
 
     companion object {
         val KIND = ResourceKind.create(Build::class.java)
@@ -33,7 +36,12 @@ class BuildsOperator(client: ClientAdapter<out OpenShiftClient>)
         return client.builds()
     }
 
-    override fun watchLog(resource: Build, out: OutputStream): LogWatch? {
-        return watchLogWhenReady(resource, out)
+    override fun watchLog(container: Container?, resource: Build, out: OutputStream): LogWatch? {
+        return super.watchLog(container, resource, out)
     }
+
+    override fun watchExec(container: Container?, resource: Build): ExecWatch? {
+        return super.watchExec(container, resource)
+    }
+
 }

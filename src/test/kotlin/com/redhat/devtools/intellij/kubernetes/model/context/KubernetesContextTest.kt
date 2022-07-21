@@ -34,11 +34,12 @@ import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.NAMESPACE
 import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.POD1
 import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.POD2
 import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.POD3
+import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.setContainers
 import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.client
 import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.customResource
 import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.customResourceDefinition
 import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.resource
-import com.redhat.devtools.intellij.kubernetes.model.mocks.Mocks.logWatchingNamespacedResourceOperator
+import com.redhat.devtools.intellij.kubernetes.model.mocks.Mocks.logAndExecWatchingNamespacedResourceOperator
 import com.redhat.devtools.intellij.kubernetes.model.mocks.Mocks.namespacedResourceOperator
 import com.redhat.devtools.intellij.kubernetes.model.mocks.Mocks.nonNamespacedResourceOperator
 import com.redhat.devtools.intellij.kubernetes.model.resource.ILogWatcher
@@ -53,6 +54,8 @@ import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.Namespa
 import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.NodesOperator
 import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.ServicesOperator
 import com.redhat.devtools.intellij.kubernetes.model.util.MultiResourceException
+import com.redhat.devtools.intellij.kubernetes.model.util.ResourceException
+import io.fabric8.kubernetes.api.model.Container
 import io.fabric8.kubernetes.api.model.GenericKubernetesResource
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.NamedContext
@@ -73,6 +76,11 @@ import java.io.OutputStream
 
 class KubernetesContextTest {
 
+	private val container1: Container = mock()
+	private val container2: Container = mock()
+	private val pod = POD2.apply {
+		setContainers(this, container1, container2)
+	}
 	private val modelChange: ResourceModelObservable = mock()
 	private val allNamespaces = arrayOf(NAMESPACE1, NAMESPACE2, NAMESPACE3)
 	private val currentNamespace = NAMESPACE2
@@ -164,12 +172,12 @@ class KubernetesContextTest {
 			nonNamespacedCustomResourceWatchOp
 		)
 
-	private val podLogWatchingOperator = logWatchingNamespacedResourceOperator<Pod, KubernetesClient>(
+	private val podLogWatchingOperator = logAndExecWatchingNamespacedResourceOperator<Pod, KubernetesClient>(
 		NamespacedPodsOperator.KIND,
 		allPods.toList(),
 		currentNamespace
 	)
-	private val deploymentLogWatchingOperator = logWatchingNamespacedResourceOperator<Deployment, KubernetesClient>(
+	private val deploymentLogWatchingOperator = logAndExecWatchingNamespacedResourceOperator<Deployment, KubernetesClient>(
 		DeploymentsOperator.KIND,
 		emptyList(),
 		currentNamespace
@@ -246,7 +254,7 @@ class KubernetesContextTest {
 		// when
 		val isCurrent = context.isCurrentNamespace(mock<HasMetadata>())
 		// then
-		assertThat(isCurrent).isFalse()
+		assertThat(isCurrent).isFalse
 	}
 
 	@Test
@@ -256,7 +264,7 @@ class KubernetesContextTest {
 		// when
 		val isCurrent = context.isCurrentNamespace(NAMESPACE3)
 		// then
-		assertThat(isCurrent).isFalse()
+		assertThat(isCurrent).isFalse
 	}
 
 	@Test
@@ -328,7 +336,7 @@ class KubernetesContextTest {
 		verify(context, times(1)).createCustomResourcesOperator(eq(clusterwideDefinition), any())
 	}
 
-	@Test(expected = IllegalArgumentException::class)
+	@Test(expected = ResourceException::class)
 	fun `#getCustomResources should throw if scope is unknown`() {
 		// given
 		val bogusScope = customResourceDefinition(
@@ -405,8 +413,8 @@ class KubernetesContextTest {
 		// when
 		context.delete(toDelete)
 		// then
-		verify(POD2.metadata, atLeastOnce()).setDeletionTimestamp(any())
-		verify(POD3.metadata, atLeastOnce()).setDeletionTimestamp(any())
+		verify(POD2.metadata, atLeastOnce()).deletionTimestamp = any()
+		verify(POD3.metadata, atLeastOnce()).deletionTimestamp = any()
 	}
 
 	@Test(expected=MultiResourceException::class)
@@ -469,9 +477,9 @@ class KubernetesContextTest {
 		val context = createContext(internalResourcesOperators, emptyList())
 		val out: OutputStream = mock()
 		// when
-		context.watchLog(POD2, out)
+		context.watchLog(container1, pod, out)
 		// then
-		verify(expected).watchLog(POD2, out)
+		verify(expected).watchLog(container1, pod, out)
 	}
 
 	@Test
@@ -482,7 +490,7 @@ class KubernetesContextTest {
 			namespacedPodsOperator)
 		val context = createContext(internalResourcesOperators, emptyList())
 		// when
-		val log = context.watchLog(POD2, mock())
+		val log = context.watchLog(container1, pod, mock())
 		// then
 		assertThat(log).isNull()
 	}
@@ -499,19 +507,33 @@ class KubernetesContextTest {
 		// when
 		val canWatchLog = context.canWatchLog(POD2)
 		// then
-		assertThat(canWatchLog).isTrue()
+		assertThat(canWatchLog).isTrue
 	}
 
 	@Test
 	fun `#canWatchLog should false if no operator exists that supports watching the log for the given pod`() {
 		// given
-		val internalResourcesOperators = mutableListOf(
-			namespacesOperator)
+		val internalResourcesOperators = mutableListOf(namespacesOperator)
 		val context = createContext(internalResourcesOperators, emptyList())
 		// when
 		val canWatchLog = context.canWatchLog(POD2)
 		// then
-		assertThat(canWatchLog).isFalse()
+		assertThat(canWatchLog).isFalse
+	}
+
+	@Test
+	fun `#canWatchExec should return true if there is an operator that supports given kind and watching the log`() {
+		// given
+		val internalResourcesOperators = mutableListOf(
+			namespacesOperator,
+			podLogWatchingOperator,
+			deploymentLogWatchingOperator
+		)
+		val context = createContext(internalResourcesOperators, emptyList())
+		// when
+		val canWatchExec = context.canWatchExec(POD2)
+		// then
+		assertThat(canWatchExec).isTrue
 	}
 
 	@Test
@@ -687,7 +709,7 @@ class KubernetesContextTest {
 		// when
 		val added = context.added(pod)
 		// then
-		assertThat(added).isTrue()
+		assertThat(added).isTrue
 	}
 
 	@Test
@@ -699,7 +721,7 @@ class KubernetesContextTest {
 		// when
 		val added = context.added(namespace)
 		// then
-		assertThat(added).isTrue()
+		assertThat(added).isTrue
 	}
 
 	@Test
@@ -711,7 +733,7 @@ class KubernetesContextTest {
 		// when
 		val added = context.added(pod)
 		// then
-		assertThat(added).isFalse()
+		assertThat(added).isFalse
 	}
 
 	@Test

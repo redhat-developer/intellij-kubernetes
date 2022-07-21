@@ -16,12 +16,11 @@ import com.redhat.devtools.intellij.kubernetes.model.context.IActiveContext
 import com.redhat.devtools.intellij.kubernetes.model.context.IActiveContext.ResourcesIn
 import com.redhat.devtools.intellij.kubernetes.model.context.IContext
 import com.redhat.devtools.intellij.kubernetes.model.resource.ResourceKind
-import com.redhat.devtools.intellij.kubernetes.model.util.ResourceException
-import com.redhat.devtools.intellij.kubernetes.model.util.isNotFound
+import io.fabric8.kubernetes.api.model.Container
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinition
 import io.fabric8.kubernetes.client.KubernetesClient
-import io.fabric8.kubernetes.client.KubernetesClientException
+import io.fabric8.kubernetes.client.dsl.ExecWatch
 import io.fabric8.kubernetes.client.dsl.LogWatch
 import java.io.OutputStream
 import java.util.function.Predicate
@@ -48,8 +47,10 @@ interface IResourceModel {
     fun stopWatch(definition: CustomResourceDefinition)
     fun invalidate(element: Any?)
     fun delete(resources: List<HasMetadata>)
-    fun watchLog(resource: HasMetadata, out: OutputStream): LogWatch?
-    fun canFollowLogs(resource: HasMetadata): Boolean
+    fun watchLog(container: Container?, resource: HasMetadata, out: OutputStream): LogWatch?
+    fun canWatchLog(resource: HasMetadata): Boolean
+    fun watchExec(container: Container?, resource: HasMetadata): ExecWatch?
+    fun canWatchExec(resource: HasMetadata): Boolean
     fun addListener(listener: IResourceModelListener)
     fun removeListener(listener: IResourceModelListener)
 }
@@ -90,22 +91,11 @@ open class ResourceModel : IResourceModel {
     }
 
     override fun getCurrentNamespace(): String? {
-        try {
-            return allContexts.current?.getCurrentNamespace()
-        } catch (e: KubernetesClientException) {
-            throw ResourceException(
-                "Could not get current namespace for server ${allContexts.current?.masterUrl}", e)
-        }
+        return allContexts.current?.getCurrentNamespace()
     }
 
     override fun isCurrentNamespace(resource: HasMetadata): Boolean {
-        try {
-            return allContexts.current?.isCurrentNamespace(resource) ?: false
-        } catch (e: KubernetesClientException) {
-            throw ResourceException(
-                "Could not get current namespace for server ${allContexts.current?.masterUrl}", e
-            )
-        }
+        return allContexts.current?.isCurrentNamespace(resource) ?: false
     }
 
     override fun <R: HasMetadata> resources(kind: ResourceKind<R>): Namespaceable<R> {
@@ -117,27 +107,16 @@ open class ResourceModel : IResourceModel {
     }
 
     fun <R: HasMetadata> getAllResources(kind: ResourceKind<R>, resourceIn: ResourcesIn, filter: Predicate<R>? = null): Collection<R> {
-        try {
-            val resources: Collection<R> = allContexts.current?.getAllResources(kind, resourceIn) ?: return emptyList()
-            return if (filter == null) {
-                resources
-            } else {
-                resources.filter { filter.test(it) }
-            }
-        } catch (e: KubernetesClientException) {
-            if (e.isNotFound()) {
-                return emptyList()
-            }
-            throw ResourceException("Could not get ${kind.kind}s for server ${allContexts.current?.masterUrl}", e)
+        val resources: Collection<R> = allContexts.current?.getAllResources(kind, resourceIn) ?: return emptyList()
+        return if (filter == null) {
+            resources
+        } else {
+            resources.filter { filter.test(it) }
         }
     }
 
     fun getAllResources(definition: CustomResourceDefinition): Collection<HasMetadata> {
-        try {
-            return allContexts.current?.getAllResources(definition) ?: emptyList()
-        } catch(e: IllegalArgumentException) {
-            throw ResourceException("Could not get custom resources for ${definition.metadata}: ${e.cause}", e)
-        }
+        return allContexts.current?.getAllResources(definition) ?: emptyList()
     }
 
     override fun watch(kind: ResourceKind<out HasMetadata>) {
@@ -194,12 +173,19 @@ open class ResourceModel : IResourceModel {
         allContexts.current?.delete(resources)
     }
 
-    override fun watchLog(resource: HasMetadata, out: OutputStream): LogWatch? {
-        return allContexts.current?.watchLog(resource, out)
+    override fun watchLog(container: Container?, resource: HasMetadata, out: OutputStream): LogWatch? {
+        return allContexts.current?.watchLog(container, resource, out)
     }
 
-    override fun canFollowLogs(resource: HasMetadata): Boolean {
+    override fun canWatchLog(resource: HasMetadata): Boolean {
         return true == allContexts.current?.canWatchLog(resource)
     }
 
+    override fun watchExec(container: Container?, resource: HasMetadata): ExecWatch? {
+        return allContexts.current?.watchExec(container, resource)
+    }
+
+    override fun canWatchExec(resource: HasMetadata): Boolean {
+        return true == allContexts.current?.canWatchExec(resource)
+    }
 }
