@@ -16,12 +16,14 @@ import com.redhat.devtools.intellij.kubernetes.model.client.ClientAdapter
 import com.redhat.devtools.intellij.kubernetes.model.client.KubeClientAdapter
 import com.redhat.devtools.intellij.kubernetes.model.client.OSClientAdapter
 import com.redhat.devtools.intellij.kubernetes.model.resource.ResourceKind
+import io.fabric8.kubernetes.api.model.Container
 import io.fabric8.kubernetes.api.model.GenericKubernetesResource
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinition
 import io.fabric8.kubernetes.client.KubernetesClient
 import io.fabric8.kubernetes.client.Watch
 import io.fabric8.kubernetes.client.Watcher
+import io.fabric8.kubernetes.client.dsl.ExecWatch
 import io.fabric8.kubernetes.client.dsl.LogWatch
 import java.io.OutputStream
 import java.net.URL
@@ -104,9 +106,13 @@ interface IActiveContext<N: HasMetadata, C: KubernetesClient>: IContext {
      */
     fun delete(resources: List<HasMetadata>)
 
-    fun <T: HasMetadata> watchLog(resource: T, out: OutputStream): LogWatch?
+    fun <T: HasMetadata> watchLog(container: Container?, resource: T, out: OutputStream): LogWatch?
 
     fun <T: HasMetadata> canWatchLog(resource: T): Boolean
+
+    fun <T: HasMetadata> watchExec(container: Container?, resource: T): ExecWatch?
+
+    fun <T: HasMetadata> canWatchExec(resource: T): Boolean
 
     /**
      * Returns all resources of the given kind in the given scope.

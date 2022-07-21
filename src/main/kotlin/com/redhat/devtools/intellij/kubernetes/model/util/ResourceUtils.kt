@@ -187,17 +187,17 @@ fun isWillBeDeleted(resource: HasMetadata?): Boolean {
  * Returns a message listing the given resources by name while using ',' as delimiter.
  * Duplicate resources are ignored. Names that are longer than 20 characters are trimmed.
  *
- * @see toCauseMessage
- * @see trim
+ * @see com.redhat.devtools.intellij.kubernetes.model.util.toMessage
+ * @see trimWithEllipsis
  */
-fun toMessage(resources: Collection<HasMetadata>, maxLength: Int): String {
+fun toMessage(resources: Collection<HasMetadata>, maxLength: Int = -1): String {
 	return resources.stream()
 		.distinct()
 		.map { toMessage(it, maxLength) }
 		.collect(Collectors.joining(",\n"))
 }
 
-fun toMessage(resource: HasMetadata, maxLength: Int): String {
+fun toMessage(resource: HasMetadata, maxLength: Int = -1): String {
 	return "${resource.kind} \"${trimWithEllipsis(resource.metadata.name, maxLength)}\""
 }
 

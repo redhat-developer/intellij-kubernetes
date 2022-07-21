@@ -11,17 +11,22 @@
 package com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes
 
 import com.redhat.devtools.intellij.kubernetes.model.client.ClientAdapter
+import com.redhat.devtools.intellij.kubernetes.model.resource.IExecWatcher
 import com.redhat.devtools.intellij.kubernetes.model.resource.ILogWatcher
 import com.redhat.devtools.intellij.kubernetes.model.resource.NamespacedOperation
 import com.redhat.devtools.intellij.kubernetes.model.resource.NamespacedResourceOperator
 import com.redhat.devtools.intellij.kubernetes.model.resource.ResourceKind
+import io.fabric8.kubernetes.api.model.Container
 import io.fabric8.kubernetes.api.model.Pod
 import io.fabric8.kubernetes.client.KubernetesClient
+import io.fabric8.kubernetes.client.dsl.ExecWatch
 import io.fabric8.kubernetes.client.dsl.LogWatch
 import java.io.OutputStream
 
-open class NamespacedPodsOperator(client: ClientAdapter<out KubernetesClient>)
-    : NamespacedResourceOperator<Pod, KubernetesClient>(client.get()), ILogWatcher<Pod> {
+open class NamespacedPodsOperator(client: ClientAdapter<out KubernetesClient>):
+    NamespacedResourceOperator<Pod, KubernetesClient>(client.get()),
+    ILogWatcher<Pod>,
+    IExecWatcher<Pod> {
 
     companion object {
         val KIND = ResourceKind.create(Pod::class.java)
@@ -33,8 +38,11 @@ open class NamespacedPodsOperator(client: ClientAdapter<out KubernetesClient>)
         return client.pods()
     }
 
-    override fun watchLog(resource: Pod, out: OutputStream): LogWatch? {
-        return watchLogWhenReady(resource, out)
+    override fun watchLog(container: Container?, resource: Pod, out: OutputStream): LogWatch? {
+        return super.watchLog(container, resource, out)
     }
 
+    override fun watchExec(container: Container?, resource: Pod): ExecWatch? {
+        return super.watchExec(container, resource)
+    }
 }

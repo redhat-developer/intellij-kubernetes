@@ -8,15 +8,16 @@
  * Contributors:
  * Red Hat, Inc. - initial API and implementation
  ******************************************************************************/
-package com.redhat.devtools.intellij.kubernetes.logs
+package com.redhat.devtools.intellij.kubernetes.console
 
+import com.intellij.execution.ui.ConsoleView
 import com.intellij.execution.ui.ConsoleViewContentType
-import com.intellij.terminal.TerminalExecutionConsole
+import com.intellij.openapi.diagnostic.logger
 import java.io.OutputStream
 import java.util.Queue
 import java.util.concurrent.LinkedBlockingQueue
 
-class TerminalOutputStream(private val terminal: TerminalExecutionConsole) : OutputStream() {
+class ConsoleOutputStream(private val terminal: ConsoleView) : OutputStream() {
 
     companion object {
         const val BUFFER_SIZE: Int = 256
@@ -52,7 +53,8 @@ class TerminalOutputStream(private val terminal: TerminalExecutionConsole) : Out
     private fun appendCodePoint(builder: java.lang.StringBuilder, codePoint: Int): java.lang.StringBuilder {
         try {
             builder.appendCodePoint(codePoint)
-        } catch (_: Throwable) {
+        } catch (e: Throwable) {
+            logger<ConsoleOutputStream>().warn("Error appending code point $codePoint to buffer.", e)
         }
         return builder
     }

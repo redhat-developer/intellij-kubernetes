@@ -77,9 +77,10 @@ spec:
          - "echo kube"
       restartPolicy: Never
 """
+
     // need real resources, not mocks - #equals used to track changes
-    private val GARGAMEL = PodBuilder(POD2)
-        .editMetadata()
+    private val GARGAMEL = PodBuilder()
+        .withNewMetadata()
             .withName("Gargamel")
             .withNamespace("namespace2")
             .withResourceVersion("1")
@@ -187,7 +188,7 @@ spec:
     @Before
     fun before() {
         doReturn(YAMLFileType.YML)
-            .whenever(psiFile).getFileType()
+            .whenever(psiFile).fileType
         doReturn(psiFile)
             .whenever(psiDocumentManager).getPsiFile(any())
     }

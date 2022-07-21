@@ -22,10 +22,10 @@ import com.intellij.ui.tree.AsyncTreeModel
 import com.intellij.ui.treeStructure.Tree
 import com.redhat.devtools.intellij.common.compat.PopupHandlerAdapter
 import com.redhat.devtools.intellij.common.tree.StructureTreeModelFactory
-import com.redhat.devtools.intellij.kubernetes.actions.addDoubleClickListener
 import com.redhat.devtools.intellij.kubernetes.actions.getElement
 import com.redhat.devtools.intellij.kubernetes.editor.ResourceEditorFactory
 import com.redhat.devtools.intellij.kubernetes.model.IResourceModel
+import com.redhat.devtools.intellij.kubernetes.tree.util.addDoubleClickListener
 import io.fabric8.kubernetes.api.model.HasMetadata
 import java.awt.Point
 import java.awt.event.MouseAdapter

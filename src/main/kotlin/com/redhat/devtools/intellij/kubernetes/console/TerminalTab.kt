@@ -1,0 +1,119 @@
+/*******************************************************************************
+ * Copyright (c) 2022 Red Hat, Inc.
+ * Distributed under license by Red Hat, Inc. All rights reserved.
+ * This program is made available under the terms of the
+ * Eclipse Public License v2.0 which accompanies this distribution,
+ * and is available at http://www.eclipse.org/legal/epl-v20.html
+ *
+ * Contributors:
+ * Red Hat, Inc. - initial API and implementation
+ ******************************************************************************/
+package com.redhat.devtools.intellij.kubernetes.console
+
+import com.intellij.openapi.diagnostic.logger
+import com.intellij.openapi.project.Project
+import com.intellij.terminal.TerminalExecutionConsole
+import com.pty4j.PtyProcess
+import com.pty4j.WinSize
+import com.redhat.devtools.intellij.common.utils.ExecProcessHandler
+import com.redhat.devtools.intellij.kubernetes.model.IResourceModel
+import io.fabric8.kubernetes.api.model.Container
+import io.fabric8.kubernetes.api.model.Pod
+import io.fabric8.kubernetes.client.dsl.ExecWatch
+import java.io.InputStream
+import java.io.OutputStream
+import java.nio.charset.Charset
+
+open class TerminalTab(pod: Pod, model: IResourceModel, project: Project) :
+    ConsoleTab<TerminalExecutionConsole, ExecWatch>(pod, model, project) {
+
+    override fun startWatch(container: Container?, consoleView: TerminalExecutionConsole?): ExecWatch? {
+        if (container == null
+            || consoleView == null
+        ) {
+            return null
+        }
+        val watch = createExecWatch(container) ?: return null
+        val process = ExecWatchProcessAdapter(watch)
+        val handler = ExecProcessHandler(process, "welcome to container ${container.name}\n", Charset.defaultCharset())
+        consoleView.attachToProcess(handler)
+        handler.startNotify()
+        return watch
+    }
+
+
+    override fun createConsoleView(project: Project): TerminalExecutionConsole? {
+        return TerminalExecutionConsole(project, null)
+    }
+
+    override fun getDisplayName(): String {
+        return "Terminal: Pod ${pod.metadata.name}"
+    }
+
+    override fun dispose() {
+        closeWatch()
+    }
+
+    private fun closeWatch() {
+        try {
+            watch.get()?.close()
+        } catch (e: Exception) {
+            logger<TerminalTab>().warn(
+                "Could not close exec watch for pod ${pod.metadata.name}",
+                e.cause
+            )
+        }
+    }
+
+    private fun createExecWatch(container: Container): ExecWatch? {
+        return model.watchExec(container, pod)
+    }
+
+    /**
+     * An adapter for [ExecWatch] that adapts it to be accessed like a [PtyProcess]
+     */
+    inner class ExecWatchProcessAdapter(private val watch: ExecWatch) : PtyProcess() {
+        override fun isRunning(): Boolean {
+            return true
+        }
+
+        override fun setWinSize(winSize: WinSize) {
+            // dont act upon
+        }
+
+        override fun getWinSize(): WinSize {
+            // has no effect
+            return WinSize(80, 200)
+        }
+
+        override fun getPid(): Int {
+            return -1
+        }
+
+        @Override
+        override fun getOutputStream(): OutputStream? {
+            return watch.input
+        }
+
+        override fun getInputStream(): InputStream? {
+            return watch.output
+        }
+
+        override fun getErrorStream(): InputStream? {
+            return watch.error
+        }
+
+        override fun waitFor(): Int {
+            return 0
+        }
+
+        override fun exitValue(): Int {
+            return 0
+        }
+
+        override fun destroy() {
+            watch.close()
+        }
+
+    }
+}

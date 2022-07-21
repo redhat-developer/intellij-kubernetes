@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2022 Red Hat, Inc.
+ * Copyright (c) 2020 Red Hat, Inc.
  * Distributed under license by Red Hat, Inc. All rights reserved.
  * This program is made available under the terms of the
  * Eclipse Public License v2.0 which accompanies this distribution,
@@ -8,14 +8,16 @@
  * Contributors:
  * Red Hat, Inc. - initial API and implementation
  ******************************************************************************/
-package com.redhat.devtools.intellij.kubernetes.model.resource
+package com.redhat.devtools.intellij.kubernetes.console
 
-import io.fabric8.kubernetes.api.model.HasMetadata
-import io.fabric8.kubernetes.client.dsl.LogWatch
-import java.io.OutputStream
+import com.intellij.openapi.project.Project
+import com.intellij.openapi.wm.ToolWindow
+import com.intellij.openapi.wm.ToolWindowFactory
 
-interface ILogWatcher<T: HasMetadata>: IResourceOperator<T> {
 
-    fun watchLog(resource: T, out: OutputStream): LogWatch?
+class ConsolesToolWindowFactory: ToolWindowFactory {
 
+    override fun createToolWindowContent(project: Project, toolWindow: ToolWindow) {
+        toolWindow.stripeTitle = "Kubernetes Consoles"
+    }
 }

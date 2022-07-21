@@ -8,7 +8,7 @@
  * Contributors:
  * Red Hat, Inc. - initial API and implementation
  ******************************************************************************/
-package com.redhat.devtools.intellij.kubernetes.logs
+package com.redhat.devtools.intellij.kubernetes.console
 
 import com.intellij.terminal.TerminalExecutionConsole
 import com.nhaarman.mockitokotlin2.any
@@ -21,19 +21,19 @@ import com.nhaarman.mockitokotlin2.verify
 import org.junit.Before
 import org.junit.Test
 
-class TerminalOutputStreamTest {
+class ConsoleOutputStreamTest {
 
     private val POOR_DARTH_VADER =
         "Numerous Disney World customers were annoyed after one of the actors playing Darth Vader actually had trouble breathing." +
                 "The actor has now been sent to a galaxy far, far away, meaning that he has been fired and will not be receiving employee health benefits." +
                 "Hopefully in that galaxy they have at least free sabers."
     private var terminal: TerminalExecutionConsole = mock()
-    private var out: TerminalOutputStream = TerminalOutputStream(terminal)
+    private var out: ConsoleOutputStream = ConsoleOutputStream(terminal)
 
     @Before
     fun before() {
         this.terminal = mock()
-        this.out = spy(TerminalOutputStream(terminal))
+        this.out = spy(ConsoleOutputStream(terminal))
     }
 
     @Test
@@ -49,7 +49,7 @@ class TerminalOutputStreamTest {
     @Test
     fun `#write should NOT print to terminal as long as buffer is not full`() {
         // given
-        val toPrint = POOR_DARTH_VADER.substring(0, TerminalOutputStream.BUFFER_SIZE - 1)
+        val toPrint = POOR_DARTH_VADER.substring(0, ConsoleOutputStream.BUFFER_SIZE - 1)
         // when
         printToTerminal(toPrint)
         // then
@@ -59,7 +59,7 @@ class TerminalOutputStreamTest {
     @Test
     fun `#write should print to terminal as soon as buffer is full`() {
         // given
-        val toPrint = POOR_DARTH_VADER.substring(0, TerminalOutputStream.BUFFER_SIZE + 1)
+        val toPrint = POOR_DARTH_VADER.substring(0, ConsoleOutputStream.BUFFER_SIZE + 1)
         // when
         printToTerminal(toPrint)
         // then print chars but last one

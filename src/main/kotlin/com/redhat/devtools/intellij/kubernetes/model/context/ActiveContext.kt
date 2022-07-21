@@ -23,6 +23,7 @@ import com.redhat.devtools.intellij.kubernetes.model.context.IActiveContext.Reso
 import com.redhat.devtools.intellij.kubernetes.model.context.IActiveContext.ResourcesIn.NO_NAMESPACE
 import com.redhat.devtools.intellij.kubernetes.model.context.IActiveContext.ResourcesIn.CURRENT_NAMESPACE
 import com.redhat.devtools.intellij.kubernetes.model.context.IActiveContext.ResourcesIn.ANY_NAMESPACE
+import com.redhat.devtools.intellij.kubernetes.model.resource.IExecWatcher
 import com.redhat.devtools.intellij.kubernetes.model.resource.ILogWatcher
 import com.redhat.devtools.intellij.kubernetes.model.resource.INamespacedResourceOperator
 import com.redhat.devtools.intellij.kubernetes.model.resource.INonNamespacedResourceOperator
@@ -35,9 +36,11 @@ import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.custom.
 import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.custom.NonNamespacedCustomResourceOperator
 import com.redhat.devtools.intellij.kubernetes.model.util.MultiResourceException
 import com.redhat.devtools.intellij.kubernetes.model.util.ResourceException
+import com.redhat.devtools.intellij.kubernetes.model.util.isNotFound
 import com.redhat.devtools.intellij.kubernetes.model.util.isSameResource
 import com.redhat.devtools.intellij.kubernetes.model.util.setWillBeDeleted
 import com.redhat.devtools.intellij.kubernetes.model.util.toMessage
+import io.fabric8.kubernetes.api.model.Container
 import io.fabric8.kubernetes.api.model.GenericKubernetesResource
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.NamedContext
@@ -47,8 +50,10 @@ import io.fabric8.kubernetes.client.KubernetesClient
 import io.fabric8.kubernetes.client.KubernetesClientException
 import io.fabric8.kubernetes.client.Watch
 import io.fabric8.kubernetes.client.Watcher
+import io.fabric8.kubernetes.client.dsl.ExecWatch
 import io.fabric8.kubernetes.client.dsl.LogWatch
 import io.fabric8.kubernetes.model.Scope
+import java.io.IOException
 import java.io.OutputStream
 import java.net.URL
 
@@ -91,8 +96,8 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
     private fun setCurrentNamespace(operators: Collection<INamespacedResourceOperator<*, *>>) {
         try {
             @Suppress("UNCHECKED_CAST")
-            val namespacesOperator: INonNamespacedResourceOperator<N, C> = nonNamespacedOperators[getNamespacesKind()]
-                    as INonNamespacedResourceOperator<N, C>
+            val namespacesOperator: INonNamespacedResourceOperator<N, C> =
+                nonNamespacedOperators[getNamespacesKind()] as INonNamespacedResourceOperator<N, C>
             val namespace = getCurrentNamespace(namespacesOperator.allResources)
             setCurrentNamespace(namespace?.metadata?.name, operators)
             watch(namespacesOperator) // always watch namespaces
@@ -109,9 +114,15 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
     }
 
     override fun getCurrentNamespace(): String? {
-        val namespaceKind = getNamespacesKind()
-        val current = getCurrentNamespace(getAllResources(namespaceKind, NO_NAMESPACE))
-        return current?.metadata?.name
+        return try {
+            val namespaceKind = getNamespacesKind()
+            val current = getCurrentNamespace(getAllResources(namespaceKind, NO_NAMESPACE))
+            current?.metadata?.name
+        } catch (e: KubernetesClientException) {
+            throw ResourceException(
+                "Could not get current namespace for server $masterUrl", e
+            )
+        }
     }
 
     private fun getCurrentNamespace(namespaces: Collection<N>): N? {
@@ -122,8 +133,14 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
     protected abstract fun getNamespacesKind(): ResourceKind<N>
 
     override fun isCurrentNamespace(resource: HasMetadata): Boolean {
-        val current = getCurrentNamespace(getAllResources(getNamespacesKind(), NO_NAMESPACE)) ?: return false
-        return resource.isSameResource(current as HasMetadata)
+        return try {
+            val current = getCurrentNamespace(getAllResources(getNamespacesKind(), NO_NAMESPACE)) ?: return false
+            resource.isSameResource(current as HasMetadata)
+        } catch (e: KubernetesClientException) {
+            throw ResourceException(
+                "Could not get current namespace for server $masterUrl", e
+            )
+        }
     }
 
     override fun isCurrentNamespace(namespace: String): Boolean {
@@ -131,11 +148,19 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
     }
 
     override fun <R: HasMetadata> getAllResources(kind: ResourceKind<R>, resourcesIn: ResourcesIn): Collection<R> {
-        logger<ActiveContext<*,*>>().debug("Resources $kind requested.")
-        synchronized(this) {
-            val operator = getOperator(kind, resourcesIn)
-            return operator?.allResources
-                ?: emptyList()
+        logger<ActiveContext<*, *>>().debug("Resources $kind requested.")
+        return try {
+            synchronized(this) {
+                val operator = getOperator(kind, resourcesIn)
+                operator?.allResources
+                    ?: emptyList()
+            }
+        } catch (e: KubernetesClientException) {
+            if (e.isNotFound()) {
+                emptyList()
+            } else {
+                throw ResourceException("Could not get ${kind.kind}s for server $masterUrl", e)
+            }
         }
     }
 
@@ -193,7 +218,12 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
     }
 
     override fun getAllResources(definition: CustomResourceDefinition): Collection<GenericKubernetesResource> {
-        return getOperator(definition)?.allResources ?: return emptyList()
+        logger<ActiveContext<*, *>>().debug("Getting all ${definition.metadata.name} resources.")
+        return try {
+            getOperator(definition)?.allResources ?: return emptyList()
+        } catch (e: IllegalArgumentException) {
+            throw ResourceException("Could not get custom resources for ${definition.metadata}: $e", e)
+        }
     }
 
     protected open fun createCustomResourcesOperator(
@@ -292,6 +322,38 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
         stopWatch(kind)
     }
 
+    override fun <R: HasMetadata> canWatchLog(resource: R): Boolean {
+        return getResourceOperator<R, ILogWatcher<R>>(resource) != null
+    }
+
+    override fun <R: HasMetadata> watchLog(container: Container?, resource: R, out: OutputStream): LogWatch? {
+        logger<ActiveContext<*, *>>().debug("Watching log for container in ${toMessage(resource, -1)}")
+        return try {
+            getResourceOperator<R, ILogWatcher<R>>(resource)?.watchLog(container, resource, out)
+        } catch(e: KubernetesClientException) {
+            throw ResourceException("Could not watch log for ${toMessage(resource, -1)}", e)
+        } catch(e: IOException) {
+            // WebSocketHandshakeException
+            throw ResourceException("Could not watch log for ${toMessage(resource, -1)}", e)
+        }
+    }
+
+    override fun <R: HasMetadata> canWatchExec(resource: R): Boolean {
+        return getResourceOperator<R, IExecWatcher<R>>(resource) != null
+    }
+
+    override fun <R: HasMetadata> watchExec(container: Container?, resource: R): ExecWatch? {
+        logger<ActiveContext<*, *>>().debug("Watching exec for container in ${toMessage(resource, -1)}.")
+        return try {
+            getResourceOperator<R, IExecWatcher<R>>(resource)?.watchExec(container, resource)
+        } catch (e: Throwable) {
+            // KubernetesClientException
+            // IOException
+            throw ResourceException("Could not connect to container ${container?.name ?: ""} in ${toMessage(resource, 30)}.",
+                e, listOf(resource))
+        }
+    }
+
     override fun added(resource: HasMetadata): Boolean {
         val added = when (resource) {
             is CustomResourceDefinition ->
@@ -334,6 +396,7 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
     }
 
     override fun removed(resource: HasMetadata): Boolean {
+        logger<ActiveContext<*, *>>().debug("Resource ${resource.metadata.name} was removed.")
         val removed = if (resource is CustomResourceDefinition) {
             // implicit cast to CustomResourceDefinition
             removeResource(resource)
@@ -372,13 +435,14 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
     }
 
     override fun invalidate() {
-        logger<ActiveContext<*, *>>().debug("Invalidating all operators.")
+        logger<ActiveContext<*, *>>().debug("Invalidating all cached resources.")
         namespacedOperators.values.forEach { it.invalidate() }
         nonNamespacedOperators.values.forEach { it.invalidate() }
         modelChange.fireModified(this)
     }
 
     override fun replaced(resource: HasMetadata): Boolean {
+        logger<ActiveContext<*, *>>().debug("Resource ${resource.metadata.name} was replaced.")
         val replaced = when(resource) {
             is CustomResourceDefinition ->
                 replaced(ResourceKind.create(resource.spec), resource)
@@ -402,7 +466,7 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
     }
 
     override fun invalidate(kind: ResourceKind<*>) {
-        logger<ActiveContext<*, *>>().debug("Invalidating resource operator for $kind resources.")
+        logger<ActiveContext<*, *>>().debug("Invalidating all $kind resources.")
         invalidateOperators(kind)
     }
 
@@ -417,6 +481,7 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
     }
 
     override fun delete(resources: List<HasMetadata>) {
+        logger<ActiveContext<*, *>>().debug("Deleting ${toMessage(resources)}.")
         val exceptions = resources
             .distinct()
             .groupBy { Pair(ResourceKind.create(it), ResourcesIn.valueOf(it, getCurrentNamespace())) }
@@ -456,30 +521,17 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
         }
     }
 
-    override fun <T: HasMetadata> watchLog(resource: T, out: OutputStream): LogWatch? {
-        try {
-            return getLogWatchOperator<T>(resource)?.watchLog(resource, out)
-        } catch(e: KubernetesClientException) {
-            throw ResourceException("Could not watch log of ${toMessage(resource, -1)}", e)
-        }
-    }
-
-    override fun <T: HasMetadata> canWatchLog(resource: T): Boolean {
-        return getLogWatchOperator<T>(resource) != null
-    }
-
     override fun close() {
         logger<ActiveContext<*, *>>().debug("Closing context ${context.name}.")
         watch.close()
     }
 
-    private fun <T: HasMetadata> getLogWatchOperator(resource: HasMetadata): ILogWatcher<T>? {
+    private inline fun <R: HasMetadata, reified O: Any> getResourceOperator(resource: R): O? {
         val kind = ResourceKind.create(resource::class.java)
-        @Suppress("UNCHECKED_CAST")
-        return getAllResourceOperators(ILogWatcher::class.java)
-            .filter { it.key == kind }
+        return getAllResourceOperators(IResourceOperator::class.java)
+            .filter {it.key == kind && it.value is O }
             .map { it.value }
-            .firstOrNull() as? ILogWatcher<T>
+            .firstOrNull() as O?
     }
 
     private fun <P: IResourceOperator<out HasMetadata>> getAllResourceOperators(type: Class<P>)

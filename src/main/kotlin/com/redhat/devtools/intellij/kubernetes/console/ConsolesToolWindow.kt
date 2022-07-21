@@ -8,9 +8,10 @@
  * Contributors:
  * Red Hat, Inc. - initial API and implementation
  ******************************************************************************/
-package com.redhat.devtools.intellij.kubernetes.logs
+package com.redhat.devtools.intellij.kubernetes.console
 
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.util.Disposer
 import com.intellij.openapi.wm.ToolWindow
 import com.intellij.openapi.wm.ToolWindowManager
 import com.intellij.ui.content.Content
@@ -19,11 +20,11 @@ import com.intellij.ui.content.ContentManager
 import com.redhat.devtools.intellij.common.utils.UIHelper.executeInUI
 import java.util.function.Supplier
 
-object LogsToolWindow {
+object ConsolesToolWindow {
 
-    const val ID = "Kubernetes Logs"
+    const val ID = "Kubernetes Consoles"
 
-    fun add(tab: LogTab<*>, project: Project): Boolean {
+    fun add(tab: ConsoleTab<*, *>, project: Project): Boolean {
         return executeInUI(Supplier {
             var added = false
             val toolWindow = ToolWindowManager.getInstance(project).getToolWindow(ID)
@@ -41,12 +42,13 @@ object LogsToolWindow {
         })
     }
 
-    private fun createContent(logTab: LogTab<*>): Content {
+    private fun createContent(tab: ConsoleTab<*, *>): Content {
         val content = ContentFactory.SERVICE.getInstance().createContent(
-            logTab.getComponent(),
-            logTab.getDisplayName(),
+            tab.createComponent(),
+            tab.getDisplayName(),
             true
         )
+        Disposer.register(content, tab)
         content.isCloseable = true
         return content
     }
