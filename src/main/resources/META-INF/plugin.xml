@@ -10,6 +10,11 @@
     </description>
     <change-notes>
         <![CDATA[
+        <h3>0.6.1</h3>
+        <ul>
+            <li><a href="https://github.com/redhat-developer/intellij-kubernetes/issues/458">Switch to IJ common 1.7.1 as it breaks dependent plugins</a></li>
+        </ul>
+        <p></p>
         <h3>0.6.0</h3>
         <ul>
             <li><a href="https://github.com/redhat-developer/intellij-kubernetes/issues/215">As a user I want to be able to follow the logs</a></li>
