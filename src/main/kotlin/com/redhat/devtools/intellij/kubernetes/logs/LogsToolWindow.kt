@@ -23,7 +23,7 @@ object LogsToolWindow {
 
     const val ID = "Kubernetes Logs"
 
-    fun add(tab: LogTab<*>, project: Project): Boolean {
+    fun add(tab: LogTab, project: Project): Boolean {
         return executeInUI(Supplier {
             var added = false
             val toolWindow = ToolWindowManager.getInstance(project).getToolWindow(ID)
@@ -41,7 +41,7 @@ object LogsToolWindow {
         })
     }
 
-    private fun createContent(logTab: LogTab<*>): Content {
+    private fun createContent(logTab: LogTab): Content {
         val content = ContentFactory.SERVICE.getInstance().createContent(
             logTab.getComponent(),
             logTab.getDisplayName(),

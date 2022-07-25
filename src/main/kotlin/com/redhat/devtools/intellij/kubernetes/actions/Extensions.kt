@@ -11,12 +11,15 @@
 package com.redhat.devtools.intellij.kubernetes.actions
 
 import com.intellij.openapi.actionSystem.AnAction
+import com.intellij.openapi.actionSystem.AnActionEvent
+import com.intellij.openapi.actionSystem.PlatformDataKeys
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.progress.ProgressManager
 import com.intellij.openapi.progress.Progressive
 import com.intellij.openapi.progress.Task
 import com.intellij.openapi.project.Project
+import com.intellij.ui.treeStructure.Tree
 import com.redhat.devtools.intellij.kubernetes.model.IResourceModel
 import com.redhat.devtools.intellij.kubernetes.tree.TreeStructure.Descriptor
 import java.awt.event.MouseAdapter
@@ -48,6 +51,15 @@ inline fun <reified T> Any.getElement(): T? {
     }
     return if (element is T) {
         element
+    } else {
+        null
+    }
+}
+
+fun AnActionEvent.getTree(): Tree? {
+    val component = this.getData(PlatformDataKeys.CONTEXT_COMPONENT)
+    return if (component is Tree) {
+        component
     } else {
         null
     }

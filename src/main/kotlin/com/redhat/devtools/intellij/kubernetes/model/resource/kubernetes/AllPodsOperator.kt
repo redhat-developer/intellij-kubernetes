@@ -15,6 +15,7 @@ import com.redhat.devtools.intellij.kubernetes.model.resource.ILogWatcher
 import com.redhat.devtools.intellij.kubernetes.model.resource.NonNamespacedOperation
 import com.redhat.devtools.intellij.kubernetes.model.resource.NonNamespacedResourceOperator
 import com.redhat.devtools.intellij.kubernetes.model.resource.ResourceKind
+import io.fabric8.kubernetes.api.model.Container
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.Pod
 import io.fabric8.kubernetes.client.KubernetesClient
@@ -38,7 +39,7 @@ class AllPodsOperator(clients: Clients<out KubernetesClient>)
         return ensureSameNamespace(resource, super.get(resource))
     }
 
-    override fun watchLog(resource: Pod, out: OutputStream): LogWatch? {
-        return watchLogWhenReady(resource, out)
+    override fun watchLog(container: Container, pod: Pod, out: OutputStream): LogWatch? {
+        return watchLogWhenReady(pod, out)
     }
 }

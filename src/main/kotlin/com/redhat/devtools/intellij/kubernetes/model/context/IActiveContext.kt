@@ -12,8 +12,10 @@ package com.redhat.devtools.intellij.kubernetes.model.context
 
 import com.redhat.devtools.intellij.common.kubernetes.ClusterInfo
 import com.redhat.devtools.intellij.kubernetes.model.resource.ResourceKind
+import io.fabric8.kubernetes.api.model.Container
 import io.fabric8.kubernetes.api.model.GenericKubernetesResource
 import io.fabric8.kubernetes.api.model.HasMetadata
+import io.fabric8.kubernetes.api.model.Pod
 import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinition
 import io.fabric8.kubernetes.client.KubernetesClient
 import io.fabric8.kubernetes.client.Watch
@@ -77,7 +79,7 @@ interface IActiveContext<N: HasMetadata, C: KubernetesClient>: IContext {
      */
     fun delete(resources: List<HasMetadata>)
 
-    fun <T: HasMetadata> watchLog(resource: T, out: OutputStream): LogWatch?
+    fun watchLog(container: Container, pod: Pod, out: OutputStream): LogWatch?
 
     fun <T: HasMetadata> canWatchLog(resource: T): Boolean
 

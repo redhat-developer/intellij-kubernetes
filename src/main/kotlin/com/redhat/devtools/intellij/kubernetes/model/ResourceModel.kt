@@ -20,7 +20,9 @@ import com.redhat.devtools.intellij.kubernetes.model.context.create
 import com.redhat.devtools.intellij.kubernetes.model.resource.ResourceKind
 import com.redhat.devtools.intellij.kubernetes.model.util.ResourceException
 import com.redhat.devtools.intellij.kubernetes.model.util.isNotFound
+import io.fabric8.kubernetes.api.model.Container
 import io.fabric8.kubernetes.api.model.HasMetadata
+import io.fabric8.kubernetes.api.model.Pod
 import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinition
 import io.fabric8.kubernetes.client.KubernetesClient
 import io.fabric8.kubernetes.client.KubernetesClientException
@@ -43,7 +45,7 @@ interface IResourceModel {
     fun stopWatch(definition: CustomResourceDefinition)
     fun invalidate(element: Any?)
     fun delete(resources: List<HasMetadata>)
-    fun watchLog(resource: HasMetadata, out: OutputStream): LogWatch?
+    fun watchLog(container: Container, pod: Pod, out: OutputStream): LogWatch?
     fun canFollowLogs(resource: HasMetadata): Boolean
     fun addListener(listener: IResourceChangeListener)
     fun removeListener(listener: IResourceChangeListener)
@@ -199,8 +201,8 @@ open class ResourceModel : IResourceModel {
         contexts.current?.delete(resources)
     }
 
-    override fun watchLog(resource: HasMetadata, out: OutputStream): LogWatch? {
-        return contexts.current?.watchLog(resource, out)
+    override fun watchLog(container: Container, pod: Pod, out: OutputStream): LogWatch? {
+        return contexts.current?.watchLog(container, pod, out)
     }
 
     override fun canFollowLogs(resource: HasMetadata): Boolean {

@@ -10,12 +10,14 @@
  ******************************************************************************/
 package com.redhat.devtools.intellij.kubernetes.model.resource
 
+import io.fabric8.kubernetes.api.model.Container
 import io.fabric8.kubernetes.api.model.HasMetadata
+import io.fabric8.kubernetes.api.model.Pod
 import io.fabric8.kubernetes.client.dsl.LogWatch
 import java.io.OutputStream
 
 interface ILogWatcher<T: HasMetadata>: IResourceOperator<T> {
 
-    fun watchLog(resource: T, out: OutputStream): LogWatch?
+    fun watchLog(container: Container, pod: Pod, out: OutputStream): LogWatch?
 
 }

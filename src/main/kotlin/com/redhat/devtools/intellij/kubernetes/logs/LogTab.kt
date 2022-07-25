@@ -19,7 +19,8 @@ import com.intellij.terminal.TerminalExecutionConsole
 import com.redhat.devtools.intellij.common.utils.UIHelper.executeInUI
 import com.redhat.devtools.intellij.kubernetes.model.IResourceModel
 import com.redhat.devtools.intellij.kubernetes.model.util.toMessage
-import io.fabric8.kubernetes.api.model.HasMetadata
+import io.fabric8.kubernetes.api.model.Container
+import io.fabric8.kubernetes.api.model.Pod
 import io.fabric8.kubernetes.client.dsl.LogWatch
 import java.awt.BorderLayout
 import java.io.OutputStream
@@ -29,7 +30,7 @@ import javax.swing.JLabel
 import javax.swing.JPanel
 import org.jetbrains.concurrency.runAsync
 
-open class LogTab<T: HasMetadata>(private val resource: T, private val model: IResourceModel, private val project: Project): Disposable {
+open class LogTab(private val container: Container, private val pod: Pod, private val model: IResourceModel, private val project: Project): Disposable {
 
     private var terminalPanel: JPanel? = null
     private var terminal: TerminalExecutionConsole? = null
@@ -44,11 +45,11 @@ open class LogTab<T: HasMetadata>(private val resource: T, private val model: IR
         runAsync {
             try {
                 watch.set(
-                    model.watchLog(resource, TerminalOutputStream(terminal))
+                    model.watchLog(container, pod, TerminalOutputStream(terminal))
                 )
             } catch (e: Exception) {
-                logger<LogTab<*>>().warn("Could not read logs for ${resource.kind} ${resource.metadata.name}", e.cause)
-                showInTerminal(createMessageComponent("Could not read logs for ${resource.kind} ${resource.metadata.name}: ${toMessage(e.cause)}."))
+                logger<LogTab>().warn("Could not read logs for container ${container.name} of pod ${pod.metadata.name}", e.cause)
+                showInTerminal(createMessageComponent("Could not read logs for container ${container.name} of pod ${pod.metadata.name}: ${toMessage(e.cause)}."))
             }
         }
     }
@@ -126,7 +127,7 @@ open class LogTab<T: HasMetadata>(private val resource: T, private val model: IR
     }
 
     fun getDisplayName(): String {
-        return "${resource.kind} '${resource.metadata.name}'"
+        return "${pod.kind} '${pod.metadata.name}'"
     }
 
     override fun dispose() {

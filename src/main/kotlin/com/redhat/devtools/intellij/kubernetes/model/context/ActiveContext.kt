@@ -38,9 +38,11 @@ import com.redhat.devtools.intellij.kubernetes.model.util.ResourceException
 import com.redhat.devtools.intellij.kubernetes.model.util.isSameResource
 import com.redhat.devtools.intellij.kubernetes.model.util.setWillBeDeleted
 import com.redhat.devtools.intellij.kubernetes.model.util.toMessage
+import io.fabric8.kubernetes.api.model.Container
 import io.fabric8.kubernetes.api.model.GenericKubernetesResource
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.NamedContext
+import io.fabric8.kubernetes.api.model.Pod
 import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinition
 import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinitionSpec
 import io.fabric8.kubernetes.client.Config
@@ -490,11 +492,11 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
         }
     }
 
-    override fun <T: HasMetadata> watchLog(resource: T, out: OutputStream): LogWatch? {
+    override fun watchLog(container: Container, pod: Pod, out: OutputStream): LogWatch? {
         try {
-            return getLogWatchOperator<T>(resource)?.watchLog(resource, out)
+            return getLogWatchOperator<Pod>(pod)?.watchLog(container, pod, out)
         } catch(e: KubernetesClientException) {
-            throw ResourceException("Could not watch log of ${toMessage(resource, -1)}", e)
+            throw ResourceException("Could not watch log of container ${container.name} of pod ${pod.metadata.name}", e)
         }
     }
 

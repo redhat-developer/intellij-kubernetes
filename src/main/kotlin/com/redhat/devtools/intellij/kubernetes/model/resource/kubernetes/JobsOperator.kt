@@ -11,18 +11,15 @@
 package com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes
 
 import com.redhat.devtools.intellij.kubernetes.model.Clients
-import com.redhat.devtools.intellij.kubernetes.model.resource.ILogWatcher
 import com.redhat.devtools.intellij.kubernetes.model.resource.NamespacedOperation
 import com.redhat.devtools.intellij.kubernetes.model.resource.NamespacedResourceOperator
 import com.redhat.devtools.intellij.kubernetes.model.resource.ResourceKind
 import io.fabric8.kubernetes.api.model.batch.v1.Job
 import io.fabric8.kubernetes.client.BatchAPIGroupClient
 import io.fabric8.kubernetes.client.KubernetesClient
-import io.fabric8.kubernetes.client.dsl.LogWatch
-import java.io.OutputStream
 
 class JobsOperator(clients: Clients<out KubernetesClient>)
-    : NamespacedResourceOperator<Job, BatchAPIGroupClient>(clients.getBatch()), ILogWatcher<Job> {
+    : NamespacedResourceOperator<Job, BatchAPIGroupClient>(clients.getBatch()) { //, ILogWatcher<Job> {
 
     companion object {
         val KIND = ResourceKind.create(Job::class.java)
@@ -34,7 +31,9 @@ class JobsOperator(clients: Clients<out KubernetesClient>)
         return client.v1().jobs()
     }
 
+/*
     override fun watchLog(resource: Job, out: OutputStream): LogWatch? {
         return watchLogWhenReady(resource, out)
     }
+*/
 }

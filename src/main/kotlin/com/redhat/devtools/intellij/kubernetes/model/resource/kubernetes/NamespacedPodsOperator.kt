@@ -11,17 +11,14 @@
 package com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes
 
 import com.redhat.devtools.intellij.kubernetes.model.Clients
-import com.redhat.devtools.intellij.kubernetes.model.resource.ILogWatcher
 import com.redhat.devtools.intellij.kubernetes.model.resource.NamespacedOperation
 import com.redhat.devtools.intellij.kubernetes.model.resource.NamespacedResourceOperator
 import com.redhat.devtools.intellij.kubernetes.model.resource.ResourceKind
 import io.fabric8.kubernetes.api.model.Pod
 import io.fabric8.kubernetes.client.KubernetesClient
-import io.fabric8.kubernetes.client.dsl.LogWatch
-import java.io.OutputStream
 
 open class NamespacedPodsOperator(clients: Clients<out KubernetesClient>)
-    : NamespacedResourceOperator<Pod, KubernetesClient>(clients.get()), ILogWatcher<Pod> {
+    : NamespacedResourceOperator<Pod, KubernetesClient>(clients.get()) { //, ILogWatcher<Pod> {
 
     companion object {
         val KIND = ResourceKind.create(Pod::class.java)
@@ -33,8 +30,9 @@ open class NamespacedPodsOperator(clients: Clients<out KubernetesClient>)
         return client.pods()
     }
 
+    /*
     override fun watchLog(resource: Pod, out: OutputStream): LogWatch? {
         return watchLogWhenReady(resource, out)
     }
-
+*/
 }

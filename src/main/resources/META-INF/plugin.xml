@@ -167,10 +167,15 @@
                     id="com.redhat.devtools.intellij.kubernetes.actions.RefreshAction"
                     text="Refresh"
                     icon="AllIcons.Actions.Refresh"/>
-            <action class="com.redhat.devtools.intellij.kubernetes.actions.FollowLogsAction"
-                    id="com.redhat.devtools.intellij.kubernetes.actions.ShowLogsAction"
-                    text="Follow Log"
-                    icon="/icons/logs.svg"/>
+            <group class="com.redhat.devtools.intellij.kubernetes.actions.FollowLogsActionsGroup"
+                   id="Follow Logs"
+                   text="Follow Logs"
+                   popup="true"
+                   icon="/icons/logs.svg">
+                <group class="com.redhat.devtools.intellij.kubernetes.actions.FollowContainerLogActionsGroup"
+                       popup="true"
+                       icon="/icons/logs.svg" />
+            </group>
         </group>
 
         <group id="Kubernetes.Editor.Toolbar" class="com.intellij.openapi.actionSystem.DefaultActionGroup">
