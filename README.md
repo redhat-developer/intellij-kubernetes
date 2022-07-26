@@ -1,9 +1,14 @@
+[![JetBrains Marketplace](https://img.shields.io/jetbrains/plugin/v/15921-kubernetes-by-red-hat?label=Jet%20Brains%20Marketplace&style=for-the-badge)](https://plugins.jetbrains.com/plugin/15921-kubernetes-by-red-hat)
+[![Downloads](https://img.shields.io/jetbrains/plugin/d/15921-kubernetes-by-red-hat?logo=jetbrains&style=for-the-badge)](https://plugins.jetbrains.com/plugin/15921-kubernetes-by-red-hat)
+[![Build Status](https://img.shields.io/github/workflow/status/redhat-developer/intellij-kubernetes/Java%20CI%20with%20Gradle?logo=github&style=for-the-badge)](https://github.com/redhat-developer/intellij-kubernetes/actions/workflows/ci.yml?query=workflow%3ACI)
+[![License](https://img.shields.io/github/license/redhat-developer/intellij-kubernetes?style=for-the-badge)](https://github.com/redhat-developer/intellij-kubernetes/blob/main/LICENSE)
+
 # Kubernetes
 
 ## Overview
 
 JetBrains IDEA plugin that allows to browse, create, modify and delete resources on Kubernetes or OpenShift clusters.
-The plugin provides functionalities and user experiences that are very close to the Kubernetes extension for vscode (https://marketplace.visualstudio.com/items?itemName=ms-kubernetes-tools.vscode-kubernetes-tools).
+The plugin provides functionalities and user experiences that are very close to the [Kubernetes extension for Visual Studio Code](https://marketplace.visualstudio.com/items?itemName=ms-kubernetes-tools.vscode-kubernetes-tools).
 
 It is available for install from the [JetBrains Marketplace](https://plugins.jetbrains.com/plugin/15921-kubernetes-by-red-hat).
 
@@ -43,7 +48,7 @@ Resources are grouped in different categories such as Namespaces, Nodes, Workloa
 #### Pods
 The pod in the container is identified with color based on the state of the pod.
 - A green dot indicates that the pod is currently running.
-- A red dot indicates that the pod is in Pending, Succeeded (Terminated), Failed or in Unknown State.  
+- A red dot indicates that the pod is in Pending, Succeeded (Terminated), Failed or in Unknown State.
 
 ![img.png](images/pod.png)
 
@@ -56,9 +61,9 @@ This opens the resource YAML file in the editor and allows the user to make the 
 Pushing the changes made to the file to the cluster automatically updates the edited Kubernetes resource.
 Users can also create a new Kubernetes resource from local YAML/JSON file and push them to the cluster.
 
-> **Tip**: You're advised to edit copies of your yaml/json files. 
-> This is because the editor keeps your content in sync with the resource that exists on the cluster. 
-> Changes that happen on the cluster are included when pushing or pulling the editor.  
+> **Tip**: You're advised to edit copies of your yaml/json files.
+> This is because the editor keeps your content in sync with the resource that exists on the cluster.
+> Changes that happen on the cluster are included when pushing or pulling the editor.
 
 ![editor](images/editor.png)
 
@@ -91,7 +96,7 @@ If you left your editor unchanged since the last push, the new version is pulled
 
 ![editor pulled](images/editor-pulled.png)
 
-Competing changes in your editor and on the cluster get notified with 2 options: 
+Competing changes in your editor and on the cluster get notified with 2 options:
 You can either overwrite the cluster by pushing the editor to the cluster.
 Alternatively you can replace your local version with the one on the cluster and pull it.
 
@@ -100,7 +105,7 @@ Alternatively you can replace your local version with the one on the cluster and
 #### Diff
 
 The editor allows you to compare the local content with the resource content on the cluster.
-The toolbar holds an action that opens up a fully editable diff that highlights the differences.   
+The toolbar holds an action that opens up a fully editable diff that highlights the differences.
 
 ![editor toolbar diff](images/editor-toolbar-diff.png)
 
@@ -114,7 +119,7 @@ You may delete any resource that is listed in the resource tree by choosing "Del
 
 #### Follow logs
 
-IntelliJ-Kubernetes extension allows you to follow logs of the cluster resources such as Pods, Jobs and Builds. 
+IntelliJ-Kubernetes extension allows you to follow logs of the cluster resources such as Pods, Jobs and Builds.
 There is a dedicated tab to display the log messages for the selected Kubernetes resource.
 
 ![logs](images/logs.png)
@@ -136,6 +141,7 @@ Feedback & Questions
 ====================
 If you discover an issue please file a bug and we will fix it as soon as possible.
 * File a bug in [GitHub Issues](https://github.com/redhat-developer/intellij-kubernetes/issues).
+* Open a [Discussion on GitHub](https://github.com/redhat-developer/intellij-kubernetes/discussions).
 
 UI Testing
 ==========
