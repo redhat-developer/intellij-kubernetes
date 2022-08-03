@@ -21,7 +21,6 @@ import org.jboss.tools.intellij.kubernetes.fixtures.mainIdeWindow.IdeStatusBarFi
 import org.jboss.tools.intellij.kubernetes.fixtures.menus.ActionToolbarMenu;
 import org.jboss.tools.intellij.kubernetes.fixtures.menus.RightClickMenu;
 
-import java.awt.*;
 import java.awt.datatransfer.Clipboard;
 import java.awt.datatransfer.StringSelection;
 import java.awt.event.KeyEvent;
@@ -105,14 +104,6 @@ public class CreateAnotherTypeResourceByEditTest extends AbstractKubernetesTest{
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
-    }
-
-    private static Clipboard getSystemClipboard()
-    {
-        Toolkit defaultToolkit = Toolkit.getDefaultToolkit();
-        Clipboard systemClipboard = defaultToolkit.getSystemClipboard();
-
-        return systemClipboard;
     }
 
     private static void checkErrors(RemoteRobot robot){

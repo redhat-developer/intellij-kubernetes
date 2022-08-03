@@ -20,9 +20,6 @@ import org.jboss.tools.intellij.kubernetes.fixtures.mainIdeWindow.EditorsSplitte
 import org.jboss.tools.intellij.kubernetes.fixtures.menus.ActionToolbarMenu;
 import org.jboss.tools.intellij.kubernetes.fixtures.menus.RightClickMenu;
 
-import java.awt.*;
-import java.awt.datatransfer.Clipboard;
-import java.awt.datatransfer.StringSelection;
 import java.awt.event.KeyEvent;
 import java.time.Duration;
 import java.util.List;
@@ -46,14 +43,11 @@ public class CreateResourceByEditTest extends AbstractKubernetesTest{
         Keyboard myKeyboard = new Keyboard(robot);
         String newEditorTitle = newResourceName;
 
-        Clipboard clipboard = getSystemClipboard();
-        String text = "\"" + newResourceName + "\"";
-        clipboard.setContents(new StringSelection(text), null);
+        String text = "\"" + newResourceName;
 
         RemoteText namePlace = findResourceNamePosition(robot, editorSplitter, myKeyboard);
-        namePlace.click(MouseButton.RIGHT_BUTTON);
-        RightClickMenu rightClickMenu = robot.find(RightClickMenu.class);
-        rightClickMenu.select("Paste");
+        namePlace.doubleClick();
+        myKeyboard.enterText(text); // replace with new name
 
         ActionToolbarMenu toolbarMenu = robot.find(ActionToolbarMenu.class);
         toolbarMenu.PushToCluster();
@@ -93,7 +87,6 @@ public class CreateResourceByEditTest extends AbstractKubernetesTest{
         }
 
         RemoteText namePlace = remoteText.get(nameId+3); // +1 because we need the next one, +1 because between every 2 real elements is space, +1 because here is the ":"
-        namePlace.doubleClick(); // set the cursor
 
         return namePlace;
     }
@@ -105,13 +98,5 @@ public class CreateResourceByEditTest extends AbstractKubernetesTest{
         } catch (WaitForConditionTimeoutException e) {
             return false;
         }
-    }
-
-    private static Clipboard getSystemClipboard()
-    {
-        Toolkit defaultToolkit = Toolkit.getDefaultToolkit();
-        Clipboard systemClipboard = defaultToolkit.getSystemClipboard();
-
-        return systemClipboard;
     }
 }

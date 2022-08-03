@@ -19,7 +19,7 @@ import com.intellij.remoterobot.fixtures.FixtureName;
 import org.jetbrains.annotations.NotNull;
 
 import static com.intellij.remoterobot.search.locators.Locators.byXpath;
-import static com.redhat.devtools.intellij.commonUiTestLibrary.utils.labels.ButtonLabels.clearAllLabel;
+import static com.redhat.devtools.intellij.commonuitest.utils.constants.ButtonLabels.CLEAR_ALL_LABEL;
 
 /**
  * IDE Fatal Errors dialog fixture
@@ -37,7 +37,7 @@ public class IdeFatalErrorsDialogFixture extends CommonContainerFixture {
      * Click on the 'Clear all' button
      */
     public void clearAll() {
-        button(clearAllLabel).click();
+        button(CLEAR_ALL_LABEL).click();
     }
 
     public ComponentFixture exceptionDescriptionJTextArea() {

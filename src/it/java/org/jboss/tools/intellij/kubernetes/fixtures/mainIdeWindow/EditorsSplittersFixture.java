@@ -19,6 +19,7 @@ import com.intellij.remoterobot.fixtures.FixtureName;
 import org.jetbrains.annotations.NotNull;
 
 import java.time.Duration;
+import java.util.List;
 
 import static com.intellij.remoterobot.search.locators.Locators.byXpath;
 

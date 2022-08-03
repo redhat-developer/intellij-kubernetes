@@ -14,14 +14,18 @@ import com.intellij.remoterobot.RemoteRobot;
 import com.intellij.remoterobot.fixtures.ComponentFixture;
 import com.intellij.remoterobot.fixtures.dataExtractor.RemoteText;
 import com.intellij.remoterobot.utils.WaitForConditionTimeoutException;
-import com.redhat.devtools.intellij.commonUiTestLibrary.UITestRunner;
-import com.redhat.devtools.intellij.commonUiTestLibrary.fixtures.dialogs.FlatWelcomeFrame;
-import com.redhat.devtools.intellij.commonUiTestLibrary.fixtures.dialogs.information.TipDialog;
-import com.redhat.devtools.intellij.commonUiTestLibrary.fixtures.dialogs.projectManipulation.NewProjectDialog;
-import com.redhat.devtools.intellij.commonUiTestLibrary.fixtures.mainIdeWindow.ideStatusBar.IdeStatusBar;
-import com.redhat.devtools.intellij.commonUiTestLibrary.fixtures.mainIdeWindow.toolWindowsPane.ToolWindowsPane;
+import com.redhat.devtools.intellij.commonuitest.UITestRunner;
+import com.redhat.devtools.intellij.commonuitest.fixtures.dialogs.FlatWelcomeFrame;
+import com.redhat.devtools.intellij.commonuitest.fixtures.dialogs.information.TipDialog;
+import com.redhat.devtools.intellij.commonuitest.utils.runner.IntelliJVersion;
+import com.redhat.devtools.intellij.commonuitest.fixtures.dialogs.project.NewProjectDialogWizard;
+import com.redhat.devtools.intellij.commonuitest.fixtures.mainidewindow.idestatusbar.IdeStatusBar;
+import com.redhat.devtools.intellij.commonuitest.fixtures.mainidewindow.toolwindowspane.ToolWindowPane;
 import org.jboss.tools.intellij.kubernetes.fixtures.dialogs.ProjectStructureDialog;
 import org.jboss.tools.intellij.kubernetes.fixtures.mainIdeWindow.KubernetesToolsFixture;
+import static com.intellij.remoterobot.search.locators.Locators.byXpath;
+
+import org.jboss.tools.intellij.kubernetes.fixtures.mainIdeWindow.SingleHeighLabelFixture;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -50,9 +54,14 @@ public class BasicTests {
 
     @BeforeAll
     public static void connect() {
-        robot = UITestRunner.runIde(UITestRunner.IdeaVersion.V_2020_2, 8580);
+        robot = UITestRunner.runIde(IntelliJVersion.COMMUNITY_V_2022_1, 8580);
         createEmptyProject();
         openKubernetesTab();
+        try {
+            Thread.sleep(5000); // need around 5 seconds to update kubernetes view tree
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
         KubernetesToolsFixture kubernetesToolsFixture = robot.find(KubernetesToolsFixture.class);
         kubernetesViewTree = kubernetesToolsFixture.getKubernetesViewTree();
         waitFor(Duration.ofSeconds(15), Duration.ofSeconds(1), "Kubernetes Tree View is not available.", BasicTests::isKubernetesViewTreeAvailable);
@@ -73,12 +82,12 @@ public class BasicTests {
         step("open Resource Editor", () -> OpenResourceEditorTest.checkResourceEditor(robot, kubernetesViewTree));
     }
 
-    @Test
+     @Test
     public void editResource() {
         step("edit Resource", () -> EditResourceTest.editResource(robot, kubernetesViewTree));
     }
 
-    @Test
+     @Test
     public void createResourceByEdit() {
         step("create Resource", () -> CreateResourceByEditTest.createResourceByEdit(robot, kubernetesViewTree));
 
@@ -94,37 +103,69 @@ public class BasicTests {
     private static void createEmptyProject(){
         final FlatWelcomeFrame flatWelcomeFrame = robot.find(FlatWelcomeFrame.class);
         flatWelcomeFrame.createNewProject();
-        final NewProjectDialog newProjectDialogFixture = flatWelcomeFrame.find(NewProjectDialog.class, Duration.ofSeconds(20));
-        newProjectDialogFixture.selectNewProjectType("Empty Project");
-        newProjectDialogFixture.next();
-        newProjectDialogFixture.finish();
+        final NewProjectDialogWizard newProjectDialogWizard = flatWelcomeFrame.find(NewProjectDialogWizard.class, Duration.ofSeconds(20));
+        selectNewProjectType("Empty Project");
+        newProjectDialogWizard.finish();
 
-        final IdeStatusBar ideStatusBar = robot.find(IdeStatusBar.class);
+        final IdeStatusBar ideStatusBar = robot.find(IdeStatusBar.class, Duration.ofSeconds(10));
         ideStatusBar.waitUntilProjectImportIsComplete();
         ProjectStructureDialog.cancelProjectStructureDialogIfItAppears(robot);
-        TipDialog.closeTipDialogIfItAppears(robot);
+        closeTipDialogIfItAppears();
+        closeGotItPopup();
+        closeOpenedEditors();
         ideStatusBar.waitUntilAllBgTasksFinish();
     }
 
     private static void openKubernetesTab(){
-        final ToolWindowsPane toolWindowsPane = robot.find(ToolWindowsPane.class);
-        waitFor(Duration.ofSeconds(10), Duration.ofSeconds(1), "The 'Kubernetes' stripe button is not available.", () -> isStripeButtonAvailable(toolWindowsPane, "Kubernetes"));
-        toolWindowsPane.stripeButton("Kubernetes").click();
+        final ToolWindowPane toolWindowPane = robot.find(ToolWindowPane.class);
+//        waitFor(Duration.ofSeconds(10), Duration.ofSeconds(1), "The 'Kubernetes' stripe button is not available.", () -> ToolWindowPane.isStripeButtonAvailable("Kubernetes", false));
+        toolWindowPane.stripeButton("Kubernetes", false).click();
+//        final ComponentFixture toolWinPane = robot.find(ComponentFixture.class, byXpath("//div[@class='ToolWindowPane']"), Duration.ofSeconds(10));
+//        robot.find(ComponentFixture.class, byXpath("//div[@accessiblename='Kubernetes' and @class='StripeButton' and @text='Kubernetes']"), Duration.ofSeconds(10)).click();
     }
 
-    private static boolean isStripeButtonAvailable(ToolWindowsPane toolWindowsPane, String label) { // loading...
-        try {
-            toolWindowsPane.stripeButton(label);
-        } catch (WaitForConditionTimeoutException e) {
-            return false;
-        }
-        return true;
-    }
+//    private static boolean isStripeButtonAvailable(ToolWindowsPane toolWindowsPane, String label) { // loading...
+//        try {
+//            toolWindowsPane.stripeButton(label ,false);
+//        } catch (WaitForConditionTimeoutException e) {
+//            return false;
+//        }
+//        return true;
+//    }
 
     private static boolean isKubernetesViewTreeAvailable(){
         List<RemoteText> allText = kubernetesViewTree.findAllText();
         String firstText = allText.get(0).getText();
         return !"Nothing to show".equals(firstText);
+    }
+
+    public static void closeTipDialogIfItAppears() {
+        try {
+            TipDialog tipDialog = robot.find(TipDialog.class, Duration.ofSeconds(10));
+            tipDialog.close();
+        } catch (WaitForConditionTimeoutException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public static void closeGotItPopup() {
+        try {
+            robot.find(ComponentFixture.class, byXpath("JBList", "//div[@accessiblename='Got It' and @class='JButton' and @text='Got It']"), Duration.ofSeconds(10)).click();
+        } catch (WaitForConditionTimeoutException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public static void closeOpenedEditors() {
+        List<SingleHeighLabelFixture> singleHeighLabelsList = robot.findAll(SingleHeighLabelFixture.class, byXpath("//div[@class='SingleHeightLabel']"));
+        for (SingleHeighLabelFixture singleHeighLabel : singleHeighLabelsList) {
+            singleHeighLabel.find(ComponentFixture.class, byXpath("//div[@accessiblename='Close. Alt-Click to Close Others (Ctrl+F4)' and @class='InplaceButton']")).click();
+        }
+    }
+
+    public static void selectNewProjectType(String projectType) {
+        ComponentFixture newProjectTypeList = robot.findAll(ComponentFixture.class, byXpath("JBList", "//div[@class='JBList']")).get(0);
+        newProjectTypeList.findText(projectType).click();
     }
 
 }

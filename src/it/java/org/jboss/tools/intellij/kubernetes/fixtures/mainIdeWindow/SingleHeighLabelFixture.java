@@ -32,6 +32,6 @@ public class SingleHeighLabelFixture extends CommonContainerFixture {
     }
 
     public void close(){
-        find(ComponentFixture.class, byXpath("//div[@accessiblename='Close. Alt-Click to Close Others' and @class='InplaceButton']")).click();
+        find(ComponentFixture.class, byXpath("//div[@accessiblename='Close. Alt-Click to Close Others (Ctrl+F4)' and @class='InplaceButton']")).click();
     }
 }
