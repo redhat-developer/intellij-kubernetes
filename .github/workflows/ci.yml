@@ -40,7 +40,7 @@ jobs:
         cp .github/workflows/accepted ~/.local/share/JetBrains/consentOptions
         export DISPLAY=:99.0
         Xvfb -ac :99 -screen 0 1920x1080x16 &
-        ./gradlew integrationTest
+        ./gradlew integrationTest --info
     - uses: actions/upload-artifact@v1
       with:
         name: ${{ runner.os }}-integration-test-reports

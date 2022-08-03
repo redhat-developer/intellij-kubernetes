@@ -43,11 +43,14 @@ public class EditResourceTest extends AbstractKubernetesTest{
             labelsId++;
         }
         RemoteText placeForNewLabel = remote_text.get(labelsId+2); // +1 because we need the next one, +1 because between every 2 real elements is space
-        placeForNewLabel.click(); // set the cursor
+        placeForNewLabel.click();
+
+        String text = "    some_labels: \"some_labels";
         Keyboard my_keyboard = new Keyboard(robot);
-        my_keyboard.enterText("    some_label: \"some_label\"");
-        my_keyboard.enter();
-        my_keyboard.backspace();
+
+        my_keyboard.enter(); // create empty line
+        placeForNewLabel.click(); // focus on the empty line
+        my_keyboard.enterText(text); // enter text
 
         ActionToolbarMenu toolbarMenu = robot.find(ActionToolbarMenu.class);
         toolbarMenu.PushToCluster();
@@ -62,7 +65,7 @@ public class EditResourceTest extends AbstractKubernetesTest{
         List<RemoteText> remoteTextNew = textFixtureNew.findAllText();
         boolean labelExist = false;
         for (RemoteText actual_remote_text : remoteTextNew){
-            if (actual_remote_text.getText().contains("some_label")){
+            if (actual_remote_text.getText().contains("some_labels")){
                 labelExist = true;
                 break;
             }

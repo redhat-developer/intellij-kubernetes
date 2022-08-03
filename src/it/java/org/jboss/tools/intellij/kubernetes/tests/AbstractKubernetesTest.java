@@ -14,14 +14,15 @@ import com.intellij.remoterobot.RemoteRobot;
 import com.intellij.remoterobot.fixtures.ComponentFixture;
 import com.intellij.remoterobot.fixtures.dataExtractor.RemoteText;
 import com.intellij.remoterobot.utils.WaitForConditionTimeoutException;
-import com.redhat.devtools.intellij.commonUiTestLibrary.fixtures.dialogs.errors.IdeFatalErrorsDialog;
+import com.redhat.devtools.intellij.commonuitest.fixtures.dialogs.errors.IdeFatalErrorsDialog;
 import org.assertj.swing.core.MouseButton;
 import org.jboss.tools.intellij.kubernetes.fixtures.mainIdeWindow.IdeStatusBarFixture;
 
+import java.awt.*;
+import java.awt.datatransfer.Clipboard;
 import java.time.Duration;
 import java.util.List;
 
-import static com.intellij.remoterobot.search.locators.Locators.byXpath;
 import static com.intellij.remoterobot.utils.RepeatUtilsKt.waitFor;
 
 /**
@@ -33,6 +34,11 @@ public abstract class AbstractKubernetesTest {
         openClusterContent(kubernetesViewTree);
         for (String resourceForOpen : path){
             kubernetesViewTree.findText(resourceForOpen).doubleClick(MouseButton.LEFT_BUTTON); // open Nodes content
+            try {
+                Thread.sleep(3000);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
             waitFor(Duration.ofSeconds(15), Duration.ofSeconds(1), "Resources is not available.", () -> isResourcesLoaded(kubernetesViewTree));
         }
     }
@@ -139,5 +145,13 @@ public abstract class AbstractKubernetesTest {
         IdeFatalErrorsDialog ideErrorsDialog = robot.find(IdeFatalErrorsDialog.class);
         ideErrorsDialog.clearAll();
         return true;
+    }
+
+    public static Clipboard getSystemClipboard()
+    {
+        Toolkit defaultToolkit = Toolkit.getDefaultToolkit();
+        Clipboard systemClipboard = defaultToolkit.getSystemClipboard();
+
+        return systemClipboard;
     }
 }

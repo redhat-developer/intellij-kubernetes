@@ -23,7 +23,7 @@ import static com.intellij.remoterobot.search.locators.Locators.byXpath;
 /**
  * @author olkornii@redhat.com
  */
-@DefaultXpath(by = "InternalDecorator type", xpath = "//div[@accessiblename='Kubernetes Tool Window' and @class='InternalDecorator']")
+@DefaultXpath(by = "InternalDecorator type", xpath = "//div[@accessiblename='Kubernetes Tool Window' and @class='InternalDecoratorImpl']")
 @FixtureName(name = "Kubernetes Tool Window")
 public class KubernetesToolsFixture extends CommonContainerFixture {
     public KubernetesToolsFixture(@NotNull RemoteRobot remoteRobot, @NotNull RemoteComponent remoteComponent) {
