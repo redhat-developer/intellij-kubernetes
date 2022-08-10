@@ -35,7 +35,7 @@ public abstract class AbstractKubernetesTest {
         for (String resourceForOpen : path){
             kubernetesViewTree.findText(resourceForOpen).doubleClick(MouseButton.LEFT_BUTTON); // open Nodes content
             try {
-                Thread.sleep(3000);
+                Thread.sleep(3000); // sleep for few seconds, cluster need some time to reload nodes
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
