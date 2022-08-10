@@ -57,12 +57,8 @@ public class BasicTests {
         robot = UITestRunner.runIde(IntelliJVersion.COMMUNITY_V_2022_1, 8580);
         createEmptyProject();
         openKubernetesTab();
-        try {
-            Thread.sleep(5000); // need around 5 seconds to update kubernetes view tree
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-        KubernetesToolsFixture kubernetesToolsFixture = robot.find(KubernetesToolsFixture.class);
+
+        KubernetesToolsFixture kubernetesToolsFixture = robot.find(KubernetesToolsFixture.class, Duration.ofSeconds(5));
         kubernetesViewTree = kubernetesToolsFixture.getKubernetesViewTree();
         waitFor(Duration.ofSeconds(15), Duration.ofSeconds(1), "Kubernetes Tree View is not available.", BasicTests::isKubernetesViewTreeAvailable);
     }
@@ -118,20 +114,8 @@ public class BasicTests {
 
     private static void openKubernetesTab(){
         final ToolWindowPane toolWindowPane = robot.find(ToolWindowPane.class);
-//        waitFor(Duration.ofSeconds(10), Duration.ofSeconds(1), "The 'Kubernetes' stripe button is not available.", () -> ToolWindowPane.isStripeButtonAvailable("Kubernetes", false));
         toolWindowPane.stripeButton("Kubernetes", false).click();
-//        final ComponentFixture toolWinPane = robot.find(ComponentFixture.class, byXpath("//div[@class='ToolWindowPane']"), Duration.ofSeconds(10));
-//        robot.find(ComponentFixture.class, byXpath("//div[@accessiblename='Kubernetes' and @class='StripeButton' and @text='Kubernetes']"), Duration.ofSeconds(10)).click();
     }
-
-//    private static boolean isStripeButtonAvailable(ToolWindowsPane toolWindowsPane, String label) { // loading...
-//        try {
-//            toolWindowsPane.stripeButton(label ,false);
-//        } catch (WaitForConditionTimeoutException e) {
-//            return false;
-//        }
-//        return true;
-//    }
 
     private static boolean isKubernetesViewTreeAvailable(){
         List<RemoteText> allText = kubernetesViewTree.findAllText();
