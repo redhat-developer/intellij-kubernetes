@@ -78,12 +78,12 @@ public class BasicTests {
         step("open Resource Editor", () -> OpenResourceEditorTest.checkResourceEditor(robot, kubernetesViewTree));
     }
 
-     @Test
+    @Test
     public void editResource() {
         step("edit Resource", () -> EditResourceTest.editResource(robot, kubernetesViewTree));
     }
 
-     @Test
+    @Test
     public void createResourceByEdit() {
         step("create Resource", () -> CreateResourceByEditTest.createResourceByEdit(robot, kubernetesViewTree));
 
