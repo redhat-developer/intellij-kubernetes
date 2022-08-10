@@ -58,12 +58,8 @@ Pods also unveil their IP address and the number of running containers out of th
 You can edit Kubernetes resources that is shown in the resource tree and apply them to the cluster.
 The action can be performed either by `Double Click on Resource` or selecting `Edit` action from the context menu.
 This opens the resource YAML file in the editor and allows the user to make the necessary changes.
-Pushing the changes made to the file to the cluster automatically updates the edited Kubernetes resource.
-Users can also create a new Kubernetes resource from local YAML/JSON file and push them to the cluster.
-
-> **Tip**: You're advised to edit copies of your yaml/json files.
-> This is because the editor keeps your content in sync with the resource that exists on the cluster.
-> Changes that happen on the cluster are included when pushing or pulling the editor.
+Pushing the editor to the cluster updates the resource on the cluster or creates a new resource if it didn't exist yet.
+Users can also create a new Kubernetes resource from local YAML/JSON file.
 
 ![editor](images/editor.png)
 
@@ -92,7 +88,6 @@ The new resource will then appear in the resource tree that's displayed in our t
 
 The editor also notifies you if your resource has changed on the cluster.
 The notification informs you of a newer version that is available on the cluster and allows you to `Pull` it into your editor.
-If you left your editor unchanged since the last push, the new version is pulled unasked and a notification informs you of it.
 
 ![editor pulled](images/editor-pulled.png)
 
