@@ -41,6 +41,8 @@ import org.jboss.tools.intellij.kubernetes.tests.CreateAnotherTypeResourceByEdit
 
 import java.time.Duration;
 import java.util.List;
+import java.util.logging.Logger;
+import java.util.logging.Level;
 
 /**
  * JUnit UI tests for intellij-kubernetes
@@ -51,6 +53,7 @@ public class BasicTests {
 
     private static RemoteRobot robot;
     private static ComponentFixture kubernetesViewTree;
+    private static final Logger LOGGER = Logger.getLogger(BasicTests.class.getName());
 
     @BeforeAll
     public static void connect() {
@@ -90,7 +93,7 @@ public class BasicTests {
         step("delete Resource", () -> CreateResourceByEditTest.deleteResource(robot, kubernetesViewTree));
     }
 
-//    @Test
+    //    @Test
     public void createAnotherResourceTypeByEdit() {
         step("create another type of Resource", () -> CreateAnotherTypeResourceByEditTest.createAnotherTypeResourceByEdit(robot, kubernetesViewTree));
     }
@@ -113,7 +116,7 @@ public class BasicTests {
     }
 
     private static void openKubernetesTab(){
-        final ToolWindowPane toolWindowPane = robot.find(ToolWindowPane.class);
+        final ToolWindowPane toolWindowPane = robot.find(ToolWindowPane.class, Duration.ofSeconds(5));
         toolWindowPane.stripeButton("Kubernetes", false).click();
     }
 
@@ -142,6 +145,7 @@ public class BasicTests {
 
     public static void closeOpenedEditors() {
         List<SingleHeighLabelFixture> singleHeighLabelsList = robot.findAll(SingleHeighLabelFixture.class, byXpath("//div[@class='SingleHeightLabel']"));
+        LOGGER.log(Level.INFO, "Next opened editors will be closed: " + singleHeighLabelsList);
         for (SingleHeighLabelFixture singleHeighLabel : singleHeighLabelsList) {
             singleHeighLabel.find(ComponentFixture.class, byXpath("//div[@accessiblename='Close. Alt-Click to Close Others (Ctrl+F4)' and @class='InplaceButton']")).click();
         }

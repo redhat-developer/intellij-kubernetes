@@ -26,8 +26,6 @@ plugins {
     id "idea"
 }
 
-downloadRobotServerPlugin.version = remoteRobotVersion
-
 sourceSets {
     integrationTest {
         java.srcDir file('src/it/java')
@@ -221,6 +219,6 @@ repositories {
         url 'https://packages.jetbrains.team/maven/p/ij/intellij-dependencies'
     }
 }
-    
+
 group 'com.redhat.devtools.intellij'
 version projectVersion
