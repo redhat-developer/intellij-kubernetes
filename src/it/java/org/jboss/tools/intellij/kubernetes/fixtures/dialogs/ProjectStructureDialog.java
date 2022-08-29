@@ -26,7 +26,7 @@ import java.time.Duration;
  * @author olkornii@redhat.com
  */
 @DefaultXpath(by = "MyDialog type", xpath = "//div[@accessiblename='Project Structure' and @class='MyDialog']")
-@FixtureName(name = "Tip Of The Day Dialog")
+@FixtureName(name = "Project Structure Dialog")
 public class ProjectStructureDialog extends CommonContainerFixture {
     public ProjectStructureDialog(@NotNull RemoteRobot remoteRobot, @NotNull RemoteComponent remoteComponent) {
         super(remoteRobot, remoteComponent);
