@@ -13,7 +13,7 @@ package com.redhat.devtools.intellij.kubernetes.logs
 import com.intellij.execution.ui.ConsoleViewContentType
 import com.intellij.terminal.TerminalExecutionConsole
 import java.io.OutputStream
-import java.util.*
+import java.util.Queue
 import java.util.concurrent.LinkedBlockingQueue
 
 class TerminalOutputStream(private val terminal: TerminalExecutionConsole) : OutputStream() {
