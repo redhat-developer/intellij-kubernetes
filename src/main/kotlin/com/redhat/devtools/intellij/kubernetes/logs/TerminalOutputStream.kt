@@ -13,7 +13,7 @@ package com.redhat.devtools.intellij.kubernetes.logs
 import com.intellij.execution.ui.ConsoleViewContentType
 import com.intellij.terminal.TerminalExecutionConsole
 import java.io.OutputStream
-import java.util.Queue
+import java.util.*
 import java.util.concurrent.LinkedBlockingQueue
 
 class TerminalOutputStream(private val terminal: TerminalExecutionConsole) : OutputStream() {
@@ -42,8 +42,16 @@ class TerminalOutputStream(private val terminal: TerminalExecutionConsole) : Out
 
     private fun flushToTerminal(buffer: Queue<Int>) {
         val builder = buffer.stream()
-            .collect(::StringBuilder, StringBuilder::appendCodePoint, StringBuilder::append)
+            .collect(::StringBuilder, this::appendCodePoint, StringBuilder::append)
         buffer.clear()
         terminal.print(builder.toString(), ConsoleViewContentType.SYSTEM_OUTPUT)
+    }
+
+    private fun appendCodePoint(builder: java.lang.StringBuilder, codePoint: Int): java.lang.StringBuilder {
+        try {
+            builder.appendCodePoint(codePoint)
+        } catch (_: Throwable) {
+        }
+        return builder
     }
 }
