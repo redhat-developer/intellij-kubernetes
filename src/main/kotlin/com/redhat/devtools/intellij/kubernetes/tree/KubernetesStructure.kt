@@ -16,6 +16,7 @@ import com.intellij.ui.tree.LeafState
 import com.redhat.devtools.intellij.kubernetes.model.IResourceModel
 import com.redhat.devtools.intellij.kubernetes.model.resource.PodForDaemonSet
 import com.redhat.devtools.intellij.kubernetes.model.resource.PodForDeployment
+import com.redhat.devtools.intellij.kubernetes.model.resource.PodForJob
 import com.redhat.devtools.intellij.kubernetes.model.resource.PodForService
 import com.redhat.devtools.intellij.kubernetes.model.resource.PodForStatefulSet
 import com.redhat.devtools.intellij.kubernetes.model.resource.ResourceKind
@@ -72,6 +73,7 @@ import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinition
 import io.fabric8.kubernetes.api.model.apps.DaemonSet
 import io.fabric8.kubernetes.api.model.apps.Deployment
 import io.fabric8.kubernetes.api.model.apps.StatefulSet
+import io.fabric8.kubernetes.api.model.batch.v1.Job
 import io.fabric8.kubernetes.api.model.discovery.v1beta1.Endpoint
 import io.fabric8.kubernetes.api.model.storage.StorageClass
 
@@ -264,6 +266,17 @@ class KubernetesStructure(model: IResourceModel) : AbstractTreeStructureContribu
 								.inCurrentNamespace()
 								.list()
 								.sortedBy(resourceName)
+					}
+				},
+				element<Job> {
+					applicableIf { it is Job }
+					childrenKind { NamespacedPodsOperator.KIND }
+					children {
+						model.resources(NamespacedPodsOperator.KIND)
+							.inCurrentNamespace()
+							.filtered(PodForJob(it))
+							.list()
+							.sortedBy(resourceName)
 					}
 				},
 				element<Any> {
