@@ -25,7 +25,9 @@ class TerminalOutputStream(private val terminal: TerminalExecutionConsole) : Out
     private val buffer = LinkedBlockingQueue<Int>(BUFFER_SIZE)
 
     override fun write(char: Int) {
-        if ('\n' == char.toChar()
+        if (!Character.isValidCodePoint(char)) {
+            return
+        } else if ('\n' == char.toChar()
             && buffer.remainingCapacity() > 0
         ) {
             // newline
