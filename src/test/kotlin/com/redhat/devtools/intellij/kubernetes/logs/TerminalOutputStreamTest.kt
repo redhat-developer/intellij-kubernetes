@@ -66,6 +66,16 @@ class TerminalOutputStreamTest {
         verify(terminal, times(1)).print(eq(toPrint.substring(0, toPrint.length - 1)), any())
     }
 
+    @Test
+    fun `#write should skip invalid code point`() {
+        // given
+        val toPrint = "" + (Character.MAX_CODE_POINT + 1) + "\n"
+        // when
+        printToTerminal(toPrint)
+        // then print chars but invalid code point
+        verify(terminal, never()).print(eq("\n"), any())
+    }
+
     private fun printToTerminal(string: String) {
         string.forEach { out.write(it.toInt()) }
     }
