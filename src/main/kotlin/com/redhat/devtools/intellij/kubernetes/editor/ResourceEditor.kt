@@ -11,6 +11,7 @@
 package com.redhat.devtools.intellij.kubernetes.editor
 
 import com.intellij.json.JsonFileType
+import com.intellij.openapi.Disposable
 import com.intellij.openapi.actionSystem.ActionToolbar
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.ReadAction
@@ -20,6 +21,7 @@ import com.intellij.openapi.editor.Document
 import com.intellij.openapi.fileEditor.FileEditor
 import com.intellij.openapi.fileTypes.FileType
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.util.Disposer
 import com.intellij.openapi.util.Key
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.PsiDocumentManager
@@ -87,9 +89,10 @@ open class ResourceEditor(
     private val resourceVersion: PersistentEditorValue = PersistentEditorValue(editor),
     // for mocking purposes
     private val diff: ResourceDiff = ResourceDiff(project)
-): IResourceChangeListener {
+): IResourceChangeListener, Disposable {
 
     init {
+        Disposer.register(editor, this)
         resourceModel.addListener(this)
     }
 
@@ -524,5 +527,9 @@ open class ResourceEditor(
         } else {
             ApplicationManager.getApplication().invokeLater(runnable)
         }
+    }
+
+    override fun dispose() {
+        resourceModel.removeListener(this)
     }
 }
