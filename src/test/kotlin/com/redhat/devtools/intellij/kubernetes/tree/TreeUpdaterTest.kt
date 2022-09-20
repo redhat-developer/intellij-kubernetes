@@ -235,6 +235,25 @@ class TreeUpdaterTest {
         }
     }
 
+    @Test
+    fun `#dispose should stop listening to resource model`() {
+        // given
+        updater.listenTo(resourceModel)
+        // when
+        updater.dispose()
+        // then
+        verify(resourceModel).removeListener(updater)
+    }
+
+    @Test
+    fun `#dispose should NOT stop listening to resource model if it never listened to it`() {
+        // given dont listen to resource model
+        // when
+        updater.dispose()
+        // then
+        verify(resourceModel, never()).removeListener(updater)
+    }
+
     private fun node(
         resource: HasMetadata,
         children: List<DefaultMutableTreeNode> = emptyList()
