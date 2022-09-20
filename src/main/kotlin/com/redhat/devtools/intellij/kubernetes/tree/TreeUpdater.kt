@@ -12,6 +12,8 @@ package com.redhat.devtools.intellij.kubernetes.tree
 
 import com.intellij.ide.util.treeView.AbstractTreeStructure
 import com.intellij.ide.util.treeView.NodeDescriptor
+import com.intellij.openapi.Disposable
+import com.intellij.openapi.util.Disposer
 import com.intellij.ui.tree.StructureTreeModel
 import com.intellij.ui.tree.TreePathUtil
 import com.redhat.devtools.intellij.kubernetes.actions.getDescriptor
@@ -31,10 +33,17 @@ import javax.swing.tree.TreePath
 class TreeUpdater(
     private val treeModel: StructureTreeModel<AbstractTreeStructure>,
     private val structure: TreeStructure
-) : ModelChangeObservable.IResourceChangeListener {
+) : ModelChangeObservable.IResourceChangeListener, Disposable {
+
+    private var model: IResourceModel? = null
+
+    init {
+        Disposer.register(treeModel, this)
+    }
 
     fun listenTo(model: IResourceModel): TreeUpdater {
         model.addListener(this)
+        this.model = model
         return this
     }
 
@@ -146,4 +155,9 @@ class TreeUpdater(
     private fun hasElement(element: Any, node: TreeNode): Boolean {
         return node.getDescriptor()?.hasElement(element) ?: false
     }
+
+    override fun dispose() {
+        model?.removeListener(this)
+    }
+
 }
