@@ -19,11 +19,14 @@ import com.intellij.openapi.ui.popup.JBPopupFactory
 import com.intellij.openapi.util.Disposer
 import com.intellij.openapi.util.Key
 import com.intellij.ui.EditorNotificationPanel
+import com.intellij.ui.ScrollPaneFactory
 import com.intellij.ui.awt.RelativePoint
 import com.redhat.devtools.intellij.kubernetes.editor.hideNotification
 import com.redhat.devtools.intellij.kubernetes.editor.showNotification
+import java.awt.Dimension
 import java.awt.Point
 import javax.swing.JComponent
+import javax.swing.JEditorPane
 
 /**
  * An editor (panel) notification that shows errors.
@@ -32,6 +35,7 @@ class ErrorNotification(private val editor: FileEditor, private val project: Pro
 
     companion object {
         private val KEY_PANEL = Key<JComponent>(ErrorNotification::class.java.canonicalName)
+        private val HEIGHT_ERROR_BALLOON = 200
     }
 
     fun show(title: String, message: String?) {
@@ -55,28 +59,38 @@ class ErrorNotification(private val editor: FileEditor, private val project: Pro
     }
 
     private fun addDetailsAction(message: String?, panel: EditorNotificationPanel, editor: FileEditor) {
-        if (message == null
-            || message.isBlank()) {
+        if (message.isNullOrBlank()) {
             return
         }
         panel.createActionLabel("Details") {
-            val balloonBuilder = JBPopupFactory.getInstance()
-                .createHtmlTextBalloonBuilder(
-                    """<html>
-                        <body>
-                            <div>
-                               ${message.replace("\n", "<br>")}
-                            </div>
-                        </body>
-                       </html>""".trimMargin(),
-                    MessageType.ERROR,
-                    null)
-            val balloon = balloonBuilder
-                .setDialogMode(true)
-                .createBalloon()
+            val balloon = createBalloon(message, panel.visibleRect.width, HEIGHT_ERROR_BALLOON)
             showBelow(balloon, panel)
             Disposer.register(editor, balloon)
         }
+    }
+
+    private fun createBalloon(message: String?, width: Int, height: Int): Balloon {
+        val backgroundColor = MessageType.ERROR.popupBackground
+        val foregroundColor = MessageType.ERROR.titleForeground
+        val text = JEditorPane().apply {
+            text = message
+            isEditable = false
+            background = backgroundColor
+            foreground = foregroundColor
+        }
+        val scrolled = ScrollPaneFactory.createScrollPane(text, true).apply {
+            preferredSize = Dimension(width, height)
+            background = backgroundColor
+            viewport.background = backgroundColor
+            text.caretPosition = 0
+        }
+        return JBPopupFactory.getInstance().createBalloonBuilder(scrolled)
+            .setFillColor(backgroundColor)
+            .setBorderColor(backgroundColor)
+            .setCloseButtonEnabled(true)
+            .setHideOnClickOutside(false)
+            .setHideOnAction(false) // allow user to Ctrl+A & Ctrl+C
+            .createBalloon()
     }
 
     private fun showBelow(balloon: Balloon, panel: EditorNotificationPanel) {
