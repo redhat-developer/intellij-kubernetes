@@ -805,6 +805,23 @@ spec:
         verify(resourceVersion).set(null)
     }
 
+    @Test
+    fun `#init should start listening to resource model`() {
+        // given
+        // when
+        // then
+        verify(resourceModel).addListener(editor)
+    }
+
+    @Test
+    fun `#dispose should stop listening to resource model`() {
+        // given
+        // when
+        editor.dispose()
+        // then
+        verify(resourceModel).removeListener(editor)
+    }
+
     private fun givenEditorResourceIsOutdated(outdated: Boolean) {
         doReturn(outdated)
             .whenever(clusterResource).isOutdated(any() as String?)
