@@ -10,15 +10,15 @@
  ******************************************************************************/
 package com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes
 
-import com.redhat.devtools.intellij.kubernetes.model.Clients
+import com.redhat.devtools.intellij.kubernetes.model.client.ClientAdapter
 import com.redhat.devtools.intellij.kubernetes.model.resource.NonNamespacedOperation
 import com.redhat.devtools.intellij.kubernetes.model.resource.NonNamespacedResourceOperator
 import com.redhat.devtools.intellij.kubernetes.model.resource.ResourceKind
 import io.fabric8.kubernetes.api.model.Node
 import io.fabric8.kubernetes.client.KubernetesClient
 
-class NodesOperator(clients: Clients<out KubernetesClient>)
-    : NonNamespacedResourceOperator<Node, KubernetesClient>(clients.get()) {
+class NodesOperator(client: ClientAdapter<out KubernetesClient>)
+    : NonNamespacedResourceOperator<Node, KubernetesClient>(client.get()) {
 
     companion object {
         val KIND = ResourceKind.create(Node::class.java)

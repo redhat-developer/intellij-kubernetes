@@ -13,12 +13,12 @@ package com.redhat.devtools.intellij.kubernetes.model.resource.openshift
 import com.redhat.devtools.intellij.kubernetes.model.resource.NamespacedOperation
 import com.redhat.devtools.intellij.kubernetes.model.resource.NamespacedResourceOperator
 import com.redhat.devtools.intellij.kubernetes.model.resource.ResourceKind
-import com.redhat.devtools.intellij.kubernetes.model.Clients
+import com.redhat.devtools.intellij.kubernetes.model.client.ClientAdapter
 import io.fabric8.openshift.api.model.ImageStream
 import io.fabric8.openshift.client.OpenShiftClient
 
-class ImageStreamsOperator(clients: Clients<out OpenShiftClient>)
-    : NamespacedResourceOperator<ImageStream, OpenShiftClient>(clients.get()) {
+class ImageStreamsOperator(client: ClientAdapter<out OpenShiftClient>)
+    : NamespacedResourceOperator<ImageStream, OpenShiftClient>(client.get()) {
 
     companion object {
         val KIND = ResourceKind.create(ImageStream::class.java)

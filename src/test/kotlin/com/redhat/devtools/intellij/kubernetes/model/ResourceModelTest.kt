@@ -11,21 +11,12 @@
 package com.redhat.devtools.intellij.kubernetes.model
 
 import com.nhaarman.mockitokotlin2.any
-import com.nhaarman.mockitokotlin2.anyOrNull
 import com.nhaarman.mockitokotlin2.clearInvocations
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.mock
-import com.nhaarman.mockitokotlin2.never
 import com.nhaarman.mockitokotlin2.times
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.whenever
-import io.fabric8.kubernetes.api.model.HasMetadata
-import io.fabric8.kubernetes.api.model.NamedContext
-import io.fabric8.kubernetes.api.model.Namespace
-import io.fabric8.kubernetes.api.model.Pod
-import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinition
-import io.fabric8.kubernetes.client.KubernetesClient
-import org.assertj.core.api.Assertions.assertThat
 import com.redhat.devtools.intellij.kubernetes.model.context.IActiveContext
 import com.redhat.devtools.intellij.kubernetes.model.context.IActiveContext.ResourcesIn
 import com.redhat.devtools.intellij.kubernetes.model.context.IContext
@@ -36,19 +27,21 @@ import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.namedCont
 import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.resource
 import com.redhat.devtools.intellij.kubernetes.model.mocks.Mocks.activeContext
 import com.redhat.devtools.intellij.kubernetes.model.mocks.Mocks.context
-import com.redhat.devtools.intellij.kubernetes.model.mocks.Mocks.contextFactory
 import com.redhat.devtools.intellij.kubernetes.model.resource.ResourceKind
 import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.NamespacedPodsOperator
+import io.fabric8.kubernetes.api.model.HasMetadata
+import io.fabric8.kubernetes.api.model.Namespace
+import io.fabric8.kubernetes.api.model.Pod
+import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinition
+import io.fabric8.kubernetes.client.KubernetesClient
 import org.junit.Test
 import java.util.function.Predicate
 
 class ResourceModelTest {
 
-    private val observable: IModelChangeObservable = mock()
+    private val modelChange: IResourceModelObservable = mock()
     private val namespace: Namespace = resource("papa smurf", null, "papaUid", "v1")
     private val activeContext: IActiveContext<HasMetadata, KubernetesClient> = activeContext(namespace, mock())
-    private val contextFactory: (IModelChangeObservable, NamedContext?) -> IActiveContext<HasMetadata, KubernetesClient> =
-            contextFactory(activeContext)
 
     private val namedContext1 =
             namedContext("ctx1", "namespace1", "cluster1", "user1")
@@ -57,14 +50,15 @@ class ResourceModelTest {
     private val namedContext3 =
             namedContext("ctx3", "namespace3", "cluster3", "user3")
 
-    private val contexts = createContexts(activeContext, listOf(
+    private val allContexts = createContexts(activeContext, listOf(
             context(namedContext1),
             activeContext,
             context(namedContext3)
     ))
+
     private val model: ResourceModel = object : ResourceModel() {
-        override val observable: IModelChangeObservable = this@ResourceModelTest.observable
-        override val contexts: IContexts = this@ResourceModelTest.contexts
+        override val modelChange: IResourceModelObservable = this@ResourceModelTest.modelChange
+        override val allContexts: IAllContexts = this@ResourceModelTest.allContexts
     }
 
     @Test
@@ -116,7 +110,7 @@ class ResourceModelTest {
         // when
         model.setCurrentNamespace("papa-smurf")
         // then
-        verify(contexts).setCurrentNamespace("papa-smurf")
+        verify(allContexts).setCurrentNamespace("papa-smurf")
     }
 
     @Test
@@ -134,42 +128,20 @@ class ResourceModelTest {
         // when
         model.invalidate(model)
         // then
-        verify(contexts).clear()
-    }
-
-    @Test
-    fun `#invalidate(model) should fire 1x model modified if contexts was cleared`() {
-        // given
-        whenever(contexts.clear())
-            .doReturn(true)
-        // when
-        model.invalidate(model)
-        // then
-        verify(observable, times(1)).fireModified(model)
-    }
-
-    @Test
-    fun `#invalidate(model) should NOT fire model modified if contexts were cleared`() {
-        // given
-        whenever(contexts.clear())
-            .doReturn(false)
-        // when
-        model.invalidate(model)
-        // then
-        verify(observable, never()).fireModified(model)
+        verify(allContexts).refresh()
     }
 
     @Test
     fun `#invalidate(model) should cause #allContexts to (drop cache and) load again`() {
         // given
         model.getAllContexts()
-        verify(contexts, times(1)).all
-        clearInvocations(contexts)
+        verify(allContexts, times(1)).all
+        clearInvocations(allContexts)
         // when
         model.invalidate(model)
         model.getAllContexts()
         // then
-        verify(contexts, times(1)).all
+        verify(allContexts, times(1)).all
     }
 
     @Test
@@ -192,71 +164,15 @@ class ResourceModelTest {
     }
 
     @Test
-    fun `#allContexts should get all contexts in kube config`() {
+    fun `#allContexts should get all contexts in AllContexts`() {
         // given
         // when
         model.getAllContexts()
         // then
-        verify(contexts).all
+        verify(allContexts).all
     }
 
-    @Test
-    fun `#allContexts should return contexts for all contexts in kube config`() {
-        // given
-        // when
-        val numOf = model.getAllContexts().size
-        // then
-        assertThat(numOf).isEqualTo(contexts.all.size)
-    }
-
-    @Test
-    fun `#allContexts should not create currentContext if exists already`() {
-        // given
-        model.invalidate(model)
-        model.getCurrentContext()
-        clearInvocations(contextFactory)
-        // when
-        model.getAllContexts()
-        // then
-        verify(contextFactory, never()).invoke(any(), anyOrNull())
-    }
-
-    @Test
-    fun `#setCurrentContext(context) should not create new active context if setting (same) existing current context`() {
-        // given
-        val currentContext = model.getCurrentContext()
-        clearInvocations(contextFactory)
-        // when
-        model.setCurrentContext(currentContext!!)
-        // then
-        verify(contextFactory, never()).invoke(any(), anyOrNull())
-    }
-
-    @Test
-    fun `#setCurrentContext(context) should fire if 'contexts' was successfully set new context`() {
-        // given
-        whenever(contexts.setCurrent(any()))
-            .doReturn(true)
-        // when
-        model.setCurrentContext(mock())
-        // then
-        verify(observable, times(1))
-            .fireModified(model)
-    }
-
-    @Test
-    fun `#setCurrentContext(context) should NOT fire if 'contexts' failed to set new context`() {
-        // given
-        whenever(contexts.setCurrent(any()))
-            .doReturn(false)
-        // when
-        model.setCurrentContext(mock())
-        // then
-        verify(observable, never())
-            .fireModified(model)
-    }
-
-    private fun createContexts(currentContext: IActiveContext<*,*>?, allContexts: List<IContext>): IContexts {
+    private fun createContexts(currentContext: IActiveContext<*,*>?, allContexts: List<IContext>): IAllContexts {
         return mock {
             on { mock.all } doReturn allContexts
             on { mock.current } doReturn currentContext

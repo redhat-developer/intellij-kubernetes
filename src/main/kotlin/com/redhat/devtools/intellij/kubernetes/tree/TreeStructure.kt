@@ -35,6 +35,8 @@ import javax.swing.Icon
  * A factory that creates nodes (PresentableNodeDescriptor) for a (tree-) model.
  *
  * @see PresentableNodeDescriptor
+ * @see AbstractTreeStructure
+ * @see MultiParentTreeStructure
  */
 open class TreeStructure(
         private val project: Project,

@@ -11,7 +11,8 @@
 package com.redhat.devtools.intellij.kubernetes.editor
 
 import com.intellij.openapi.diagnostic.logger
-import com.redhat.devtools.intellij.kubernetes.model.ModelChangeObservable
+import com.redhat.devtools.intellij.kubernetes.model.IResourceModelListener
+import com.redhat.devtools.intellij.kubernetes.model.ResourceModelObservable
 import com.redhat.devtools.intellij.kubernetes.model.ResourceWatch
 import com.redhat.devtools.intellij.kubernetes.model.ResourceWatch.WatchListeners
 import com.redhat.devtools.intellij.kubernetes.model.context.IActiveContext
@@ -31,7 +32,7 @@ open class ClusterResource protected constructor(
     resource: HasMetadata,
     private val context: IActiveContext<out HasMetadata, out KubernetesClient>,
     private val watch: ResourceWatch<HasMetadata> = ResourceWatch(),
-    private val modelChange: ModelChangeObservable = ModelChangeObservable()
+    private val modelChange: ResourceModelObservable = ResourceModelObservable()
 ) {
     companion object Factory {
         fun create(resource: HasMetadata?, context: IActiveContext<out HasMetadata, out KubernetesClient>?): ClusterResource? {
@@ -112,7 +113,8 @@ open class ClusterResource protected constructor(
                     // api discovery error
                     e.status.message
                 } else {
-                    "Could not retrieve ${initialResource.kind} ${initialResource.metadata?.name ?: ""} in version ${initialResource.apiVersion} from server"
+                    "Could not retrieve ${initialResource.kind} ${initialResource.metadata?.name ?: ""}" +
+                            " in version ${initialResource.apiVersion} from server"
                 }
             throw ResourceException(message, e)
         }
@@ -320,7 +322,7 @@ open class ClusterResource protected constructor(
      *
      * @param listener that should get called if a change (modification, deletion) was detected
      */
-    fun addListener(listener: ModelChangeObservable.IResourceChangeListener) {
+    fun addListener(listener: IResourceModelListener) {
         modelChange.addListener(listener)
     }
 }

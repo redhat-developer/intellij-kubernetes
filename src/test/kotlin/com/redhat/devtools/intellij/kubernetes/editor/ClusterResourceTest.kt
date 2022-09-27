@@ -19,7 +19,7 @@ import com.nhaarman.mockitokotlin2.never
 import com.nhaarman.mockitokotlin2.times
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.whenever
-import com.redhat.devtools.intellij.kubernetes.model.ModelChangeObservable
+import com.redhat.devtools.intellij.kubernetes.model.ResourceModelObservable
 import com.redhat.devtools.intellij.kubernetes.model.ResourceWatch
 import com.redhat.devtools.intellij.kubernetes.model.context.IActiveContext
 import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.resource
@@ -48,7 +48,7 @@ class ClusterResourceTest {
         on { watch(any(), any()) } doReturn watch
     }
     private val resourceWatch: ResourceWatch<HasMetadata> = mock()
-    private val observable: ModelChangeObservable = mock()
+    private val observable: ResourceModelObservable = mock()
     private val cluster = TestableClusterResource(endorResource, context, resourceWatch, observable)
 
     @Test
@@ -593,7 +593,7 @@ class ClusterResourceTest {
         resource: HasMetadata,
         context: IActiveContext<out HasMetadata, out KubernetesClient>,
         watch: ResourceWatch<HasMetadata>,
-        observable: ModelChangeObservable
+        observable: ResourceModelObservable
         ) : ClusterResource(resource, context, watch, observable) {
 
         public override var updatedResource: HasMetadata?

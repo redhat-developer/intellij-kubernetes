@@ -22,7 +22,7 @@ import com.intellij.openapi.vfs.VirtualFile
 import com.redhat.devtools.intellij.kubernetes.editor.notification.ErrorNotification
 import com.redhat.devtools.intellij.kubernetes.editor.util.getKubernetesResourceInfo
 import com.redhat.devtools.intellij.kubernetes.editor.util.hasKubernetesResource
-import com.redhat.devtools.intellij.kubernetes.model.ResourceModel
+import com.redhat.devtools.intellij.kubernetes.model.IResourceModel
 import com.redhat.devtools.intellij.kubernetes.model.util.ResourceException
 import com.redhat.devtools.intellij.kubernetes.model.util.isSameResource
 import com.redhat.devtools.intellij.kubernetes.telemetry.TelemetryService
@@ -51,7 +51,7 @@ open class ResourceEditorFactory protected constructor(
     },
     /* for mocking purposes */
     private val createResourceEditor: (FileEditor, Project) -> ResourceEditor =
-        { editor, project -> ResourceEditor(editor, ResourceModel.getInstance(), project) },
+        { editor, project -> ResourceEditor(editor, IResourceModel.getInstance(), project) },
     /* for mocking purposes */
     private val reportTelemetry: (FileEditor, Project, TelemetryMessageBuilder.ActionMessage) -> Unit = { editor, project, telemetry ->
         val resourceInfo = getKubernetesResourceInfo(editor.file, project)

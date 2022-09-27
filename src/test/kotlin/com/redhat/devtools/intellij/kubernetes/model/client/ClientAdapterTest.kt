@@ -8,25 +8,24 @@
  * Contributors:
  * Red Hat, Inc. - initial API and implementation
  ******************************************************************************/
-package com.redhat.devtools.intellij.kubernetes.model
+package com.redhat.devtools.intellij.kubernetes.model.client
 
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.verify
 import io.fabric8.kubernetes.client.AppsAPIGroupClient
-import io.fabric8.kubernetes.client.KubernetesClient
-import io.fabric8.openshift.client.OpenShiftClient
+import io.fabric8.kubernetes.client.NamespacedKubernetesClient
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test
 
-class ClientsTest {
+class ClientAdapterTest {
 
     @Test
     fun `#isOpenShift should return true if has OpenShiftClient`() {
         // given
-        val clients = createClients(mock<OpenShiftClient>())
+        val clientAdapter = OSClientAdapter(mock(), mock())
         // when
-        val isOpenShift = clients.isOpenShift()
+        val isOpenShift = clientAdapter.isOpenShift()
         // then
         assertThat(isOpenShift).isTrue()
     }
@@ -34,9 +33,9 @@ class ClientsTest {
     @Test
     fun `#isOpenShift should return false if has KubernetesClient`() {
         // given
-        val clients = createClients(mock<KubernetesClient>())
+        val clientAdapter = KubeClientAdapter(mock())
         // when
-        val isOpenShift = clients.isOpenShift()
+        val isOpenShift = clientAdapter.isOpenShift()
         // then
         assertThat(isOpenShift).isFalse()
     }
@@ -44,10 +43,10 @@ class ClientsTest {
     @Test
     fun `#get() should return client`() {
         // given
-        val client = mock<KubernetesClient>()
-        val clients = createClients(client)
+        val client = mock<NamespacedKubernetesClient>()
+        val clientAdapter = KubeClientAdapter(client)
         // when
-        val returned = clients.get()
+        val returned = clientAdapter.get()
         // then
         assertThat(returned).isEqualTo(client)
     }
@@ -56,12 +55,12 @@ class ClientsTest {
     fun `#get(type) should adapt client`() {
         // given
         val adapted = mock<AppsAPIGroupClient>()
-        val client = mock<KubernetesClient> {
+        val client = mock<NamespacedKubernetesClient> {
             on { adapt(AppsAPIGroupClient::class.java) } doReturn adapted
         }
-        val clients = createClients(client)
+        val clientAdapter = KubeClientAdapter(client)
         // when
-        clients.get(AppsAPIGroupClient::class.java)
+        clientAdapter.get(AppsAPIGroupClient::class.java)
         // then
         verify(client).adapt(AppsAPIGroupClient::class.java)
     }
@@ -69,10 +68,10 @@ class ClientsTest {
     @Test
     fun `#close should close client`() {
         // given
-        val client = mock<KubernetesClient>()
-        val clients = createClients(client)
+        val client = mock<NamespacedKubernetesClient>()
+        val clientAdapter = KubeClientAdapter(client)
         // when
-        clients.close()
+        clientAdapter.close()
         // then
         verify(client).close()
     }
@@ -81,19 +80,14 @@ class ClientsTest {
     fun `#close should close adapted clients`() {
         // given
         val adapted = mock<AppsAPIGroupClient>()
-        val client = mock<KubernetesClient> {
+        val client = mock<NamespacedKubernetesClient> {
             on { adapt(AppsAPIGroupClient::class.java) } doReturn adapted
         }
-        val clients = createClients(client)
-        clients.get(AppsAPIGroupClient::class.java) // create adapted client
+        val clientAdapter = KubeClientAdapter(client)
+        clientAdapter.get(AppsAPIGroupClient::class.java) // create adapted client
         // when
-        clients.close()
+        clientAdapter.close()
         // then
         verify(adapted).close()
     }
-
-    private fun <T : KubernetesClient> createClients(client: T): Clients<T> {
-        return Clients(client)
-    }
-
 }

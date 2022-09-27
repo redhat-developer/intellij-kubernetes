@@ -10,26 +10,29 @@
  ******************************************************************************/
 package com.redhat.devtools.intellij.kubernetes.model
 
-import com.redhat.devtools.intellij.kubernetes.model.ModelChangeObservable.IResourceChangeListener
+import com.nhaarman.mockitokotlin2.mock
+import com.redhat.devtools.intellij.kubernetes.model.context.IActiveContext
 import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.resource
 import io.fabric8.kubernetes.api.model.Namespace
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
 import org.junit.Test
 
-class ModelChangeObservableTest {
+class ResourceModelObservableTest {
 
-    private val observable = TestableModelChangeObservable()
+    private val observable = TestableResourceModelObservable()
     private val resource = resource<Namespace>("smurfette namespace", null, "smurfetteUid", "v1")
-    private val listener = object: IResourceChangeListener {
+    private val listener = object: IResourceModelListener {
 
-        var currentNamespace: String? = null
+        var newContext: IActiveContext<*,*>? = null
+        var oldContext: IActiveContext<*,*>? = null
         val removedResources = mutableListOf<Any>()
         val addedResources = mutableListOf<Any>()
         val modifiedResources = mutableListOf<Any>()
 
-        override fun currentNamespace(namespace: String?) {
-            currentNamespace = namespace
+        override fun currentNamespaceChanged(new: IActiveContext<*,*>?, old: IActiveContext<*,*>?) {
+            this.newContext = new
+            this.oldContext = old
         }
 
         override fun removed(removed: Any) {
@@ -66,7 +69,7 @@ class ModelChangeObservableTest {
     fun `#addListener should add listener that is not contained yet`() {
         // given
         val sizeBeforeAdd = observable.listeners.size
-        val newListener = object: IResourceChangeListener {}
+        val newListener = object: IResourceModelListener {}
         assertThat(observable.listeners.contains(newListener)).isFalse()
         // when
         observable.addListener(newListener)
@@ -78,7 +81,7 @@ class ModelChangeObservableTest {
     @Test
     fun `#removeListener should remove listener that is contained`() {
         // given
-        val newListener = object: IResourceChangeListener {}
+        val newListener = object: IResourceModelListener {}
         observable.addListener(newListener)
         assertThat(observable.listeners.contains(newListener)).isTrue()
         val sizeBeforeRemove = observable.listeners.size
@@ -92,7 +95,7 @@ class ModelChangeObservableTest {
     @Test
     fun `#removeListener should NOT remove listener that is NOT contained`() {
         // given
-        val newListener = object: IResourceChangeListener {}
+        val newListener = object: IResourceModelListener {}
         assertThat(observable.listeners.contains(newListener)).isFalse()
         val sizeBeforeRemove = observable.listeners.size
         // when
@@ -111,7 +114,8 @@ class ModelChangeObservableTest {
         assertThat(listener.removedResources.take(1)).containsExactly(resource)
         assertThat(listener.addedResources).isEmpty()
         assertThat(listener.modifiedResources).isEmpty()
-        assertThat(listener.currentNamespace).isNull()
+        assertThat(listener.newContext).isNull()
+        assertThat(listener.oldContext).isNull()
     }
 
     @Test
@@ -123,7 +127,8 @@ class ModelChangeObservableTest {
         assertThat(listener.removedResources).isEmpty()
         assertThat(listener.addedResources.take(1)).containsExactly(resource)
         assertThat(listener.modifiedResources).isEmpty()
-        assertThat(listener.currentNamespace).isNull()
+        assertThat(listener.newContext).isNull()
+        assertThat(listener.oldContext).isNull()
     }
 
     @Test
@@ -135,23 +140,27 @@ class ModelChangeObservableTest {
         assertThat(listener.removedResources).isEmpty()
         assertThat(listener.addedResources).isEmpty()
         assertThat(listener.modifiedResources.take(1)).containsExactly(resource)
-        assertThat(listener.currentNamespace).isNull()
+        assertThat(listener.newContext).isNull()
+        assertThat(listener.oldContext).isNull()
     }
 
     @Test
     fun `#fireCurrentNamespace should notify current namespace`() {
         // given
+        val newContext: IActiveContext<*,*> = mock()
+        val oldContext: IActiveContext<*,*> = mock()
         // when
-        observable.fireCurrentNamespace(resource.metadata.name)
+        observable.fireCurrentNamespaceChanged(newContext, oldContext)
         // then
         assertThat(listener.removedResources).isEmpty()
         assertThat(listener.addedResources).isEmpty()
         assertThat(listener.modifiedResources).isEmpty()
-        assertThat(listener.currentNamespace).isEqualTo(resource.metadata.name)
+        assertThat(listener.newContext).isEqualTo(newContext)
+        assertThat(listener.oldContext).isEqualTo(oldContext)
     }
 
-    class TestableModelChangeObservable: ModelChangeObservable() {
-        public override val listeners = mutableListOf<IResourceChangeListener>()
+    class TestableResourceModelObservable: ResourceModelObservable() {
+        public override val listeners = mutableListOf<IResourceModelListener>()
     }
 
 }

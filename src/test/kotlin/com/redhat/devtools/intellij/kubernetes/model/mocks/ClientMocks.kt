@@ -35,6 +35,7 @@ import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinition
 import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinitionVersion
 import io.fabric8.kubernetes.client.Config
 import io.fabric8.kubernetes.client.KubernetesClient
+import io.fabric8.kubernetes.client.NamespacedKubernetesClient
 import io.fabric8.kubernetes.client.V1ApiextensionAPIGroupDSL
 import io.fabric8.kubernetes.client.Watch
 import io.fabric8.kubernetes.client.Watcher
@@ -65,7 +66,7 @@ object ClientMocks {
         namespaces: Array<Namespace>,
         masterUrl: URL = URL("http://localhost"),
         customResourceDefinitions: List<CustomResourceDefinition> = emptyList()
-    ): KubernetesClient {
+    ): NamespacedKubernetesClient {
         val namespacesMock = namespaceListOperation(namespaces)
         val config = mock<Config> {
             on { namespace } doReturn currentNamespace
@@ -152,7 +153,7 @@ object ClientMocks {
     }
 
     fun namedContext(name: String, namespace: String, cluster: String, user: String): NamedContext {
-        val context: Context = kubeConfigContext(namespace, cluster, user)
+        val context: Context = context(namespace, cluster, user)
         return namedContext(name, context)
     }
 
@@ -163,7 +164,7 @@ object ClientMocks {
         }
     }
 
-    fun kubeConfigContext(namespace: String, cluster: String, user: String): Context {
+    private fun context(namespace: String, cluster: String, user: String): Context {
         return mock {
             on { this.namespace } doReturn namespace
             on { this.cluster } doReturn cluster
@@ -178,7 +179,7 @@ object ClientMocks {
         }
     }
 
-    fun changeConfig(currentContext: NamedContext?, contexts: List<NamedContext>, config: Config) {
+    fun doReturnCurrentContextAndAllContexts(currentContext: NamedContext?, contexts: List<NamedContext>, config: Config) {
         doReturn(contexts)
             .whenever(config).contexts
         doReturn(currentContext)
@@ -239,7 +240,7 @@ object ClientMocks {
         name: String,
         namespace: String? = null,
         uid: String? = System.currentTimeMillis().toString(),
-        apiVersion: String,
+        apiVersion: String = "v1",
         resourceVersion: String? = System.currentTimeMillis().toString()): T {
         val metadata = objectMeta(name, namespace, uid, resourceVersion)
         return mock {

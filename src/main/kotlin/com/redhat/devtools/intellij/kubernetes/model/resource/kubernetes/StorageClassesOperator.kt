@@ -10,7 +10,7 @@
  ******************************************************************************/
 package com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes
 
-import com.redhat.devtools.intellij.kubernetes.model.Clients
+import com.redhat.devtools.intellij.kubernetes.model.client.ClientAdapter
 import com.redhat.devtools.intellij.kubernetes.model.resource.NonNamespacedOperation
 import com.redhat.devtools.intellij.kubernetes.model.resource.NonNamespacedResourceOperator
 import com.redhat.devtools.intellij.kubernetes.model.resource.ResourceKind
@@ -18,8 +18,8 @@ import io.fabric8.kubernetes.api.model.storage.StorageClass
 import io.fabric8.kubernetes.client.KubernetesClient
 import io.fabric8.kubernetes.client.StorageAPIGroupClient
 
-class StorageClassesOperator(clients: Clients<out KubernetesClient>)
-    : NonNamespacedResourceOperator<StorageClass, StorageAPIGroupClient>(clients.getStorage()) {
+class StorageClassesOperator(client: ClientAdapter<out KubernetesClient>)
+    : NonNamespacedResourceOperator<StorageClass, StorageAPIGroupClient>(client.getStorage()) {
 
     companion object {
         val KIND = ResourceKind.create(StorageClass::class.java)

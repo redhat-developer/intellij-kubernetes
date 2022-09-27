@@ -14,15 +14,15 @@ import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.extensions.ExtensionPointName
 import com.redhat.devtools.intellij.common.kubernetes.ClusterHelper
 import com.redhat.devtools.intellij.common.kubernetes.ClusterInfo
-import com.redhat.devtools.intellij.kubernetes.model.Clients
-import com.redhat.devtools.intellij.kubernetes.model.IModelChangeObservable
+import com.redhat.devtools.intellij.kubernetes.model.IResourceModelObservable
 import com.redhat.devtools.intellij.kubernetes.model.Notification
 import com.redhat.devtools.intellij.kubernetes.model.ResourceWatch
 import com.redhat.devtools.intellij.kubernetes.model.ResourceWatch.WatchListeners
+import com.redhat.devtools.intellij.kubernetes.model.client.ClientAdapter
 import com.redhat.devtools.intellij.kubernetes.model.context.IActiveContext.ResourcesIn
-import com.redhat.devtools.intellij.kubernetes.model.context.IActiveContext.ResourcesIn.ANY_NAMESPACE
-import com.redhat.devtools.intellij.kubernetes.model.context.IActiveContext.ResourcesIn.CURRENT_NAMESPACE
 import com.redhat.devtools.intellij.kubernetes.model.context.IActiveContext.ResourcesIn.NO_NAMESPACE
+import com.redhat.devtools.intellij.kubernetes.model.context.IActiveContext.ResourcesIn.CURRENT_NAMESPACE
+import com.redhat.devtools.intellij.kubernetes.model.context.IActiveContext.ResourcesIn.ANY_NAMESPACE
 import com.redhat.devtools.intellij.kubernetes.model.resource.ILogWatcher
 import com.redhat.devtools.intellij.kubernetes.model.resource.INamespacedResourceOperator
 import com.redhat.devtools.intellij.kubernetes.model.resource.INonNamespacedResourceOperator
@@ -43,7 +43,6 @@ import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.NamedContext
 import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinition
 import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinitionSpec
-import io.fabric8.kubernetes.client.Config
 import io.fabric8.kubernetes.client.KubernetesClient
 import io.fabric8.kubernetes.client.KubernetesClientException
 import io.fabric8.kubernetes.client.Watch
@@ -54,22 +53,23 @@ import java.io.OutputStream
 import java.net.URL
 
 abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
-    private val modelChange: IModelChangeObservable,
-    private val clients: Clients<C>,
     context: NamedContext,
-    private val singleResourceOperator: NonCachingSingleResourceOperator = NonCachingSingleResourceOperator(clients.get())
+    private val modelChange: IResourceModelObservable,
+    override val client: ClientAdapter<out C>,
+    private var singleResourceOperator: NonCachingSingleResourceOperator = NonCachingSingleResourceOperator(client)
 ) : Context(context), IActiveContext<N, C> {
 
     override val active: Boolean = true
     override val masterUrl: URL
         get() {
-            return clients.get().masterUrl
+            return client.get().masterUrl
         }
+
     override val version: ClusterInfo by lazy {
-        ClusterHelper.getClusterInfo(clients.get())
+        ClusterHelper.getClusterInfo(client.get())
     }
 
-    private val extensionName: ExtensionPointName<IResourceOperatorFactory<HasMetadata, C, IResourceOperator<HasMetadata>>> =
+    private val extensionName: ExtensionPointName<IResourceOperatorFactory<HasMetadata, KubernetesClient, IResourceOperator<HasMetadata>>> =
             ExtensionPointName.create("com.redhat.devtools.intellij.kubernetes.resourceOperators")
 
     protected open val nonNamespacedOperators: MutableMap<ResourceKind<out HasMetadata>, INonNamespacedResourceOperator<*, *>> by lazy {
@@ -87,26 +87,6 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
     protected open val watchListener = WatchListeners({ added(it) }, { removed(it) }, { replaced(it) })
 
     protected open val notification: Notification = Notification()
-
-    override fun setCurrentNamespace(namespace: String): Boolean {
-        val currentNamespace = getCurrentNamespace()
-        if (namespace == currentNamespace) {
-            return false
-        }
-        logger<ActiveContext<*, *>>().debug("Setting current namespace to $namespace.")
-
-        val stopped = stopWatch(currentNamespace)
-        val configuration = clients.get().configuration
-        setCurrentNamespace(namespace, configuration)
-        setCurrentNamespace(namespace, namespacedOperators.values)
-        watchAll(stopped)
-        modelChange.fireCurrentNamespace(namespace)
-        return true
-    }
-
-    private fun setCurrentNamespace(namespace: String, configuration: Config) {
-        configuration.namespace = namespace
-    }
 
     private fun setCurrentNamespace(operators: Collection<INamespacedResourceOperator<*, *>>) {
         try {
@@ -135,15 +115,8 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
     }
 
     private fun getCurrentNamespace(namespaces: Collection<N>): N? {
-        val name: String? = clients.get().configuration.namespace
-        return find(name, namespaces)
-    }
-
-    private fun find(namespace: String?, namespaces: Collection<N>): N? {
-        if (namespace == null) {
-            return null
-        }
-        return namespaces.find { namespace == it.metadata?.name }
+        val name: String = client.namespace ?: return null
+        return namespaces.find { name == it.metadata?.name }
     }
 
     protected abstract fun getNamespacesKind(): ResourceKind<N>
@@ -151,6 +124,10 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
     override fun isCurrentNamespace(resource: HasMetadata): Boolean {
         val current = getCurrentNamespace(getAllResources(getNamespacesKind(), NO_NAMESPACE)) ?: return false
         return resource.isSameResource(current as HasMetadata)
+    }
+
+    override fun isCurrentNamespace(namespace: String): Boolean {
+        return namespace == getCurrentNamespace()
     }
 
     override fun <R: HasMetadata> getAllResources(kind: ResourceKind<R>, resourcesIn: ResourcesIn): Collection<R> {
@@ -231,14 +208,14 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
                     kind,
                     context,
                     getCurrentNamespace(),
-                    clients.get()
+                    client.get()
                 )
             ANY_NAMESPACE,
             NO_NAMESPACE ->
                 NonNamespacedCustomResourceOperator(
                     kind,
                     context,
-                    clients.get())
+                    client.get())
         }
     }
 
@@ -276,16 +253,16 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
         watch(nonNamespacedOperators[kind])
     }
 
+    override fun watchAll(kinds: Collection<ResourceKind<out HasMetadata>>) {
+        kinds.forEach { kind -> watch(kind) }
+    }
+
     override fun watch(definition: CustomResourceDefinition) {
         watch(getOperator(definition))
     }
 
-    private fun watchAll(kinds: Collection<Any>) {
-        val watchOperations = namespacedOperators.entries.toList()
-            .filter { kinds.contains(it.key) }
-            .map { Pair(it.value.kind, it.value::watchAll) }
-
-        watch.watchAll(watchOperations, watchListener)
+    override fun getWatched(): Collection<ResourceKind<out HasMetadata>> {
+        return watch.getWatched()
     }
 
     private fun watch(operator: IResourceOperator<*>?) {
@@ -303,7 +280,7 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
     override fun stopWatch(kind: ResourceKind<out HasMetadata>) {
         logger<ActiveContext<*, *>>().debug("Stop watching $kind resources.")
         watch.stopWatch(kind)
-        // dont notify invalidation change because this would cause UI to reload
+        // don't notify invalidation change because this would cause UI to reload
         // and therefore to repopulate the cache immediately.
         // Any resource operation that eventually happens while the watch is not active would cause the cache
         // to become out-of-sync and it would therefore return invalid resources when asked to do so
@@ -313,17 +290,6 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
     override fun stopWatch(definition: CustomResourceDefinition) {
         val kind = ResourceKind.create(definition.spec) ?: return
         stopWatch(kind)
-    }
-
-    /**
-     * Stops watching all watchables for the given namespace. Doesn't stop the cluster wide watchables nor
-     * the ones for a different namespace.
-     *
-     * @param namespace the namespace that the watchables should be stopped for
-     */
-    private fun stopWatch(namespace: String?): Collection<Any> {
-        logger<ActiveContext<*, *>>().debug("Stopping all watches for namespace $namespace.")
-        return watch.stopWatchAll(namespacedOperators(namespace).map { it.kind })
     }
 
     override fun added(resource: HasMetadata): Boolean {
@@ -438,7 +404,6 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
     override fun invalidate(kind: ResourceKind<*>) {
         logger<ActiveContext<*, *>>().debug("Invalidating resource operator for $kind resources.")
         invalidateOperators(kind)
-        modelChange.fireModified(kind)
     }
 
     private fun invalidateOperators(kind: ResourceKind<*>) {
@@ -458,6 +423,7 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
             .mapNotNull {
                 try {
                     delete(it.key.first, it.key.second, it.value)
+                    modelChange.fireModified(it.value)
                     null
                 } catch (e: KubernetesClientException) {
                     ResourceException("Could not delete ${it.key.first} resource(s) ${toMessage(resources, -1)}", e, it.value)
@@ -469,19 +435,19 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
         }
     }
 
-    private fun delete(kind: ResourceKind<out HasMetadata>, scope: ResourcesIn, resources: List<HasMetadata>) {
+    private fun delete(kind: ResourceKind<out HasMetadata>, scope: ResourcesIn, resources: List<HasMetadata>): Collection<HasMetadata> {
         val operator = getOperator(kind, scope)
         if (operator == null) {
             logger<ActiveContext<*,*>>().warn(
                 "Could not delete $kind resources: ${toMessage(resources, -1)}."
                 + "No operator found for $kind in scope $scope.)")
-            return
+            return emptyList()
         }
         try {
             val deleted = operator.delete(resources)
-            if (deleted) {
+            return if (deleted) {
                 resources.forEach { setWillBeDeleted(it) }
-                modelChange.fireModified(resources)
+                resources
             } else {
                 throw KubernetesClientException("Could not delete $kind resources: ${toMessage(resources, -1)} ")
             }
@@ -505,7 +471,6 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
     override fun close() {
         logger<ActiveContext<*, *>>().debug("Closing context ${context.name}.")
         watch.close()
-        clients.close()
     }
 
     private fun <T: HasMetadata> getLogWatchOperator(resource: HasMetadata): ILogWatcher<T>? {
@@ -521,20 +486,20 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
             : MutableMap<ResourceKind<out HasMetadata>, P> {
         val operators = mutableMapOf<ResourceKind<out HasMetadata>, P>()
         operators.putAll(
-                getInternalResourceOperators(clients)
+                getInternalResourceOperators(client)
                         .filterIsInstance(type)
                         .associateBy { it.kind })
         operators.putAll(
-                getExtensionResourceOperators(clients)
+                getExtensionResourceOperators(client)
                         .filterIsInstance(type)
                         .associateBy { it.kind })
         return operators
     }
 
-    protected abstract fun getInternalResourceOperators(clients: Clients<C>): List<IResourceOperator<out HasMetadata>>
+    protected abstract fun getInternalResourceOperators(client: ClientAdapter<out C>): List<IResourceOperator<out HasMetadata>>
 
-    protected open fun getExtensionResourceOperators(clients: Clients<C>): List<IResourceOperator<out HasMetadata>> {
+    protected open fun getExtensionResourceOperators(client: ClientAdapter<out C>): List<IResourceOperator<out HasMetadata>> {
         return extensionName.extensionList
-                .map { it.create(clients) }
+                .map { it.create(client.get()) }
     }
 }

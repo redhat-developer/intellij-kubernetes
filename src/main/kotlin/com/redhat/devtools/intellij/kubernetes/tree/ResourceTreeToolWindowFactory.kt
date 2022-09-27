@@ -25,7 +25,7 @@ import com.redhat.devtools.intellij.common.tree.StructureTreeModelFactory
 import com.redhat.devtools.intellij.kubernetes.actions.addDoubleClickListener
 import com.redhat.devtools.intellij.kubernetes.actions.getElement
 import com.redhat.devtools.intellij.kubernetes.editor.ResourceEditorFactory
-import com.redhat.devtools.intellij.kubernetes.model.ResourceModel
+import com.redhat.devtools.intellij.kubernetes.model.IResourceModel
 import io.fabric8.kubernetes.api.model.HasMetadata
 import java.awt.Point
 import java.awt.event.MouseAdapter
@@ -53,7 +53,7 @@ class ResourceTreeToolWindowFactory: ToolWindowFactory {
     }
 
     private fun createTree(content: Content, project: Project): Tree {
-        val resourceModel = ResourceModel.getInstance()
+        val resourceModel = IResourceModel.getInstance()
         val structure = TreeStructure(project, resourceModel)
         val treeModel = StructureTreeModelFactory.create(structure, project)
         val tree = Tree(AsyncTreeModel(treeModel, content))

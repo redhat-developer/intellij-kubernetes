@@ -10,7 +10,7 @@
  ******************************************************************************/
 package com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes
 
-import com.redhat.devtools.intellij.kubernetes.model.Clients
+import com.redhat.devtools.intellij.kubernetes.model.client.ClientAdapter
 import com.redhat.devtools.intellij.kubernetes.model.resource.NamespacedOperation
 import com.redhat.devtools.intellij.kubernetes.model.resource.NamespacedResourceOperator
 import com.redhat.devtools.intellij.kubernetes.model.resource.ResourceKind
@@ -18,8 +18,8 @@ import io.fabric8.kubernetes.api.model.networking.v1.Ingress
 import io.fabric8.kubernetes.client.KubernetesClient
 import io.fabric8.kubernetes.client.NetworkAPIGroupClient
 
-class IngressOperator(clients: Clients<out KubernetesClient>)
-    : NamespacedResourceOperator<Ingress, NetworkAPIGroupClient>(clients.getNetworking()) {
+class IngressOperator(client: ClientAdapter<out KubernetesClient>)
+    : NamespacedResourceOperator<Ingress, NetworkAPIGroupClient>(client.getNetworking()) {
 
     companion object {
         val KIND = ResourceKind.create(Ingress::class.java)

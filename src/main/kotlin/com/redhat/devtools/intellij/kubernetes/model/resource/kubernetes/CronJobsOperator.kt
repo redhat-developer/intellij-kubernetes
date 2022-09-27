@@ -10,7 +10,7 @@
  ******************************************************************************/
 package com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes
 
-import com.redhat.devtools.intellij.kubernetes.model.Clients
+import com.redhat.devtools.intellij.kubernetes.model.client.ClientAdapter
 import com.redhat.devtools.intellij.kubernetes.model.resource.NamespacedOperation
 import com.redhat.devtools.intellij.kubernetes.model.resource.NamespacedResourceOperator
 import com.redhat.devtools.intellij.kubernetes.model.resource.ResourceKind
@@ -18,8 +18,8 @@ import io.fabric8.kubernetes.api.model.batch.v1beta1.CronJob
 import io.fabric8.kubernetes.client.BatchAPIGroupClient
 import io.fabric8.kubernetes.client.KubernetesClient
 
-class CronJobsOperator(clients: Clients<out KubernetesClient>)
-    : NamespacedResourceOperator<CronJob, BatchAPIGroupClient>(clients.getBatch()) {
+class CronJobsOperator(client: ClientAdapter<out KubernetesClient>)
+    : NamespacedResourceOperator<CronJob, BatchAPIGroupClient>(client.getBatch()) {
 
     companion object {
         val KIND = ResourceKind.create(CronJob::class.java)

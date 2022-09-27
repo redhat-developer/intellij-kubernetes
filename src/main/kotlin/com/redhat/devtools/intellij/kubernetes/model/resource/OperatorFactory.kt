@@ -10,7 +10,7 @@
  ******************************************************************************/
 package com.redhat.devtools.intellij.kubernetes.model.resource
 
-import com.redhat.devtools.intellij.kubernetes.model.Clients
+import com.redhat.devtools.intellij.kubernetes.model.client.ClientAdapter
 import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.AllPodsOperator
 import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.ConfigMapsOperator
 import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.CronJobsOperator
@@ -42,7 +42,7 @@ import io.fabric8.openshift.client.OpenShiftClient
 object OperatorFactory {
 
     private val openshift =
-        listOf<Pair<ResourceKind<out HasMetadata>, (Clients<out OpenShiftClient>) -> IResourceOperator<out HasMetadata>>>(
+        listOf<Pair<ResourceKind<out HasMetadata>, (ClientAdapter<out OpenShiftClient>) -> IResourceOperator<out HasMetadata>>>(
             NamespacesOperator.KIND to ::NamespacesOperator,
             NodesOperator.KIND to ::NodesOperator,
             AllPodsOperator.KIND to ::AllPodsOperator,
@@ -70,7 +70,7 @@ object OperatorFactory {
         )
 
     private val kubernetes =
-        listOf<Pair<ResourceKind<out HasMetadata>, (Clients<out KubernetesClient>) -> IResourceOperator<out HasMetadata>>>(
+        listOf<Pair<ResourceKind<out HasMetadata>, (ClientAdapter<out KubernetesClient>) -> IResourceOperator<out HasMetadata>>>(
             NamespacesOperator.KIND to ::NamespacesOperator,
             NodesOperator.KIND to ::NodesOperator,
             AllPodsOperator.KIND to ::AllPodsOperator,
@@ -91,41 +91,41 @@ object OperatorFactory {
             CustomResourceDefinitionsOperator.KIND to ::CustomResourceDefinitionsOperator
         )
 
-    fun createKubernetes(clients: Clients<out KubernetesClient>): List<IResourceOperator<out HasMetadata>> {
-        return kubernetes.map { it.second.invoke(clients) }
+    fun createKubernetes(client: ClientAdapter<out KubernetesClient>): List<IResourceOperator<out HasMetadata>> {
+        return kubernetes.map { it.second.invoke(client) }
     }
 
-    fun createOpenShift(clients: Clients<out OpenShiftClient>): List<IResourceOperator<out HasMetadata>> {
-        return openshift.map { it.second.invoke(clients) }
+    fun createOpenShift(client: ClientAdapter<out OpenShiftClient>): List<IResourceOperator<out HasMetadata>> {
+        return openshift.map { it.second.invoke(client) }
     }
 
-    fun createAll(clients: Clients<out KubernetesClient>): List<IResourceOperator<out HasMetadata>>{
-        return if (clients.isOpenShift()) {
+    fun createAll(client: ClientAdapter<out KubernetesClient>): List<IResourceOperator<out HasMetadata>>{
+        return if (client.isOpenShift()) {
             @Suppress("UNCHECKED_CAST")
-            createOpenShift(clients as Clients<OpenShiftClient>)
+            createOpenShift(client as ClientAdapter<OpenShiftClient>)
         } else {
-            createKubernetes(clients)
+            createKubernetes(client)
         }
     }
 
     inline fun <reified T : IResourceOperator<out HasMetadata>> create(
         kind: ResourceKind<out HasMetadata>,
-        clients: Clients<out KubernetesClient>
+        client: ClientAdapter<out KubernetesClient>
     ): T? {
-        val operators = getOperatorsByKind(clients)
+        val operators = getOperatorsByKind(client)
         return operators
             .filter { kindAndOperator -> kind == kindAndOperator.first }
-            .map { kindAndOperator -> kindAndOperator.second.invoke(clients) }
+            .map { kindAndOperator -> kindAndOperator.second.invoke(client) }
             .filterIsInstance<T>()
             .firstOrNull()
     }
 
     fun getOperatorsByKind(
-        clients: Clients<out KubernetesClient>
-    ): List<Pair<ResourceKind<out HasMetadata>, (Clients<out KubernetesClient>) -> IResourceOperator<out HasMetadata>>> {
-        return if (clients.isOpenShift()) {
+        client: ClientAdapter<out KubernetesClient>
+    ): List<Pair<ResourceKind<out HasMetadata>, (ClientAdapter<out KubernetesClient>) -> IResourceOperator<out HasMetadata>>> {
+        return if (client.isOpenShift()) {
             @Suppress("UNCHECKED_CAST")
-            openshift as List<Pair<ResourceKind<out HasMetadata>, (Clients<out KubernetesClient>) -> IResourceOperator<out HasMetadata>>>
+            openshift as List<Pair<ResourceKind<out HasMetadata>, (ClientAdapter<out KubernetesClient>) -> IResourceOperator<out HasMetadata>>>
         } else {
             kubernetes
         }

@@ -12,7 +12,6 @@ package com.redhat.devtools.intellij.kubernetes.model.context
 
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.argThat
-import com.nhaarman.mockitokotlin2.argumentCaptor
 import com.nhaarman.mockitokotlin2.atLeastOnce
 import com.nhaarman.mockitokotlin2.clearInvocations
 import com.nhaarman.mockitokotlin2.doReturn
@@ -23,10 +22,11 @@ import com.nhaarman.mockitokotlin2.spy
 import com.nhaarman.mockitokotlin2.times
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.whenever
-import com.redhat.devtools.intellij.kubernetes.model.Clients
-import com.redhat.devtools.intellij.kubernetes.model.ModelChangeObservable
 import com.redhat.devtools.intellij.kubernetes.model.Notification
+import com.redhat.devtools.intellij.kubernetes.model.ResourceModelObservable
 import com.redhat.devtools.intellij.kubernetes.model.ResourceWatch
+import com.redhat.devtools.intellij.kubernetes.model.client.ClientAdapter
+import com.redhat.devtools.intellij.kubernetes.model.client.KubeClientAdapter
 import com.redhat.devtools.intellij.kubernetes.model.context.IActiveContext.ResourcesIn
 import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.NAMESPACE1
 import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.NAMESPACE2
@@ -55,10 +55,10 @@ import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.Service
 import com.redhat.devtools.intellij.kubernetes.model.util.MultiResourceException
 import io.fabric8.kubernetes.api.model.GenericKubernetesResource
 import io.fabric8.kubernetes.api.model.HasMetadata
+import io.fabric8.kubernetes.api.model.NamedContext
 import io.fabric8.kubernetes.api.model.Namespace
 import io.fabric8.kubernetes.api.model.Node
 import io.fabric8.kubernetes.api.model.Pod
-import io.fabric8.kubernetes.api.model.Secret
 import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinition
 import io.fabric8.kubernetes.api.model.apps.Deployment
 import io.fabric8.kubernetes.client.KubernetesClient
@@ -66,19 +66,17 @@ import io.fabric8.kubernetes.client.NamespacedKubernetesClient
 import io.fabric8.kubernetes.client.Watch
 import io.fabric8.kubernetes.client.Watcher
 import io.fabric8.kubernetes.model.Scope
-import java.io.OutputStream
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
 import org.junit.Test
-import org.mockito.ArgumentMatcher
+import java.io.OutputStream
 
 class KubernetesContextTest {
 
-	private val modelChange: ModelChangeObservable = mock()
-
+	private val modelChange: ResourceModelObservable = mock()
 	private val allNamespaces = arrayOf(NAMESPACE1, NAMESPACE2, NAMESPACE3)
 	private val currentNamespace = NAMESPACE2
-	private val clients: Clients<KubernetesClient> = Clients(client(currentNamespace.metadata.name, allNamespaces))
+	private val client = KubeClientAdapter(client(currentNamespace.metadata.name, allNamespaces))
 	private val namespaceWatchOperation: (watcher: Watcher<in Namespace>) -> Watch? = { null }
 
 	private val namespacesOperator = nonNamespacedResourceOperator<Namespace, NamespacedKubernetesClient>(
@@ -108,14 +106,6 @@ class KubernetesContextTest {
 		namespacedResourceOperator(
 			ResourceKind.create(HasMetadata::class.java),
 			setOf(hasMetadata1, hasMetadata2),
-			currentNamespace
-		)
-
-	// operator that is not contained in list of operators known to the context
-	private val danglingSecretsOperator: INamespacedResourceOperator<Secret, NamespacedKubernetesClient> =
-		namespacedResourceOperator(
-			ResourceKind.create(Secret::class.java),
-			setOf(resource("secret1", "ns4", "uid1", "v1")),
 			currentNamespace
 		)
 
@@ -204,119 +194,33 @@ class KubernetesContextTest {
 	}
 
 	private fun createContext(internalResourcesOperators: List<IResourceOperator<*>>, extensionResourceOperators: List<IResourceOperator<*>>): TestableKubernetesContext {
-		return spy(TestableKubernetesContext(
+		return spy(
+			TestableKubernetesContext(
+				mock(),
 				modelChange,
-				this@KubernetesContextTest.clients,
+				this@KubernetesContextTest.client,
 				internalResourcesOperators,
 				extensionResourceOperators,
 				Pair(namespacedCustomResourceOperator, nonNamespacedCustomResourcesOperator),
 				resourceWatch,
-				notification)
+				notification
+			)
 		)
-	}
-
-	@Test
-	fun `#setCurrentNamespace should remove all namespaced operators`() {
-		// given
-		val captor = argumentCaptor<List<ResourceKind<out HasMetadata>>>()
-		val toRemove = context.namespacedOperators
-				.map { it.value.kind }
-				.toTypedArray()
-		// when
-		context.setCurrentNamespace(NAMESPACE1.metadata.name)
-		// then
-		verify(context.watch).stopWatchAll(captor.capture())
-		assertThat(captor.firstValue).containsOnly(*toRemove)
-	}
-
-	@Test
-	fun `#setCurrentNamespace should watch all namespaced operators that it stopped before`() {
-		// given
-		val stopped: Collection<ResourceKind<out HasMetadata>> =
-			context.namespacedOperators.values
-				.map { it.kind }
-
-		whenever(context.watch.stopWatchAll(any()))
-			.thenReturn(stopped)
-		// when
-		context.setCurrentNamespace(NAMESPACE1.metadata.name)
-		// then
-		val matcher = ArgumentMatcher<Collection<Pair<ResourceKind<out HasMetadata>, (watcher: Watcher<in HasMetadata>) -> Watch?>>> {
-				watched ->
-					val watchedKinds: List<ResourceKind<out HasMetadata>>? = watched?.map { pair -> pair.first }
-					(true == watchedKinds?.containsAll(stopped)
-							&& watched.size == stopped.size)
-			}
-		verify(context.watch).watchAll(argThat(matcher), any())
-	}
-
-	@Test
-	fun `#setCurrentNamespace should NOT watch operator that was stopped if it is not contained in list of known operators`() {
-		// given
-		val captor =
-			argumentCaptor<Collection<Pair<ResourceKind<out HasMetadata>, (Watcher<in HasMetadata>) -> Watch?>>>()
-		val stopped: Collection<ResourceKind<*>> = listOf(danglingSecretsOperator.kind)
-		whenever(context.watch.stopWatchAll(any()))
-			.thenReturn(stopped)
-		// when
-		context.setCurrentNamespace(NAMESPACE1.metadata.name)
-		// then
-		verify(context.watch).watchAll(captor.capture(), any())
-		assertThat(captor.firstValue).isEmpty()
-	}
-
-	@Test
-	fun `#setCurrentNamespace should not invalidate non-namespaced resource operators`() {
-		// given
-		val namespace = NAMESPACE1.metadata.name
-		// when
-		context.setCurrentNamespace(namespace)
-		// then
-		verify(namespacesOperator, never()).invalidate()
-	}
-
-	@Test
-	fun `#setCurrentNamespace should not invalidate namespaced resource operators if it didn't change`() {
-		// given
-		val namespace = currentNamespace.metadata.name
-		// when
-		context.setCurrentNamespace(namespace)
-		// then
-		verify(namespacedPodsOperator, never()).invalidate()
-	}
-
-	@Test
-	fun `#setCurrentNamespace should fire change in current namespace`() {
-		// given
-		// when
-		context.setCurrentNamespace(NAMESPACE1.metadata.name)
-		// then
-		verify(modelChange).fireCurrentNamespace(NAMESPACE1.metadata.name)
-	}
-
-	@Test
-	fun `#setCurrentNamespace should set namespace in client`() {
-		// given
-		// when
-		context.setCurrentNamespace(NAMESPACE1.metadata.name)
-		// then
-		verify(clients.get().configuration).namespace = NAMESPACE1.metadata.name
 	}
 
 	@Test
 	fun `#getCurrentNamespace should retrieve current namespace in client`() {
 		// given
-		clearInvocations(clients.get().configuration) // clear invocation when constructing context
 		// when
 		context.getCurrentNamespace()
 		// then
-		verify(clients.get().configuration).namespace
+		verify(client.get()).namespace
 	}
 
 	@Test
 	fun `#getCurrentNamespace should use null if no namespace set in client`() {
 		// given
-		whenever(clients.get().configuration.namespace)
+		whenever(client.get().namespace)
 				.thenReturn(null)
 		// when
 		val namespace = context.getCurrentNamespace()
@@ -327,7 +231,7 @@ class KubernetesContextTest {
 	@Test
 	fun `#getCurrentNamespace should return null if current namespace is set but doesnt exist`() {
 		// given
-		whenever(clients.get().configuration.namespace)
+		whenever(client.get().namespace)
 				.thenReturn("inexistent")
 
 		// when
@@ -340,7 +244,7 @@ class KubernetesContextTest {
 	fun `#isCurrentNamespace should return false if given namespace is not in existing namespaces`() {
 		// given
 		// when
-		val isCurrent = context.isCurrentNamespace(mock())
+		val isCurrent = context.isCurrentNamespace(mock<HasMetadata>())
 		// then
 		assertThat(isCurrent).isFalse()
 	}
@@ -623,16 +527,15 @@ class KubernetesContextTest {
 		// when
 		context.watch(ResourceKind.create(namespacedDefinition.spec)!!)
 		// then
-		@Suppress("UNCHECKED_CAST")
 		verify(context.watch).watch(
 			eq(namespacedCustomResourceOperator.kind),
-			argThat(ArgumentMatcher { function ->
+			argThat { function ->
 				// cannot compare functions directly, mockito creates proxies,
 				// identical kotlin lambdas may not be equal
 				// kotlin method references are KFunction, lambdas are KClassImpl
 				function.invoke(mock()) ==
 						namespacedCustomResourceWatchOp.invoke(mock())
-			}),
+			},
 			any())
 	}
 
@@ -651,13 +554,13 @@ class KubernetesContextTest {
 		// then
 		verify(context.watch).watch(
 			eq(nonNamespacedCustomResourcesOperator.kind),
-			argThat(ArgumentMatcher { function ->
+			argThat { function ->
 				// cannot compare functions directly, mockito creates proxies,
 				// identical kotlin lambdas may not be equal
 				// kotlin method references are KFunction, lambdas are KClassImpl
 				function.invoke(mock()) ==
 						nonNamespacedCustomResourceWatchOp.invoke(mock())
-			}),
+			},
 			any())
 	}
 
@@ -1078,12 +981,12 @@ class KubernetesContextTest {
 	}
 
 	@Test
-	fun `#close should close client`() {
+	fun `#close should NOT close client (client belongs to AllContext, is only passed to context)`() {
 		// given
 		// when
 		context.close()
 		// then
-		verify(clients.get()).close()
+		verify(client.get(), never()).close()
 	}
 
 	private fun givenCustomResourceOperatorInContext(
@@ -1115,8 +1018,9 @@ class KubernetesContextTest {
 	}
 
 	class TestableKubernetesContext(
-        observable: ModelChangeObservable,
-        clients: Clients<KubernetesClient>,
+		context: NamedContext,
+        observable: ResourceModelObservable,
+        client: KubeClientAdapter,
         private val internalResourceOperators: List<IResourceOperator<out HasMetadata>>,
         private val extensionResourceOperators: List<IResourceOperator<out HasMetadata>>,
         private val customResourcesOperators: Pair<
@@ -1124,7 +1028,7 @@ class KubernetesContextTest {
 					INonNamespacedResourceOperator<GenericKubernetesResource, KubernetesClient>>,
         public override var watch: ResourceWatch<ResourceKind<out HasMetadata>>,
         override val notification: Notification)
-		: KubernetesContext(observable, clients, mock()) {
+		: KubernetesContext(context, observable, client) {
 
 		public override val namespacedOperators
 				: MutableMap<ResourceKind<out HasMetadata>, INamespacedResourceOperator<out HasMetadata, KubernetesClient>>
@@ -1138,12 +1042,12 @@ class KubernetesContextTest {
 				return super.nonNamespacedOperators
 			}
 
-		override fun getInternalResourceOperators(clients: Clients<KubernetesClient>)
+		override fun getInternalResourceOperators(client: ClientAdapter<out KubernetesClient>)
 				: List<IResourceOperator<out HasMetadata>> {
 			return internalResourceOperators
 		}
 
-		override fun getExtensionResourceOperators(clients: Clients<KubernetesClient>)
+		override fun getExtensionResourceOperators(client: ClientAdapter<out KubernetesClient>)
 				: List<IResourceOperator<out HasMetadata>> {
 			return extensionResourceOperators
 		}

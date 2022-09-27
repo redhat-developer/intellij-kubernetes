@@ -17,6 +17,8 @@ import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.spy
 import com.nhaarman.mockitokotlin2.whenever
+import com.redhat.devtools.intellij.kubernetes.model.client.ClientAdapter
+import com.redhat.devtools.intellij.kubernetes.model.client.KubeClientAdapter
 import io.fabric8.kubernetes.api.model.APIResourceBuilder
 import io.fabric8.kubernetes.api.model.APIResourceList
 import io.fabric8.kubernetes.api.model.APIResourceListBuilder
@@ -81,7 +83,7 @@ class APIResourcesTest {
         .build()
 
     private var response: HttpResponse<InputStream>? = null
-    private var client: KubernetesClient? = null
+    private var client: ClientAdapter<out KubernetesClient> = mock()
     private var api: APIResources? = null
 
     @Before
@@ -89,7 +91,7 @@ class APIResourcesTest {
         this.response = mock()
         val httpClient = createHttpClient(response!!)
         this.client = createClient(httpClient)
-        this.api = APIResources(client!!)
+        this.api = APIResources(client)
     }
 
     @Test
@@ -129,7 +131,7 @@ class APIResourcesTest {
     fun `#get for unknown kind should return null`() {
         // given
         // when
-        val found = APIResources(client!!).get("Yoda", "rebels", version)
+        val found = APIResources(client).get("Yoda", "rebels", version)
         // then
         assertThat(found).isNull()
     }
@@ -172,13 +174,13 @@ class APIResourcesTest {
         return client
     }
 
-    private fun createClient(httpClient: HttpClient): KubernetesClient {
+    private fun createClient(httpClient: HttpClient): ClientAdapter<out KubernetesClient> {
         val client = spy(DefaultKubernetesClient())
         doReturn(httpClient)
             .whenever(client).httpClient
         mockCoreApiResources(coreApiResourceList, response!!)
         mockExtensionApiResources(version, client)
-        return client
+        return KubeClientAdapter(client)
     }
 
     private fun mockCoreApiResources(apiResources: APIResourceList, response: HttpResponse<InputStream>) {

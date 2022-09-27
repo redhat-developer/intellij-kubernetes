@@ -18,7 +18,8 @@ import com.intellij.ui.tree.StructureTreeModel
 import com.intellij.ui.tree.TreePathUtil
 import com.redhat.devtools.intellij.kubernetes.actions.getDescriptor
 import com.redhat.devtools.intellij.kubernetes.model.IResourceModel
-import com.redhat.devtools.intellij.kubernetes.model.ModelChangeObservable
+import com.redhat.devtools.intellij.kubernetes.model.IResourceModelListener
+import com.redhat.devtools.intellij.kubernetes.model.context.IActiveContext
 import javax.swing.tree.DefaultMutableTreeNode
 import javax.swing.tree.TreeNode
 import javax.swing.tree.TreePath
@@ -33,7 +34,7 @@ import javax.swing.tree.TreePath
 class TreeUpdater(
     private val treeModel: StructureTreeModel<AbstractTreeStructure>,
     private val structure: TreeStructure
-) : ModelChangeObservable.IResourceChangeListener, Disposable {
+) : IResourceModelListener, Disposable {
 
     private var model: IResourceModel? = null
 
@@ -47,10 +48,29 @@ class TreeUpdater(
         return this
     }
 
-    override fun currentNamespace(namespace: String?) {
+    override fun currentNamespaceChanged(new: IActiveContext<*, *>?, old: IActiveContext<*,*>?) {
         treeModel.invoker.invokeLater {
-            invalidateRoot()
+            val contexts = findNodes(old)
+                .map { TreePathUtil.toTreePath(it) }
+            // have existing node point to new context (is pointing to old context that was replaced)
+            setElement(new, contexts)
+            invalidatePaths(contexts)
         }
+    }
+
+    /**
+     * Sets the given element to all the nodes specified by the given [TreePath]s.
+     * Does nothing if the element is `null`.
+     *
+     * @param element the element to be set to the node
+     * @param paths the paths to the nodes whose element should be set
+     */
+    private fun setElement(element: Any?, paths: Collection<TreePath>) {
+        if (element == null) {
+            return
+        }
+
+        paths.forEach { it.lastPathComponent.getDescriptor()?.setElement(element) }
     }
 
     override fun removed(removed: Any) {
@@ -105,7 +125,7 @@ class TreeUpdater(
 
     private fun isRootNode(element: Any?): Boolean {
         val descriptor = (treeModel.root as? DefaultMutableTreeNode)?.userObject as? NodeDescriptor<*>
-        return descriptor?.element == element
+        return element == descriptor?.element
     }
 
     private fun invalidateRoot() {
