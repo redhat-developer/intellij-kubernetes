@@ -19,8 +19,10 @@ import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.whenever
 import com.redhat.devtools.intellij.common.validation.KubernetesResourceInfo
 import com.redhat.devtools.intellij.common.validation.KubernetesTypeInfo
-import com.redhat.devtools.intellij.kubernetes.model.IModelChangeObservable
+import com.redhat.devtools.intellij.kubernetes.model.IResourceModelObservable
 import com.redhat.devtools.intellij.kubernetes.model.IResourceModel
+import com.redhat.devtools.intellij.kubernetes.model.client.ClientAdapter
+import com.redhat.devtools.intellij.kubernetes.model.client.ClientConfig
 import com.redhat.devtools.intellij.kubernetes.model.context.IActiveContext
 import com.redhat.devtools.intellij.kubernetes.model.context.IContext
 import com.redhat.devtools.intellij.kubernetes.model.resource.ILogWatcher
@@ -40,8 +42,15 @@ import org.mockito.Mockito
 
 object Mocks {
 
+    fun clientAdapter(clientConfig: ClientConfig): ClientAdapter<KubernetesClient> {
+        return mock<ClientAdapter<KubernetesClient>>().apply {
+            doReturn(clientConfig)
+                .whenever(this).config
+        }
+    }
+
     fun contextFactory(context: IActiveContext<HasMetadata, KubernetesClient>?)
-            : (IModelChangeObservable, NamedContext?) -> IActiveContext<HasMetadata, KubernetesClient> {
+            : (ClientAdapter<out KubernetesClient>, IResourceModelObservable) -> IActiveContext<out HasMetadata, out KubernetesClient> {
         return mock {
             /**
              * Trying to use {@code com.nhaarman.mockitokotlin2.doReturn} leads to
@@ -66,12 +75,14 @@ object Mocks {
 
     fun activeContext(currentNamespace: Namespace, context: NamedContext)
             : IActiveContext<HasMetadata, KubernetesClient> {
-        return mock {
-            Mockito.doReturn(currentNamespace.metadata.name)
-                .`when`(mock).getCurrentNamespace()
-            Mockito.doReturn(context)
-                .`when`(mock).context
-        }
+        val mock = mock<IActiveContext<HasMetadata, KubernetesClient>>()
+        doReturn(currentNamespace.metadata.name)
+            .whenever(mock).getCurrentNamespace()
+        doReturn(context)
+            .whenever(mock).context
+        doReturn(true)
+            .whenever(mock).active
+        return mock
     }
 
     inline fun <reified T : HasMetadata, C : Client> namespacedResourceOperator(
@@ -88,7 +99,7 @@ object Mocks {
     }
 
     inline fun <reified T : HasMetadata, C : Client> logWatchingNamespacedResourceOperator(
-        kind: ResourceKind<T>?,
+        kind: ResourceKind<T>,
         resources: Collection<T>,
         namespace: Namespace,
         crossinline watchOperation: (watcher: Watcher<in T>) -> Watch? = { null },
@@ -171,6 +182,21 @@ object Mocks {
             on { this.name } doReturn name
             on { this.namespace } doReturn namespace
             on { this.typeInfo } doReturn typeInfo
+        }
+    }
+
+    fun clientConfig(
+        currentContext: NamedContext?,
+        allContexts: List<NamedContext>,
+        configuration: io.fabric8.kubernetes.client.Config = mock()
+    ): ClientConfig {
+        return mock {
+            on { this.currentContext } doReturn currentContext
+            on { isCurrent(any()) } doAnswer { invocation ->
+                invocation.getArgument<NamedContext>(0) == currentContext
+            }
+            on { this.allContexts } doReturn allContexts
+            on { this.configuration } doReturn configuration
         }
     }
 

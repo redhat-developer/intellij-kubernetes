@@ -10,26 +10,26 @@
  ******************************************************************************/
 package com.redhat.devtools.intellij.kubernetes.model.context
 
-import io.fabric8.kubernetes.api.model.HasMetadata
-import io.fabric8.kubernetes.api.model.NamedContext
-import io.fabric8.openshift.api.model.Project
-import io.fabric8.openshift.client.OpenShiftClient
-import com.redhat.devtools.intellij.kubernetes.model.IModelChangeObservable
+import com.redhat.devtools.intellij.kubernetes.model.IResourceModelObservable
+import com.redhat.devtools.intellij.kubernetes.model.client.ClientAdapter
+import com.redhat.devtools.intellij.kubernetes.model.client.OSClientAdapter
 import com.redhat.devtools.intellij.kubernetes.model.resource.IResourceOperator
 import com.redhat.devtools.intellij.kubernetes.model.resource.OperatorFactory
 import com.redhat.devtools.intellij.kubernetes.model.resource.ResourceKind
 import com.redhat.devtools.intellij.kubernetes.model.resource.openshift.ProjectsOperator
-import com.redhat.devtools.intellij.kubernetes.model.Clients
+import io.fabric8.kubernetes.api.model.HasMetadata
+import io.fabric8.kubernetes.api.model.NamedContext
+import io.fabric8.openshift.api.model.Project
+import io.fabric8.openshift.client.OpenShiftClient
 
 open class OpenShiftContext(
-    modelChange: IModelChangeObservable,
-    clients: Clients<OpenShiftClient>,
-    context: NamedContext
-) : ActiveContext<Project, OpenShiftClient>(modelChange, clients, context) {
+    context: NamedContext,
+    modelChange: IResourceModelObservable,
+    client: OSClientAdapter,
+) : ActiveContext<Project, OpenShiftClient>(context, modelChange, client) {
 
-	override fun getInternalResourceOperators(clients: Clients<OpenShiftClient>)
-			: List<IResourceOperator<out HasMetadata>> {
-		return OperatorFactory.createOpenShift(clients)
+	override fun getInternalResourceOperators(client: ClientAdapter<out OpenShiftClient>): List<IResourceOperator<out HasMetadata>> {
+		return OperatorFactory.createOpenShift(client)
 	}
 
 	override fun getNamespacesKind(): ResourceKind<Project> {

@@ -20,6 +20,7 @@ import com.nhaarman.mockitokotlin2.never
 import com.nhaarman.mockitokotlin2.spy
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.whenever
+import com.redhat.devtools.intellij.kubernetes.model.client.KubeClientAdapter
 import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.clusterScopedApiResource
 import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.namespacedApiResource
 import com.redhat.devtools.intellij.kubernetes.model.util.isSameResource
@@ -31,6 +32,7 @@ import io.fabric8.kubernetes.api.model.ObjectMetaBuilder
 import io.fabric8.kubernetes.api.model.PodBuilder
 import io.fabric8.kubernetes.client.KubernetesClient
 import io.fabric8.kubernetes.client.KubernetesClientException
+import io.fabric8.kubernetes.client.NamespacedKubernetesClient
 import io.fabric8.kubernetes.client.dsl.MixedOperation
 import io.fabric8.kubernetes.client.dsl.Resource
 import io.fabric8.kubernetes.client.dsl.base.ResourceDefinitionContext
@@ -79,6 +81,8 @@ class NonCachingSingleResourceOperatorTest {
         genericResourceOperation
     )
 
+    private val clientAdapter: KubeClientAdapter = KubeClientAdapter(client)
+
     @Before
     fun before() {
         clearInvocations(genericResourceOperation)
@@ -88,7 +92,7 @@ class NonCachingSingleResourceOperatorTest {
     fun `#get should call client#genericKubernetesResource(context) if resource has a name`() {
         // given
         val apiResource = namespacedApiResource(namespacedCustomResource)
-        val operator = NonCachingSingleResourceOperator(client, createAPIResources(apiResource))
+        val operator = NonCachingSingleResourceOperator(clientAdapter, createAPIResources(apiResource))
         // when
         operator.get(namespacedCustomResource)
         // then
@@ -107,7 +111,7 @@ class NonCachingSingleResourceOperatorTest {
             .build()
         unnamed.metadata.name = null
         val apiResource = namespacedApiResource(unnamed)
-        val operator = NonCachingSingleResourceOperator(client, createAPIResources(apiResource))
+        val operator = NonCachingSingleResourceOperator(clientAdapter, createAPIResources(apiResource))
         // when
         val result = operator.get(unnamed)
         // then
@@ -119,7 +123,7 @@ class NonCachingSingleResourceOperatorTest {
     fun `#get should call client#genericKubernetesResources()#inNamespace(resourceNamespace) if custom resource is namespaced and has namespace`() {
         // given
         val apiResource = namespacedApiResource(namespacedCustomResource)
-        val operator = NonCachingSingleResourceOperator(client, createAPIResources(apiResource))
+        val operator = NonCachingSingleResourceOperator(clientAdapter, createAPIResources(apiResource))
         // when
         operator.get(namespacedCustomResource)
         // then
@@ -134,7 +138,7 @@ class NonCachingSingleResourceOperatorTest {
             .build()
         namespacedCustomResource.metadata = noNamespace
         val apiResource = namespacedApiResource(namespacedCustomResource)
-        val operator = NonCachingSingleResourceOperator(client, createAPIResources(apiResource))
+        val operator = NonCachingSingleResourceOperator(clientAdapter, createAPIResources(apiResource))
         // when
         operator.get(namespacedCustomResource)
         // then
@@ -145,7 +149,7 @@ class NonCachingSingleResourceOperatorTest {
     fun `#get should NOT call client#genericKubernetesResources()#inNamespace() if resource is cluster scoped`() {
         // given
         val apiResource = clusterScopedApiResource(clusterCustomResource)
-        val operator = NonCachingSingleResourceOperator(client, createAPIResources(apiResource))
+        val operator = NonCachingSingleResourceOperator(clientAdapter, createAPIResources(apiResource))
         // when
         operator.get(clusterCustomResource)
         // then
@@ -155,7 +159,7 @@ class NonCachingSingleResourceOperatorTest {
     @Test(expected = KubernetesClientException::class)
     fun `#get should throw if custom resource is unknown api`() {
         // given
-        val operator = NonCachingSingleResourceOperator(client, createAPIResources(null))
+        val operator = NonCachingSingleResourceOperator(clientAdapter, createAPIResources(null))
         // when
         operator.get(namespacedCustomResource)
         // then
@@ -165,7 +169,7 @@ class NonCachingSingleResourceOperatorTest {
     fun `#replace should call client#genericKubernetesResource(context) if resource has a name`() {
         // given
         val apiResource = namespacedApiResource(namespacedCustomResource)
-        val operator = NonCachingSingleResourceOperator(client, createAPIResources(apiResource))
+        val operator = NonCachingSingleResourceOperator(clientAdapter, createAPIResources(apiResource))
         // when
         operator.replace(namespacedCustomResource)
         // then
@@ -177,7 +181,7 @@ class NonCachingSingleResourceOperatorTest {
     fun `#replace should call #createOrReplace() if resource has a name`() {
         // given
         val apiResource = namespacedApiResource(namespacedCustomResource)
-        val operator = NonCachingSingleResourceOperator(client, createAPIResources(apiResource))
+        val operator = NonCachingSingleResourceOperator(clientAdapter, createAPIResources(apiResource))
         // when
         operator.replace(namespacedCustomResource)
         // then
@@ -194,7 +198,7 @@ class NonCachingSingleResourceOperatorTest {
         generatedName.metadata.name = null
         generatedName.metadata.generateName = "storm trooper clone"
         val apiResource = namespacedApiResource(namespacedCustomResource)
-        val operator = NonCachingSingleResourceOperator(client, createAPIResources(apiResource))
+        val operator = NonCachingSingleResourceOperator(clientAdapter, createAPIResources(apiResource))
         // when
         operator.replace(generatedName)
         // then
@@ -206,7 +210,7 @@ class NonCachingSingleResourceOperatorTest {
     fun `#watch should call client#genericKubernetesResource(context) if resource has a name`() {
         // given
         val apiResource = namespacedApiResource(namespacedCustomResource)
-        val operator = NonCachingSingleResourceOperator(client, createAPIResources(apiResource))
+        val operator = NonCachingSingleResourceOperator(clientAdapter, createAPIResources(apiResource))
         // when
         operator.watch(namespacedCustomResource, mock())
         // then
@@ -221,7 +225,7 @@ class NonCachingSingleResourceOperatorTest {
         val unnamed = PodBuilder(legacyResource).build()
         unnamed.metadata.name = null
         val apiResource = namespacedApiResource(unnamed)
-        val operator = NonCachingSingleResourceOperator(client, createAPIResources(apiResource))
+        val operator = NonCachingSingleResourceOperator(clientAdapter, createAPIResources(apiResource))
         // when
         val result = operator.watch(unnamed, mock())
         // then
@@ -242,8 +246,8 @@ class NonCachingSingleResourceOperatorTest {
     private fun createClient(
         namespace: String,
         genericKubernetesResourceOp: MixedOperation<GenericKubernetesResource, GenericKubernetesResourceList, Resource<GenericKubernetesResource>>
-    ): KubernetesClient {
-        val client: KubernetesClient = mock()
+    ): NamespacedKubernetesClient {
+        val client: NamespacedKubernetesClient = mock()
         doReturn(genericKubernetesResourceOp)
             .whenever(client).genericKubernetesResources(any())
         doReturn(namespace)

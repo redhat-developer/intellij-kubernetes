@@ -10,7 +10,7 @@
  ******************************************************************************/
 package com.redhat.devtools.intellij.kubernetes.model.resource.openshift
 
-import com.redhat.devtools.intellij.kubernetes.model.Clients
+import com.redhat.devtools.intellij.kubernetes.model.client.ClientAdapter
 import com.redhat.devtools.intellij.kubernetes.model.resource.ILogWatcher
 import com.redhat.devtools.intellij.kubernetes.model.resource.NamespacedOperation
 import com.redhat.devtools.intellij.kubernetes.model.resource.NamespacedResourceOperator
@@ -20,8 +20,8 @@ import io.fabric8.openshift.api.model.Build
 import io.fabric8.openshift.client.OpenShiftClient
 import java.io.OutputStream
 
-class BuildsOperator(clients: Clients<out OpenShiftClient>)
-    : NamespacedResourceOperator<Build, OpenShiftClient>(clients.get()), ILogWatcher<Build> {
+class BuildsOperator(client: ClientAdapter<out OpenShiftClient>)
+    : NamespacedResourceOperator<Build, OpenShiftClient>(client.get()), ILogWatcher<Build> {
 
     companion object {
         val KIND = ResourceKind.create(Build::class.java)

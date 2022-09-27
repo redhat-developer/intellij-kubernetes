@@ -10,26 +10,27 @@
  ******************************************************************************/
 package com.redhat.devtools.intellij.kubernetes.model.context
 
-import io.fabric8.kubernetes.api.model.HasMetadata
-import io.fabric8.kubernetes.api.model.NamedContext
-import io.fabric8.kubernetes.api.model.Namespace
-import com.redhat.devtools.intellij.kubernetes.model.IModelChangeObservable
+import com.redhat.devtools.intellij.kubernetes.model.IResourceModelObservable
+import com.redhat.devtools.intellij.kubernetes.model.client.ClientAdapter
+import com.redhat.devtools.intellij.kubernetes.model.client.KubeClientAdapter
 import com.redhat.devtools.intellij.kubernetes.model.resource.IResourceOperator
 import com.redhat.devtools.intellij.kubernetes.model.resource.OperatorFactory
 import com.redhat.devtools.intellij.kubernetes.model.resource.ResourceKind
 import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.NamespacesOperator
-import com.redhat.devtools.intellij.kubernetes.model.Clients
+import io.fabric8.kubernetes.api.model.HasMetadata
+import io.fabric8.kubernetes.api.model.NamedContext
+import io.fabric8.kubernetes.api.model.Namespace
 import io.fabric8.kubernetes.client.KubernetesClient
 
 open class KubernetesContext(
-    modelChange: IModelChangeObservable,
-    clients: Clients<KubernetesClient>,
-    context: NamedContext
-) : ActiveContext<Namespace, KubernetesClient>(modelChange, clients, context) {
+	context: NamedContext,
+	modelChange: IResourceModelObservable,
+	client: KubeClientAdapter,
+) : ActiveContext<Namespace, KubernetesClient>(context, modelChange, client) {
 
-	override fun getInternalResourceOperators(clients: Clients<KubernetesClient>)
+	override fun getInternalResourceOperators(client: ClientAdapter<out KubernetesClient>)
 			: List<IResourceOperator<out HasMetadata>> {
-		return OperatorFactory.createKubernetes(clients)
+		return OperatorFactory.createKubernetes(client)
 	}
 
 	override fun getNamespacesKind(): ResourceKind<Namespace> {

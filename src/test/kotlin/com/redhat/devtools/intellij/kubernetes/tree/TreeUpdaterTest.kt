@@ -16,6 +16,7 @@ import com.intellij.ui.tree.StructureTreeModel
 import com.intellij.ui.tree.TreePathUtil
 import com.intellij.util.concurrency.Invoker
 import com.nhaarman.mockitokotlin2.any
+import com.nhaarman.mockitokotlin2.argThat
 import com.nhaarman.mockitokotlin2.argumentCaptor
 import com.nhaarman.mockitokotlin2.doAnswer
 import com.nhaarman.mockitokotlin2.doReturn
@@ -28,6 +29,7 @@ import com.nhaarman.mockitokotlin2.whenever
 import com.redhat.devtools.intellij.kubernetes.actions.getDescriptor
 import com.redhat.devtools.intellij.kubernetes.actions.getElement
 import com.redhat.devtools.intellij.kubernetes.model.IResourceModel
+import com.redhat.devtools.intellij.kubernetes.model.context.IActiveContext
 import com.redhat.devtools.intellij.kubernetes.model.mocks.Fakes.deployment
 import com.redhat.devtools.intellij.kubernetes.model.mocks.Fakes.pod
 import com.redhat.devtools.intellij.kubernetes.tree.TreeStructure.Descriptor
@@ -43,13 +45,15 @@ import org.junit.Test
 class TreeUpdaterTest {
 
     private val resourceModel = mock<IResourceModel>()
+
+    private val luckyLukeContext = mock<IActiveContext<*, *>>()
     private val root = mutableTreeNode(resourceModel)
     private val texas = deployment("Texas")
     private val kansas = deployment("Kansas")
     private val mississippi = deployment("Mississippi")
     private val ponyExpress = deployment("Pony Express")
     private val daltonCity = deployment("Dalton City")
-    private val lukyLuke = pod("Luky Luke")
+    private val luckyLuke = pod("Lucky Luke")
     private val jollyJumper = pod("Jolly Jumper")
     // not present in the tree, notified as new element (to be added) that should get displayed
     private val rantanplan = pod("Rantanplan")
@@ -60,7 +64,11 @@ class TreeUpdaterTest {
     // not present in the tree, notified as new element (to be added) that should NOT get displayed
     private val calamityJane = pod("Calamity Jane")
 
-    private val parents: MutableMap<HasMetadata, MutableList<Descriptor<*>>> = mutableMapOf()
+    private val smurfsContext = mock<IActiveContext<*, *>>()
+    private val papaSmurf = pod("Papa Smurf")
+    private val gargamel = pod("Gargamel")
+
+    private val parents: MutableMap<Any, MutableList<Descriptor<*>>> = mutableMapOf()
     private val structure: TreeStructure = object: TreeStructure(mock(), mock(), mock()) {
         override fun isParentDescriptor(descriptor: NodeDescriptor<*>?, element: Any): Boolean {
             // simplified mock impl of structure: rantanplan is to be displayed in 'Kansas' and 'Dalton City'
@@ -78,25 +86,31 @@ class TreeUpdaterTest {
     @Before
     fun before() {
         node(root, listOf(
-            node(kansas, listOf(
-                node(lukyLuke),
-                node(jollyJumper)
-            )),
-            node(texas, listOf(
-                node(joeDalton),
-                node(williamDalton),
-                node(jackDalton)
-            )),
-            node(mississippi, listOf(
-                node(ponyExpress, listOf(
+            node(luckyLukeContext, listOf(
+                node(kansas, listOf(
+                    node(luckyLuke),
+                    node(jollyJumper)
+                )),
+                node(texas, listOf(
                     node(joeDalton),
                     node(williamDalton),
-                    node(jackDalton))
-                )
-            )),
-            node(daltonCity, listOf(
-                node(maDalton))
-            )
+                    node(jackDalton)
+                )),
+                node(mississippi, listOf(
+                    node(ponyExpress, listOf(
+                        node(joeDalton),
+                        node(williamDalton),
+                        node(jackDalton))
+                    )
+                )),
+                node(daltonCity, listOf(
+                    node(maDalton))
+                ))
+            ),
+            node(smurfsContext, listOf(
+                node(papaSmurf, listOf()),
+                node(gargamel, listOf())
+            ))
         ))
     }
 
@@ -109,7 +123,7 @@ class TreeUpdaterTest {
         }.whenever(this).invokeLater(any())
     }
     private val treeModel: StructureTreeModel<AbstractTreeStructure> = mock {
-        on { this.invoker } doReturn syncInvoker
+        on { invoker } doReturn syncInvoker
         on { root } doReturn root
         // required to not npe at runtime when mock calls super class
         on { invalidate(any(), any()) } doReturn mock<Promise<TreePath>>()
@@ -126,12 +140,30 @@ class TreeUpdaterTest {
     }
 
     @Test
-    fun `#currentNamespace invalidates treeModel (tree root node)`() {
+    fun `#currentNamespace invalidates context`() {
         // given
+        val newLuckyLukeContext = mock<IActiveContext<*,*>>()
         // when
-        updater.currentNamespace("luky luke")
+        updater.currentNamespaceChanged(newLuckyLukeContext, luckyLukeContext)
         // then
-        verify(treeModel).invalidate()
+        verify(treeModel).invalidate(
+            argThat { path: TreePath ->
+                path.lastPathComponent.getDescriptor()?.element == luckyLukeContext
+            },
+            eq(true)
+        )
+    }
+
+    @Test
+    fun `#currentNamespace sets new context to node`() {
+        // given
+        val newLuckyLukeContext = mock<IActiveContext<*,*>>()
+        // when
+        updater.currentNamespaceChanged(newLuckyLukeContext, luckyLukeContext)
+        // then
+        val descriptor = findNode(luckyLukeContext).firstOrNull()?.lastPathComponent?.getDescriptor()
+        assertThat(descriptor).isNotNull()
+        verify(descriptor)?.setElement(newLuckyLukeContext)
     }
 
     @Test
@@ -255,10 +287,10 @@ class TreeUpdaterTest {
     }
 
     private fun node(
-        resource: HasMetadata,
+        element: Any,
         children: List<DefaultMutableTreeNode> = emptyList()
     ): DefaultMutableTreeNode {
-        return node(mutableTreeNode(resource), children)
+        return node(mutableTreeNode(element), children)
     }
 
     private fun node(
@@ -273,8 +305,8 @@ class TreeUpdaterTest {
         return node
     }
 
-    private fun mutableTreeNode(resource: HasMetadata): DefaultMutableTreeNode {
-        val descriptor = objectIdentityDescriptor(resource)
+    private fun mutableTreeNode(element: Any): DefaultMutableTreeNode {
+        val descriptor = objectIdentityDescriptor(element)
         return DefaultMutableTreeNode(descriptor)
     }
 
@@ -295,32 +327,32 @@ class TreeUpdaterTest {
     }
 
     private fun saveParent(node: DefaultMutableTreeNode, parent: DefaultMutableTreeNode) {
-        val resource = node.getElement<HasMetadata>() ?: return
+        val element = node.getElement<Any>() ?: return
         val descriptor = parent.getDescriptor() ?: return
-        if (parents[resource] == null) {
-            parents[resource] = mutableListOf()
+        if (parents[element] == null) {
+            parents[element] = mutableListOf()
         }
-        parents[resource]?.add(descriptor)
+        parents[element]?.add(descriptor)
     }
 
-    private fun findNodes(vararg resources: HasMetadata): Array<TreePath> {
-        return resources.flatMap {
-            resource -> findNode(resource)
+    private fun findNodes(vararg element: Any): Array<TreePath> {
+        return element.flatMap {
+            element -> findNode(element)
         }.toTypedArray()
     }
 
-    private fun findNode(resource: HasMetadata): MutableList<TreePath> {
+    private fun findNode(element: Any): MutableList<TreePath> {
         val paths = mutableListOf<TreePath>()
-        findNode(resource, root, paths)
+        findNode(element, root, paths)
         return paths
     }
 
-    private fun findNode(resource: HasMetadata, node: DefaultMutableTreeNode, paths: MutableList<TreePath>): MutableList<TreePath> {
+    private fun findNode(element: Any, node: DefaultMutableTreeNode, paths: MutableList<TreePath>): MutableList<TreePath> {
         for (child in node.children()) {
-            if (resource == child.getElement<HasMetadata>()) {
+            if (element == child.getElement<Any>()) {
                 paths.add(TreePathUtil.toTreePath(child))
             }
-            findNode(resource, child as DefaultMutableTreeNode, paths)
+            findNode(element, child as DefaultMutableTreeNode, paths)
         }
         return paths
     }

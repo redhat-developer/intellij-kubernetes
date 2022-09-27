@@ -10,15 +10,15 @@
  ******************************************************************************/
 package com.redhat.devtools.intellij.kubernetes.model.resource.openshift
 
-import com.redhat.devtools.intellij.kubernetes.model.Clients
+import com.redhat.devtools.intellij.kubernetes.model.client.ClientAdapter
 import com.redhat.devtools.intellij.kubernetes.model.resource.NamespacedOperation
 import com.redhat.devtools.intellij.kubernetes.model.resource.NamespacedResourceOperator
 import com.redhat.devtools.intellij.kubernetes.model.resource.ResourceKind
 import io.fabric8.openshift.api.model.BuildConfig
 import io.fabric8.openshift.client.OpenShiftClient
 
-class BuildConfigsOperator(clients: Clients<out OpenShiftClient>)
-    : NamespacedResourceOperator<BuildConfig, OpenShiftClient>(clients.get()) {
+class BuildConfigsOperator(client: ClientAdapter<out OpenShiftClient>)
+    : NamespacedResourceOperator<BuildConfig, OpenShiftClient>(client.get()) {
 
     companion object {
         val KIND = ResourceKind.create(BuildConfig::class.java)

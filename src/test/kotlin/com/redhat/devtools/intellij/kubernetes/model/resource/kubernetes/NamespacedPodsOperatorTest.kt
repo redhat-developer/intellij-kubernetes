@@ -19,7 +19,8 @@ import com.nhaarman.mockitokotlin2.spy
 import com.nhaarman.mockitokotlin2.times
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.whenever
-import com.redhat.devtools.intellij.kubernetes.model.Clients
+import com.redhat.devtools.intellij.kubernetes.model.client.ClientAdapter
+import com.redhat.devtools.intellij.kubernetes.model.client.KubeClientAdapter
 import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.NAMESPACE1
 import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.NAMESPACE2
 import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.NAMESPACE3
@@ -44,9 +45,9 @@ import org.junit.Test
 class NamespacedPodsOperatorTest {
 
     private val currentNamespace = NAMESPACE2.metadata.name
-    private val clients = Clients(client(currentNamespace, arrayOf(NAMESPACE1, NAMESPACE2, NAMESPACE3)))
-    private val operator = spy(TestablePodsOperator(clients))
-    private val op = inNamespace(pods(clients.get()))
+    private val client = KubeClientAdapter(client(currentNamespace, arrayOf(NAMESPACE1, NAMESPACE2, NAMESPACE3)))
+    private val operator = spy(TestablePodsOperator(client))
+    private val op = inNamespace(pods(client.get()))
 
     @Before
     fun before() {
@@ -271,7 +272,7 @@ class NamespacedPodsOperatorTest {
         // when
         operator.watchAll(watcher)
         // then
-        verify(clients.get().pods()
+        verify(client.get().pods()
             .inNamespace(POD2.metadata.namespace)
         ).watch(watcher)
     }
@@ -284,7 +285,7 @@ class NamespacedPodsOperatorTest {
         // when
         operator.watchAll(watcher)
         // then
-        verify(clients.get().pods()
+        verify(client.get().pods()
             .inNamespace(POD2.metadata.namespace), never()
         ).watch(watcher)
     }
@@ -296,7 +297,7 @@ class NamespacedPodsOperatorTest {
         // when
         operator.watch(POD2, watcher)
         // then
-        verify(clients.get().pods()
+        verify(client.get().pods()
             .inNamespace(POD2.metadata.namespace)
             .withName(POD2.metadata.name)
         ).watch(watcher)
@@ -309,7 +310,7 @@ class NamespacedPodsOperatorTest {
         val toDelete = listOf(POD2)
         operator.delete(toDelete)
         // then
-        verify(clients.get().pods()).delete(toDelete)
+        verify(client.get().pods()).delete(toDelete)
     }
 
     @Test
@@ -320,14 +321,14 @@ class NamespacedPodsOperatorTest {
         // when
         operator.delete(listOf(POD2))
         // then
-        verify(clients.get().pods(), never()).delete(any<List<Pod>>())
+        verify(client.get().pods(), never()).delete(any<List<Pod>>())
     }
 
     @Test
     fun `#delete() returns true if client could delete`() {
         // given
         clearInvocations(operator)
-        whenever(clients.get().pods().delete(any<List<Pod>>()))
+        whenever(client.get().pods().delete(any<List<Pod>>()))
             .thenReturn(true)
         // when
         val success = operator.delete(listOf(POD2))
@@ -339,7 +340,7 @@ class NamespacedPodsOperatorTest {
     fun `#delete() returns false if client could NOT delete`() {
         // given
         clearInvocations(operator)
-        whenever(clients.get().pods().delete(any<List<Pod>>()))
+        whenever(client.get().pods().delete(any<List<Pod>>()))
             .thenReturn(false)
         // when
         val success = operator.delete(listOf(POD2))
@@ -353,7 +354,7 @@ class NamespacedPodsOperatorTest {
         // when
         operator.replace(POD2)
         // then
-        verify(clients.get().pods()
+        verify(client.get().pods()
             .inNamespace(POD2.metadata.namespace)
             .withName(POD2.metadata.name))
             .replace(POD2)
@@ -392,7 +393,7 @@ class NamespacedPodsOperatorTest {
         // when
         operator.replace(POD2)
         // then
-        verify(clients.get().pods()
+        verify(client.get().pods()
             .inNamespace(POD2.metadata.namespace)
             .withName(POD2.metadata.name))
             .replace(POD2)
@@ -402,7 +403,7 @@ class NamespacedPodsOperatorTest {
     fun `#replace() returns new pod if client replaced`() {
         // given
         clearInvocations(operator)
-        whenever(clients.get().pods()
+        whenever(client.get().pods()
             .inNamespace(POD2.metadata.namespace)
             .withName(POD2.metadata.name)
             .replace(POD2))
@@ -419,7 +420,7 @@ class NamespacedPodsOperatorTest {
         // when
         operator.create(POD2)
         // then
-        verify(clients.get().pods()
+        verify(client.get().pods()
             .inNamespace(POD2.metadata.namespace)
             .withName(POD2.metadata.name))
             .create(POD2)
@@ -460,7 +461,7 @@ class NamespacedPodsOperatorTest {
         // when
         operator.create(POD2)
         // then
-        verify(clients.get().pods()
+        verify(client.get().pods()
             .inNamespace(POD2.metadata.namespace)
             .withName(POD2.metadata.name))
             .create(POD2)
@@ -470,7 +471,7 @@ class NamespacedPodsOperatorTest {
     fun `#create() returns new pod if client created`() {
         // given
         clearInvocations(operator)
-        whenever(clients.get().pods()
+        whenever(client.get().pods()
             .inNamespace(POD2.metadata.namespace)
             .withName(POD2.metadata.name)
             .create(POD2))
@@ -485,7 +486,7 @@ class NamespacedPodsOperatorTest {
     fun `#create() returns null if client could not create`() {
         // given
         clearInvocations(operator)
-        whenever(clients.get().pods()
+        whenever(client.get().pods()
             .inNamespace(POD2.metadata.namespace)
             .withName(POD2.metadata.name)
             .create(POD2))
@@ -502,7 +503,7 @@ class NamespacedPodsOperatorTest {
         // when
         operator.get(POD2)
         // then
-        verify(clients.get().pods()
+        verify(client.get().pods()
             .inNamespace(POD2.metadata.namespace)
             .withName(POD2.metadata.name))
             .get()
@@ -516,7 +517,7 @@ class NamespacedPodsOperatorTest {
         // when
         operator.get(pod)
         // then
-        verify(clients.get().pods().inNamespace(operator.namespace))
+        verify(client.get().pods().inNamespace(operator.namespace))
             .withName(pod.metadata.name)
     }
 
@@ -532,7 +533,7 @@ class NamespacedPodsOperatorTest {
         // when
         operator.get(pod)
         // then
-        verify(clients.get().pods().inNamespace(operator.namespace))
+        verify(client.get().pods().inNamespace(operator.namespace))
             .withName(pod.metadata.name)
     }
 
@@ -544,7 +545,7 @@ class NamespacedPodsOperatorTest {
         // when
         operator.watch(pod, mock())
         // then
-        verify(clients.get().pods().inNamespace(operator.namespace))
+        verify(client.get().pods().inNamespace(operator.namespace))
             .withName(pod.metadata.name)
     }
 
@@ -560,7 +561,7 @@ class NamespacedPodsOperatorTest {
         // when
         operator.watchLog(pod, mock())
         // then
-        verify(clients.get().pods().inNamespace(operator.namespace))
+        verify(client.get().pods().inNamespace(operator.namespace))
             .withName(pod.metadata.name)
     }
 
@@ -570,11 +571,11 @@ class NamespacedPodsOperatorTest {
         // when
         operator.watchLog(POD2, mock())
         // then
-        verify(clients.get().pods().inNamespace(POD2.metadata.namespace).withName(POD2.metadata.name))
+        verify(client.get().pods().inNamespace(POD2.metadata.namespace).withName(POD2.metadata.name))
             .waitUntilReady(any(), any())
     }
 
-    class TestablePodsOperator(clients: Clients<KubernetesClient>): NamespacedPodsOperator(clients) {
+    class TestablePodsOperator  (client: ClientAdapter<out KubernetesClient>): NamespacedPodsOperator(client) {
 
         public override fun loadAllResources(namespace: String): List<Pod> {
             return super.loadAllResources(namespace)

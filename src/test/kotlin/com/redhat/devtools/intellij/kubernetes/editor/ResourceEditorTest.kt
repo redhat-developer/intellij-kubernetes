@@ -791,7 +791,7 @@ spec:
         whenever(clusterResource.isClosed())
             .doReturn(false)
         // when
-        editor.currentNamespace("castle gargamel")
+        editor.currentNamespaceChanged(mock(), mock())
         // then
         verify(clusterResourceFactory).invoke(any(), any())
     }
@@ -800,7 +800,7 @@ spec:
     fun `#currentNamespace should clear saved resourceVersion`() {
         // given
         // when
-        editor.currentNamespace("castle gargamel")
+        editor.currentNamespaceChanged(mock(), mock())
         // then
         verify(resourceVersion).set(null)
     }

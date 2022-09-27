@@ -13,7 +13,6 @@ package com.redhat.devtools.intellij.kubernetes.editor
 import com.intellij.openapi.editor.Document
 import com.intellij.openapi.fileEditor.FileEditor
 import com.redhat.devtools.intellij.kubernetes.editor.util.getDocument
-import com.redhat.devtools.intellij.kubernetes.model.Clients
 import com.redhat.devtools.intellij.kubernetes.model.util.ResourceException
 import com.redhat.devtools.intellij.kubernetes.model.util.createResource
 import io.fabric8.kubernetes.api.model.HasMetadata
@@ -21,7 +20,7 @@ import io.fabric8.kubernetes.api.model.HasMetadata
 object EditorResourceFactory {
 
     /**
-     * Returns a [HasMetadata] for a given editor and [Clients] instance.
+     * Returns a [HasMetadata] for a given editor instance.
      *
      * @param editor to retrieve the json/yaml from
      * @return [HasMetadata] for the given editor and clients
@@ -31,7 +30,7 @@ object EditorResourceFactory {
     }
 
     /**
-     * Returns a [HasMetadata] for a given [Document] and [Clients] instance.
+     * Returns a [HasMetadata] for a given [Document] instance.
      *
      * @param document to retrieve the json/yaml from
      * @return [HasMetadata] for the given editor and clients

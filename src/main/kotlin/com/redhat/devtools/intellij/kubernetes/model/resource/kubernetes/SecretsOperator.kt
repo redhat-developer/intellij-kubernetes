@@ -10,15 +10,15 @@
  ******************************************************************************/
 package com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes
 
-import com.redhat.devtools.intellij.kubernetes.model.Clients
+import com.redhat.devtools.intellij.kubernetes.model.client.ClientAdapter
 import com.redhat.devtools.intellij.kubernetes.model.resource.NamespacedOperation
 import com.redhat.devtools.intellij.kubernetes.model.resource.NamespacedResourceOperator
 import com.redhat.devtools.intellij.kubernetes.model.resource.ResourceKind
 import io.fabric8.kubernetes.api.model.Secret
 import io.fabric8.kubernetes.client.KubernetesClient
 
-class SecretsOperator(clients: Clients<out KubernetesClient>)
-    : NamespacedResourceOperator<Secret, KubernetesClient>(clients.get()) {
+class SecretsOperator(client: ClientAdapter<out KubernetesClient>)
+    : NamespacedResourceOperator<Secret, KubernetesClient>(client.get()) {
 
     companion object {
         val KIND = ResourceKind.create(Secret::class.java)

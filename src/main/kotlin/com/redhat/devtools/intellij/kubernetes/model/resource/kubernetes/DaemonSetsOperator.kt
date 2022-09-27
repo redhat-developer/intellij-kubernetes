@@ -10,7 +10,7 @@
  ******************************************************************************/
 package com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes
 
-import com.redhat.devtools.intellij.kubernetes.model.Clients
+import com.redhat.devtools.intellij.kubernetes.model.client.ClientAdapter
 import com.redhat.devtools.intellij.kubernetes.model.resource.NamespacedOperation
 import com.redhat.devtools.intellij.kubernetes.model.resource.NamespacedResourceOperator
 import com.redhat.devtools.intellij.kubernetes.model.resource.ResourceKind
@@ -18,8 +18,8 @@ import io.fabric8.kubernetes.api.model.apps.DaemonSet
 import io.fabric8.kubernetes.client.AppsAPIGroupClient
 import io.fabric8.kubernetes.client.KubernetesClient
 
-class DaemonSetsOperator(clients: Clients<out KubernetesClient>)
-	: NamespacedResourceOperator<DaemonSet, AppsAPIGroupClient>(clients.getApps()) {
+class DaemonSetsOperator(client: ClientAdapter<out KubernetesClient>)
+	: NamespacedResourceOperator<DaemonSet, AppsAPIGroupClient>(client.getApps()) {
 
 	companion object {
 		val KIND = ResourceKind.create(DaemonSet::class.java)

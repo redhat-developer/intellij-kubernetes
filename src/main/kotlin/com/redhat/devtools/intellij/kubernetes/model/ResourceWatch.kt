@@ -16,6 +16,7 @@ import io.fabric8.kubernetes.client.KubernetesClientException
 import io.fabric8.kubernetes.client.Watch
 import io.fabric8.kubernetes.client.Watcher
 import io.fabric8.kubernetes.client.WatcherException
+import java.util.*
 import java.util.concurrent.BlockingDeque
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ExecutorService
@@ -83,6 +84,10 @@ open class ResourceWatch<T>(
             logger<ResourceWatch<*>>().warn("Could not close watch for $key resources", e)
             return null
         }
+    }
+
+    fun getWatched(): Collection<T> {
+        return Collections.list(watches.keys())
     }
 
     fun close() {

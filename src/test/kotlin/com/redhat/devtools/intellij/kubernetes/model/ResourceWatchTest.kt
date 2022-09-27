@@ -22,6 +22,7 @@ import com.redhat.devtools.intellij.kubernetes.model.resource.ResourceKind
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.Namespace
 import io.fabric8.kubernetes.api.model.Pod
+import io.fabric8.kubernetes.api.model.apps.Deployment
 import io.fabric8.kubernetes.client.KubernetesClientException
 import io.fabric8.kubernetes.client.Watch
 import io.fabric8.kubernetes.client.Watcher
@@ -41,7 +42,7 @@ class ResourceWatchTest {
     private val replaceOperationState = OperationState()
     private val replaceOperation: (HasMetadata) -> Unit = { replaceOperationState.operation(it) }
     private val resourceWatch: TestableResourceWatch = spy(TestableResourceWatch(
-        watchOperations = LinkedBlockingDeque<ResourceWatch.WatchOperation<*>>(),
+        watchOperations = LinkedBlockingDeque(),
         watchOperationsRunner = mock()
     ))
     private val watchListener = ResourceWatch.WatchListeners(addOperation, removeOperation, replaceOperation)
@@ -63,7 +64,7 @@ class ResourceWatchTest {
         // given
         // when watch supplier is added - in @Before
         // then
-        assertThat(podWatchOpProvider.isWatchCalled()).isTrue()
+        assertThat(podWatchOpProvider.isWatchCalled()).isTrue
     }
 
     @Test
@@ -103,12 +104,23 @@ class ResourceWatchTest {
     }
 
     @Test
+    fun `#getWatched() should return all watched kinds`() {
+        // given
+        assertThat(resourceWatch.watches.keys).contains(podKind)
+        assertThat(resourceWatch.watches.keys).contains(namespaceKind)
+        // when
+        val watched = resourceWatch.getWatched()
+        // then
+        assertThat(watched).contains(podKind, namespaceKind)
+    }
+
+    @Test
     fun `#stopWatch() should close removed watch`() {
         // given
         // when starting 2nd time
         resourceWatch.stopWatch(podKind)
         // then
-        assertThat(podWatchOpProvider.watch?.isClosed()).isTrue()
+        assertThat(podWatchOpProvider.watch?.isClosed()).isTrue
     }
 
     @Test
@@ -119,7 +131,7 @@ class ResourceWatchTest {
         // when starting 2nd time
         resourceWatch.stopWatch(podKind)
         // then
-        assertThat(notRemoved.watch?.isClosed()).isFalse()
+        assertThat(notRemoved.watch?.isClosed()).isFalse
     }
 
     @Test
@@ -158,8 +170,8 @@ class ResourceWatchTest {
         // when
         podWatchOpProvider.watcher?.eventReceived(Watcher.Action.ADDED, resource)
         // then
-        assertThat(addOperationState.wasInvokedWithResource(resource)).isTrue()
-        assertThat(removeOperationState.wasInvoked()).isFalse()
+        assertThat(addOperationState.wasInvokedWithResource(resource)).isTrue
+        assertThat(removeOperationState.wasInvoked()).isFalse
     }
 
     @Test
@@ -169,8 +181,8 @@ class ResourceWatchTest {
         // when
         podWatchOpProvider.watcher?.eventReceived(Watcher.Action.DELETED, resource)
         // then
-        assertThat(removeOperationState.wasInvokedWithResource(resource)).isTrue()
-        assertThat(addOperationState.wasInvoked()).isFalse()
+        assertThat(removeOperationState.wasInvokedWithResource(resource)).isTrue
+        assertThat(addOperationState.wasInvoked()).isFalse
     }
 
     @Test
@@ -180,9 +192,9 @@ class ResourceWatchTest {
         // when
         podWatchOpProvider.watcher?.eventReceived(Watcher.Action.ERROR, resource)
         // then
-        assertThat(removeOperationState.wasInvoked()).isFalse()
-        assertThat(addOperationState.wasInvoked()).isFalse()
-        assertThat(replaceOperationState.wasInvoked()).isFalse()
+        assertThat(removeOperationState.wasInvoked()).isFalse
+        assertThat(addOperationState.wasInvoked()).isFalse
+        assertThat(replaceOperationState.wasInvoked()).isFalse
     }
 
     @Test
@@ -192,9 +204,9 @@ class ResourceWatchTest {
         // when
         podWatchOpProvider.watcher?.eventReceived(Watcher.Action.MODIFIED, resource)
         // then
-        assertThat(removeOperationState.wasInvokedWithResource(resource)).isFalse()
-        assertThat(addOperationState.wasInvoked()).isFalse()
-        assertThat(replaceOperationState.wasInvokedWithResource(resource)).isTrue()
+        assertThat(removeOperationState.wasInvokedWithResource(resource)).isFalse
+        assertThat(addOperationState.wasInvoked()).isFalse
+        assertThat(replaceOperationState.wasInvokedWithResource(resource)).isTrue
     }
 
     @Test
@@ -203,8 +215,8 @@ class ResourceWatchTest {
         // when starting 2nd time
         resourceWatch.close()
         // then
-        assertThat(podWatchOpProvider.watch?.isClosed()).isTrue()
-        assertThat(namespaceWatchOp.watch?.isClosed()).isTrue()
+        assertThat(podWatchOpProvider.watch?.isClosed()).isTrue
+        assertThat(namespaceWatchOp.watch?.isClosed()).isTrue
     }
 
     class TestableResourceWatch(
