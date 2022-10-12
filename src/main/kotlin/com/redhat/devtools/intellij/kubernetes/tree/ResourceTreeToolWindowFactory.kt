@@ -16,6 +16,7 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.wm.ToolWindow
 import com.intellij.openapi.wm.ToolWindowFactory
 import com.intellij.ui.ScrollPaneFactory
+import com.intellij.ui.content.Content
 import com.intellij.ui.content.ContentFactory
 import com.intellij.ui.tree.AsyncTreeModel
 import com.intellij.ui.treeStructure.Tree
@@ -41,18 +42,21 @@ class ResourceTreeToolWindowFactory: ToolWindowFactory {
     }
 
     override fun createToolWindowContent(project: Project, toolWindow: ToolWindow) {
-        val tree = createTree(project)
-        val panel = ScrollPaneFactory.createScrollPane(tree)
-        PopupHandlerAdapter.install(tree, "com.redhat.devtools.intellij.kubernetes.tree", ActionPlaces.UNKNOWN)
+        val panel = ScrollPaneFactory.createScrollPane()
         val contentFactory = ContentFactory.SERVICE.getInstance()
-        toolWindow.contentManager.addContent(contentFactory.createContent(panel, "", false))
+        val content = contentFactory.createContent(panel, "", false)
+        toolWindow.contentManager.addContent(content)
+
+        val tree = createTree(content, project)
+        PopupHandlerAdapter.install(tree, "com.redhat.devtools.intellij.kubernetes.tree", ActionPlaces.UNKNOWN)
+        panel.setViewportView(tree)
     }
 
-    private fun createTree(project: Project): Tree {
+    private fun createTree(content: Content, project: Project): Tree {
         val resourceModel = ResourceModel.getInstance()
         val structure = TreeStructure(project, resourceModel)
         val treeModel = StructureTreeModelFactory.create(structure, project)
-        val tree = Tree(AsyncTreeModel(treeModel, project))
+        val tree = Tree(AsyncTreeModel(treeModel, content))
         tree.isRootVisible = false
         tree.cellRenderer = NodeRenderer()
         tree.addDoubleClickListener(openResourceEditor(project))
