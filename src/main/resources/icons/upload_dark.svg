@@ -4,8 +4,8 @@
 <svg height="100%" stroke-miterlimit="10" style="fill-rule:nonzero;clip-rule:evenodd;stroke-linecap:round;stroke-linejoin:round;" version="1.1" viewBox="0 0 16 16" width="100%" xml:space="preserve" xmlns="http://www.w3.org/2000/svg" xmlns:vectornator="http://vectornator.io" xmlns:xlink="http://www.w3.org/1999/xlink">
 <defs/>
 <g id="Untitled" vectornator:layerName="Untitled">
-<path d="M10.8808 6.28679L13.8226 6.28679L13.8226 13.4161L7.93912 13.4161L2.05568 13.4161L2.05568 6.28679L4.9974 6.28679" fill="none" opacity="1" stroke="#6e6e6e" stroke-linecap="butt" stroke-linejoin="miter" stroke-width="1.5"/>
-<path d="M7.85715 1.77944L7.82846 9.91372" fill="none" opacity="1" stroke="#6e6e6e" stroke-linecap="butt" stroke-linejoin="miter" stroke-width="1.5"/>
-<path d="M9.23522 9.03622L6.40684 9.05268L7.82926 10.4586L9.23522 9.03622Z" fill="#6e6e6e" fill-rule="nonzero" opacity="1" stroke="#6e6e6e" stroke-linecap="butt" stroke-linejoin="miter" stroke-width="1.5"/>
+<path d="M10.8808 6.28679L13.8226 6.28679L13.8226 13.4161L7.93912 13.4161L2.05568 13.4161L2.05568 6.28679L4.9974 6.28679" fill="none" opacity="1" stroke="#aeb1b3" stroke-linecap="butt" stroke-linejoin="miter" stroke-width="1.5"/>
+<path d="M7.8369 10.9585L7.80821 2.82422" fill="none" opacity="1" stroke="#aeb1b3" stroke-linecap="butt" stroke-linejoin="miter" stroke-width="1.5"/>
+<path d="M9.21497 3.70173L6.38659 3.68526L7.80901 2.2793L9.21497 3.70173Z" fill="none" opacity="1" stroke="#aeb1b3" stroke-linecap="butt" stroke-linejoin="miter" stroke-width="1.5"/>
 </g>
 </svg>
