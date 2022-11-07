@@ -80,4 +80,7 @@ abstract class AbstractResourceOperator<R : HasMetadata, C : Client>(protected v
         return kind.clazz.isAssignableFrom(resource::class.java)
     }
 
+    override fun close() {
+        client.close()
+    }
 }

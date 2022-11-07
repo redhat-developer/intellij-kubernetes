@@ -19,6 +19,7 @@ import io.fabric8.kubernetes.client.Client
 import io.fabric8.kubernetes.client.KubernetesClientException
 import io.fabric8.kubernetes.client.Watch
 import io.fabric8.kubernetes.client.Watcher
+import io.fabric8.kubernetes.client.dsl.ExecListener
 import io.fabric8.kubernetes.client.dsl.ExecWatch
 import io.fabric8.kubernetes.client.dsl.LogWatch
 import io.fabric8.kubernetes.client.dsl.MixedOperation
@@ -42,9 +43,6 @@ abstract class NamespacedResourceOperator<R : HasMetadata, C: Client>(
             invalidate()
             field = namespace
         }
-
-    private val logWatcher = LogWatcher<R>()
-    private val execWatcher = ExecWatcher<R>()
 
     override val allResources: List<R>
         get() {
@@ -93,20 +91,20 @@ abstract class NamespacedResourceOperator<R : HasMetadata, C: Client>(
             ?.watch(typedWatcher)
     }
 
-    protected open fun watchLog(container: Container?, resource: R, out: OutputStream): LogWatch? {
+    protected open fun watchLog(container: Container, resource: R, out: OutputStream): LogWatch? {
         val op = getOperation()
             ?.inNamespace(resourceNamespaceOrCurrent(resource))
             ?.withName(resource.metadata.name)
             ?: return null
-        return logWatcher.watch(container, resource, out, op)
+        return watchLog(container, out, op)
     }
 
-    protected open fun watchExec(container: Container?, resource: R): ExecWatch? {
+    protected open fun watchExec(container: Container, resource: R, listener: ExecListener): ExecWatch? {
         val operation = getOperation()
             ?.inNamespace(resourceNamespaceOrCurrent(resource))
             ?.withName(resource.metadata.name)
             ?: return null
-        return execWatcher.watch(container, resource, operation)
+        return watchExec(container, listener, operation)
     }
 
     override fun delete(resources: List<HasMetadata>): Boolean {

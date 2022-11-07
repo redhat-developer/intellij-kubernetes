@@ -28,7 +28,9 @@ open class LogTab(pod: Pod, model: IResourceModel, project: Project) :
             return null
         }
         return try {
-            model.watchLog(container, pod, ConsoleOutputStream(consoleView))
+            val watch = model.watchLog(container, pod, ConsoleOutputStream(consoleView))
+            this.watch.set(watch)
+            watch
         } catch (e: Exception) {
             logger<LogTab>().warn("Could not read logs for container ${container.name}", e.cause)
             return null
@@ -50,13 +52,7 @@ open class LogTab(pod: Pod, model: IResourceModel, project: Project) :
     }
 
     private fun closeWatch() {
-        try {
-            watch.get()?.close()
-        } catch (e: Exception) {
-            logger<TerminalTab>().warn(
-                "Could not close log watch for pod ${pod.metadata.name}",
-                e.cause
-            )
-        }
+        val watch = watch.get() ?: return
+        model.stopWatch(watch)
     }
 }

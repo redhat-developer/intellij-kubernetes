@@ -30,7 +30,6 @@ import io.fabric8.kubernetes.api.model.ObjectMeta
 import io.fabric8.kubernetes.api.model.Pod
 import io.fabric8.kubernetes.api.model.PodList
 import io.fabric8.kubernetes.api.model.PodSpec
-import io.fabric8.kubernetes.api.model.PodTemplate
 import io.fabric8.kubernetes.api.model.PodTemplateSpec
 import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinition
 import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinitionList
@@ -203,10 +202,18 @@ object ClientMocks {
         }
     }
 
-    fun config(currentContext: NamedContext?, contexts: List<NamedContext>): Config {
+    fun config(
+        currentContext: NamedContext?,
+        contexts: List<NamedContext>,
+        masterUrl: String = "https://localhost",
+        apiVersion: String = "v1"
+    ): Config {
         return mock {
-            on { mock.currentContext } doReturn currentContext
-            on { mock.contexts } doReturn contexts
+            on { this.currentContext } doReturn currentContext
+            on { this.contexts } doReturn contexts
+            on { this.masterUrl } doReturn masterUrl
+            on { this.apiVersion } doReturn apiVersion
+            on { this.requestConfig } doReturn mock()
         }
     }
 

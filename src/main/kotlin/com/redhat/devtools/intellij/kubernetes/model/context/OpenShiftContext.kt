@@ -15,7 +15,6 @@ import com.redhat.devtools.intellij.kubernetes.model.client.ClientAdapter
 import com.redhat.devtools.intellij.kubernetes.model.client.OSClientAdapter
 import com.redhat.devtools.intellij.kubernetes.model.resource.IResourceOperator
 import com.redhat.devtools.intellij.kubernetes.model.resource.OperatorFactory
-import com.redhat.devtools.intellij.kubernetes.model.resource.ResourceKind
 import com.redhat.devtools.intellij.kubernetes.model.resource.openshift.ProjectsOperator
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.NamedContext
@@ -28,12 +27,10 @@ open class OpenShiftContext(
     client: OSClientAdapter,
 ) : ActiveContext<Project, OpenShiftClient>(context, modelChange, client) {
 
+	override val namespaceKind =  ProjectsOperator.KIND
+
 	override fun getInternalResourceOperators(client: ClientAdapter<out OpenShiftClient>): List<IResourceOperator<out HasMetadata>> {
 		return OperatorFactory.createOpenShift(client)
-	}
-
-	override fun getNamespacesKind(): ResourceKind<Project> {
-		return ProjectsOperator.KIND
 	}
 
 	override fun isOpenShift() = true

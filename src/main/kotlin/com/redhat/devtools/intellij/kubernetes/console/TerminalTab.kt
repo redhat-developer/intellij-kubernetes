@@ -10,7 +10,6 @@
  ******************************************************************************/
 package com.redhat.devtools.intellij.kubernetes.console
 
-import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.project.Project
 import com.intellij.terminal.TerminalExecutionConsole
 import com.pty4j.PtyProcess
@@ -19,6 +18,7 @@ import com.redhat.devtools.intellij.common.utils.ExecProcessHandler
 import com.redhat.devtools.intellij.kubernetes.model.IResourceModel
 import io.fabric8.kubernetes.api.model.Container
 import io.fabric8.kubernetes.api.model.Pod
+import io.fabric8.kubernetes.client.dsl.ExecListener
 import io.fabric8.kubernetes.client.dsl.ExecWatch
 import java.io.InputStream
 import java.io.OutputStream
@@ -33,7 +33,8 @@ open class TerminalTab(pod: Pod, model: IResourceModel, project: Project) :
         ) {
             return null
         }
-        val watch = createExecWatch(container) ?: return null
+        val watch = model.watchExec(container, pod, ContainerExecListener(container)) ?: return null
+        this.watch.set(watch)
         val process = ExecWatchProcessAdapter(watch)
         val handler = ExecProcessHandler(process, "welcome to container ${container.name}\n", Charset.defaultCharset())
         consoleView.attachToProcess(handler)
@@ -55,18 +56,8 @@ open class TerminalTab(pod: Pod, model: IResourceModel, project: Project) :
     }
 
     private fun closeWatch() {
-        try {
-            watch.get()?.close()
-        } catch (e: Exception) {
-            logger<TerminalTab>().warn(
-                "Could not close exec watch for pod ${pod.metadata.name}",
-                e.cause
-            )
-        }
-    }
-
-    private fun createExecWatch(container: Container): ExecWatch? {
-        return model.watchExec(container, pod)
+        val watch = watch.get() ?: return
+        model.stopWatch(watch)
     }
 
     /**
@@ -115,5 +106,15 @@ open class TerminalTab(pod: Pod, model: IResourceModel, project: Project) :
             watch.close()
         }
 
+    }
+
+    private inner class ContainerExecListener(private val container: Container): ExecListener {
+        override fun onFailure(e: Throwable?, response: ExecListener.Response?) {
+            showError(container, "Could not connect to container \"${container.name}\".")
+        }
+
+        override fun onClose(code: Int, reason: String?) {
+            showError(container, "Connection to container \"${container.name}\" was closed.")
+        }
     }
 }

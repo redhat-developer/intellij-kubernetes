@@ -28,13 +28,11 @@ open class KubernetesContext(
 	client: KubeClientAdapter,
 ) : ActiveContext<Namespace, KubernetesClient>(context, modelChange, client) {
 
+	override val namespaceKind : ResourceKind<Namespace> =  NamespacesOperator.KIND
+
 	override fun getInternalResourceOperators(client: ClientAdapter<out KubernetesClient>)
 			: List<IResourceOperator<out HasMetadata>> {
 		return OperatorFactory.createKubernetes(client)
-	}
-
-	override fun getNamespacesKind(): ResourceKind<Namespace> {
-		return NamespacesOperator.KIND
 	}
 
 	override fun isOpenShift() = false

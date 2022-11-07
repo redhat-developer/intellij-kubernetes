@@ -26,9 +26,9 @@ import com.intellij.ui.components.JBList
 import com.intellij.ui.components.JBScrollPane
 import com.redhat.devtools.intellij.kubernetes.model.IResourceModel
 import com.redhat.devtools.intellij.kubernetes.model.util.ResourceException
+import com.redhat.devtools.intellij.kubernetes.model.util.toMessage
 import io.fabric8.kubernetes.api.model.Container
 import io.fabric8.kubernetes.api.model.Pod
-import java.awt.CardLayout
 import java.awt.Dimension
 import java.util.concurrent.atomic.AtomicReference
 import javax.swing.Box
@@ -44,7 +44,7 @@ abstract class ConsoleTab<T : ConsoleView, W : Any?>(
 
     protected val watches = emptyList<AtomicReference<W>>()
     protected val watch: AtomicReference<W?> = AtomicReference()
-    private var consoles: CardLayoutPanel<Container, *, *>? = null
+    private var consoles: CardLayoutPanel<Container, Container, ConsoleOrErrorPanel>? = null
 
     fun createComponent(): JComponent {
         val containers = createContainersList(::onContainerSelected)
@@ -102,32 +102,26 @@ abstract class ConsoleTab<T : ConsoleView, W : Any?>(
         }
     }
 
-    private inner class ConsolesPanel : CardLayoutPanel<Container, Container, JComponent>() {
+    protected fun showError(container: Container, message: String) {
+        val consoleOrErrorPanel = consoles?.getValue(container, false) ?: return
+        consoleOrErrorPanel.showError(message)
+    }
+
+    private inner class ConsolesPanel : CardLayoutPanel<Container, Container, ConsoleOrErrorPanel>() {
 
         override fun prepare(container: Container): Container {
             return container
         }
 
-        override fun create(container: Container): JComponent {
-            return ConsoleOrErrorView(container).component
+        override fun create(container: Container): ConsoleOrErrorPanel {
+            return ConsoleOrErrorPanel(container)
         }
     }
 
-    private inner class ConsoleOrErrorView(private val container: Container) {
+    private inner class ConsoleOrErrorPanel(private val container: Container): SimpleCardLayoutPanel<JComponent>() {
 
         private val NAME_VIEW_CONSOLE = "console"
         private val NAME_VIEW_ERROR = "error"
-
-        val component by lazy {
-            val panel = JPanel(cardLayout)
-            val consoleView = consoleView
-            if (consoleView != null) {
-                panel.add(consoleView.component, NAME_VIEW_CONSOLE)
-            }
-            panel.add(errorView.component, NAME_VIEW_ERROR)
-            cardLayout.show(panel, NAME_VIEW_CONSOLE)
-            panel
-        }
 
         private val consoleView by lazy {
             val view = createConsoleView(project)
@@ -141,26 +135,25 @@ abstract class ConsoleTab<T : ConsoleView, W : Any?>(
             ErrorView()
         }
 
-        private val cardLayout by lazy {
-            CardLayout()
+        init {
+            val consoleView = consoleView
+            if (consoleView != null) {
+                add(consoleView.component, NAME_VIEW_CONSOLE)
+            }
+            add(errorView.component, NAME_VIEW_ERROR)
+            showConsole()
         }
 
-        private fun showConsole() {
-            show(component, NAME_VIEW_CONSOLE)
+        fun showConsole() {
+            show(NAME_VIEW_CONSOLE)
         }
 
-        private fun showError(e: Exception) {
-            errorView.setError(e) {
+        fun showError(message: String) {
+            errorView.setError(message) {
                 showConsole()
                 asyncStartWatch(consoleView)
             }
-            show(component, NAME_VIEW_ERROR)
-        }
-
-        private fun show(component: JComponent, name: String) {
-            cardLayout.show(component, name)
-            component.revalidate()
-            component.repaint()
+            show(NAME_VIEW_ERROR)
         }
 
         private fun asyncStartWatch(consoleView: T?) {
@@ -171,11 +164,13 @@ abstract class ConsoleTab<T : ConsoleView, W : Any?>(
                 try {
                     startWatch(container, consoleView)
                 } catch (e: ResourceException) {
-                    logger<TerminalTab>().warn("Could not watch container ${container.name ?: ""} ", e)
-                    showError(e)
+                    val message = toMessage(e)
+                    logger<TerminalTab>().warn(message, e)
+                    showError(message)
                 }
             }
         }
+
     }
 
     private class ErrorView {
@@ -199,9 +194,10 @@ abstract class ConsoleTab<T : ConsoleView, W : Any?>(
 
         private var listener: (() -> Unit)? = null
 
-        fun setError(e: Exception, listener: () -> Unit) {
-            label.setHtmlText("${e.message ?: "Could not connect"} <a>Reconnect.</a>")
+        fun setError(message: String, listener: () -> Unit) {
+            label.setHtmlText("$message <a>Reconnect.</a>")
             this.listener = listener
         }
+
     }
 }
