@@ -13,6 +13,8 @@ package com.redhat.devtools.intellij.kubernetes.model.client
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.verify
+import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.config
+import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.namedContext
 import io.fabric8.kubernetes.client.AppsAPIGroupClient
 import io.fabric8.kubernetes.client.NamespacedKubernetesClient
 import org.assertj.core.api.Assertions.assertThat
@@ -27,7 +29,7 @@ class ClientAdapterTest {
         // when
         val isOpenShift = clientAdapter.isOpenShift()
         // then
-        assertThat(isOpenShift).isTrue()
+        assertThat(isOpenShift).isTrue
     }
 
     @Test
@@ -90,4 +92,19 @@ class ClientAdapterTest {
         // then
         verify(adapted).close()
     }
+
+    @Test
+    fun `#create should set given namespace to client config`() {
+        // given
+        val namespace = "Crevasse City"
+        val ctx1 = namedContext("Aldeeran", "Aldera", "Republic", "Organa" )
+        val ctx2 = namedContext("Death Start", "Navy Garrison", "Empire", "Darh Vader" )
+        val config = config(ctx1, listOf(ctx1, ctx2))
+        // when
+        ClientAdapter.Factory.create(namespace, config)
+        // then
+        verify(config).namespace = namespace
+        verify(config.currentContext.context).namespace = namespace
+    }
+
 }

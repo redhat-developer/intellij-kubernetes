@@ -14,7 +14,6 @@ import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.anyOrNull
 import com.nhaarman.mockitokotlin2.doAnswer
 import com.nhaarman.mockitokotlin2.doReturn
-import com.nhaarman.mockitokotlin2.eq
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.whenever
 import com.redhat.devtools.intellij.common.validation.KubernetesResourceInfo
@@ -25,10 +24,10 @@ import com.redhat.devtools.intellij.kubernetes.model.client.ClientAdapter
 import com.redhat.devtools.intellij.kubernetes.model.client.ClientConfig
 import com.redhat.devtools.intellij.kubernetes.model.context.IActiveContext
 import com.redhat.devtools.intellij.kubernetes.model.context.IContext
-import com.redhat.devtools.intellij.kubernetes.model.resource.IExecWatcher
-import com.redhat.devtools.intellij.kubernetes.model.resource.ILogWatcher
 import com.redhat.devtools.intellij.kubernetes.model.resource.INamespacedResourceOperator
 import com.redhat.devtools.intellij.kubernetes.model.resource.INonNamespacedResourceOperator
+import com.redhat.devtools.intellij.kubernetes.model.resource.IWatchableExec
+import com.redhat.devtools.intellij.kubernetes.model.resource.IWatchableLog
 import com.redhat.devtools.intellij.kubernetes.model.resource.ResourceKind
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.NamedContext
@@ -39,7 +38,6 @@ import io.fabric8.kubernetes.client.Watch
 import io.fabric8.kubernetes.client.Watcher
 import io.fabric8.kubernetes.client.dsl.ExecWatch
 import io.fabric8.kubernetes.client.dsl.LogWatch
-import java.io.OutputStream
 import org.mockito.Mockito
 
 object Mocks {
@@ -112,30 +110,29 @@ object Mocks {
         namespace: Namespace,
         crossinline watchOperation: (watcher: Watcher<in T>) -> Watch? = { null },
         deleteSuccess: Boolean = true,
-        getReturnValue: T? = null,
-        out: OutputStream = mock()
+        getReturnValue: T? = null
     ): INamespacedResourceOperator<T, C>  {
-        val mock = mock<INamespacedResourceOperator<T, C>>(arrayOf(ILogWatcher::class, IExecWatcher::class))
+        val mock = mock<INamespacedResourceOperator<T, C>>(arrayOf(IWatchableLog::class, IWatchableExec::class))
         mockNamespacedOperatorMethods(namespace, kind, resources, watchOperation, deleteSuccess, getReturnValue, mock)
-        mockLogWatcher(mock, out)
+        mockLogWatcher(mock)
         mockExecWatcher(mock)
         return mock
     }
 
-    inline fun <reified T : HasMetadata, C : Client> mockLogWatcher(mock: INamespacedResourceOperator<T, C>, out: OutputStream) {
+    inline fun <reified T : HasMetadata, C : Client> mockLogWatcher(mock: INamespacedResourceOperator<T, C>) {
         @Suppress("UNCHECKED_CAST")
-        val logWatcher = mock as ILogWatcher<T>
+        val watchable = mock as IWatchableLog<T>
         val logWatch: LogWatch = mock()
         doReturn(logWatch)
-            .whenever(logWatcher).watchLog(any(), any(), eq(out))
+            .whenever(watchable).watchLog(any(), any(), any())
     }
 
     inline fun <reified T : HasMetadata, C : Client> mockExecWatcher(mock: INamespacedResourceOperator<T, C>) {
         @Suppress("UNCHECKED_CAST")
-        val execWatcher = mock as IExecWatcher<T>
+        val execWatcher = mock as IWatchableExec<T>
         val execWatch: ExecWatch = mock()
         doReturn(execWatch)
-            .whenever(execWatcher).watchExec(any(), any())
+            .whenever(execWatcher).watchExec(any(), any(), any())
     }
 
     inline fun <C : Client, reified T : HasMetadata> mockNamespacedOperatorMethods(

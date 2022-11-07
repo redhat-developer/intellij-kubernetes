@@ -13,11 +13,12 @@ package com.redhat.devtools.intellij.kubernetes.model.resource
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.client.Watch
 import io.fabric8.kubernetes.client.Watcher
+import java.io.Closeable
 
 /**
  * A class that can watch, get, create and replace resources
  */
-interface IResourceOperator<R: HasMetadata> {
+interface IResourceOperator<R: HasMetadata>: Closeable {
     val kind: ResourceKind<R>
     val allResources: Collection<R>
     fun watchAll(watcher: Watcher<in R>): Watch?

@@ -12,6 +12,7 @@ package com.redhat.devtools.intellij.kubernetes.model
 
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.diagnostic.logger
+import com.redhat.devtools.intellij.kubernetes.model.client.ClientAdapter
 import com.redhat.devtools.intellij.kubernetes.model.context.IActiveContext
 import com.redhat.devtools.intellij.kubernetes.model.context.IActiveContext.ResourcesIn
 import com.redhat.devtools.intellij.kubernetes.model.context.IContext
@@ -20,6 +21,7 @@ import io.fabric8.kubernetes.api.model.Container
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinition
 import io.fabric8.kubernetes.client.KubernetesClient
+import io.fabric8.kubernetes.client.dsl.ExecListener
 import io.fabric8.kubernetes.client.dsl.ExecWatch
 import io.fabric8.kubernetes.client.dsl.LogWatch
 import java.io.OutputStream
@@ -47,10 +49,12 @@ interface IResourceModel {
     fun stopWatch(definition: CustomResourceDefinition)
     fun invalidate(element: Any?)
     fun delete(resources: List<HasMetadata>)
-    fun watchLog(container: Container?, resource: HasMetadata, out: OutputStream): LogWatch?
     fun canWatchLog(resource: HasMetadata): Boolean
-    fun watchExec(container: Container?, resource: HasMetadata): ExecWatch?
+    fun watchLog(container: Container, resource: HasMetadata, out: OutputStream): LogWatch?
+    fun stopWatch(watch: LogWatch): Boolean
     fun canWatchExec(resource: HasMetadata): Boolean
+    fun watchExec(container: Container, resource: HasMetadata, listener: ExecListener): ExecWatch?
+    fun stopWatch(watch: ExecWatch): Boolean
     fun addListener(listener: IResourceModelListener)
     fun removeListener(listener: IResourceModelListener)
 }
@@ -65,6 +69,10 @@ interface IResourceModel {
  * @see [com.redhat.devtools.intellij.kubernetes.actions.getResourceModel]
  */
 open class ResourceModel : IResourceModel {
+
+    protected val processWatches by lazy {
+        ProcessWatches(ClientAdapter.Factory::create)
+    }
 
     protected open val modelChange: IResourceModelObservable by lazy {
         ResourceModelObservable()
@@ -173,19 +181,28 @@ open class ResourceModel : IResourceModel {
         allContexts.current?.delete(resources)
     }
 
-    override fun watchLog(container: Container?, resource: HasMetadata, out: OutputStream): LogWatch? {
-        return allContexts.current?.watchLog(container, resource, out)
-    }
-
     override fun canWatchLog(resource: HasMetadata): Boolean {
-        return true == allContexts.current?.canWatchLog(resource)
+        return processWatches.canWatchLog(resource)
     }
 
-    override fun watchExec(container: Container?, resource: HasMetadata): ExecWatch? {
-        return allContexts.current?.watchExec(container, resource)
+    override fun watchLog(container: Container, resource: HasMetadata, out: OutputStream): LogWatch? {
+        return processWatches.watchLog(container, resource, out)
+    }
+
+    override fun stopWatch(watch: LogWatch): Boolean {
+        return processWatches.stopWatchLog(watch)
     }
 
     override fun canWatchExec(resource: HasMetadata): Boolean {
-        return true == allContexts.current?.canWatchExec(resource)
+        return processWatches.canWatchExec(resource)
     }
+
+    override fun watchExec(container: Container, resource: HasMetadata, listener: ExecListener): ExecWatch? {
+        return processWatches.watchExec(container, resource, listener)
+    }
+
+    override fun stopWatch(watch: ExecWatch): Boolean {
+        return processWatches.stopWatchExec(watch)
+    }
+
 }

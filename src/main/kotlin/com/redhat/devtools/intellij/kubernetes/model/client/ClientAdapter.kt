@@ -44,11 +44,12 @@ open class KubeClientAdapter(client: NamespacedKubernetesClient) :
 abstract class ClientAdapter<C: KubernetesClient>(private val fabric8Client: C) {
 
     companion object Factory {
-        fun create(namespace: String? = null, context: String? = null): ClientAdapter<out io.fabric8.kubernetes.client.KubernetesClient> {
-            val config = Config.autoConfigure(context)
-            if (namespace != null) {
-                config.namespace = namespace
-            }
+        fun create(namespace: String? = null, context: String? = null): ClientAdapter<out KubernetesClient> {
+            return create(namespace, Config.autoConfigure(context))
+        }
+
+        fun create(namespace: String? = null, config: Config): ClientAdapter<out KubernetesClient> {
+            setNamespace(namespace, config)
             val kubeClient = DefaultKubernetesClient(config)
             return try {
                 val osClient = kubeClient.adapt(NamespacedOpenShiftClient::class.java)
@@ -60,6 +61,13 @@ abstract class ClientAdapter<C: KubernetesClient>(private val fabric8Client: C) 
                         KubeClientAdapter(kubeClient)
                     else -> throw e
                 }
+            }
+        }
+
+        private fun setNamespace(namespace: String?, config: Config) {
+            if (namespace != null) {
+                config.namespace = namespace
+                config.currentContext?.context?.namespace = namespace
             }
         }
     }

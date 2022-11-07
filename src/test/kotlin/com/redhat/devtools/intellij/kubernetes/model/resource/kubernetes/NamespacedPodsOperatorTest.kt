@@ -648,7 +648,7 @@ class NamespacedPodsOperatorTest {
         // given
         clearInvocations(operator)
         // when
-        operator.watchExec(container1, POD2)
+        operator.watchExec(container1, POD2, mock())
         // then
         verify(client.get().pods())
             .inNamespace(POD2.metadata.namespace)
@@ -666,7 +666,7 @@ class NamespacedPodsOperatorTest {
         operator.namespace =  "Ando" // should use it
         clearInvocations(operator)
         // when
-        operator.watchExec(container1, pod)
+        operator.watchExec(container1, pod, mock())
         // then
         verify(client.get().pods())
             .inNamespace(operator.namespace)
@@ -678,7 +678,7 @@ class NamespacedPodsOperatorTest {
         operator.namespace =  "Alderaan" // should use it
         clearInvocations(operator)
         // when
-        operator.watchExec(container1, POD1)
+        operator.watchExec(container1, POD1, mock())
         // then
         verify(client.get().pods()
             .inNamespace(operator.namespace))
@@ -691,7 +691,7 @@ class NamespacedPodsOperatorTest {
         operator.namespace =  "Alderaan" // should use it
         clearInvocations(operator)
         // when
-        operator.watchExec(container1, POD2)
+        operator.watchExec(container1, POD2, mock())
         // then
         verify(client.get().pods()
             .inNamespace(operator.namespace)
