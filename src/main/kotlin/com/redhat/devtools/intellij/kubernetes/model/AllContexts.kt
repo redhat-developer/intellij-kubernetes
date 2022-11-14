@@ -98,7 +98,7 @@ open class AllContexts(
 		get() {
 			synchronized(this) {
 				if (field.isEmpty()) {
-					val all = toContexts(client.get(), client.get()?.config)
+					val all = createContexts(client.get(), client.get()?.config)
 					field.addAll(all)
 				}
 				return field
@@ -106,7 +106,6 @@ open class AllContexts(
 		}
 
 	override fun setCurrentContext(context: IContext): IActiveContext<out HasMetadata, out KubernetesClient>? {
-		val current = this.current ?: return null
 		val new = setCurrentContext(context, current, emptyList())
 		if (new != null) {
 			modelChange.fireAllContextsChanged()
@@ -125,8 +124,8 @@ open class AllContexts(
 
 	private fun setCurrentContext(
 		toSet: IContext,
-		current: IActiveContext<out HasMetadata, out KubernetesClient>,
-		toWatch: Collection<ResourceKind<out HasMetadata>>
+		current: IActiveContext<out HasMetadata, out KubernetesClient>?,
+		toWatch: Collection<ResourceKind<out HasMetadata>>?
 	) : IActiveContext<out HasMetadata, out KubernetesClient>? {
 		synchronized(this) {
 			if (toSet == current) {
@@ -140,10 +139,12 @@ open class AllContexts(
 				toSet.context.name,
 				client.get()
 			)
-			current.close()
+			current?.close()
 			all.clear() // causes reload of all contexts when accessed afterwards
 			val newCurrent = this.current // gets new current from all
-			newCurrent?.watchAll(toWatch)
+			if (toWatch != null) {
+				newCurrent?.watchAll(toWatch)
+			}
 			return newCurrent
 		}
 	}
@@ -165,7 +166,7 @@ open class AllContexts(
 		}
 	}
 
-	private fun toContexts(client: ClientAdapter<out KubernetesClient>?, config: ClientConfig?)
+	private fun createContexts(client: ClientAdapter<out KubernetesClient>?, config: ClientConfig?)
 			: List<IContext> {
 		if (client == null
 			|| config == null
@@ -225,7 +226,7 @@ open class AllContexts(
 		return find(context, all) != null
 	}
 
-	private fun find(context:IContext, all: MutableList<IContext>): IContext? {
+	private fun find(context: IContext, all: MutableList<IContext>): IContext? {
 		val found = all.find { sameButNamespace(context.context, it.context) } ?: return null
 		val indexOf = all.indexOf(found)
 		if (indexOf < 0) {

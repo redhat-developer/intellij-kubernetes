@@ -19,8 +19,8 @@ import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.whenever
 import com.redhat.devtools.intellij.common.validation.KubernetesResourceInfo
 import com.redhat.devtools.intellij.common.validation.KubernetesTypeInfo
-import com.redhat.devtools.intellij.kubernetes.model.IResourceModelObservable
 import com.redhat.devtools.intellij.kubernetes.model.IResourceModel
+import com.redhat.devtools.intellij.kubernetes.model.IResourceModelObservable
 import com.redhat.devtools.intellij.kubernetes.model.client.ClientAdapter
 import com.redhat.devtools.intellij.kubernetes.model.client.ClientConfig
 import com.redhat.devtools.intellij.kubernetes.model.context.IActiveContext
@@ -43,6 +43,12 @@ import java.io.OutputStream
 import org.mockito.Mockito
 
 object Mocks {
+
+    fun clientFactory(clientAdapter: ClientAdapter<KubernetesClient>): (String?, String?) -> ClientAdapter<out KubernetesClient> =
+        mock<(String?, String?) -> ClientAdapter<out KubernetesClient>>().apply {
+            doReturn(clientAdapter)
+                .whenever(this).invoke(anyOrNull(), anyOrNull())
+        }
 
     fun clientAdapter(clientConfig: ClientConfig): ClientAdapter<KubernetesClient> {
         return mock<ClientAdapter<KubernetesClient>>().apply {
@@ -208,7 +214,7 @@ object Mocks {
         return mock {
             on { this.currentContext } doReturn currentContext
             on { isCurrent(any()) } doAnswer { invocation ->
-                invocation.getArgument<NamedContext>(0) == currentContext
+                invocation.getArgument<NamedContext>(0) == mock.currentContext
             }
             on { this.allContexts } doReturn allContexts
             on { this.configuration } doReturn configuration

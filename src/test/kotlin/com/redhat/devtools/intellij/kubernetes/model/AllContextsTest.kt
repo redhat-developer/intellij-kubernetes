@@ -31,6 +31,7 @@ import com.redhat.devtools.intellij.kubernetes.model.mocks.Mocks
 import com.redhat.devtools.intellij.kubernetes.model.mocks.Mocks.activeContext
 import com.redhat.devtools.intellij.kubernetes.model.mocks.Mocks.clientAdapter
 import com.redhat.devtools.intellij.kubernetes.model.mocks.Mocks.clientConfig
+import com.redhat.devtools.intellij.kubernetes.model.mocks.Mocks.clientFactory
 import com.redhat.devtools.intellij.kubernetes.model.mocks.Mocks.context
 import com.redhat.devtools.intellij.kubernetes.model.resource.ResourceKind
 import io.fabric8.kubernetes.api.model.Config
@@ -69,12 +70,8 @@ class AllContextsTest {
 		on { oauthToken } doReturn token
 	}
 	private val clientConfig = clientConfig(currentContext, contexts, configuration)
-	private val clientAdapter: ClientAdapter<KubernetesClient> = clientAdapter(clientConfig)
-	private val clientFactory: (String?, String?) -> ClientAdapter<out KubernetesClient> =
-		mock<(String?, String?) -> ClientAdapter<out KubernetesClient>>().apply {
-			doReturn(clientAdapter)
-				.whenever(this).invoke(anyOrNull(), anyOrNull())
-	}
+	private val clientAdapter = clientAdapter(clientConfig)
+	private val clientFactory = clientFactory(clientAdapter)
 
 	private val allContexts = TestableAllContexts(modelChange, contextFactory, clientFactory)
 
@@ -182,6 +179,22 @@ class AllContextsTest {
 		allContexts.setCurrentContext(activeContext)
 		// then
 		verify(contextFactory, never()).invoke(any(), any())
+	}
+
+	@Test
+	fun `#setCurrentContext(context) should create new active context regardless of existing current context being null`() {
+		// given
+		val clientConfig = clientConfig(null, contexts, configuration)
+		doReturn(activeContext.context)
+			.whenever(clientConfig).currentContext // returned on 2nd call
+		val clientAdapter = clientAdapter(clientConfig)
+		val clientFactory = clientFactory(clientAdapter)
+		val allContexts = TestableAllContexts(modelChange, contextFactory, clientFactory)
+		clearInvocations(contextFactory) // clear invocation so initial creation is not counted
+		// when
+		allContexts.setCurrentContext(activeContext)
+		// then
+		verify(contextFactory).invoke(any(), any())
 	}
 
 	@Test
@@ -344,6 +357,19 @@ class AllContextsTest {
 					&& it.contains(deploymentKind)
 					&& it.size == 2
 		}))
+	}
+
+	@Test
+	fun `#setCurrentNamespace(namespace) should return null if current context is null`() {
+		// given
+		val clientConfig = clientConfig(null, contexts, configuration)
+		val clientAdapter = clientAdapter(clientConfig)
+		val clientFactory = clientFactory(clientAdapter)
+		val allContexts = TestableAllContexts(modelChange, contextFactory, clientFactory)
+		// when
+		val newContext = allContexts.setCurrentNamespace("rebellion")
+		// then
+		assertThat(newContext).isNull()
 	}
 
 	@Test
