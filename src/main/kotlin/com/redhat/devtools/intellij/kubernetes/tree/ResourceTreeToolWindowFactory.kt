@@ -10,6 +10,7 @@
  ******************************************************************************/
 package com.redhat.devtools.intellij.kubernetes.tree
 
+import com.intellij.ide.util.treeView.AbstractTreeStructure
 import com.intellij.ide.util.treeView.NodeRenderer
 import com.intellij.openapi.actionSystem.ActionPlaces
 import com.intellij.openapi.project.Project
@@ -19,9 +20,10 @@ import com.intellij.ui.ScrollPaneFactory
 import com.intellij.ui.content.Content
 import com.intellij.ui.content.ContentFactory
 import com.intellij.ui.tree.AsyncTreeModel
+import com.intellij.ui.tree.StructureTreeModel
 import com.intellij.ui.treeStructure.Tree
+import com.intellij.util.concurrency.Invoker
 import com.redhat.devtools.intellij.common.compat.PopupHandlerAdapter
-import com.redhat.devtools.intellij.common.tree.StructureTreeModelFactory
 import com.redhat.devtools.intellij.kubernetes.actions.getElement
 import com.redhat.devtools.intellij.kubernetes.editor.ResourceEditorFactory
 import com.redhat.devtools.intellij.kubernetes.model.IResourceModel
@@ -55,7 +57,12 @@ class ResourceTreeToolWindowFactory: ToolWindowFactory {
     private fun createTree(content: Content, project: Project): Tree {
         val resourceModel = IResourceModel.getInstance()
         val structure = TreeStructure(project, resourceModel)
-        val treeModel = StructureTreeModelFactory.create(structure, project)
+        val treeModel = StructureTreeModel<AbstractTreeStructure>(
+            structure,
+            null,
+            Invoker.forBackgroundPoolWithoutReadAction(project),
+            project
+        )
         val tree = Tree(AsyncTreeModel(treeModel, content))
         tree.isRootVisible = false
         tree.cellRenderer = NodeRenderer()
