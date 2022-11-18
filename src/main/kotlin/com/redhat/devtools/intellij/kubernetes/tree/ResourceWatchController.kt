@@ -12,6 +12,8 @@ package com.redhat.devtools.intellij.kubernetes.tree
 
 import com.intellij.openapi.diagnostic.logger
 import com.redhat.devtools.intellij.kubernetes.actions.getDescriptor
+import com.redhat.devtools.intellij.kubernetes.telemetry.TelemetryService
+import com.redhat.devtools.intellij.telemetry.core.service.TelemetryMessageBuilder
 import javax.swing.JTree
 import javax.swing.event.TreeExpansionEvent
 import javax.swing.event.TreeExpansionListener
@@ -26,18 +28,27 @@ object ResourceWatchController {
 		tree.addTreeExpansionListener(object: TreeExpansionListener {
 			override fun treeExpanded(event: TreeExpansionEvent) {
 				val descriptor = getDescriptor(event)
+				val telemetry = createTelemetry(descriptor)
 				try {
 					descriptor?.watchChildren()
-				} catch(e: Exception) {
+					telemetry?.send()
+				} catch (e: Exception) {
 					logger<ResourceWatchController>().warn("Could not watch ${descriptor?.element} resources.", e)
+					telemetry?.error(e)
 				}
+			}
+
+			private fun createTelemetry(descriptor: TreeStructure.Descriptor<*>?): TelemetryMessageBuilder.ActionMessage? {
+				val kind = descriptor?.childrenKind ?: return null
+				return TelemetryService.instance.action("expand tree")
+					.property(TelemetryService.PROP_RESOURCE_KIND, kind.kind)
 			}
 
 			override fun treeCollapsed(event: TreeExpansionEvent?) {
 				val descriptor = getDescriptor(event)
 				try {
 					descriptor?.stopWatchChildren()
-				} catch(e: Exception) {
+				} catch (e: Exception) {
 					logger<ResourceWatchController>().warn("Could not watch ${descriptor?.element} resources.", e)
 				}
 			}
