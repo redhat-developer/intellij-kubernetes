@@ -1,7 +1,7 @@
 <idea-plugin>
     <id>com.redhat.devtools.intellij.kubernetes</id>
     <name>Kubernetes by Red Hat</name>
-    <vendor email="developers@redhat.com" url="http://www.redhat.com">Red-Hat</vendor>
+    <vendor email="developers@redhat.com" url="https://www.redhat.com">Red-Hat</vendor>
     <description>
         <![CDATA[
         <p>A plugin for interacting with Kubernetes and OpenShift clusters.</p>
@@ -10,6 +10,19 @@
     </description>
     <change-notes>
         <![CDATA[
+        <h3>0.7.0</h3>
+        <ul>
+            <li><a href="https://github.com/redhat-developer/intellij-kubernetes/issues/214">As a user I want to be able to open a terminal in a pod</a></li>
+            <li><a href="https://github.com/redhat-developer/intellij-kubernetes/issues/461">cannot follow logs for a pod with multiple containers</a></li>
+            <li><a href="https://github.com/redhat-developer/intellij-kubernetes/issues/523">Support init containers</a></li>
+            <li><a href="https://github.com/redhat-developer/intellij-kubernetes/issues/492">when switching current namespace, editor still saves to previous namespace</a></li>
+            <li><a href="https://github.com/redhat-developer/intellij-kubernetes/issues/530">Can push yml resource without a name but no resource is created, "pull" and "diff" actions do nothing</a></li>
+            <li><a href="https://github.com/redhat-developer/intellij-kubernetes/issues/493">IDE stuck for some second when opening yaml files and not being connected to any cluster</a></li>
+            <li><a href="https://github.com/redhat-developer/intellij-kubernetes/issues/513">Cannot set new context if there's no current context yet</a></li>
+            <li><a href="https://github.com/redhat-developer/intellij-kubernetes/issues/485">Pushing a 2nd time errors with empty error details</a></li>
+            <li><a href="https://github.com/redhat-developer/intellij-kubernetes/issues/469">lighten up icons and provide separate icons for the light theme</a></li>
+        </ul>
+        <p></p>
         <h3>0.6.2</h3>
         <ul>
             <li><a href="https://github.com/redhat-developer/intellij-kubernetes/issues/477">Prevent from failure of adding special characters on following pod log</a></li>
