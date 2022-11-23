@@ -11,6 +11,7 @@
 package com.redhat.devtools.intellij.kubernetes.model.resource
 
 import com.redhat.devtools.intellij.kubernetes.model.client.ClientAdapter
+import com.redhat.devtools.intellij.kubernetes.model.util.ResourceException
 import com.redhat.devtools.intellij.kubernetes.model.util.hasGenerateName
 import com.redhat.devtools.intellij.kubernetes.model.util.hasName
 import io.fabric8.kubernetes.api.model.APIResource
@@ -72,6 +73,7 @@ class NonCachingSingleResourceOperator(
      * If there's no `name` you need to use [io.fabric8.kubernetes.client.dsl.MixedOperation.create].
      *
      * @param resource that shall be replaced on the cluster
+     * @throws ResourceException if given resource has neither a name nor a generateName
      *
      * @return the resource that was created
      */
@@ -84,7 +86,7 @@ class NonCachingSingleResourceOperator(
         } else if (hasGenerateName(genericKubernetesResource)) {
             op.create(genericKubernetesResource)
         } else {
-            null
+            throw ResourceException("Could not replace ${resource.kind ?: "resource"}: has neither name nor generateName.")
         }
     }
 

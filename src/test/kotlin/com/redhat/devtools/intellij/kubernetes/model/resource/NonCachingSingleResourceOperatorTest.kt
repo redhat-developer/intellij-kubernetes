@@ -23,6 +23,7 @@ import com.nhaarman.mockitokotlin2.whenever
 import com.redhat.devtools.intellij.kubernetes.model.client.KubeClientAdapter
 import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.clusterScopedApiResource
 import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.namespacedApiResource
+import com.redhat.devtools.intellij.kubernetes.model.util.ResourceException
 import com.redhat.devtools.intellij.kubernetes.model.util.isSameResource
 import io.fabric8.kubernetes.api.model.APIResource
 import io.fabric8.kubernetes.api.model.GenericKubernetesResource
@@ -30,7 +31,6 @@ import io.fabric8.kubernetes.api.model.GenericKubernetesResourceList
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.ObjectMetaBuilder
 import io.fabric8.kubernetes.api.model.PodBuilder
-import io.fabric8.kubernetes.client.KubernetesClient
 import io.fabric8.kubernetes.client.KubernetesClientException
 import io.fabric8.kubernetes.client.NamespacedKubernetesClient
 import io.fabric8.kubernetes.client.dsl.MixedOperation
@@ -204,6 +204,19 @@ class NonCachingSingleResourceOperatorTest {
         // then
         verify(genericResourceOperation.inNamespace(generatedName.metadata.namespace))
             .create(argThat { isSameResource(generatedName) })
+    }
+
+    @Test(expected = ResourceException::class)
+    fun `#replace should throw if resource has NO name NOR generateName`() {
+        // given
+        val generatedName = PodBuilder(legacyResource).build()
+        generatedName.metadata.name = null
+        generatedName.metadata.generateName = null
+        val apiResource = namespacedApiResource(namespacedCustomResource)
+        val operator = NonCachingSingleResourceOperator(clientAdapter, createAPIResources(apiResource))
+        // when
+        operator.replace(generatedName)
+        // then
     }
 
     @Test
