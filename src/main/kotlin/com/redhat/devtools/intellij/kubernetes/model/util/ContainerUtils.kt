@@ -11,8 +11,10 @@
 package com.redhat.devtools.intellij.kubernetes.model.util
 
 import io.fabric8.kubernetes.api.model.Container
+import io.fabric8.kubernetes.api.model.ContainerStatus
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.Pod
+import io.fabric8.kubernetes.api.model.PodStatus
 import io.fabric8.kubernetes.api.model.batch.v1.Job
 
 fun Pod.getFirstContainer(): Container? {
@@ -30,4 +32,20 @@ fun getFirstContainer(resource: HasMetadata): Container? {
 		else -> null
 	}
 
+}
+
+fun getStatus(container: Container, podStatus: PodStatus): ContainerStatus? {
+	return getStatus(container, podStatus.containerStatuses)
+		?: getStatus(container, podStatus.initContainerStatuses)
+}
+
+private fun getStatus(container: Container, containerStatus: List<ContainerStatus>): ContainerStatus? {
+	return containerStatus.find { status ->
+		status.name == container.name
+	}
+}
+
+fun isRunning(status: ContainerStatus?): Boolean {
+	return status?.ready != null
+			&& status.state?.running != null
 }

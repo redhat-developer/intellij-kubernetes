@@ -26,6 +26,8 @@ import com.intellij.ui.components.JBList
 import com.intellij.ui.components.JBScrollPane
 import com.redhat.devtools.intellij.kubernetes.model.IResourceModel
 import com.redhat.devtools.intellij.kubernetes.model.util.ResourceException
+import com.redhat.devtools.intellij.kubernetes.model.util.getStatus
+import com.redhat.devtools.intellij.kubernetes.model.util.isRunning
 import com.redhat.devtools.intellij.kubernetes.model.util.toMessage
 import io.fabric8.kubernetes.api.model.Container
 import io.fabric8.kubernetes.api.model.Pod
@@ -35,6 +37,7 @@ import javax.swing.Box
 import javax.swing.BoxLayout
 import javax.swing.JComponent
 import javax.swing.JPanel
+import javax.swing.ListModel
 
 abstract class ConsoleTab<T : ConsoleView, W : Any?>(
     protected val pod: Pod,
@@ -51,9 +54,21 @@ abstract class ConsoleTab<T : ConsoleView, W : Any?>(
         val scrollPane = JBScrollPane(containers)
         val consoles = ConsolesPanel()
         this.consoles = consoles
+        val toSelect = indexOfFirstRunningContainer(containers.model, pod)
+        containers.selectedIndex = toSelect
         val splitPane = createSplitPanel(scrollPane, consoles)
-        containers.selectedIndex = 0
         return createToolWindowPanel(splitPane)
+    }
+
+    private fun indexOfFirstRunningContainer(model: ListModel<ContainerLabelAdapter>, pod: Pod): Int {
+        var i = 0
+        do {
+            val container = model.getElementAt(i).container
+            if (isRunning(getStatus(container, pod.status))) {
+                return i
+            }
+        } while (++i < model.size)
+        return 0
     }
 
     private fun createToolWindowPanel(splitPane: JComponent): SimpleToolWindowPanel {
@@ -77,10 +92,12 @@ abstract class ConsoleTab<T : ConsoleView, W : Any?>(
         }
     }
 
-    private fun createContainersList(onSelected: (container: Container) -> Unit): JBList<*> {
+    private fun createContainersList(onSelected: (container: Container) -> Unit): JBList<ContainerLabelAdapter> {
         return JBList<ContainerLabelAdapter>().apply {
             addListSelectionListener { onSelected.invoke(selectedValue.container) }
             val listModel = CollectionListModel<ContainerLabelAdapter>()
+            listModel.add(pod.spec.initContainers
+                .map { container -> InitContainerLabelAdapter(container) })
             listModel.add(pod.spec.containers
                 .map { container -> ContainerLabelAdapter(container) })
             model = listModel
@@ -95,16 +112,24 @@ abstract class ConsoleTab<T : ConsoleView, W : Any?>(
 
     protected abstract fun startWatch(container: Container?, consoleView: T?): W?
 
-    private class ContainerLabelAdapter(val container: Container) {
-        override fun toString(): String {
-            // workaround: spaces to create left indent (insets/border don't affect selection insets)
-            return "  " + container.name
-        }
-    }
 
     protected fun showError(container: Container, message: String) {
         val consoleOrErrorPanel = consoles?.getValue(container, false) ?: return
         consoleOrErrorPanel.showError(message)
+    }
+
+    private class InitContainerLabelAdapter(container: Container): ContainerLabelAdapter(container) {
+
+        override fun toString(): String {
+            return "${super.toString()} (init)"
+        }
+    }
+
+    private open class ContainerLabelAdapter(val container: Container) {
+        override fun toString(): String {
+            // workaround: spaces to create left indent (insets/border don't affect selection insets)
+            return "  ${container.name}"
+        }
     }
 
     private inner class ConsolesPanel : CardLayoutPanel<Container, Container, ConsoleOrErrorPanel>() {

@@ -12,7 +12,6 @@ package com.redhat.devtools.intellij.kubernetes.console
 
 import com.intellij.execution.filters.TextConsoleBuilderFactory
 import com.intellij.execution.ui.ConsoleView
-import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.project.Project
 import com.redhat.devtools.intellij.kubernetes.model.IResourceModel
 import io.fabric8.kubernetes.api.model.Container
@@ -27,14 +26,9 @@ open class LogTab(pod: Pod, model: IResourceModel, project: Project) :
             || consoleView == null) {
             return null
         }
-        return try {
-            val watch = model.watchLog(container, pod, ConsoleOutputStream(consoleView))
-            this.watch.set(watch)
-            watch
-        } catch (e: Exception) {
-            logger<LogTab>().warn("Could not read logs for container ${container.name}", e.cause)
-            return null
-        }
+        val watch = model.watchLog(container, pod, ConsoleOutputStream(consoleView))
+        this.watch.set(watch)
+        return watch
     }
 
     override fun createConsoleView(project: Project): ConsoleView {
