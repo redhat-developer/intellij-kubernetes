@@ -13,24 +13,13 @@ package com.redhat.devtools.intellij.kubernetes.editor.notification
 import com.intellij.icons.AllIcons
 import com.intellij.openapi.fileEditor.FileEditor
 import com.intellij.openapi.project.Project
-import com.intellij.openapi.ui.MessageType
-import com.intellij.openapi.ui.popup.Balloon
-import com.intellij.openapi.ui.popup.JBPopupFactory
 import com.intellij.openapi.util.Disposer
 import com.intellij.openapi.util.Key
 import com.intellij.ui.EditorNotificationPanel
-import com.intellij.ui.ScrollPaneFactory
-import com.intellij.ui.awt.RelativePoint
+import com.redhat.devtools.intellij.kubernetes.balloon.ErrorBalloon
 import com.redhat.devtools.intellij.kubernetes.editor.hideNotification
 import com.redhat.devtools.intellij.kubernetes.editor.showNotification
-import java.awt.Dimension
-import java.awt.FontMetrics
-import java.awt.Point
 import javax.swing.JComponent
-import javax.swing.JEditorPane
-import javax.swing.SwingUtilities
-import kotlin.math.ceil
-import kotlin.math.min
 
 /**
  * An editor (panel) notification that shows errors.
@@ -39,7 +28,6 @@ class ErrorNotification(private val editor: FileEditor, private val project: Pro
 
     companion object {
         private val KEY_PANEL = Key<JComponent>(ErrorNotification::class.java.canonicalName)
-        private val MAX_HEIGHT_ERROR_BALLOON = 200
     }
 
     fun show(title: String, message: String?) {
@@ -67,57 +55,9 @@ class ErrorNotification(private val editor: FileEditor, private val project: Pro
             return
         }
         panel.createActionLabel("Details") {
-            val height = getBalloonHeight(message, panel.visibleRect.width, panel.graphics.fontMetrics)
-            val balloon = createBalloon(message, panel.visibleRect.width, height)
-            showBelow(balloon, panel)
+            val balloon = ErrorBalloon.create(message, panel)
+            ErrorBalloon.showBelow(balloon, panel)
             Disposer.register(editor, balloon)
         }
-    }
-
-    private fun createBalloon(message: String?, width: Int, height: Int): Balloon {
-        val backgroundColor = MessageType.ERROR.popupBackground
-        val foregroundColor = MessageType.ERROR.titleForeground
-        val text = JEditorPane().apply {
-            text = message
-            isEditable = false
-            background = backgroundColor
-            foreground = foregroundColor
-        }
-        val scrolled = ScrollPaneFactory.createScrollPane(text, true).apply {
-            preferredSize = Dimension(width, height)
-            background = backgroundColor
-            viewport.background = backgroundColor
-            text.caretPosition = 0
-        }
-        return JBPopupFactory.getInstance().createBalloonBuilder(scrolled)
-            .setFillColor(backgroundColor)
-            .setBorderColor(backgroundColor)
-            .setCloseButtonEnabled(true)
-            .setHideOnClickOutside(true)
-            .setHideOnAction(false) // allow user to Ctrl+A & Ctrl+C
-            .createBalloon()
-    }
-
-    /**
-     * Determines the height of the error details balloon.
-     * The height returned is either the strictly required height or the maximum height if it exceeds it.
-     *
-     * @param message the message that should be displayed in the balloon
-     * @param availableWidth the width that's available to the balloon
-     * @param fontMetrics the font metrics to use
-     */
-    private fun getBalloonHeight(
-        message: String?,
-        availableWidth: Int,
-        fontMetrics: FontMetrics
-    ): Int {
-        val neededWidth = SwingUtilities.computeStringWidth(fontMetrics, message)
-        val neededHeight = ceil(neededWidth.toDouble() / availableWidth) * fontMetrics.height
-        return min(neededHeight.toInt(), MAX_HEIGHT_ERROR_BALLOON)
-    }
-
-    private fun showBelow(balloon: Balloon, panel: EditorNotificationPanel) {
-        val below = RelativePoint(panel, Point(panel.bounds.width / 2, panel.bounds.height))
-        balloon.show(below, Balloon.Position.below)
     }
 }
