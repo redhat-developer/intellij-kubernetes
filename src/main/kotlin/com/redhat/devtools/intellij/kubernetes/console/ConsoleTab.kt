@@ -16,6 +16,7 @@ import com.intellij.openapi.Disposable
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.SimpleToolWindowPanel
+import com.intellij.openapi.util.Disposer
 import com.intellij.ui.CardLayoutPanel
 import com.intellij.ui.CollectionListModel
 import com.intellij.ui.HyperlinkLabel
@@ -23,6 +24,7 @@ import com.intellij.ui.OnePixelSplitter
 import com.intellij.ui.SingleSelectionModel
 import com.intellij.ui.components.JBList
 import com.intellij.ui.components.JBScrollPane
+import com.redhat.devtools.intellij.kubernetes.balloon.ErrorBalloon
 import com.redhat.devtools.intellij.kubernetes.model.IResourceModel
 import com.redhat.devtools.intellij.kubernetes.model.util.ResourceException
 import com.redhat.devtools.intellij.kubernetes.model.util.getStatus
@@ -30,10 +32,9 @@ import com.redhat.devtools.intellij.kubernetes.model.util.isRunning
 import com.redhat.devtools.intellij.kubernetes.model.util.toMessage
 import io.fabric8.kubernetes.api.model.Container
 import io.fabric8.kubernetes.api.model.Pod
-import java.awt.Dimension
+import java.awt.FlowLayout
+import java.awt.GridBagLayout
 import java.util.concurrent.atomic.AtomicReference
-import javax.swing.Box
-import javax.swing.BoxLayout
 import javax.swing.JComponent
 import javax.swing.JPanel
 import javax.swing.ListModel
@@ -117,9 +118,9 @@ abstract class ConsoleTab<T : ConsoleView, W : Any?>(
     protected abstract fun startWatch(container: Container?, consoleView: T?): W?
 
 
-    protected fun showError(container: Container, message: String) {
+    protected fun showError(container: Container, message: String, e: Throwable? = null) {
         val consoleOrErrorPanel = consoles?.getValue(container, false) ?: return
-        consoleOrErrorPanel.showError(message)
+        consoleOrErrorPanel.showError(message, e)
     }
 
     private class InitContainerLabelAdapter(container: Container): ContainerLabelAdapter(container) {
@@ -136,6 +137,9 @@ abstract class ConsoleTab<T : ConsoleView, W : Any?>(
         }
     }
 
+    /**
+     * A card-panel that displays panels for each container.
+     */
     private inner class ConsolesPanel : CardLayoutPanel<Container, Container, ConsoleOrErrorPanel>() {
 
         override fun prepare(container: Container): Container {
@@ -155,6 +159,9 @@ abstract class ConsoleTab<T : ConsoleView, W : Any?>(
         }
     }
 
+    /**
+     * A card-Panel that either displays the console or an error.
+     */
     private inner class ConsoleOrErrorPanel(private val container: Container): SimpleCardLayoutPanel<JComponent>() {
 
         private val NAME_VIEW_CONSOLE = "console"
@@ -169,7 +176,7 @@ abstract class ConsoleTab<T : ConsoleView, W : Any?>(
         }
 
         private val errorView by lazy {
-            ErrorView()
+            ErrorView(ConsoleTab@this)
         }
 
         init {
@@ -185,8 +192,8 @@ abstract class ConsoleTab<T : ConsoleView, W : Any?>(
             show(NAME_VIEW_CONSOLE)
         }
 
-        fun showError(message: String) {
-            errorView.setError(message) {
+        fun showError(message: String, e: Throwable?) {
+            errorView.setError(message, e) {
                 showConsole()
                 asyncStartWatch(consoleView)
             }
@@ -205,39 +212,55 @@ abstract class ConsoleTab<T : ConsoleView, W : Any?>(
                 try {
                     startWatch(container, consoleView)
                 } catch (e: ResourceException) {
-                    val message = toMessage(e)
-                    logger<TerminalTab>().warn(message, e)
-                    showError(message)
+                    logger<TerminalTab>().warn(e)
+                    showError("Could not connect to container \"${container.name}\".", e)
                 }
             }
         }
 
     }
 
-    private class ErrorView {
-        val component by lazy {
-            JPanel().apply {
-                // workaround: failed to have error HyperlinkLabel centered using BorderLayout etc.
-                layout = BoxLayout(this, BoxLayout.X_AXIS)
-                add(Box.createRigidArea(Dimension(100, 0)))
-                add(label)
-            }
-        }
-
-        private val label: HyperlinkLabel by lazy {
+    private class ErrorView(private val parent: Disposable) {
+        private val errorLabel: HyperlinkLabel by lazy {
             HyperlinkLabel().apply {
                 setIcon(AllIcons.General.Error)
                 addHyperlinkListener {
-                    listener?.invoke()
+                    errorDetailsListener?.invoke()
                 }
             }
         }
 
-        private var listener: (() -> Unit)? = null
+        private val reconnectLabel: HyperlinkLabel by lazy {
+            HyperlinkLabel().apply {
+                setHtmlText("<a>Reconnect.</a>")
+                addHyperlinkListener {
+                    reconnectListener?.invoke()
+                }
+            }
+        }
 
-        fun setError(message: String, listener: () -> Unit) {
-            label.setHtmlText("$message <a>Reconnect.</a>")
-            this.listener = listener
+        val component by lazy {
+            JPanel().apply {
+                layout = GridBagLayout()
+                add(JPanel().apply {
+                    layout = FlowLayout()
+                    add(errorLabel)
+                    add(reconnectLabel)
+                })
+            }
+        }
+
+        private var reconnectListener: (() -> Unit)? = null
+        private var errorDetailsListener: (() -> Unit)? = null
+
+        fun setError(message: String, e: Throwable?, listener: () -> Unit) {
+            errorLabel.setHtmlText("$message <a>Details.</a>")
+            this.errorDetailsListener = {
+                val balloon = ErrorBalloon.create(toMessage(e), errorLabel)
+                ErrorBalloon.showAbove(balloon, errorLabel)
+                Disposer.register(parent, balloon)
+            }
+            this.reconnectListener = listener
         }
 
     }
