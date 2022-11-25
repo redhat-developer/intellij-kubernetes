@@ -24,7 +24,7 @@ It is available for install from the [JetBrains Marketplace](https://plugins.jet
  - Switching contexts and namespaces within Kubernetes
  - Follow logs from the connected cluster resource
  - Open a Terminal Shell to a Running Container in the connected cluster
- - Support [init containers](https://kubernetes.io/docs/concepts/workloads/pods/init-containers/) for logs and terminal.
+ - Support [init containers](https://kubernetes.io/docs/concepts/workloads/pods/init-containers/) for logs and terminals.
 
 ## Features
 
@@ -114,25 +114,25 @@ The very same dialog may also be opened with a link that's present in the notifi
 #### Delete Resources
 You may delete any resource that is listed in the resource tree by choosing "Delete" in the context menu.
 
-#### Follow Logs
+#### Follow Logs of Running Containers
 
 IntelliJ Kubernetes extension allows you to follow logs of the cluster resources such as Pods, Jobs and Builds.
 There is a dedicated tab to display the log messages for the selected Kubernetes resource.
 All the containers for your Kubernetes resources are listed down in the Terminal View and the user can select the appropriate container and switch between them as needed.
-Init containers, that are run before the app containers, are listed and can be selected, too.
+This also lists down the `init` containers which the user can select to see the logs. 
 
 ![logs](images/logs.png)
 
-#### Open Terminals
+#### Open Terminal Shell To Running Container
 The plugin allows you to open a terminal shell for the running container on the connected cluster.
-The user can open the Kubernetes resources such as Pod, Build and open that in the Terminal Shell using the context menu action Terminal.
+The user can open the Kubernetes resources such as Pod, Build in the Terminal Shell using the context menu action Terminal.
 All the containers for your Kubernetes resources are listed down in the Terminal View and the user can select the appropriate container and switch between them as needed.
-Init containers, that are run before the app containers, are listed and can be selected, too.
+Init containers, which run before the application containers, are listed down and can be selected to open in the terminal shell.
 
 ![logs](images/terminal.png)
 
 ## Data and Telemetry
-The JetBrains IntelliJ Kubernetes plugin collects anonymous [usage data](https://github.com/redhat-developer/intellij-kubernetes/blob/master/USAGE_DATA.md) and sends it to Red Hat servers to help improve our products and services.
+This `Kubernetes by Red Hat` plugin collects anonymous [usage data](https://github.com/redhat-developer/intellij-kubernetes/blob/main/USAGE_DATA.md) and sends it to Red Hat servers to help improve our products and services.
 Read our [privacy statement](https://developers.redhat.com/article/tool-data-collection) to learn more. This extension respects the Red Hat Telemetry setting which you can learn more about at https://github.com/redhat-developer/intellij-redhat-telemetry#telemetry-reporting
 
 ## Release notes
