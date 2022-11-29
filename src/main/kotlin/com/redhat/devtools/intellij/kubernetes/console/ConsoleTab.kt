@@ -13,7 +13,6 @@ package com.redhat.devtools.intellij.kubernetes.console
 import com.intellij.execution.ui.ConsoleView
 import com.intellij.icons.AllIcons
 import com.intellij.openapi.Disposable
-import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.SimpleToolWindowPanel
@@ -38,6 +37,7 @@ import javax.swing.BoxLayout
 import javax.swing.JComponent
 import javax.swing.JPanel
 import javax.swing.ListModel
+import org.jetbrains.concurrency.runAsync
 
 abstract class ConsoleTab<T : ConsoleView, W : Any?>(
     protected val pod: Pod,
@@ -185,7 +185,7 @@ abstract class ConsoleTab<T : ConsoleView, W : Any?>(
             if (consoleView == null) {
                 return
             }
-            ApplicationManager.getApplication().executeOnPooledThread {
+            runAsync {
                 try {
                     startWatch(container, consoleView)
                 } catch (e: ResourceException) {
