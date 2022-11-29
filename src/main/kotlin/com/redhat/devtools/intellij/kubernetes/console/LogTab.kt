@@ -12,6 +12,7 @@ package com.redhat.devtools.intellij.kubernetes.console
 
 import com.intellij.execution.filters.TextConsoleBuilderFactory
 import com.intellij.execution.ui.ConsoleView
+import com.intellij.openapi.application.runInEdt
 import com.intellij.openapi.project.Project
 import com.redhat.devtools.intellij.kubernetes.model.IResourceModel
 import io.fabric8.kubernetes.api.model.Container
@@ -26,9 +27,23 @@ open class LogTab(pod: Pod, model: IResourceModel, project: Project) :
             || consoleView == null) {
             return null
         }
-        val watch = model.watchLog(container, pod, ConsoleOutputStream(consoleView))
+        val watch = model.watchLog(
+            container,
+            pod, FailureCallbackOutputStream(
+                onFailureDetected(container),
+                ConsoleOutputStream(consoleView)
+            )
+        )
         this.watch.set(watch)
         return watch
+    }
+
+    private fun onFailureDetected(container: Container): () -> Unit {
+        return {
+            runInEdt {
+                showError(container, "Could not connect to container \"${container.name}\".")
+            }
+        }
     }
 
     override fun createConsoleView(project: Project): ConsoleView {
