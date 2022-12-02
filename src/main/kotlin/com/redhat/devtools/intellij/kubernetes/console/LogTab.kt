@@ -57,6 +57,7 @@ open class LogTab(pod: Pod, model: IResourceModel, project: Project) :
     }
 
     override fun dispose() {
+        super.dispose()
         closeWatch()
     }
 

@@ -52,6 +52,7 @@ open class TerminalTab(pod: Pod, model: IResourceModel, project: Project) :
     }
 
     override fun dispose() {
+        super.dispose()
         closeWatch()
     }
 
