@@ -105,6 +105,10 @@ abstract class ConsoleTab<T : ConsoleView, W : Any?>(
         }
     }
 
+    override fun dispose() {
+        consoles?.dispose()
+    }
+
 
     abstract fun createConsoleView(project: Project): T?
 
@@ -140,6 +144,14 @@ abstract class ConsoleTab<T : ConsoleView, W : Any?>(
 
         override fun create(container: Container): ConsoleOrErrorPanel {
             return ConsoleOrErrorPanel(container)
+        }
+
+        override fun dispose() {
+            removeAll()
+        }
+
+        override fun dispose(key: Container?, value: ConsoleOrErrorPanel?) {
+            value?.dispose()
         }
     }
 
@@ -179,6 +191,10 @@ abstract class ConsoleTab<T : ConsoleView, W : Any?>(
                 asyncStartWatch(consoleView)
             }
             show(NAME_VIEW_ERROR)
+        }
+
+        override fun dispose() {
+            consoleView?.dispose()
         }
 
         private fun asyncStartWatch(consoleView: T?) {
