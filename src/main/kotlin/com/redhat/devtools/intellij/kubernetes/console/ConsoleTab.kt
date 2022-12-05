@@ -256,7 +256,7 @@ abstract class ConsoleTab<T : ConsoleView, W : Any?>(
         fun setError(message: String, e: Throwable?, listener: () -> Unit) {
             errorLabel.setHtmlText("$message <a>Details.</a>")
             this.errorDetailsListener = {
-                val balloon = ErrorBalloon.create(toMessage(e), errorLabel)
+                val balloon = ErrorBalloon.create(toMessage(e), component)
                 ErrorBalloon.showAbove(balloon, errorLabel)
                 Disposer.register(parent, balloon)
             }

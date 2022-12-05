@@ -15,13 +15,13 @@ import com.intellij.openapi.ui.popup.Balloon
 import com.intellij.openapi.ui.popup.JBPopupFactory
 import com.intellij.ui.ScrollPaneFactory
 import com.intellij.ui.awt.RelativePoint
+import com.intellij.util.ui.JBUI
 import java.awt.Dimension
 import java.awt.FontMetrics
 import java.awt.Point
 import javax.swing.JComponent
 import javax.swing.JEditorPane
 import javax.swing.JPanel
-import javax.swing.SwingUtilities
 import kotlin.math.ceil
 import kotlin.math.min
 
@@ -29,12 +29,14 @@ object ErrorBalloon {
 
     private const val MAX_HEIGHT_ERROR_BALLOON = 200
 
-    fun create(message: String?, component: JComponent): Balloon {
-        val height = getBalloonHeight(message, component.visibleRect.width, component.graphics.fontMetrics)
-        return create(message, component.visibleRect.width, height)
+    fun create(message: String?, parent: JComponent): Balloon {
+        val requiredWidth = parent.graphics.fontMetrics.getStringBounds(message, parent.graphics).bounds.width
+        val width = min(requiredWidth, parent.visibleRect.width) + 30 // safety margin
+        val height = getBalloonHeight(width, requiredWidth, parent.graphics.fontMetrics)
+        return create(message, width, height)
     }
 
-    fun create(message: String?, width: Int, height: Int): Balloon {
+    private fun create(message: String?, width: Int, height: Int): Balloon {
         val backgroundColor = MessageType.ERROR.popupBackground
         val foregroundColor = MessageType.ERROR.titleForeground
         val text = JEditorPane().apply {
@@ -42,8 +44,10 @@ object ErrorBalloon {
             isEditable = false
             background = backgroundColor
             foreground = foregroundColor
+            alignmentX = 0.5f
         }
         val scrolled = ScrollPaneFactory.createScrollPane(text, true).apply {
+            verticalScrollBar.width
             preferredSize = Dimension(width, height)
             background = backgroundColor
             viewport.background = backgroundColor
@@ -52,6 +56,7 @@ object ErrorBalloon {
         return JBPopupFactory.getInstance().createBalloonBuilder(scrolled)
             .setFillColor(backgroundColor)
             .setBorderColor(backgroundColor)
+            .setBorderInsets(JBUI.insets(10))
             .setCloseButtonEnabled(true)
             .setHideOnClickOutside(true)
             .setHideOnAction(false) // allow user to Ctrl+A & Ctrl+C
@@ -60,18 +65,17 @@ object ErrorBalloon {
 
     /**
      * Determines the height of the error details balloon.
-     * The height returned is either the strictly required height or the maximum height if it exceeds it.
+     * The height that is returned is either the strictly required height or the maximum height if it exceeds it.
      *
-     * @param message the message that should be displayed in the balloon
      * @param availableWidth the width that's available to the balloon
+     * @param requiredWidth the width that's required for the balloon
      * @param fontMetrics the font metrics to use
      */
     private fun getBalloonHeight(
-        message: String?,
         availableWidth: Int,
+        requiredWidth: Int,
         fontMetrics: FontMetrics
     ): Int {
-        val requiredWidth = SwingUtilities.computeStringWidth(fontMetrics, message)
         val requiredLines = requiredWidth.toDouble() / availableWidth
         val neededHeight = ceil(requiredLines) * fontMetrics.height
         return min(neededHeight.toInt(), MAX_HEIGHT_ERROR_BALLOON)

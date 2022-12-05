@@ -32,7 +32,7 @@ open class LogTab(pod: Pod, model: IResourceModel, project: Project) :
             container,
             pod, FailureCallbackOutputStream(
                 onFailureDetected(container),
-                ConsoleOutputStream(consoleView)
+                consoleView
             )
         )
         this.watch.set(watch)

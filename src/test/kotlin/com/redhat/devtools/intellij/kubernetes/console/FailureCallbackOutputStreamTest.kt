@@ -10,34 +10,32 @@
  ******************************************************************************/
 package com.redhat.devtools.intellij.kubernetes.console
 
+import com.intellij.execution.ui.ConsoleView
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.never
-import com.nhaarman.mockitokotlin2.times
 import com.nhaarman.mockitokotlin2.verify
-import java.io.OutputStream
 import org.junit.Test
 
 class FailureCallbackOutputStreamTest {
 
     private val callback: (message: String) -> Unit = mock()
-    private val parent: OutputStream = mock()
-    private val out = FailureCallbackOutputStream(callback, parent)
+    private val consoleView: ConsoleView = mock()
+    private val out = FailureCallbackOutputStream(callback, consoleView)
 
     @Test
-    fun `should invoke callback if detects kind & status`() {
+    fun `should invoke callback has kind, status & message`() {
         // given
-        val failure = """
-            |{
-            | "kind":"Status",
-            | "apiVersion":"v1",
-            | "metadata":{},
-            | "status":"Failure",
-            | "message":"container \"ngnix\" in pod \"nginx-initcontainers\" is waiting to start: trying and failing to pull image",
-            | "reason":"BadRequest",
-            | "code":400
-            |}"
-            """.trimMargin()
+        val failure =
+            "{" +
+                "\"kind\":\"Status\"," +
+                "\"apiVersion\":\"v1\"," +
+                "\"metadata\":{}," +
+                "\"status\":\"Failure\"," +
+                "\"message\":\"container \"ngnix\" in pod \"nginx-initcontainers\" is waiting to start: trying and failing to pull image," +
+                "\"reason\":\"BadRequest\"," +
+                "\"code\":400" +
+            "}\n"
         // when
         write(failure, out)
         // then
@@ -45,66 +43,44 @@ class FailureCallbackOutputStreamTest {
     }
 
     @Test
-    fun `should invoke callback, even if there's no message`() {
+    fun `should NOT invoke callback if kind is NOT 'Status'`() {
         // given
-        val failure = """
-            |{
-            | "kind":"Status",
-            | "status":"Failure",
-            |}"
-            """.trimMargin()
+        val failure =
+            "{" +
+                    " \"kind\":\"Station\"," +
+                    " \"status\":\"Fail\"," +
+                    " \"message\":\"lord vader has eaten too many chillies\"," +
+                    "}"
         // when
         write(failure, out)
         // then
-        verify(callback).invoke(any())
+        verify(callback, never()).invoke(any())
     }
 
     @Test
-    fun `should invoke callback, regardless of nested object`() {
+    fun `should NOT invoke callback if there's no message`() {
         // given
-        val failure = """
-            |{
-            | "kind":"Status",
-            | "metadata":{},
-            | "message":"the force is moot"
-            | "status":"Failure",
-            |}"
-            """.trimMargin()
+        val failure =
+            "{" +
+                "\"kind\":\"Status\"," +
+                "\"status\":\"Failure\"," +
+            "}"
         // when
         write(failure, out)
         // then
-        verify(callback).invoke(any())
-    }
-
-    @Test
-    fun `should invoke callback, regardless of non-json text in front of it`() {
-        // given
-        val failure = """
-            |death star is not a star, it's an ugly spherical junk yard
-            |we need to send the garbage collection to clean it up
-            |{
-            | "kind":"Status",
-            | "status":"Failure",
-            | "message":"yoda has the force"
-            |}"
-            """.trimMargin()
-        // when
-        write(failure, out)
-        // then
-        verify(callback).invoke(any())
+        verify(callback, never()).invoke(any())
     }
 
     @Test
     fun `should NOT invoke callback if properties are NOT within json object`() {
         // given
-        val failure = """
-            |{
-            |}
-            | "kind":"Status",
-            | "message":"the force is weak"
-            | "status":"Failure",
-            |}"
-            """.trimMargin()
+        val failure =
+            "{" +
+            "}" +
+            "\"kind\":\"Status\"," +
+            "\"message\":\"luke skywalker loves chocolate\"" +
+            "\"status\":\"Failure\"," +
+            "}"
         // when
         write(failure, out)
         // then
@@ -112,95 +88,14 @@ class FailureCallbackOutputStreamTest {
     }
 
     @Test
-    fun `should invoke callback if properties are in 2nd json object`() {
+    fun `should NOT invoke callback if status is NOT 'Failure'`() {
         // given
-        val failure = """
-            |{
-            |}
-            |{
-            | "kind":"Status",
-            | "message":"the force is moot"
-            | "status":"Failure",
-            |}"
-            """.trimMargin()
-        // when
-        write(failure, out)
-        // then
-        verify(callback).invoke(any())
-    }
-
-    @Test
-    fun `should invoke callback 2x if there are 2 messages`() {
-        // given
-        val failure = """
-            |{
-            | "kind":"Status",
-            | "message":"the force is moot"
-            | "status":"Failure",
-            |}
-            |{
-            | "kind":"Status",
-            | "message":"the force is moot"
-            | "status":"Failure",
-            |}"
-            """.trimMargin()
-        // when
-        write(failure, out)
-        // then
-        verify(callback, times(2)).invoke(any())
-    }
-
-    @Test
-    fun `should provide message to callback that it invokes`() {
-        // given
-        val failure = """
-            |{
-            | "kind":"Status",
-            | "apiVersion":"v1",
-            | "status":"Failure",
-            | "message":"container \"ngnix\" in pod \"nginx-initcontainers\" is waiting to start: trying and failing to pull image",
-            |}"
-            """.trimMargin()
-        // when
-        write(failure, out)
-        // then
-        verify(callback).invoke("container \"ngnix\" in pod \"nginx-initcontainers\" is waiting to start: trying and failing to pull image")
-    }
-
-    @Test
-    fun `should write to parent outputstream even if does not detect`() {
-        // given
-        val failure = "{}"
-        // when
-        write(failure, out)
-        // then
-        verify(parent, times(failure.length)).write(any<Int>())
-    }
-
-    @Test
-    fun `should NOT invoke callback if does not detect status`() {
-        // given
-        val failure = """
-            |{
-            | "kind":"Status",
-            | "status":"<<JEDI>>",
-            |}"
-            """.trimMargin()
-        // when
-        write(failure, out)
-        // then
-        verify(callback, never()).invoke(any())
-    }
-
-    @Test
-    fun `should NOT invoke callback if status is 'Fail' NOT 'Failure'`() {
-        // given
-        val failure = """
-            |{
-            | "kind":"Status",
-            | "status":"Fail",
-            |}"
-            """.trimMargin()
+        val failure =
+            "{" +
+                " \"kind\":\"Status\"," +
+                " \"status\":\"Fail\"," +
+                " \"message\":\"lord vader has eaten too many chillies\"," +
+            "}"
         // when
         write(failure, out)
         // then
