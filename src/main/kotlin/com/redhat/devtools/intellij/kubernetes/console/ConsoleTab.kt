@@ -176,7 +176,7 @@ abstract class ConsoleTab<T : ConsoleView, W : Any?>(
         }
 
         private val errorView by lazy {
-            ErrorView(ConsoleTab@this)
+            ErrorView(this)
         }
 
         init {
