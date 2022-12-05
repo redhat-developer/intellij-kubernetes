@@ -15,6 +15,7 @@ import com.intellij.execution.ui.ConsoleView
 import com.intellij.openapi.application.runInEdt
 import com.intellij.openapi.project.Project
 import com.redhat.devtools.intellij.kubernetes.model.IResourceModel
+import com.redhat.devtools.intellij.kubernetes.model.util.ResourceException
 import io.fabric8.kubernetes.api.model.Container
 import io.fabric8.kubernetes.api.model.Pod
 import io.fabric8.kubernetes.client.dsl.LogWatch
@@ -38,10 +39,11 @@ open class LogTab(pod: Pod, model: IResourceModel, project: Project) :
         return watch
     }
 
-    private fun onFailureDetected(container: Container): () -> Unit {
-        return {
+    private fun onFailureDetected(container: Container): (message: String) -> Unit {
+        return { message ->
+            val e = ResourceException(message)
             runInEdt {
-                showError(container, "Could not connect to container \"${container.name}\".")
+                showError(container, "Could not connect to container \"${container.name}\".", e)
             }
         }
     }

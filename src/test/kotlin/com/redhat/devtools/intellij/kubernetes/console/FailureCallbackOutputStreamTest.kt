@@ -20,7 +20,7 @@ import org.junit.Test
 
 class FailureCallbackOutputStreamTest {
 
-    private val callback: () -> Unit = mock()
+    private val callback: (message: String) -> Unit = mock()
     private val parent: OutputStream = mock()
     private val out = FailureCallbackOutputStream(callback, parent)
 
@@ -41,27 +41,43 @@ class FailureCallbackOutputStreamTest {
         // when
         write(failure, out)
         // then
-        verify(callback).invoke()
+        verify(callback).invoke(any())
     }
 
     @Test
-    fun `should invoke callback if detects, regardless of nested object`() {
+    fun `should invoke callback, even if there's no message`() {
         // given
         val failure = """
             |{
             | "kind":"Status",
-            | "metadata":{},
             | "status":"Failure",
             |}"
             """.trimMargin()
         // when
         write(failure, out)
         // then
-        verify(callback).invoke()
+        verify(callback).invoke(any())
     }
 
     @Test
-    fun `should invoke callback if detects, regardless of non-json text in front of it`() {
+    fun `should invoke callback, regardless of nested object`() {
+        // given
+        val failure = """
+            |{
+            | "kind":"Status",
+            | "metadata":{},
+            | "message":"the force is moot"
+            | "status":"Failure",
+            |}"
+            """.trimMargin()
+        // when
+        write(failure, out)
+        // then
+        verify(callback).invoke(any())
+    }
+
+    @Test
+    fun `should invoke callback, regardless of non-json text in front of it`() {
         // given
         val failure = """
             |death star is not a star, it's an ugly spherical junk yard
@@ -69,12 +85,13 @@ class FailureCallbackOutputStreamTest {
             |{
             | "kind":"Status",
             | "status":"Failure",
+            | "message":"yoda has the force"
             |}"
             """.trimMargin()
         // when
         write(failure, out)
         // then
-        verify(callback).invoke()
+        verify(callback).invoke(any())
     }
 
     @Test
@@ -84,13 +101,14 @@ class FailureCallbackOutputStreamTest {
             |{
             |}
             | "kind":"Status",
+            | "message":"the force is weak"
             | "status":"Failure",
             |}"
             """.trimMargin()
         // when
         write(failure, out)
         // then
-        verify(callback, never()).invoke()
+        verify(callback, never()).invoke(any())
     }
 
     @Test
@@ -101,13 +119,14 @@ class FailureCallbackOutputStreamTest {
             |}
             |{
             | "kind":"Status",
+            | "message":"the force is moot"
             | "status":"Failure",
             |}"
             """.trimMargin()
         // when
         write(failure, out)
         // then
-        verify(callback).invoke()
+        verify(callback).invoke(any())
     }
 
     @Test
@@ -116,17 +135,36 @@ class FailureCallbackOutputStreamTest {
         val failure = """
             |{
             | "kind":"Status",
+            | "message":"the force is moot"
             | "status":"Failure",
             |}
             |{
             | "kind":"Status",
+            | "message":"the force is moot"
             | "status":"Failure",
             |}"
             """.trimMargin()
         // when
         write(failure, out)
         // then
-        verify(callback, times(2)).invoke()
+        verify(callback, times(2)).invoke(any())
+    }
+
+    @Test
+    fun `should provide message to callback that it invokes`() {
+        // given
+        val failure = """
+            |{
+            | "kind":"Status",
+            | "apiVersion":"v1",
+            | "status":"Failure",
+            | "message":"container \"ngnix\" in pod \"nginx-initcontainers\" is waiting to start: trying and failing to pull image",
+            |}"
+            """.trimMargin()
+        // when
+        write(failure, out)
+        // then
+        verify(callback).invoke("container \"ngnix\" in pod \"nginx-initcontainers\" is waiting to start: trying and failing to pull image")
     }
 
     @Test
@@ -151,7 +189,7 @@ class FailureCallbackOutputStreamTest {
         // when
         write(failure, out)
         // then
-        verify(callback, never()).invoke()
+        verify(callback, never()).invoke(any())
     }
 
     @Test
@@ -166,7 +204,7 @@ class FailureCallbackOutputStreamTest {
         // when
         write(failure, out)
         // then
-        verify(callback, never()).invoke()
+        verify(callback, never()).invoke(any())
     }
 
     private fun write(message: String, out: FailureCallbackOutputStream) {
