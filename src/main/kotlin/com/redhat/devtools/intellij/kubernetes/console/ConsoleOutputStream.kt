@@ -17,7 +17,7 @@ import java.io.OutputStream
 import java.util.Queue
 import java.util.concurrent.LinkedBlockingQueue
 
-class ConsoleOutputStream(private val terminal: ConsoleView) : OutputStream() {
+open class ConsoleOutputStream(private val terminal: ConsoleView) : OutputStream() {
 
     companion object {
         const val BUFFER_SIZE: Int = 256
@@ -47,7 +47,15 @@ class ConsoleOutputStream(private val terminal: ConsoleView) : OutputStream() {
         val builder = buffer.stream()
             .collect(::StringBuilder, this::appendCodePoint, StringBuilder::append)
         buffer.clear()
-        terminal.print(builder.toString(), ConsoleViewContentType.SYSTEM_OUTPUT)
+        flushToTerminal(processOutput(builder.toString()))
+    }
+
+    protected open fun processOutput(output: String): String {
+        return output
+    }
+
+    private fun flushToTerminal(output: String) {
+        terminal.print(output, ConsoleViewContentType.SYSTEM_OUTPUT)
     }
 
     private fun appendCodePoint(builder: java.lang.StringBuilder, codePoint: Int): java.lang.StringBuilder {
