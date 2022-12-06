@@ -9,7 +9,11 @@ buildscript {
         ext.sinceIdeaBuild = "${since.group(1)}${since.group(2)}".toInteger()
     }
 
-    if (ext.sinceIdeaBuild >= 221) {
+    if (ext.sinceIdeaBuild >= 223) {
+        ext.kotlinVersion = kotlinVersionIdea221
+        ext.kotlinStdlib = kotlinStdlibIdea221
+        ext.java_version = "17"
+    } else if (ext.sinceIdeaBuild >= 221) {
         ext.kotlinVersion = kotlinVersionIdea221
         ext.kotlinStdlib = kotlinStdlibIdea221
         ext.java_version = "11"
@@ -82,13 +86,21 @@ configurations {
 
     compileKotlin {
         kotlinOptions {
-            jvmTarget = "11"
+            if (java_version == "17") {
+                jvmTarget = "17"
+            } else {
+                jvmTarget = "11"
+            }
         }
     }
 
     compileTestKotlin {
         kotlinOptions {
-            jvmTarget = "11"
+            if (java_version == "17") {
+                jvmTarget = "17"
+            } else {
+                jvmTarget = "11"
+            }
         }
     }
 
