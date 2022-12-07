@@ -15,8 +15,8 @@ import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.verify
 import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.config
 import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.namedContext
-import io.fabric8.kubernetes.client.AppsAPIGroupClient
 import io.fabric8.kubernetes.client.NamespacedKubernetesClient
+import io.fabric8.kubernetes.client.impl.AppsAPIGroupClient
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test
 

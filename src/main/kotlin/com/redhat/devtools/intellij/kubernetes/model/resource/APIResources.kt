@@ -16,7 +16,7 @@ import io.fabric8.kubernetes.api.model.APIResource
 import io.fabric8.kubernetes.api.model.APIResourceList
 import io.fabric8.kubernetes.client.KubernetesClient
 import io.fabric8.kubernetes.client.KubernetesClientException
-import io.fabric8.kubernetes.client.dsl.base.OperationSupport
+import io.fabric8.kubernetes.client.dsl.internal.OperationSupport
 import io.fabric8.kubernetes.client.utils.ApiVersionUtil
 
 /**
@@ -63,7 +63,7 @@ class APIResources(private val client: ClientAdapter<out KubernetesClient>) {
      * lands in a release (6.0 expected)
      */
     private fun requestCoreResources(version: String, client: ClientAdapter<out KubernetesClient>): List<APIResource> {
-        return OperationSupport(client.get().httpClient, client.config.configuration)
+        return OperationSupport(client.get())
             .restCall(APIResourceList::class.java, PATH_API, version)?.resources
             ?: emptyList()
     }

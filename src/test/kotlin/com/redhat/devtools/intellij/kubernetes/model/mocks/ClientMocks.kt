@@ -47,16 +47,10 @@ import io.fabric8.kubernetes.client.Watcher
 import io.fabric8.kubernetes.client.dsl.ApiextensionsAPIGroupDSL
 import io.fabric8.kubernetes.client.dsl.ContainerResource
 import io.fabric8.kubernetes.client.dsl.Containerable
-import io.fabric8.kubernetes.client.dsl.ExecWatch
-import io.fabric8.kubernetes.client.dsl.LogWatch
 import io.fabric8.kubernetes.client.dsl.MixedOperation
 import io.fabric8.kubernetes.client.dsl.NonNamespaceOperation
 import io.fabric8.kubernetes.client.dsl.PodResource
 import io.fabric8.kubernetes.client.dsl.Resource
-import java.io.InputStream
-import java.io.OutputStream
-import java.io.PipedInputStream
-import java.io.PipedOutputStream
 import java.net.URL
 
 
@@ -120,23 +114,23 @@ object ClientMocks {
         }
     }
 
-    fun inNamespace(mixedOp: MixedOperation<Pod, PodList, PodResource<Pod>>)
-            : NonNamespaceOperation<Pod, PodList, PodResource<Pod>> {
-        val nonNamespaceOperation: NonNamespaceOperation<Pod, PodList, PodResource<Pod>> = mock()
+    fun inNamespace(mixedOp: MixedOperation<Pod, PodList, PodResource>)
+            : NonNamespaceOperation<Pod, PodList, PodResource> {
+        val nonNamespaceOperation: NonNamespaceOperation<Pod, PodList, PodResource> = mock()
         whenever(mixedOp.inNamespace(any()))
             .doReturn(nonNamespaceOperation)
         return nonNamespaceOperation
     }
 
     fun pods(client: KubernetesClient)
-            : MixedOperation<Pod, PodList, PodResource<Pod>> {
-        val podsOp = mock<MixedOperation<Pod, PodList, PodResource<Pod>>>()
+            : MixedOperation<Pod, PodList, PodResource> {
+        val podsOp = mock<MixedOperation<Pod, PodList, PodResource>>()
         whenever(client.pods())
             .doReturn(podsOp)
         return podsOp
     }
 
-    fun list(nonNamespaceOperation: NonNamespaceOperation<Pod, PodList, PodResource<Pod>>)
+    fun list(nonNamespaceOperation: NonNamespaceOperation<Pod, PodList, PodResource>)
             : PodList {
         val podList = mock<PodList>()
         whenever(nonNamespaceOperation.list())
@@ -145,7 +139,7 @@ object ClientMocks {
 
     }
 
-    fun list(mixedOp: MixedOperation<Pod, PodList, PodResource<Pod>>): PodList {
+    fun list(mixedOp: MixedOperation<Pod, PodList, PodResource>): PodList {
         val podList = mock<PodList>()
         whenever(mixedOp.list())
             .doReturn(podList)
@@ -158,8 +152,9 @@ object ClientMocks {
             .doReturn(returnedPods)
     }
 
-    fun withName(op: NonNamespaceOperation<Pod, PodList, PodResource<Pod>>, pod: Pod): PodResource<Pod> {
-        val podResource = mock<PodResource<Pod>>()
+    fun withName(op: NonNamespaceOperation<Pod, PodList, PodResource>, pod: Pod)
+            : PodResource {
+        val podResource = mock<PodResource>()
         whenever(podResource.get())
             .doReturn(pod)
         whenever(op.withName(pod.metadata.name))
@@ -168,11 +163,10 @@ object ClientMocks {
     }
 
     fun inContainer(
-        op: Containerable<String, ContainerResource<LogWatch, InputStream, PipedOutputStream, OutputStream, PipedInputStream, String, ExecWatch, Boolean, InputStream, Boolean>>,
+        op: Containerable<String, ContainerResource>,
         container: Container
     ) {
-        val containerResource: ContainerResource<LogWatch, InputStream, PipedOutputStream, OutputStream, PipedInputStream, String, ExecWatch, Boolean, InputStream, Boolean> =
-            mock()
+        val containerResource: ContainerResource = mock()
         val name = container.name
         doReturn(containerResource)
             .whenever(op).inContainer(name)

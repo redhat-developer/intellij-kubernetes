@@ -170,7 +170,7 @@ class APIResourcesTest {
                     null
                 )
             }
-        }.whenever(client).send(any(), any<Class<InputStream>>())
+        }.whenever(client).sendAsync(any(), any<Class<InputStream>>())
         return client
     }
 

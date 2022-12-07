@@ -11,6 +11,10 @@
 package com.redhat.devtools.intellij.kubernetes.model.client
 
 import io.fabric8.kubernetes.client.*
+import io.fabric8.kubernetes.client.impl.AppsAPIGroupClient
+import io.fabric8.kubernetes.client.impl.BatchAPIGroupClient
+import io.fabric8.kubernetes.client.impl.NetworkAPIGroupClient
+import io.fabric8.kubernetes.client.impl.StorageAPIGroupClient
 import io.fabric8.openshift.client.NamespacedOpenShiftClient
 import io.fabric8.openshift.client.OpenShiftClient
 import io.fabric8.openshift.client.OpenShiftNotAvailableException
