@@ -28,19 +28,25 @@ class NonNamespacedCustomResourceOperator(
 ) : NonNamespacedResourceOperator<GenericKubernetesResource, KubernetesClient>(client) {
 
     override fun loadAllResources(): List<GenericKubernetesResource> {
-        return getOperation()?.list()?.items ?: emptyList()
+        return getOperation()
+            ?.list()
+            ?.items
+            ?: emptyList()
     }
 
     override fun watch(resource: HasMetadata, watcher: Watcher<in GenericKubernetesResource>): Watch? {
         @Suppress("UNCHECKED_CAST")
         val typedWatcher = watcher as? Watcher<GenericKubernetesResource> ?: return null
-        return getOperation()?.withName(resource.metadata.name)?.watch(typedWatcher)
+        return getOperation()
+            ?.withName(resource.metadata.name)
+            ?.watch(typedWatcher)
     }
 
     override fun watchAll(watcher: Watcher<in GenericKubernetesResource>): Watch? {
         @Suppress("UNCHECKED_CAST")
         val typedWatcher = watcher as? Watcher<GenericKubernetesResource> ?: return null
-        return getOperation()?.watch(typedWatcher)
+        return getOperation()
+            ?.watch(typedWatcher)
     }
 
     override fun delete(resources: List<HasMetadata>): Boolean {
@@ -52,7 +58,9 @@ class NonNamespacedCustomResourceOperator(
     }
 
     private fun delete(name: String): Boolean {
-        getOperation()?.withName(name)?.delete()
+        getOperation()
+            ?.withName(name)
+            ?.delete()
         return true
     }
 
@@ -60,7 +68,9 @@ class NonNamespacedCustomResourceOperator(
         val toReplace = resource as? GenericKubernetesResource ?: return null
 
         return runWithoutServerSetProperties(toReplace) {
-            getOperation()?.withName(resource.metadata.name)?.createOrReplace(resource)
+            getOperation()
+                ?.resource(resource)
+                ?.createOrReplace()
         }
     }
 

@@ -14,15 +14,15 @@ import com.intellij.openapi.application.ApplicationManager
 import com.redhat.devtools.intellij.common.utils.ConfigHelper
 import io.fabric8.kubernetes.api.model.Context
 import io.fabric8.kubernetes.api.model.NamedContext
+import io.fabric8.kubernetes.client.Client
 import io.fabric8.kubernetes.client.Config
-import io.fabric8.kubernetes.client.ConfigAware
 import io.fabric8.kubernetes.client.internal.KubeConfigUtils
 
 /**
  * An adapter to access [io.fabric8.kubernetes.client.Config].
  * It also saves the kube config [KubeConfigUtils] when it changes the client config.
  */
-open class ClientConfig(private val client: ConfigAware<Config>) {
+open class ClientConfig(private val client: Client) {
 
 	open var currentContext: NamedContext?
 		get() {

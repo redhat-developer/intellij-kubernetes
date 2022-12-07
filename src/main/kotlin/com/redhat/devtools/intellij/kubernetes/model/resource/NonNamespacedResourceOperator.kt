@@ -12,13 +12,12 @@ package com.redhat.devtools.intellij.kubernetes.model.resource
 
 import com.intellij.openapi.diagnostic.logger
 import com.redhat.devtools.intellij.kubernetes.model.util.isSameNamespace
-import com.redhat.devtools.intellij.kubernetes.model.util.removeResourceVersion
-import com.redhat.devtools.intellij.kubernetes.model.util.removeUid
 import com.redhat.devtools.intellij.kubernetes.model.util.runWithoutServerSetProperties
 import io.fabric8.kubernetes.api.model.Container
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.KubernetesResourceList
 import io.fabric8.kubernetes.client.Client
+import io.fabric8.kubernetes.client.KubernetesClient
 import io.fabric8.kubernetes.client.Watch
 import io.fabric8.kubernetes.client.Watcher
 import io.fabric8.kubernetes.client.dsl.ExecListener
@@ -82,26 +81,14 @@ abstract class NonNamespacedResourceOperator<R : HasMetadata, C : Client>(
         return watchExec(container, listener, operation)
     }
 
-    override fun delete(resources: List<HasMetadata>): Boolean {
-        @Suppress("UNCHECKED_CAST")
-        val toDelete = resources as? List<R> ?: return false
-        return getOperation()
-            ?.delete(toDelete)
-            ?: false
-    }
-
     override fun replace(resource: HasMetadata): HasMetadata? {
         @Suppress("UNCHECKED_CAST")
         val toReplace = resource as? R ?: return null
-        val resourceVersion = removeResourceVersion(toReplace)
-        val uid = removeUid(toReplace)
-        val replaced = getOperation()
-            ?.withName(toReplace.metadata.name)
-            ?.replace(toReplace)
-        // restore properties that were removed before sending
-        toReplace.metadata.resourceVersion = resourceVersion
-        toReplace.metadata.uid = uid
-        return replaced
+        return runWithoutServerSetProperties(toReplace) {
+            client.adapt(KubernetesClient::class.java)
+                .resource(toReplace)
+                .replace()
+        }
     }
 
     override fun create(resource: HasMetadata): HasMetadata? {
@@ -109,9 +96,9 @@ abstract class NonNamespacedResourceOperator<R : HasMetadata, C : Client>(
         val toCreate = resource as? R ?: return null
 
         return runWithoutServerSetProperties(toCreate) {
-            getOperation()
-                ?.withName(toCreate.metadata.name)
-                ?.create(toCreate)
+            client.adapt(KubernetesClient::class.java)
+                .resource(toCreate)
+                .create()
         }
     }
 

@@ -10,13 +10,17 @@
  ******************************************************************************/
 package com.redhat.devtools.intellij.kubernetes.model.client
 
+import com.redhat.devtools.intellij.kubernetes.model.util.isUnauthorized
 import io.fabric8.kubernetes.client.*
+import io.fabric8.kubernetes.client.impl.AppsAPIGroupClient
+import io.fabric8.kubernetes.client.impl.BatchAPIGroupClient
+import io.fabric8.kubernetes.client.impl.NetworkAPIGroupClient
+import io.fabric8.kubernetes.client.impl.StorageAPIGroupClient
 import io.fabric8.openshift.client.NamespacedOpenShiftClient
 import io.fabric8.openshift.client.OpenShiftClient
-import io.fabric8.openshift.client.OpenShiftNotAvailableException
 import java.util.concurrent.ConcurrentHashMap
 
-open class OSClientAdapter(client: NamespacedOpenShiftClient, private val kubeClient: NamespacedKubernetesClient) :
+open class OSClientAdapter(client: OpenShiftClient, private val kubeClient: KubernetesClient) :
     ClientAdapter<OpenShiftClient>(client) {
 
     override val config by lazy {
@@ -34,8 +38,8 @@ open class OSClientAdapter(client: NamespacedOpenShiftClient, private val kubeCl
     }
 }
 
-open class KubeClientAdapter(client: NamespacedKubernetesClient) :
-    ClientAdapter<NamespacedKubernetesClient>(client) {
+open class KubeClientAdapter(client: KubernetesClient) :
+    ClientAdapter<KubernetesClient>(client) {
     override fun isOpenShift(): Boolean {
         return false
     }
@@ -50,17 +54,22 @@ abstract class ClientAdapter<C: KubernetesClient>(private val fabric8Client: C) 
 
         fun create(namespace: String? = null, config: Config): ClientAdapter<out KubernetesClient> {
             setNamespace(namespace, config)
-            val kubeClient = DefaultKubernetesClient(config)
-            return try {
-                val osClient = kubeClient.adapt(NamespacedOpenShiftClient::class.java)
+            //Thread.currentThread().contextClassLoader = javaClass.classLoader
+            val kubeClient = KubernetesClientBuilder().withConfig(config).build()
+            val osClient = kubeClient.adapt(NamespacedOpenShiftClient::class.java)
+            val isOpenShift = isOpenShift(osClient)
+            return if (isOpenShift) {
                 OSClientAdapter(osClient, kubeClient)
-            } catch (e: RuntimeException) {
-                when (e) {
-                    is KubernetesClientException, // unauthorized openshift
-                    is OpenShiftNotAvailableException ->
-                        KubeClientAdapter(kubeClient)
-                    else -> throw e
-                }
+            } else {
+                KubeClientAdapter(kubeClient)
+            }
+        }
+
+        private fun isOpenShift(osClient: NamespacedOpenShiftClient): Boolean {
+            return try {
+                osClient.isSupported
+            } catch (e: KubernetesClientException) {
+                e.isUnauthorized()
             }
         }
 
