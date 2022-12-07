@@ -165,7 +165,7 @@ open class TreeStructure(
         project
     ) {
         override fun getLabel(element: C): String {
-            return if (element.context.context == null) {
+            return if (element.context.name == null) {
                 "<unknown context>"
             } else {
                 element.context.name

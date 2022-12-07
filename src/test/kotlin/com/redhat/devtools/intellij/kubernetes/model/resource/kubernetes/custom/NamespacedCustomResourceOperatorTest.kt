@@ -59,7 +59,7 @@ class NamespacedCustomResourceOperatorTest {
     private val kind = ResourceKind.create(spec)!!
     private val customResource = customResource("Ezra", "Endor", definition)
     private val resources = listOf(customResource)
-    private val op = namespacedCustomResourceOperation(customResource, resources, mock())
+    private val op = namespacedCustomResourceOperation(resources, mock())
     private val client = client(currentNamespace, arrayOf(NAMESPACE1, NAMESPACE2, NAMESPACE3)).apply {
         doReturn(op)
             .whenever(this).genericKubernetesResources(any())

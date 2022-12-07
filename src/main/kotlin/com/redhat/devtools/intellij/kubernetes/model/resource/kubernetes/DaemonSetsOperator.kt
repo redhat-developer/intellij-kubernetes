@@ -15,8 +15,8 @@ import com.redhat.devtools.intellij.kubernetes.model.resource.NamespacedOperatio
 import com.redhat.devtools.intellij.kubernetes.model.resource.NamespacedResourceOperator
 import com.redhat.devtools.intellij.kubernetes.model.resource.ResourceKind
 import io.fabric8.kubernetes.api.model.apps.DaemonSet
-import io.fabric8.kubernetes.client.AppsAPIGroupClient
 import io.fabric8.kubernetes.client.KubernetesClient
+import io.fabric8.kubernetes.client.impl.AppsAPIGroupClient
 
 class DaemonSetsOperator(client: ClientAdapter<out KubernetesClient>)
 	: NamespacedResourceOperator<DaemonSet, AppsAPIGroupClient>(client.getApps()) {

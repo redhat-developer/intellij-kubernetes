@@ -29,7 +29,7 @@ interface IWatchableLog<R: HasMetadata>: IWatchableProcess<R> {
 
 fun <R : HasMetadata> watchLog(container: Container, out: OutputStream, operation: Resource<R>): LogWatch? {
     @Suppress("UNCHECKED_CAST")
-    val op = operation as? Containerable<String, ContainerResource<LogWatch, *, *, *, *, *, *, *, *, *>>
+    val op = operation as? Containerable<String, ContainerResource>
         ?: return null
     return op.inContainer(container.name)
         ?.watchLog(out)
@@ -42,7 +42,7 @@ interface IWatchableExec<R: HasMetadata>: IWatchableProcess<R> {
 fun <R: HasMetadata> watchExec(container: Container, listener: ExecListener, operation: Resource<R>): ExecWatch? {
     val containerId = container.name ?: return null
     @Suppress("UNCHECKED_CAST")
-    val op = (operation as? Containerable<String, ContainerResource<*, *, *, *, *, String, ExecWatch, *, *, *>>)
+    val op = (operation as? Containerable<String, ContainerResource>)
         ?.inContainer(containerId)
         ?.redirectingInput()
         ?.redirectingOutput()

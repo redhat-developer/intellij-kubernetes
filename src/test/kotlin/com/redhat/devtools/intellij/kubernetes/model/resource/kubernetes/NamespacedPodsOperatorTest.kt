@@ -35,6 +35,8 @@ import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.items
 import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.list
 import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.pods
 import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.resource
+import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.resourceListOperation
+import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.resourceOperation
 import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.withName
 import io.fabric8.kubernetes.api.model.Pod
 import io.fabric8.kubernetes.api.model.PodBuilder
@@ -307,7 +309,7 @@ class NamespacedPodsOperatorTest {
     }
 
     @Test
-    fun `#watch() watches given pod in client`() {
+    fun `#watch() watches given pod`() {
         // given
         val watcher = mock<Watcher<Pod>>()
         // when
@@ -320,34 +322,25 @@ class NamespacedPodsOperatorTest {
     }
 
     @Test
-    fun `#delete(pod) deletes given pods in client`() {
+    fun `#delete(List) deletes given resources`() {
         // given
-        // when
         val toDelete = listOf(POD2)
+        resourceListOperation(resourceList = toDelete, client = client.get())
+        // when
         operator.delete(toDelete)
         // then
-        verify(client.get().pods()).delete(toDelete)
+        verify(client.get().adapt(KubernetesClient::class.java)
+            .resourceList(toDelete))
+            .delete()
     }
 
     @Test
-    fun `#delete(pods) won't delete if namespace is null`() {
+    fun `#delete(List) returns true if client could delete`() {
         // given
-        operator.namespace =  null
-        clearInvocations(operator)
+        val toDelete = listOf(POD2)
+        resourceListOperation(resourceList = toDelete, client = client.get())
         // when
-        operator.delete(listOf(POD2))
-        // then
-        verify(client.get().pods(), never()).delete(any<List<Pod>>())
-    }
-
-    @Test
-    fun `#delete(pods) returns true if client could delete`() {
-        // given
-        clearInvocations(operator)
-        whenever(client.get().pods().delete(any<List<Pod>>()))
-            .thenReturn(true)
-        // when
-        val success = operator.delete(listOf(POD2))
+        val success = operator.delete(toDelete)
         // then
         assertThat(success).isTrue
     }
@@ -355,11 +348,10 @@ class NamespacedPodsOperatorTest {
     @Test
     fun `#delete(pods) returns false if client could NOT delete`() {
         // given
-        clearInvocations(operator)
-        whenever(client.get().pods().delete(any<List<Pod>>()))
-            .thenReturn(false)
+        val toDelete = listOf(POD2)
+        resourceListOperation(resourceList = toDelete, statusDetails = emptyList(), client = client.get())
         // when
-        val success = operator.delete(listOf(POD2))
+        val success = operator.delete(toDelete)
         // then
         assertThat(success).isFalse
     }
@@ -367,65 +359,73 @@ class NamespacedPodsOperatorTest {
     @Test
     fun `#replace() is replacing given pod in client`() {
         // given
+        val toReplace = POD2
+        resourceOperation(resource = toReplace, client = client.get())
         // when
-        operator.replace(POD2)
+        operator.replace(toReplace)
         // then
-        verify(client.get().pods()
-            .inNamespace(POD2.metadata.namespace)
-            .withName(POD2.metadata.name))
-            .replace(POD2)
+        verify(client.get().adapt(KubernetesClient::class.java)
+            .resource(toReplace)
+            .inNamespace(toReplace.metadata.namespace))
+            .replace()
     }
 
     @Test
     fun `#replace() is removing and restoring resource version`() {
         // given
-        val pod = resource<Pod>("pod2", "namespace2", "podUid2", "v1", "1")
-        val resourceVersion = pod.metadata.resourceVersion
+        val toReplace = resource<Pod>("pod2", "namespace2", "podUid2", "v1", "1")
+        val resourceVersion = toReplace.metadata.resourceVersion
+        resourceOperation(resource = toReplace, client = client.get())
         // when
-        operator.replace(pod)
+        operator.replace(toReplace)
         // then
-        verify(pod.metadata).resourceVersion = null
-        verify(pod.metadata).resourceVersion = resourceVersion
+        verify(toReplace.metadata).resourceVersion = null
+        verify(toReplace.metadata).resourceVersion = resourceVersion
     }
 
     @Test
     fun `#replace() is removing uid`() {
         // given
-        val pod = resource<Pod>("pod2", "namespace2", "podUid2", "v1", "1")
-        clearInvocations(pod)
-        val uid = pod.metadata.uid
+        val toReplace = resource<Pod>("pod2", "namespace2", "podUid2", "v1", "1")
+        resourceOperation(resource = toReplace, client = client.get())
+        clearInvocations(toReplace)
+        val uid = toReplace.metadata.uid
         // when
-        operator.replace(pod)
+        operator.replace(toReplace)
         // then
-        verify(pod.metadata).uid = null
-        verify(pod.metadata).uid = uid
+        verify(toReplace.metadata).uid = null
+        verify(toReplace.metadata).uid = uid
     }
 
     @Test
-    fun `#replace() will replace even if namespace is null`() {
+    fun `#replace() will replace even if operator namespace is null`() {
         // given
+        val toReplace = POD2
         operator.namespace =  null
         clearInvocations(operator)
+        resourceOperation(resource = toReplace, client = client.get())
         // when
-        operator.replace(POD2)
+        operator.replace(toReplace)
         // then
-        verify(client.get().pods()
-            .inNamespace(POD2.metadata.namespace)
-            .withName(POD2.metadata.name))
-            .replace(POD2)
+        verify(client.get().adapt(KubernetesClient::class.java)
+            .resource(toReplace)
+            .inNamespace(toReplace.metadata.namespace))
+            .replace()
     }
 
     @Test
     fun `#replace() returns new pod if client replaced`() {
         // given
+        val toReplace = POD2
         clearInvocations(operator)
-        whenever(client.get().pods()
-            .inNamespace(POD2.metadata.namespace)
-            .withName(POD2.metadata.name)
-            .replace(POD2))
+        resourceOperation(resource = toReplace, client = client.get())
+        whenever(client.get().adapt(KubernetesClient::class.java)
+            .resource(toReplace)
+            .inNamespace(toReplace.metadata.namespace)
+            .replace())
             .thenReturn(POD3)
         // when
-        val newPod = operator.replace(POD2)
+        val newPod = operator.replace(toReplace)
         // then
         assertThat(newPod).isEqualTo(POD3)
     }
@@ -433,115 +433,118 @@ class NamespacedPodsOperatorTest {
     @Test
     fun `#create() is creating given pod in client`() {
         // given
+        val toCreate = POD2
+        resourceOperation(resource = toCreate, client = client.get())
         // when
-        operator.create(POD2)
+        operator.create(toCreate)
         // then
-        verify(client.get().pods()
-            .inNamespace(POD2.metadata.namespace)
-            .withName(POD2.metadata.name))
-            .create(POD2)
+        verify(client.get().adapt(KubernetesClient::class.java)
+            .resource(toCreate)
+            .inNamespace(toCreate.metadata.namespace))
+            .create()
     }
 
     @Test
     fun `#create() is removing and restoring resource version`() {
         // given
-        val pod = resource<Pod>("pod2", "namespace2", "podUid2", "v1", "1")
-
-        clearInvocations(pod)
-        val resourceVersion = pod.metadata.resourceVersion
+        val toCreate = resource<Pod>("pod2", "namespace2", "podUid2", "v1", "1")
+        resourceOperation(resource = toCreate, client = client.get())
+        val resourceVersion = toCreate.metadata.resourceVersion
         // when
-        operator.create(pod)
+        operator.create(toCreate)
         // then
-        verify(pod.metadata).resourceVersion = null // 1st call: clear before sending
-        verify(pod.metadata).resourceVersion = resourceVersion // 2nd call: restore after sending
+        verify(toCreate.metadata).resourceVersion = null // 1st call: clear before sending
+        verify(toCreate.metadata).resourceVersion = resourceVersion // 2nd call: restore after sending
     }
 
     @Test
     fun `#create() is removing uid`() {
         // given
-        val pod = resource<Pod>("pod2", "namespace2", "podUid2", "v1", "1")
-        clearInvocations(pod)
-        val uid = pod.metadata.uid
+        val toCreate = resource<Pod>("pod2", "namespace2", "podUid2", "v1", "1")
+        resourceOperation(resource = toCreate, client = client.get())
+        val uid = toCreate.metadata.uid
         // when
-        operator.create(pod)
+        operator.create(toCreate)
         // then
-        verify(pod.metadata).uid = null // 1st call: clear before sending
-        verify(pod.metadata).uid = uid // 2nd call: restore after sending
+        verify(toCreate.metadata).uid = null // 1st call: clear before sending
+        verify(toCreate.metadata).uid = uid // 2nd call: restore after sending
     }
 
     @Test
-    fun `#create() is creating if operator namespace is null but resource has namespace`() {
+    fun `#create() is creating with resource namespace if operator namespace is null`() {
         // given
+        val toCreate = POD2
         operator.namespace =  null
-        clearInvocations(operator)
+        resourceOperation(resource = toCreate, client = client.get())
         // when
-        operator.create(POD2)
+        operator.create(toCreate)
         // then
-        verify(client.get().pods()
-            .inNamespace(POD2.metadata.namespace)
-            .withName(POD2.metadata.name))
-            .create(POD2)
+        verify(client.get().adapt(KubernetesClient::class.java)
+            .resource(toCreate)
+            .inNamespace(toCreate.metadata.namespace))
+            .create()
+    }
+
+    @Test
+    fun `#create() is creating with operator namespace if resource namespace is null`() {
+        // given
+        val toCreate = resource<Pod>("pod2", null, "podUid2", "v1", "1")
+        operator.namespace =  "death start"
+        resourceOperation(resource = toCreate, client = client.get())
+        // when
+        operator.create(toCreate)
+        // then
+        verify(client.get().adapt(KubernetesClient::class.java)
+            .resource(toCreate)
+            .inNamespace(operator.namespace))
+            .create()
     }
 
     @Test
     fun `#create() returns new pod if client has successfully created`() {
         // given
-        clearInvocations(operator)
-        whenever(client.get().pods()
-            .inNamespace(POD2.metadata.namespace)
-            .withName(POD2.metadata.name)
-            .create(POD2))
+        val toCreate = POD2
+        resourceOperation(resource = toCreate, client = client.get())
+        whenever(client.get().adapt(KubernetesClient::class.java)
+            .resource(toCreate)
+            .inNamespace(toCreate.metadata.namespace)
+            .create())
             .thenReturn(POD3)
         // when
-        val newPod = operator.create(POD2)
+        val newPod = operator.create(toCreate)
         // then
         assertThat(newPod).isEqualTo(POD3)
     }
 
     @Test
-    fun `#create() returns null if client could not create`() {
-        // given
-        clearInvocations(operator)
-        whenever(client.get().pods()
-            .inNamespace(POD2.metadata.namespace)
-            .withName(POD2.metadata.name)
-            .create(POD2))
-            .thenReturn(null)
-        // when
-        val newPod = operator.create(POD2)
-        // then
-        assertThat(newPod).isNull()
-    }
-
-    @Test
     fun `#get() is getting given pod in client`() {
         // given
+        val toGet = POD2
         // when
-        operator.get(POD2)
+        operator.get(toGet)
         // then
-        verify(client.get().pods()
-            .inNamespace(POD2.metadata.namespace)
-            .withName(POD2.metadata.name))
+        verify(client.get()
+            .pods()
+            .inNamespace(toGet.metadata.namespace)
+            .withName(toGet.metadata.name))
             .get()
     }
 
     @Test
     fun `#get() is using resource namespace if exists`() {
         // given
-        val pod = PodBuilder()
+        val toGet = PodBuilder()
             .withNewMetadata()
                 .withName("Princess Leia")
                 .withNamespace("Alderaan")
             .endMetadata()
             .build()
-
-        clearInvocations(operator)
         // when
-        operator.get(pod)
+        operator.get(toGet)
         // then
-        verify(client.get().pods()
-            .inNamespace(operator.namespace))
-            .withName(pod.metadata.name)
+        verify(client.get()
+            .pods())
+            .inNamespace(toGet.metadata.namespace)
     }
 
     @Test
@@ -558,21 +561,9 @@ class NamespacedPodsOperatorTest {
         // when
         operator.get(pod)
         // then
-        verify(client.get().pods())
+        verify(client.get()
+            .pods())
             .inNamespace(operator.namespace)
-    }
-
-    @Test
-    fun `#get() is using resource by name`() {
-        // given
-        operator.namespace =  "smurfington" // should use it
-        clearInvocations(operator)
-        // when
-        operator.get(POD1)
-        // then
-        verify(client.get().pods()
-            .inNamespace(operator.namespace))
-            .withName(POD1.metadata.name)
     }
 
     @Test

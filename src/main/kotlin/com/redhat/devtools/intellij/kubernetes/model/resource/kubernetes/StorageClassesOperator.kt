@@ -16,7 +16,7 @@ import com.redhat.devtools.intellij.kubernetes.model.resource.NonNamespacedResou
 import com.redhat.devtools.intellij.kubernetes.model.resource.ResourceKind
 import io.fabric8.kubernetes.api.model.storage.StorageClass
 import io.fabric8.kubernetes.client.KubernetesClient
-import io.fabric8.kubernetes.client.StorageAPIGroupClient
+import io.fabric8.kubernetes.client.impl.StorageAPIGroupClient
 
 class StorageClassesOperator(client: ClientAdapter<out KubernetesClient>)
     : NonNamespacedResourceOperator<StorageClass, StorageAPIGroupClient>(client.getStorage()) {

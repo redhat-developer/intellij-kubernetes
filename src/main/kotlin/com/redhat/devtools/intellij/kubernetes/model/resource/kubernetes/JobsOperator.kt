@@ -18,11 +18,11 @@ import com.redhat.devtools.intellij.kubernetes.model.resource.NamespacedResource
 import com.redhat.devtools.intellij.kubernetes.model.resource.ResourceKind
 import io.fabric8.kubernetes.api.model.Container
 import io.fabric8.kubernetes.api.model.batch.v1.Job
-import io.fabric8.kubernetes.client.BatchAPIGroupClient
 import io.fabric8.kubernetes.client.KubernetesClient
 import io.fabric8.kubernetes.client.dsl.ExecListener
 import io.fabric8.kubernetes.client.dsl.ExecWatch
 import io.fabric8.kubernetes.client.dsl.LogWatch
+import io.fabric8.kubernetes.client.impl.BatchAPIGroupClient
 import java.io.OutputStream
 
 class JobsOperator(client: ClientAdapter<out KubernetesClient>)

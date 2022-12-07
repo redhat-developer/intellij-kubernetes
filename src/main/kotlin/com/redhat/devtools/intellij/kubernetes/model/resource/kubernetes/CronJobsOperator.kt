@@ -15,8 +15,8 @@ import com.redhat.devtools.intellij.kubernetes.model.resource.NamespacedOperatio
 import com.redhat.devtools.intellij.kubernetes.model.resource.NamespacedResourceOperator
 import com.redhat.devtools.intellij.kubernetes.model.resource.ResourceKind
 import io.fabric8.kubernetes.api.model.batch.v1beta1.CronJob
-import io.fabric8.kubernetes.client.BatchAPIGroupClient
 import io.fabric8.kubernetes.client.KubernetesClient
+import io.fabric8.kubernetes.client.impl.BatchAPIGroupClient
 
 class CronJobsOperator(client: ClientAdapter<out KubernetesClient>)
     : NamespacedResourceOperator<CronJob, BatchAPIGroupClient>(client.getBatch()) {

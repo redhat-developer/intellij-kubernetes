@@ -16,7 +16,7 @@ import com.redhat.devtools.intellij.kubernetes.model.resource.NamespacedResource
 import com.redhat.devtools.intellij.kubernetes.model.resource.ResourceKind
 import io.fabric8.kubernetes.api.model.networking.v1.Ingress
 import io.fabric8.kubernetes.client.KubernetesClient
-import io.fabric8.kubernetes.client.NetworkAPIGroupClient
+import io.fabric8.kubernetes.client.impl.NetworkAPIGroupClient
 
 class IngressOperator(client: ClientAdapter<out KubernetesClient>)
     : NamespacedResourceOperator<Ingress, NetworkAPIGroupClient>(client.getNetworking()) {
