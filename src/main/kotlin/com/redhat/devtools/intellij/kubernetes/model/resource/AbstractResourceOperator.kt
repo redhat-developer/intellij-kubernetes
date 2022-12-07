@@ -14,6 +14,7 @@ import com.intellij.openapi.diagnostic.logger
 import com.redhat.devtools.intellij.kubernetes.model.util.isSameResource
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.client.Client
+import io.fabric8.kubernetes.client.KubernetesClient
 
 abstract class AbstractResourceOperator<R : HasMetadata, C : Client>(protected val client: C) : IResourceOperator<R> {
 
@@ -74,6 +75,15 @@ abstract class AbstractResourceOperator<R : HasMetadata, C : Client>(protected v
         @Suppress("UNCHECKED_CAST")
         _allResources[indexOf] = replaceBy as R
         return true
+    }
+
+    override fun delete(resources: List<HasMetadata>): Boolean {
+        @Suppress("UNCHECKED_CAST")
+        val toDelete = resources as? List<R> ?: return false
+        val status = client.adapt(KubernetesClient::class.java)
+            .resourceList(toDelete)
+            .delete()
+        return status.size == toDelete.size
     }
 
     private fun isCorrectKind(resource: HasMetadata): Boolean {

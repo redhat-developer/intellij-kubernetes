@@ -30,7 +30,11 @@ open class NamespacedCustomResourceOperator(
 ) : NamespacedResourceOperator<GenericKubernetesResource, KubernetesClient>(client, namespace), INamespacedResourceOperator<GenericKubernetesResource, KubernetesClient> {
 
     override fun loadAllResources(namespace: String): List<GenericKubernetesResource> {
-        return getOperation()?.inNamespace(namespace)?.list()?.items ?: emptyList()
+		return getOperation()
+			?.inNamespace(namespace)
+			?.list()
+			?.items
+			?: emptyList()
     }
 
     override fun watchAll(watcher: Watcher<in GenericKubernetesResource>): Watch? {
@@ -61,7 +65,10 @@ open class NamespacedCustomResourceOperator(
 
 	private fun delete(resource: HasMetadata): Boolean {
 		val inNamespace = resourceNamespaceOrCurrent(resource)
-		getOperation()?.inNamespace(inNamespace)?.withName(resource.metadata.name)?.delete()
+		getOperation()
+			?.inNamespace(inNamespace)
+			?.withName(resource.metadata.name)
+			?.delete()
 		return true
 	}
 
@@ -70,7 +77,10 @@ open class NamespacedCustomResourceOperator(
 
 		val inNamespace = resourceNamespaceOrCurrent(toReplace)
 		return runWithoutServerSetProperties(toReplace) {
-			getOperation()?.inNamespace(inNamespace)?.createOrReplace(toReplace)
+			getOperation()
+				?.inNamespace(inNamespace)
+				?.resource(toReplace)
+				?.createOrReplace()
 		}
 	}
 
@@ -80,7 +90,10 @@ open class NamespacedCustomResourceOperator(
 
 	override fun get(resource: HasMetadata): HasMetadata? {
 		val inNamespace = resourceNamespaceOrCurrent(resource)
-		return getOperation()?.inNamespace(inNamespace)?.withName(resource.metadata.name)?.get()
+		return getOperation()
+			?.inNamespace(inNamespace)
+			?.withName(resource.metadata.name)
+			?.get()
 	}
 
 	override fun getOperation(): NamespacedOperation<GenericKubernetesResource>? {

@@ -24,8 +24,8 @@ import io.fabric8.kubernetes.api.model.ConfigBuilder
 import io.fabric8.kubernetes.api.model.ContextBuilder
 import io.fabric8.kubernetes.api.model.NamedContext
 import io.fabric8.kubernetes.api.model.NamedContextBuilder
+import io.fabric8.kubernetes.client.Client
 import io.fabric8.kubernetes.client.Config
-import io.fabric8.kubernetes.client.ConfigAware
 import io.fabric8.kubernetes.client.internal.KubeConfigUtils
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test
@@ -41,7 +41,7 @@ class ClientConfigTest {
 	private val currentContext = namedContext2
 	private val allContexts = listOf(namedContext1, namedContext2, namedContext3)
 	private val f8clientConfig: Config = ClientMocks.config(currentContext, allContexts)
-	private val client: ConfigAware<Config> = createClient(f8clientConfig)
+	private val client: Client = createClient(f8clientConfig)
 	private val f8kubeConfig: io.fabric8.kubernetes.api.model.Config = apiConfig(currentContext.name, allContexts)
 	private val kubeConfig: KubeConfigAdapter = kubeConfig(true, f8kubeConfig)
 	private val clientConfig = spy(TestableClientConfig(client, kubeConfig))
@@ -191,7 +191,7 @@ class ClientConfigTest {
 			.build()
 	}
 
-	private fun createClient(config: Config): ConfigAware<Config> {
+	private fun createClient(config: Config): Client {
 		return mock {
 			on { configuration } doReturn config
 		}
@@ -211,7 +211,7 @@ class ClientConfigTest {
 			.build()
 	}
 
-	private class TestableClientConfig(client: ConfigAware<Config>, override val kubeConfig: KubeConfigAdapter) : ClientConfig(client) {
+	private class TestableClientConfig(client: Client, override val kubeConfig: KubeConfigAdapter) : ClientConfig(client) {
 		override fun runAsync(runnable: () -> Unit) {
 			// dont use jetbrains application threadpool
 			runnable.invoke()
