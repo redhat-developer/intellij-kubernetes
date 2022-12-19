@@ -82,9 +82,11 @@ class NonCachingSingleResourceOperator(
         val op = createOperation(resource)
 
         return if (hasName(genericKubernetesResource)) {
-            op.createOrReplace(genericKubernetesResource)
+            op.resource(genericKubernetesResource)
+                .createOrReplace()
         } else if (hasGenerateName(genericKubernetesResource)) {
-            op.create(genericKubernetesResource)
+            op.resource(genericKubernetesResource)
+                .create()
         } else {
             throw ResourceException("Could not replace ${resource.kind ?: "resource"}: has neither name nor generateName.")
         }

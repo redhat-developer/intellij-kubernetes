@@ -24,7 +24,6 @@ import com.redhat.devtools.intellij.kubernetes.model.client.KubeClientAdapter
 import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.clusterScopedApiResource
 import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.namespacedApiResource
 import com.redhat.devtools.intellij.kubernetes.model.util.ResourceException
-import com.redhat.devtools.intellij.kubernetes.model.util.isSameResource
 import io.fabric8.kubernetes.api.model.APIResource
 import io.fabric8.kubernetes.api.model.GenericKubernetesResource
 import io.fabric8.kubernetes.api.model.GenericKubernetesResourceList
@@ -63,7 +62,7 @@ class NonCachingSingleResourceOperatorTest {
             .build()
     }
 
-    private val legacyResource = PodBuilder()
+    private val namespacedCoreResource = PodBuilder()
         .withApiVersion("v1")
         .withKind("GrandJedi")
         .withNewMetadata()
@@ -72,9 +71,19 @@ class NonCachingSingleResourceOperatorTest {
         .endMetadata()
         .build()
 
+    private val clusterscopedCoreResource = PodBuilder()
+        .withApiVersion("v1")
+        .withKind("GrandJedi")
+        .withNewMetadata()
+            // no namespace
+            .withName("Mace Windu")
+        .endMetadata()
+        .build()
+
     /* client.genericKubernetesResources() */
     private val genericResourceOperation =
         createMixedOperation<GenericKubernetesResource, GenericKubernetesResourceList>(namespacedCustomResource)
+
 
     private val client = createClient(
         clientNamespace,
@@ -105,11 +114,12 @@ class NonCachingSingleResourceOperatorTest {
     }
 
     @Test
-    fun `#get should return NULL and NOT call client#genericKubernetesResource(context) if resource has NO name`() {
+    fun `#get should return NULL and NOT call client#genericKubernetesResource(context) if resource has NO name NOR generateName`() {
         // given
-        val unnamed = PodBuilder(legacyResource)
+        val unnamed = PodBuilder(namespacedCoreResource)
             .build()
         unnamed.metadata.name = null
+        unnamed.metadata.generateName = null
         val apiResource = namespacedApiResource(unnamed)
         val operator = NonCachingSingleResourceOperator(clientAdapter, createAPIResources(apiResource))
         // when
@@ -166,50 +176,75 @@ class NonCachingSingleResourceOperatorTest {
     }
 
     @Test
-    fun `#replace should call client#genericKubernetesResource(context) if resource has a name`() {
+    fun `#replace should call #createOrReplace() if namespaced resource has a name`() {
         // given
-        val apiResource = namespacedApiResource(namespacedCustomResource)
+        val hasName = PodBuilder(namespacedCoreResource).build()
+        hasName.metadata.name = "yoda"
+        hasName.metadata.generateName = null
+        val apiResource = namespacedApiResource(namespacedCoreResource)
         val operator = NonCachingSingleResourceOperator(clientAdapter, createAPIResources(apiResource))
         // when
         operator.replace(namespacedCustomResource)
         // then
-        verify(client).genericKubernetesResources(argThat {
-            matchesContext(namespacedCustomResource, true, this) })
+        verify(genericResourceOperation
+            .inNamespace(namespacedCustomResource.metadata.namespace)
+            .resource(namespacedCustomResource))
+            .createOrReplace()
     }
 
     @Test
-    fun `#replace should call #createOrReplace() if resource has a name`() {
+    fun `#replace should call #createOrReplace() if clusterscoped resource has a name`() {
         // given
-        val apiResource = namespacedApiResource(namespacedCustomResource)
+        val hasName = PodBuilder(clusterscopedCoreResource).build()
+        hasName.metadata.name = "yoda"
+        hasName.metadata.generateName = null
+        val apiResource = namespacedApiResource(clusterscopedCoreResource)
         val operator = NonCachingSingleResourceOperator(clientAdapter, createAPIResources(apiResource))
         // when
         operator.replace(namespacedCustomResource)
         // then
-        verify(genericResourceOperation.inNamespace(namespacedCustomResource.metadata.namespace))
-            .createOrReplace(argThat {
-                isSameResource(namespacedCustomResource)
-            })
+        verify(genericResourceOperation
+            .resource(namespacedCustomResource))
+            .createOrReplace()
     }
 
     @Test
-    fun `#replace should call #create() if resource has NO name but has generateName`() {
+    fun `#replace should call #create() if namespaced resource has NO name but has generateName`() {
         // given
-        val generatedName = PodBuilder(legacyResource).build()
-        generatedName.metadata.name = null
-        generatedName.metadata.generateName = "storm trooper clone"
-        val apiResource = namespacedApiResource(namespacedCustomResource)
+        val hasGeneratedName = PodBuilder(namespacedCoreResource).build()
+        hasGeneratedName.metadata.name = null
+        hasGeneratedName.metadata.generateName = "storm trooper clone"
+        val apiResource = namespacedApiResource(hasGeneratedName)
         val operator = NonCachingSingleResourceOperator(clientAdapter, createAPIResources(apiResource))
         // when
-        operator.replace(generatedName)
+        operator.replace(hasGeneratedName)
         // then
-        verify(genericResourceOperation.inNamespace(generatedName.metadata.namespace))
-            .create(argThat { isSameResource(generatedName) })
+        verify(genericResourceOperation
+            .inNamespace(namespacedCustomResource.metadata.namespace)
+            .resource(namespacedCustomResource))
+            .create()
+    }
+
+    @Test
+    fun `#replace should call #create() if clusterscoped resource has NO name but has generateName`() {
+        // given
+        val hasGeneratedName = PodBuilder(clusterscopedCoreResource).build()
+        hasGeneratedName.metadata.name = null
+        hasGeneratedName.metadata.generateName = "storm trooper clone"
+        val apiResource = namespacedApiResource(hasGeneratedName)
+        val operator = NonCachingSingleResourceOperator(clientAdapter, createAPIResources(apiResource))
+        // when
+        operator.replace(hasGeneratedName)
+        // then
+        verify(genericResourceOperation
+            .resource(namespacedCustomResource))
+            .create()
     }
 
     @Test(expected = ResourceException::class)
-    fun `#replace should throw if resource has NO name NOR generateName`() {
+    fun `#replace should throw if namespaced resource has NO name NOR generateName`() {
         // given
-        val generatedName = PodBuilder(legacyResource).build()
+        val generatedName = PodBuilder(namespacedCoreResource).build()
         generatedName.metadata.name = null
         generatedName.metadata.generateName = null
         val apiResource = namespacedApiResource(namespacedCustomResource)
@@ -235,7 +270,7 @@ class NonCachingSingleResourceOperatorTest {
     @Test
     fun `#watch should return NULL if resource has NO name`() {
         // given
-        val unnamed = PodBuilder(legacyResource).build()
+        val unnamed = PodBuilder(namespacedCoreResource).build()
         unnamed.metadata.name = null
         val apiResource = namespacedApiResource(unnamed)
         val operator = NonCachingSingleResourceOperator(clientAdapter, createAPIResources(apiResource))
@@ -268,15 +303,18 @@ class NonCachingSingleResourceOperatorTest {
         return client
     }
 
-    private fun <T, L> createMixedOperation(resource: T): MixedOperation<T, L, Resource<T>> {
+    private inline fun <reified T, L> createMixedOperation(resource: T): MixedOperation<T, L, Resource<T>> {
         val withNameInNamespaceOp: Resource<T> = createWithNameOp(createFromServerOp(resource))
+        val resourceOperation: Resource<T> = mock()
         val inNamespaceOp: MixedOperation<T, L, Resource<T>> = mock {
             on { withName(any()) } doReturn withNameInNamespaceOp
+            on { resource(any()) } doReturn resourceOperation
         }
         val withNameOp: Resource<T> = createWithNameOp(createFromServerOp(resource))
         return mock {
             on { inNamespace(any()) } doReturn inNamespaceOp
             on { withName(any()) } doReturn withNameOp
+            on { resource(any()) } doReturn resourceOperation
         }
     }
 

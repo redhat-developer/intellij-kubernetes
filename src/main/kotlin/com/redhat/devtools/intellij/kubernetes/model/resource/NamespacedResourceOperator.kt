@@ -16,6 +16,7 @@ import io.fabric8.kubernetes.api.model.Container
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.KubernetesResourceList
 import io.fabric8.kubernetes.client.Client
+import io.fabric8.kubernetes.client.KubernetesClient
 import io.fabric8.kubernetes.client.KubernetesClientException
 import io.fabric8.kubernetes.client.Watch
 import io.fabric8.kubernetes.client.Watcher
@@ -107,25 +108,16 @@ abstract class NamespacedResourceOperator<R : HasMetadata, C: Client>(
         return watchExec(container, listener, operation)
     }
 
-    override fun delete(resources: List<HasMetadata>): Boolean {
-        if (namespace == null) {
-            return false
-        }
-        @Suppress("UNCHECKED_CAST")
-        val toDelete = resources as? List<R> ?: return false
-        return getOperation()?.delete(toDelete) ?: false
-    }
-
     override fun replace(resource: HasMetadata): HasMetadata? {
         @Suppress("UNCHECKED_CAST")
         val toReplace = resource as? R ?: return null
 
         val inNamespace = resourceNamespaceOrCurrent(toReplace)
         return runWithoutServerSetProperties(toReplace) {
-            getOperation()
-                ?.inNamespace(inNamespace)
-                ?.withName(toReplace.metadata.name)
-                ?.replace(toReplace)
+            client.adapt(KubernetesClient::class.java)
+                .resource(toReplace)
+                .inNamespace(inNamespace)
+                .replace()
         }
     }
 
@@ -134,10 +126,10 @@ abstract class NamespacedResourceOperator<R : HasMetadata, C: Client>(
         val toCreate = resource as? R ?: return null
         val inNamespace = resourceNamespaceOrCurrent(toCreate)
         return runWithoutServerSetProperties(toCreate) {
-            getOperation()
-                ?.inNamespace(inNamespace)
-                ?.withName(toCreate.metadata.name)
-                ?.create(toCreate)
+            client.adapt(KubernetesClient::class.java)
+                .resource(toCreate)
+                .inNamespace(inNamespace)
+                .create()
         }
     }
 

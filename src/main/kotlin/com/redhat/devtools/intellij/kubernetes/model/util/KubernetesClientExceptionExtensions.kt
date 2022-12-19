@@ -21,6 +21,10 @@ fun KubernetesClientException.isForbidden(): Boolean {
     return code == HttpURLConnection.HTTP_FORBIDDEN
 }
 
+fun KubernetesClientException.isUnauthorized(): Boolean {
+    return code == HttpURLConnection.HTTP_UNAUTHORIZED
+}
+
 fun KubernetesClientException.isUnsupported(): Boolean {
     return code == HttpURLConnection.HTTP_UNSUPPORTED_TYPE
 }

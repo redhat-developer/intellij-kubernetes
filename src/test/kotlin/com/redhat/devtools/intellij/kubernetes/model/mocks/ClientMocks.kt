@@ -31,6 +31,7 @@ import io.fabric8.kubernetes.api.model.Pod
 import io.fabric8.kubernetes.api.model.PodList
 import io.fabric8.kubernetes.api.model.PodSpec
 import io.fabric8.kubernetes.api.model.PodTemplateSpec
+import io.fabric8.kubernetes.api.model.StatusDetails
 import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinition
 import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinitionList
 import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinitionNames
@@ -38,6 +39,7 @@ import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinition
 import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinitionVersion
 import io.fabric8.kubernetes.api.model.batch.v1.Job
 import io.fabric8.kubernetes.api.model.batch.v1.JobSpec
+import io.fabric8.kubernetes.client.Client
 import io.fabric8.kubernetes.client.Config
 import io.fabric8.kubernetes.client.KubernetesClient
 import io.fabric8.kubernetes.client.NamespacedKubernetesClient
@@ -47,7 +49,10 @@ import io.fabric8.kubernetes.client.Watcher
 import io.fabric8.kubernetes.client.dsl.ApiextensionsAPIGroupDSL
 import io.fabric8.kubernetes.client.dsl.ContainerResource
 import io.fabric8.kubernetes.client.dsl.Containerable
+import io.fabric8.kubernetes.client.dsl.ListVisitFromServerGetDeleteRecreateWaitApplicable
 import io.fabric8.kubernetes.client.dsl.MixedOperation
+import io.fabric8.kubernetes.client.dsl.NamespaceListVisitFromServerGetDeleteRecreateWaitApplicable
+import io.fabric8.kubernetes.client.dsl.NamespaceableResource
 import io.fabric8.kubernetes.client.dsl.NonNamespaceOperation
 import io.fabric8.kubernetes.client.dsl.PodResource
 import io.fabric8.kubernetes.client.dsl.Resource
@@ -86,6 +91,8 @@ object ClientMocks {
             on { configuration } doReturn config
             on { getMasterUrl() } doReturn masterUrl
             on { apiextensions() } doReturn apiExtensions
+            // needed for io.fabric8.kubernetes.client.extension.ClientAdapter subclasses like BatchAPIGroupClient
+            on { adapt(any<Class<Client>>()) } doReturn mock
         }
     }
 
@@ -112,6 +119,49 @@ object ClientMocks {
         return mock {
             on { v1() } doReturn v1Operation
         }
+    }
+
+    fun resourceOperation(
+        resource: HasMetadata,
+        statusDetails: List<StatusDetails> = statusDetails(1),
+        client: KubernetesClient
+    ) {
+        val inNamespaceOp: Resource<HasMetadata> = mock {
+            on { delete() } doReturn statusDetails
+            on { replace() } doReturn resource
+            on { create() } doReturn resource
+            on { get() } doReturn resource
+        }
+        /** [KubernetesClient.resource] */
+        val resourceOperation: NamespaceableResource<HasMetadata> = mock {
+            on { inNamespace(any()) } doReturn inNamespaceOp
+            on { delete() } doReturn statusDetails
+            on { replace() } doReturn resource
+        }
+
+        doReturn(resourceOperation)
+            .whenever(client).resource(any<HasMetadata>())
+    }
+
+    fun resourceListOperation(
+        resourceList: List<HasMetadata>,
+        statusDetails: List<StatusDetails> = statusDetails(1),
+        client: KubernetesClient
+    ) {
+        val resourceListInNamespaceOp: ListVisitFromServerGetDeleteRecreateWaitApplicable<HasMetadata> = mock {
+            on { delete() } doReturn statusDetails
+            on { replace() } doReturn resourceList
+            on { create() } doReturn resourceList
+            on { get() } doReturn resourceList
+        }
+        /** [KubernetesClient.resourceList] */
+        val resourceListOperation: NamespaceListVisitFromServerGetDeleteRecreateWaitApplicable<HasMetadata> = mock {
+            on { inNamespace(any()) } doReturn resourceListInNamespaceOp
+            on { delete() } doReturn statusDetails
+            on { replace() } doReturn resourceList
+        }
+        doReturn(resourceListOperation)
+            .whenever(client).resourceList(any<Collection<HasMetadata>>())
     }
 
     fun inNamespace(mixedOp: MixedOperation<Pod, PodList, PodResource>)
@@ -170,10 +220,6 @@ object ClientMocks {
         val name = container.name
         doReturn(containerResource)
             .whenever(op).inContainer(name)
-    }
-
-    inline fun <reified R: Resource<*>> containerableResource(): R {
-        return mock(arrayOf(Containerable::class))
     }
 
     fun namedContext(name: String, namespace: String, cluster: String, user: String): NamedContext {
@@ -302,11 +348,8 @@ object ClientMocks {
         }
     }
 
-    fun namespacedCustomResourceOperation(
-        resource: GenericKubernetesResource,
-        resources: List<GenericKubernetesResource>,
-        watch: Watch
-    ): MixedOperation<GenericKubernetesResource, GenericKubernetesResourceList, Resource<GenericKubernetesResource>> {
+    fun namespacedCustomResourceOperation(resources: List<GenericKubernetesResource>, watch: Watch)
+            : MixedOperation<GenericKubernetesResource, GenericKubernetesResourceList, Resource<GenericKubernetesResource>> {
         val op = mock<MixedOperation<GenericKubernetesResource, GenericKubernetesResourceList, Resource<GenericKubernetesResource>>>()
         doReturn(resources)
             .whenever(op).list()
@@ -314,10 +357,6 @@ object ClientMocks {
             .whenever(op).watch(any<Watcher<GenericKubernetesResource>>())
         doReturn(resources)
             .whenever(op).list()
-        doReturn(resource)
-            .whenever(op).createOrReplace(any())
-        doReturn(true)
-            .whenever(op).delete(any<List<GenericKubernetesResource>>())
         return op
     }
 
@@ -400,4 +439,10 @@ object ClientMocks {
         return job
     }
 
+
+    fun statusDetails(num: Int): List<StatusDetails> {
+        return (1..num)
+            .map { mock<StatusDetails>() }
+            .toList()
+    }
 }
