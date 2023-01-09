@@ -24,7 +24,6 @@ import com.redhat.devtools.intellij.kubernetes.editor.util.getKubernetesResource
 import com.redhat.devtools.intellij.kubernetes.editor.util.hasKubernetesResource
 import com.redhat.devtools.intellij.kubernetes.model.IResourceModel
 import com.redhat.devtools.intellij.kubernetes.model.util.ResourceException
-import com.redhat.devtools.intellij.kubernetes.model.util.isSameResource
 import com.redhat.devtools.intellij.kubernetes.telemetry.TelemetryService
 import com.redhat.devtools.intellij.telemetry.core.service.TelemetryMessageBuilder
 import io.fabric8.kubernetes.api.model.HasMetadata
@@ -99,11 +98,12 @@ open class ResourceEditorFactory protected constructor(
 
     private fun getExisting(resource: HasMetadata, project: Project): ResourceEditor? {
         return getFileEditorManager.invoke(project).allEditors
-            .mapNotNull { editor -> getExisting(editor) }
+            .mapNotNull { editor ->
+                getExisting(editor) }
             .firstOrNull { resourceEditor ->
                 // get editor for a temporary file thus only editors for temporary files are candidates
                 isTemporary.invoke(resourceEditor.editor.file)
-                        && resource.isSameResource(resourceEditor.editorResource.get())
+                        && resourceEditor.isEditing(resource)
             }
     }
 
@@ -115,8 +115,7 @@ open class ResourceEditorFactory protected constructor(
      */
     fun getExistingOrCreate(editor: FileEditor?, project: Project?): ResourceEditor? {
         if (editor == null
-            || project == null
-        ) {
+            || project == null) {
             return null
         }
 

@@ -14,8 +14,10 @@ import com.intellij.openapi.fileEditor.FileEditor
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Key
 import com.intellij.ui.EditorNotificationPanel
+import com.intellij.util.containers.isNullOrEmpty
 import com.redhat.devtools.intellij.kubernetes.editor.hideNotification
 import com.redhat.devtools.intellij.kubernetes.editor.showNotification
+import com.redhat.devtools.intellij.kubernetes.model.util.toKindAndNames
 import javax.swing.JComponent
 
 /**
@@ -27,25 +29,50 @@ class PushNotification(private val editor: FileEditor, private val project: Proj
         val KEY_PANEL = Key<JComponent>(PushNotification::class.java.canonicalName)
     }
 
-    fun show(existsOnCluster: Boolean, isOutdated: Boolean) {
-        editor.showNotification(KEY_PANEL, { createPanel(existsOnCluster, isOutdated) }, project)
+    fun show(showPull: Boolean, states: Collection<Different>) {
+        if (states.isEmpty()) {
+            return
+        }
+        editor.showNotification(KEY_PANEL, { createPanel(showPull, states) }, project)
     }
 
     fun hide() {
         editor.hideNotification(KEY_PANEL, project)
     }
 
-    private fun createPanel(existsOnCluster: Boolean, isOutdated: Boolean): EditorNotificationPanel {
-        val panel = EditorNotificationPanel()
-        panel.setText(
-            "Push local changes, ${
-                if (!existsOnCluster) {
-                    "create new"
+    private fun createPanel(showPull: Boolean, states: Collection<Different>): EditorNotificationPanel {
+        val toCreateOrUpdate = states.groupBy { state ->
+            state.exists
+        }
+        val toCreate = toCreateOrUpdate[false]
+        val toUpdate = toCreateOrUpdate[true]
+        val text = createText(toCreate, toUpdate)
+        return createPanel(text,
+            true == toUpdate?.isNotEmpty(),
+            showPull && states.any { state -> state.isOutdatedVersion})
+    }
+
+    private fun createText(toCreate: List<Different>?, toUpdate: List<Different>?): String {
+        return StringBuilder().apply {
+            if (!toCreate.isNullOrEmpty()) {
+                append("Push to create ${toKindAndNames(toCreate?.map { state -> state.resource })}")
+            }
+            if (!toUpdate.isNullOrEmpty()) {
+                if (isNotEmpty()) {
+                    append(", ")
                 } else {
-                    "update existing"
+                    append("Push to ")
                 }
-            } resource on cluster?"
-        )
+                append("update ${toKindAndNames(toUpdate?.map { state -> state.resource })}")
+            }
+            append("?")
+        }
+        .toString()
+    }
+
+    private fun createPanel(text: String, existsOnCluster: Boolean, isOutdated: Boolean): EditorNotificationPanel {
+        val panel = EditorNotificationPanel()
+        panel.text = text
         addPush(panel)
         if (isOutdated) {
             addPull(panel)
@@ -53,7 +80,7 @@ class PushNotification(private val editor: FileEditor, private val project: Proj
         if (existsOnCluster) {
             addDiff(panel)
         }
-        addIgnore(panel) {
+        addDismiss(panel) {
             hide()
         }
 

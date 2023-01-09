@@ -13,8 +13,8 @@ fun addPull(panel: EditorNotificationPanel) {
     panel.createActionLabel("Pull", PullAction.ID)
 }
 
-fun addIgnore(panel: EditorNotificationPanel, consumer: () -> Unit) {
-    panel.createActionLabel("Ignore", consumer)
+fun addDismiss(panel: EditorNotificationPanel, consumer: () -> Unit) {
+    panel.createActionLabel("Dismiss", consumer)
 }
 
 fun addDiff(panel: EditorNotificationPanel) {

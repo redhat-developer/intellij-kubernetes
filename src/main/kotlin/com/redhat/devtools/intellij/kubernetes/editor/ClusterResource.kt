@@ -17,6 +17,7 @@ import com.redhat.devtools.intellij.kubernetes.model.ResourceWatch
 import com.redhat.devtools.intellij.kubernetes.model.ResourceWatch.WatchListeners
 import com.redhat.devtools.intellij.kubernetes.model.context.IActiveContext
 import com.redhat.devtools.intellij.kubernetes.model.util.ResourceException
+import com.redhat.devtools.intellij.kubernetes.model.util.areEqual
 import com.redhat.devtools.intellij.kubernetes.model.util.isNotFound
 import com.redhat.devtools.intellij.kubernetes.model.util.isSameResource
 import com.redhat.devtools.intellij.kubernetes.model.util.isUnsupported
@@ -25,7 +26,7 @@ import io.fabric8.kubernetes.client.KubernetesClient
 import io.fabric8.kubernetes.client.KubernetesClientException
 
 /**
- * A resource that exists on the cluster. May be [pull], [set] etc.
+ * A resource that exists on the cluster. May be [pull], [push] etc.
  * Notifies listeners of addition, removal and modification if [watch]
  */
 open class ClusterResource protected constructor(
@@ -48,8 +49,12 @@ open class ClusterResource protected constructor(
 
     private val initialResource: HasMetadata = resource
     protected open var updatedResource: HasMetadata? = null
+    private var isDeleted: Boolean = false
+    private var closed: Boolean = false
     protected open val watchListeners = WatchListeners(
-        {},
+        {
+            // do nothing
+        },
         { removed ->
             set(null)
             setDeleted(true)
@@ -60,8 +65,6 @@ open class ClusterResource protected constructor(
             setDeleted(false)
             modelChange.fireModified(changed)
         })
-    private var isDeleted: Boolean = false
-    private var closed: Boolean = false
 
     /**
      * Sets the given resource as the current value in this instance.
@@ -85,7 +88,7 @@ open class ClusterResource protected constructor(
 
     /**
      * Returns the resource in the cluster. Returns the cached value by default,
-     * requests it from cluster if instructed so by the given `forceRequest` parameter.
+     * requests it from cluster if not cached yet or is instructed to force a new request by the given `forceRequest` parameter.
      *
      * @param forceRequest requests from server if set to true, returns the cached value otherwise
      *
@@ -120,40 +123,6 @@ open class ClusterResource protected constructor(
         }
     }
 
-    protected open fun setDeleted(deleted: Boolean) {
-        synchronized(this) {
-            this.isDeleted = deleted
-        }
-    }
-
-    fun isDeleted(): Boolean {
-        synchronized(this) {
-            return isDeleted
-        }
-    }
-
-    fun isClosed(): Boolean {
-        synchronized(this) {
-            return this.closed
-        }
-    }
-
-    fun canPush(toCompare: HasMetadata?): Boolean {
-        if (toCompare == null) {
-            return true
-        }
-        return try {
-            val resource = pull()
-            resource == null
-                    || (isSameResource(toCompare) && isModified(toCompare))
-        } catch (e: ResourceException) {
-            logger<ClusterResource>().warn(
-                "Could not request resource ${initialResource.kind} ${initialResource.metadata?.name ?: ""} from server ${context.masterUrl}",
-                e)
-            false
-        }
-    }
-
     /**
      * Pushes the given resource to the cluster. The currently existing resource on the cluster is replaced
      * if it is the same resource in an older version. A new resource is created if the given resource
@@ -173,11 +142,16 @@ open class ClusterResource protected constructor(
             set(updated)
             return updated
         } catch (e: KubernetesClientException) {
-            val details = getDetails(e)
-            throw ResourceException(details, e)
+            throw ResourceException(
+                getDetails(e),
+                e,
+                listOf(resource))
         } catch (e: RuntimeException) {
             // ex. IllegalArgumentException
-            throw ResourceException("Could not push ${resource.kind} ${resource.metadata.name ?: ""}", e)
+            throw ResourceException(
+                "Could not push ${resource.kind} ${resource.metadata.name ?: ""}",
+                e,
+                listOf(resource))
         }
     }
 
@@ -191,6 +165,18 @@ open class ClusterResource protected constructor(
         return message.substring(detailsStart + detailsIdentifier.length)
     }
 
+    protected open fun setDeleted(deleted: Boolean) {
+        synchronized(this) {
+            this.isDeleted = deleted
+        }
+    }
+
+    fun isDeleted(): Boolean {
+        synchronized(this) {
+            return isDeleted
+        }
+    }
+
     /**
      * Returns `true` if the given resource version is outdated when compared to the version of the resource on the cluster.
      * A given resourceVersion is considered outdated if it is not equal to the resourceVersion of the resource on the cluster.
@@ -201,15 +187,14 @@ open class ClusterResource protected constructor(
      * versions for equality (this means that you must not compare resource versions for greater-than or less-than
      * relationships)."
      *
-     * @param resourceVersion the resource version to compare to the version of the cluster resource
-     * @return true if the given resource version != resource version of the cluster resource
+     * @param localVersion the resource version to compare to the resource version on the cluster
+     * @return `true` if the given resource != resource on the cluster. `false` otherwise
      *
      * @see io.fabric8.kubernetes.api.model.ObjectMeta.resourceVersion
      */
-    fun isOutdated(resourceVersion: String?): Boolean {
-        val resource = pull()
-        val clusterVersion = resource?.metadata?.resourceVersion ?: return false
-        return clusterVersion != resourceVersion
+    fun isOutdatedVersion(localVersion: String?): Boolean {
+        val clusterVersion = pull()?.metadata?.resourceVersion ?: return false
+        return clusterVersion != localVersion
     }
 
     /**
@@ -232,9 +217,9 @@ open class ClusterResource protected constructor(
      *
      * @param toCompare resource to compare to the resource on the cluster
      */
-    fun isModified(toCompare: HasMetadata?): Boolean {
-        val resource = pull() ?: return false
-        return resource != toCompare
+    fun isEqual(toCompare: HasMetadata?): Boolean {
+        val pulled = pull() ?: return false
+        return areEqual(pulled, toCompare)
     }
 
     /**
@@ -313,6 +298,12 @@ open class ClusterResource protected constructor(
             }
             this.closed = true
             watch.close()
+        }
+    }
+
+    fun isClosed(): Boolean {
+        synchronized(this) {
+            return this.closed
         }
     }
 

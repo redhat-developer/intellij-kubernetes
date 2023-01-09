@@ -25,7 +25,7 @@ const val MARKER_WILL_BE_DELETED = "willBeDeleted"
 const val API_GROUP_VERSION_DELIMITER = '/'
 
 /**
- * returns `true` if the given resource has the same
+ * Returns `true` if the given resource has the same
  * - kind
  * - apiVersion
  * - name
@@ -257,7 +257,7 @@ fun getHighestPriorityVersion(spec: CustomResourceDefinitionSpec): String? {
  * @param jsonYaml the string that should be unmarshalled
  * @return the instance of the given type
  */
-inline fun <reified T> createResource(jsonYaml: String): T {
+inline fun <reified T: HasMetadata> createResource(jsonYaml: String): T {
 	return Serialization.unmarshal(jsonYaml, T::class.java)
 }
 
@@ -276,6 +276,16 @@ fun <R: HasMetadata?> runWithoutServerSetProperties(resource: R, operation: () -
 	return value
 }
 
+/**
+ * Runs the given operation removing the server set properties from given [thisResource] and [thatResource].
+ * Returns the result of the given operation.
+ *
+ * The following properties are set to `null` and restored once the operation was run:
+ * * [io.fabric8.kubernetes.api.model.ObjectMeta.resourceVersion]
+ * * [io.fabric8.kubernetes.api.model.ObjectMeta.uid]
+ *
+ * @return true if the resource is not equal to the same resource on the cluster
+ */
 fun <T: HasMetadata?, R: Any?> runWithoutServerSetProperties(thisResource: T?, thatResource: T?, operation: () -> R): R {
 	// remove properties
 	val thisResourceVersion = removeResourceVersion(thisResource)
@@ -344,3 +354,50 @@ fun <R: HasMetadata> hasGenerateName(resource: R): Boolean {
 fun <R: HasMetadata> hasName(resource: R): Boolean {
 	return true == resource.metadata.name?.isNotEmpty()
 }
+
+
+/**
+ * Returns a string stating kinds and names for the given resources.
+ *
+ * ex. 'Pod luke skywalker, Deployment rebel base'
+ */
+fun toNames(resources: Collection<HasMetadata>?): String? {
+	return toString(::toName, resources)
+}
+
+fun toKindAndNames(resources: Collection<HasMetadata>?): String? {
+	return toString(::toKindAndName, resources)
+}
+
+fun toString(toString: (resource: HasMetadata) -> String, resources: Collection<HasMetadata>?): String? {
+	if (resources == null) {
+		return null
+	}
+	return if (resources.isEmpty()) {
+		return null
+	} else {
+		resources.joinToString { resource ->
+			toString.invoke(resource)
+		}
+	}
+}
+
+/**
+ * Returns `true` if the 2 given resources are equal. Returns `false` otherwise.
+ * The following properties are not taken into account:
+ * * [io.fabric8.kubernetes.api.model.ObjectMeta.resourceVersion]
+ * * [io.fabric8.kubernetes.api.model.ObjectMeta.uid]
+ *
+ * @return true if the resource is not equal to the same resource on the cluster
+ */
+fun areEqual(thisResource: HasMetadata?, thatResource: HasMetadata?): Boolean {
+	return runWithoutServerSetProperties(thisResource, thatResource) {
+		thisResource == thatResource
+	}
+}
+
+private fun toName(resource: HasMetadata) =
+	resource.metadata.name ?: resource.metadata.generateName
+
+private fun toKindAndName(resource: HasMetadata) =
+	"${resource.kind} '${resource.metadata.name ?: resource.metadata.generateName}'"

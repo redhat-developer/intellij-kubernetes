@@ -40,7 +40,7 @@ class DeletedNotification(private val editor: FileEditor, private val project: P
         val panel = EditorNotificationPanel()
         panel.setText("${resource.kind} '${resource.metadata.name}' was deleted on cluster. Push to Cluster?")
         addPush(panel)
-        addIgnore(panel) {
+        addDismiss(panel) {
             hide()
         }
 
