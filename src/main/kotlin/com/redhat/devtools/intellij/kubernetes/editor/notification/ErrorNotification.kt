@@ -47,6 +47,9 @@ class ErrorNotification(private val editor: FileEditor, private val project: Pro
         panel.icon(AllIcons.Ide.FatalError)
         panel.text = title
         addDetailsAction(message, panel, editor)
+        addDismiss(panel) {
+            hide()
+        }
         return panel
     }
 

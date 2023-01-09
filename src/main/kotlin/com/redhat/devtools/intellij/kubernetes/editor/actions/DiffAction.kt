@@ -33,7 +33,7 @@ class DiffAction: AnAction() {
                 try {
                     val editor = ResourceEditorFactory.instance.getExistingOrCreate(fileEditor, project) ?: return@Progressive
                     editor.diff()
-                    TelemetryService.sendTelemetry(editor.editorResource.get(), telemetry)
+                    TelemetryService.sendTelemetry(editor.editorResources, telemetry)
                 } catch (e: Exception) {
                     Notification().error("Error showing diff", "Could not show diff editor vs resource from cluster: ${e.message}")
                     telemetry.error(e).send()

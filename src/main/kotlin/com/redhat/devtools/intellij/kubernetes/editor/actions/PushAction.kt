@@ -38,7 +38,7 @@ class PushAction: AnAction() {
                 try {
                     val resourceEditor = ResourceEditorFactory.instance.getExistingOrCreate(editor, project) ?: return@Progressive
                     resourceEditor.push()
-                    sendTelemetry(resourceEditor.editorResource.get(), telemetry)
+                    sendTelemetry(resourceEditor.editorResources, telemetry)
                 } catch (e: Exception) {
                     logger<ResourceFile>().warn("Could not push resource to cluster: ${e.message}", e)
                     Notification().error("Error Pushing", "Could not push resource to cluster: ${e.message}")

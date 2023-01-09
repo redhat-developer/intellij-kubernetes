@@ -33,7 +33,7 @@ class RemoveClutterAction: AnAction() {
                 try {
                     val editor = ResourceEditorFactory.instance.getExistingOrCreate(fileEditor, project) ?: return@Progressive
                     editor.removeClutter()
-                    TelemetryService.sendTelemetry(editor.editorResource.get(), telemetry)
+                    TelemetryService.sendTelemetry(editor.editorResources, telemetry)
                 } catch (e: Exception) {
                     Notification().error("Error removing metadata clutter", "Could not remove metadata clutter: ${e.message}")
                     telemetry.error(e).send()

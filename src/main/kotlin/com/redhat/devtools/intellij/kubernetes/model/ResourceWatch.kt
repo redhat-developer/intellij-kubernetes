@@ -36,7 +36,7 @@ open class ResourceWatch<T>(
     }
 
     protected open val watches: ConcurrentHashMap<T, Watch?> = ConcurrentHashMap()
-    private val executor: ExecutorService = Executors.newWorkStealingPool(10)
+    private val executor: ExecutorService = Executors.newWorkStealingPool(20)
     private val thread = executor.submit(watchOperationsRunner)
 
     open fun watchAll(
