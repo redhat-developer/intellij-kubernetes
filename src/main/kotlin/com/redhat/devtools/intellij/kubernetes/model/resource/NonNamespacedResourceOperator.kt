@@ -26,6 +26,7 @@ import io.fabric8.kubernetes.client.dsl.ExecWatch
 import io.fabric8.kubernetes.client.dsl.LogWatch
 import io.fabric8.kubernetes.client.dsl.NonNamespaceOperation
 import io.fabric8.kubernetes.client.dsl.Resource
+import io.fabric8.kubernetes.client.dsl.base.HasMetadataOperation
 import java.io.OutputStream
 
 typealias NonNamespacedOperation<R> = NonNamespaceOperation<R, out KubernetesResourceList<R>, out Resource<R>>
@@ -76,9 +77,14 @@ abstract class NonNamespacedResourceOperator<R : HasMetadata, C : Client>(
     }
 
     open fun watchExec(container: Container, resource: R, listener: ExecListener): ExecWatch? {
-        val operation = getOperation()
+        var operation = getOperation()
             ?.withName(resource.metadata.name)
             ?: return null
+        val copy = operation as? HasMetadataOperation<*,*,*>
+        if (null !=  copy) {
+            @Suppress("UNCHECKED_CAST")
+            operation = copy.inNamespace(resource.metadata.namespace) as Resource<R>
+        }
         return watchExec(container, listener, operation)
     }
 

@@ -42,6 +42,9 @@ import io.fabric8.kubernetes.api.model.batch.v1beta1.CronJob
 import io.fabric8.kubernetes.api.model.networking.v1.Ingress
 import io.fabric8.kubernetes.api.model.storage.StorageClass
 import io.fabric8.kubernetes.client.utils.PodStatusUtil
+import java.text.DateFormat
+import java.text.SimpleDateFormat
+import java.util.*
 import javax.swing.Icon
 
 object KubernetesDescriptors {
@@ -126,8 +129,28 @@ object KubernetesDescriptors {
 		model,
 		project
 	) {
+		private val df = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'")
+		private val trans = listOf(1000, 60, 60, 24)
+		private val units = listOf("s", "m", "h", "d")
 		override fun getLabel(element: Pod): String {
-			return element.metadata.name ?: "unknown"
+			if (null != element.metadata.name) {
+				var started = 0L
+				try {
+					val startedAt = df.parse(element.status.startTime).time
+					started = System.currentTimeMillis() - startedAt - TimeZone.getDefault().rawOffset
+				} catch (_: Throwable) {}
+				var readable: Long = 0
+				var i = 0
+				while (i < trans.size) {
+					started /= trans[i]
+					if (started <= 0) break
+					readable = started
+					++i
+				}
+				if (0 < i) --i
+				return "[" + element.status.phase.substring(0, 4) + "-" + readable + units[i] + "]" + element.metadata.name
+			}
+			return "unknown"
 		}
 
 		override fun getIcon(element: Pod): Icon {

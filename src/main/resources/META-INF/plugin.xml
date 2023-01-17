@@ -186,6 +186,10 @@
                     id="com.redhat.devtools.intellij.kubernetes.actions.RefreshAction"
                     text="Refresh"
                     icon="AllIcons.Actions.Refresh"/>
+            <action class="com.redhat.devtools.intellij.kubernetes.actions.RolloutRestartAction"
+                    id="com.redhat.devtools.intellij.kubernetes.actions.RolloutRestartAction"
+                    text="Restart"
+                    icon="AllIcons.Actions.Restart"/>
             <action class="com.redhat.devtools.intellij.kubernetes.actions.FollowLogsAction"
                     id="com.redhat.devtools.intellij.kubernetes.actions.ShowLogsAction"
                     text="Follow Log"
@@ -193,6 +197,10 @@
             <action class="com.redhat.devtools.intellij.kubernetes.actions.TerminalAction"
                     id="com.redhat.devtools.intellij.kubernetes.actions.TerminalAction"
                     text="Terminal"
+                    icon="Icons.terminal"/>
+            <action class="com.redhat.devtools.intellij.kubernetes.actions.NodeShellAction"
+                    id="com.redhat.devtools.intellij.kubernetes.actions.NodeShellAction"
+                    text="Node Shell"
                     icon="Icons.terminal"/>
         </group>
 
