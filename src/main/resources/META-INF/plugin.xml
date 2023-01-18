@@ -204,6 +204,10 @@
                     id="com.redhat.devtools.intellij.kubernetes.actions.NodeShellAction"
                     text="Shell"
                     icon="Icons.terminal"/>
+            <action class="com.redhat.devtools.intellij.kubernetes.actions.CopyNameAction"
+                    id="com.redhat.devtools.intellij.kubernetes.actions.CopyNameAction"
+                    text="Copy Name"
+                    icon="AllIcons.Actions.Copy"/>
         </group>
 
         <group id="Kubernetes.Editor.Toolbar" class="com.intellij.openapi.actionSystem.DefaultActionGroup">
