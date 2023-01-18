@@ -64,9 +64,9 @@ open class ResourceFile protected constructor(
             return ResourceFile(virtualFile)
         }
 
-        private fun createTemporaryFile(resource: HasMetadata): VirtualFile? {
+        fun createTemporaryFile(resource: HasMetadata, extension: String = ".$EXTENSION"): VirtualFile? {
             return try {
-                val file = FileUtilRt.createTempFile(resource.metadata.name, ".$EXTENSION")
+                val file = FileUtilRt.createTempFile(resource.metadata.name, extension)
                 VfsUtil.findFileByIoFile(file, true)
             } catch(e: IOException) {
                 logger<ResourceFile>().warn("Could not create file: ${e.message}", e)
@@ -129,7 +129,20 @@ open class ResourceFile protected constructor(
      * @return the virtual file whose content was changed
      */
     fun write(resource: HasMetadata): VirtualFile {
-        val content = Serialization.asYaml(resource)
+        return write(resource) {
+            Serialization.asYaml(it)
+        }
+    }
+
+
+    /**
+     * Writes the given resource to file in this ResourceFile. A new file is created if it doesn't exist yet.
+     *
+     * @param resource the resource that should be set as content of the given file
+     * @return the virtual file whose content was changed
+     */
+    fun write(resource: HasMetadata, serializer: (res: HasMetadata) -> String): VirtualFile {
+        val content = serializer.invoke(resource)
         write(content, VfsUtil.virtualToIoFile(virtualFile).toPath())
         /**
          * When invoking synchronous refresh from a thread other than the event dispatch thread,
@@ -159,7 +172,8 @@ open class ResourceFile protected constructor(
         executeWriteAction {
             try {
                 if (virtualFile.isValid
-                    && virtualFile.exists()) {
+                    && virtualFile.exists()
+                ) {
                     virtualFile.delete(this)
                 }
             } catch (t: Exception) {

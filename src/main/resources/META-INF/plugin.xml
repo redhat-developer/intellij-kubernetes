@@ -145,9 +145,11 @@
                     icon="Icons.consolesToolwindow"/>
         <applicationService serviceInterface="com.redhat.devtools.intellij.kubernetes.model.IResourceModel"
                             serviceImplementation="com.redhat.devtools.intellij.kubernetes.model.ResourceModel"/>
-        <nonProjectFileWritingAccessExtension implementation="com.redhat.devtools.intellij.common.editor.AllowNonProjectEditing" />
-        <postStartupActivity implementation="com.redhat.devtools.intellij.kubernetes.KubernetesPluginInitializer" />
-        <editorTabTitleProvider implementation="com.redhat.devtools.intellij.kubernetes.editor.ResourceEditorTabTitleProvider"/>
+        <nonProjectFileWritingAccessExtension
+                implementation="com.redhat.devtools.intellij.common.editor.AllowNonProjectEditing"/>
+        <postStartupActivity implementation="com.redhat.devtools.intellij.kubernetes.KubernetesPluginInitializer"/>
+        <editorTabTitleProvider
+                implementation="com.redhat.devtools.intellij.kubernetes.editor.ResourceEditorTabTitleProvider"/>
     </extensions>
 
     <extensionPoints>
@@ -200,7 +202,7 @@
                     icon="Icons.terminal"/>
             <action class="com.redhat.devtools.intellij.kubernetes.actions.NodeShellAction"
                     id="com.redhat.devtools.intellij.kubernetes.actions.NodeShellAction"
-                    text="Node Shell"
+                    text="Shell"
                     icon="Icons.terminal"/>
         </group>
 
@@ -208,20 +210,24 @@
             <action class="com.redhat.devtools.intellij.kubernetes.editor.actions.PushAction"
                     id="com.redhat.devtools.intellij.kubernetes.editor.actions.PushAction"
                     text="Push Editor to the Cluster"
-                    icon="Icons.upload" />
+                    icon="Icons.upload"/>
             <action class="com.redhat.devtools.intellij.kubernetes.editor.actions.PullAction"
                     id="com.redhat.devtools.intellij.kubernetes.editor.actions.PullAction"
                     text="Pull from Cluster to the Editor"
-                    icon="Icons.download" />
+                    icon="Icons.download"/>
             <action class="com.redhat.devtools.intellij.kubernetes.editor.actions.DiffAction"
                     id="com.redhat.devtools.intellij.kubernetes.editor.actions.DiffAction"
                     text="Diff Editor Resource with Cluster Resource"
-                    icon="Icons.diff" />
+                    icon="Icons.diff"/>
             <action class="com.redhat.devtools.intellij.kubernetes.editor.actions.RemoveClutterAction"
                     id="com.redhat.devtools.intellij.kubernetes.editor.actions.RemoveClutterAction"
                     text="Remove Metadata Clutter in Editor"
-                    icon="Icons.removeClutter" />
+                    icon="Icons.removeClutter"/>
         </group>
     </actions>
 
+    <extensions defaultExtensionNs="com.intellij">
+        <applicationConfigurable instance="com.redhat.devtools.intellij.kubernetes.configuration.KubernetesConfigurable"
+                                 id="redhat.kubernetes" nonDefaultProject="true"/>
+    </extensions>
 </idea-plugin>

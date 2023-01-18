@@ -58,7 +58,7 @@ open class ResourceEditorFactory protected constructor(
         TelemetryService.sendTelemetry(resourceInfo, telemetry)
     },
     /* for mocking purposes */
-    private val getProjectManager: () -> ProjectManager = {  ProjectManager.getInstance() }
+    private val getProjectManager: () -> ProjectManager = { ProjectManager.getInstance() }
 
 ) {
 
@@ -74,9 +74,9 @@ open class ResourceEditorFactory protected constructor(
      * @param project that this editor belongs to
      * @return the new [ResourceEditor] that was opened
      */
-    fun openEditor(resource: HasMetadata, project: Project) {
+    fun openEditor(resource: HasMetadata, project: Project, serializer: ((res: HasMetadata) -> String)? = null) {
         runAsync {
-            val file = getFile(resource, project) ?: return@runAsync
+            val file = getFile(resource, project, serializer) ?: return@runAsync
             file.putUserData(KEY_RESOURCE, resource)
             runInUI {
                 // invokes editor selection listeners before call returns
@@ -88,12 +88,16 @@ open class ResourceEditorFactory protected constructor(
         }
     }
 
-    private fun getFile(resource: HasMetadata, project: Project): VirtualFile? {
+    private fun getFile(resource: HasMetadata, project: Project, serializer: ((res: HasMetadata) -> String)? = null): VirtualFile? {
         val resourceEditor = getExisting(resource, project)
         return if (resourceEditor != null) {
             resourceEditor.editor.file
         } else {
-            createResourceFile.invoke(resource)?.write(resource)
+            if (null != serializer) {
+                createResourceFile.invoke(resource)?.write(resource, serializer)
+            } else {
+                createResourceFile.invoke(resource)?.write(resource)
+            }
         }
     }
 

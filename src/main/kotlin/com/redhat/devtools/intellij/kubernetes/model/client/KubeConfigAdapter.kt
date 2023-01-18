@@ -22,7 +22,13 @@ import java.io.File
 class KubeConfigAdapter {
 
     private val file: File by lazy {
-        File(io.fabric8.kubernetes.client.Config.getKubeconfigFilename())
+        val fileName = io.fabric8.kubernetes.client.Config.getKubeconfigFilename()
+        val fileNames = fileName?.split(File.pathSeparator) ?: listOf()
+        if (fileNames.size == 1) {
+            File(fileNames[0])
+        } else {
+            File(fileName)
+        }
     }
 
     fun exists(): Boolean {
