@@ -61,6 +61,7 @@ dependencies {
             "io.fabric8:kubernetes-model:${kubernetesClientVersion}",
             "io.fabric8:kubernetes-model-common:${kubernetesClientVersion}",
             "io.fabric8:openshift-client:${kubernetesClientVersion}",
+	        "io.fabric8:kubernetes-httpclient-okhttp:${kubernetesClientVersion}",
             "org.apache.commons:commons-lang3:3.12.0"
     )
     testImplementation(
@@ -223,6 +224,7 @@ private def colorize(String color, String message) {
 }
 
 repositories {
+    mavenLocal()
     mavenCentral()
     maven {
         url 'https://repository.jboss.org'
