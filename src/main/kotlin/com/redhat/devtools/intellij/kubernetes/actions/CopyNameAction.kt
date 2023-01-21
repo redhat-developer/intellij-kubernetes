@@ -16,7 +16,7 @@ import com.redhat.devtools.intellij.common.actions.StructureTreeAction
 import com.redhat.devtools.intellij.kubernetes.telemetry.TelemetryService
 import com.redhat.devtools.intellij.kubernetes.tree.ResourceWatchController
 import com.redhat.devtools.intellij.kubernetes.tree.util.getResourceKind
-import io.fabric8.kubernetes.api.model.*
+import io.fabric8.kubernetes.api.model.HasMetadata
 import java.awt.Toolkit
 import java.awt.datatransfer.Clipboard
 import java.awt.datatransfer.StringSelection

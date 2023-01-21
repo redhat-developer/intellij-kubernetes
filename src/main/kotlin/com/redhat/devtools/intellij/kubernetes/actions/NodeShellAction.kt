@@ -24,7 +24,6 @@ import com.redhat.devtools.intellij.kubernetes.telemetry.TelemetryService
 import com.redhat.devtools.intellij.kubernetes.tree.ResourceWatchController
 import com.redhat.devtools.intellij.kubernetes.tree.util.getResourceKind
 import io.fabric8.kubernetes.api.model.*
-import io.fabric8.kubernetes.client.dsl.internal.core.v1.PodOperationsImpl
 import io.fabric8.kubernetes.client.extended.run.RunConfig
 import io.fabric8.kubernetes.client.extended.run.RunConfigUtil
 import javax.swing.tree.TreePath
@@ -68,7 +67,7 @@ class NodeShellAction : StructureTreeAction(Any::class.java) {
                     if (imagePullSecrets.isNotEmpty()) {
                         pod.spec.imagePullSecrets = imagePullSecrets.split(",").map { LocalObjectReference(it) }
                     }
-                    pod = PodOperationsImpl(client.get(), "default").create(pod)
+                    client.get().pods().resource(pod).create()
                 }
                 if (null != pod)
                     createTerminalTabs(listOf(pod), model, project)
