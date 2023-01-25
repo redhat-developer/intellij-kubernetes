@@ -69,7 +69,6 @@ dependencies {
             "io.fabric8:kubernetes-model-common:${kubernetesClientVersion}",
             "io.fabric8:openshift-client:${kubernetesClientVersion}",
             "io.fabric8:kubernetes-httpclient-okhttp:${kubernetesClientVersion}",
-            "com.squareup.okhttp3:okhttp:3.14.9",
             "org.apache.commons:commons-lang3:3.12.0"
     )
     testImplementation(
