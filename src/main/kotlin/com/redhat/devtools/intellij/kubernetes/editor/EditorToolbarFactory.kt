@@ -20,12 +20,23 @@ import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.project.Project
 import com.intellij.ui.AppUIUtil
 import com.intellij.util.ui.JBEmptyBorder
+import com.redhat.devtools.intellij.kubernetes.editor.actions.*
 
 class EditorToolbarFactory {
     companion object {
         fun create(actionId: String, editor: FileEditor, project: Project): ActionToolbar {
             val actionManager = ActionManager.getInstance()
             val group = actionManager.getAction(actionId) as ActionGroup
+            return create(group, editor, project)
+        }
+
+        fun create(actions: Array<Action>, editor: FileEditor, project: Project): ActionToolbar {
+            val group = CustomizableAction.bindActionGroup(actions, editor)
+            return create(group, editor, project)
+        }
+
+        fun create(group: ActionGroup, editor: FileEditor, project: Project): ActionToolbar {
+            val actionManager = ActionManager.getInstance()
             val toolbar =
                 actionManager.createActionToolbar(ActionPlaces.EDITOR_TOOLBAR, group, true) as ActionToolbarImpl
             toolbar.isOpaque = false

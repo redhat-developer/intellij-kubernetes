@@ -80,16 +80,17 @@ open class ResourceEditor(
     // for mocking purposes
     private val getPsiDocumentManager: (Project) -> PsiDocumentManager = { PsiDocumentManager.getInstance(project) },
     @Suppress("NAME_SHADOWING")
-    private val getKubernetesResourceInfo: (VirtualFile?, Project) -> KubernetesResourceInfo? = {
-            file, project -> com.redhat.devtools.intellij.kubernetes.editor.util.getKubernetesResourceInfo(file,project)
+    private val getKubernetesResourceInfo: (VirtualFile?, Project) -> KubernetesResourceInfo? = { file, project ->
+        com.redhat.devtools.intellij.kubernetes.editor.util.getKubernetesResourceInfo(file, project)
     },
     // for mocking purposes
     private val documentChanged: AtomicBoolean = AtomicBoolean(false),
     // for mocking purposes
     private val resourceVersion: PersistentEditorValue = PersistentEditorValue(editor),
     // for mocking purposes
-    private val diff: ResourceDiff = ResourceDiff(project)
-): IResourceModelListener, Disposable {
+    private val diff: ResourceDiff = ResourceDiff(project),
+    private val notify: ((re: ResourceEditor, project: Project, deleted: Boolean, resource: HasMetadata, modified: Boolean, clusterResource: ClusterResource?) -> Unit)? = null
+) : IResourceModelListener, Disposable {
 
     init {
         Disposer.register(editor, this)
@@ -154,7 +155,11 @@ open class ResourceEditor(
                     this.editorResource.set(resource)
                 }
                 val cluster = clusterResource
-                showNotifications(deletedOnCluster, resource, cluster)
+                if (null != notify) {
+                    notify.invoke(this, project, deletedOnCluster, resource, isModified(), clusterResource)
+                } else {
+                    showNotifications(deletedOnCluster, resource, cluster)
+                }
             } catch (e: Exception) {
                 runInUI {
                     hideNotifications()
@@ -171,12 +176,16 @@ open class ResourceEditor(
         when {
             clusterResource == null ->
                 showClusterErrorNotification()
+
             deleted ->
                 showDeletedNotification(resource)
+
             isModified() ->
                 showPushNotification(resourceVersion.get())
+
             clusterResource.isOutdated(resourceVersion.get()) ->
                 showPullNotification(resource)
+
             else ->
                 runInUI {
                     hideNotifications()
@@ -312,11 +321,13 @@ open class ResourceEditor(
     }
 
     private fun serialize(resource: HasMetadata, fileType: FileType?): String? {
-        val serializer = when(fileType) {
+        val serializer = when (fileType) {
             YAMLFileType.YML ->
                 Serialization.yamlMapper().writerWithDefaultPrettyPrinter()
+
             JsonFileType.INSTANCE ->
                 Serialization.jsonMapper().writerWithDefaultPrettyPrinter()
+
             else -> null
         }
         return serializer?.writeValueAsString(resource)?.trim()
@@ -412,7 +423,10 @@ open class ResourceEditor(
         }
     }
 
-    private fun createClusterResource(resource: HasMetadata?, context: IActiveContext<out HasMetadata, out KubernetesClient>?): ClusterResource? {
+    private fun createClusterResource(
+        resource: HasMetadata?,
+        context: IActiveContext<out HasMetadata, out KubernetesClient>?
+    ): ClusterResource? {
         val clusterResource = clusterResourceFactory.invoke(resource, context) ?: return null
         clusterResource.addListener(onResourceChanged())
         clusterResource.watch()
@@ -458,16 +472,18 @@ open class ResourceEditor(
     fun enableNonProjectFileEditing() {
         if (editor.file == null
             || !isKubernetesResource(
-                getKubernetesResourceInfo.invoke(editor.file, project))){
-                return
+                getKubernetesResourceInfo.invoke(editor.file, project)
+            )
+        ) {
+            return
         }
         createResourceFileForVirtual(editor.file)?.enableNonProjectFileEditing()
     }
 
-    fun createToolbar() {
+    fun createToolbar(creator: (() -> ActionToolbar)? = null) {
         var editorToolbar: ActionToolbar? = editor.getUserData(KEY_TOOLBAR)
         if (editorToolbar == null) {
-            editorToolbar = EditorToolbarFactory.create(ID_TOOLBAR, editor, project)
+            editorToolbar = creator?.invoke() ?: EditorToolbarFactory.create(ID_TOOLBAR, editor, project)
             editor.putUserData(KEY_TOOLBAR, editorToolbar)
         }
     }
@@ -481,7 +497,7 @@ open class ResourceEditor(
         }
     }
 
-    override fun currentNamespaceChanged(new: IActiveContext<*,*>?, old: IActiveContext<*,*>?) {
+    override fun currentNamespaceChanged(new: IActiveContext<*, *>?, old: IActiveContext<*, *>?) {
         // current namespace in same context has changed, recreate cluster resource
         recreateClusterResource()
         resourceVersion.set(null)
@@ -511,17 +527,17 @@ open class ResourceEditor(
     }
 
     /** for testing purposes */
-    protected open fun runWriteCommand(runnable: () -> Unit) {
+    open fun runWriteCommand(runnable: () -> Unit) {
         WriteCommandAction.runWriteCommandAction(project, runnable)
     }
 
     /** for testing purposes */
-    protected open fun <R: Any> runReadCommand(runnable: () -> R?): R? {
+    open fun <R : Any> runReadCommand(runnable: () -> R?): R? {
         return ReadAction.compute<R, Exception>(runnable)
     }
 
     /** for testing purposes */
-    protected open fun runInUI(runnable: () -> Unit) {
+    open fun runInUI(runnable: () -> Unit) {
         if (ApplicationManager.getApplication().isDispatchThread) {
             runnable.invoke()
         } else {

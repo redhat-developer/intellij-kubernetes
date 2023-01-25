@@ -50,29 +50,47 @@ open class ResourceFile protected constructor(
         val TEMP_FOLDER: Path = Paths.get(FileUtil.resolveShortWindowsName(FileUtil.getTempDirectory()))
 
         @JvmStatic
-        fun create(resource: HasMetadata): ResourceFile? {
-            val virtualFile = createTemporaryFile(resource) ?: return null
+        fun create(
+            resource: HasMetadata,
+            extension: String = ".$EXTENSION",
+            naming: ((resource: HasMetadata) -> String)? = null
+        ): ResourceFile? {
+            val virtualFile = createTemporaryFile(resource, extension, naming) ?: return null
             return ResourceFile(virtualFile)
         }
 
         @JvmStatic
         fun create(virtualFile: VirtualFile?): ResourceFile? {
             if (virtualFile == null
-                || !isValidType(virtualFile)) {
+                || !isValidType(virtualFile)
+            ) {
                 return null
             }
             return ResourceFile(virtualFile)
         }
 
-        fun createTemporaryFile(resource: HasMetadata, extension: String = ".$EXTENSION"): VirtualFile? {
+        private fun createTemporaryFile(
+            resource: HasMetadata,
+            extension: String = ".$EXTENSION",
+            naming: ((resource: HasMetadata) -> String)? = null
+        ): VirtualFile? {
             return try {
-                val file = FileUtilRt.createTempFile(resource.metadata.name, extension)
+                val name = naming?.invoke(resource) ?: resource.metadata.name
+                val file = FileUtilRt.createTempFile(name, extension)
                 VfsUtil.findFileByIoFile(file, true)
-            } catch(e: IOException) {
+            } catch (e: IOException) {
                 logger<ResourceFile>().warn("Could not create file: ${e.message}", e)
                 // https://youtrack.jetbrains.com/issue/IDEA-225226
                 Notification()
-                    .error("Could create file", "Could not create file for ${resource.kind} '${resource.metadata.name}': ${trimWithEllipsis(e.message, 50)}. Maybe do File > Invalidate Caches.")
+                    .error(
+                        "Could create file",
+                        "Could not create file for ${resource.kind} '${resource.metadata.name}': ${
+                            trimWithEllipsis(
+                                e.message,
+                                50
+                            )
+                        }. Maybe do File > Invalidate Caches."
+                    )
                 null
             }
         }
@@ -128,7 +146,7 @@ open class ResourceFile protected constructor(
      * @param resource the resource that should be set as content of the given file
      * @return the virtual file whose content was changed
      */
-    fun write(resource: HasMetadata): VirtualFile {
+    open fun write(resource: HasMetadata): VirtualFile {
         return write(resource) {
             Serialization.asYaml(it)
         }

@@ -14,6 +14,7 @@ import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.progress.Progressive
 import com.redhat.devtools.intellij.common.actions.StructureTreeAction
+import com.redhat.devtools.intellij.kubernetes.model.helm.HelmRelease
 import com.redhat.devtools.intellij.kubernetes.telemetry.TelemetryService
 import com.redhat.devtools.intellij.kubernetes.telemetry.TelemetryService.sendTelemetry
 import com.redhat.devtools.intellij.kubernetes.tree.ResourceWatchController
@@ -23,18 +24,23 @@ import javax.swing.tree.TreePath
 
 class RefreshAction : StructureTreeAction(Any::class.java) {
 
-	override fun actionPerformed(event: AnActionEvent?, path: TreePath?, selectedNode: Any?) {
-		val descriptor = selectedNode?.getDescriptor() ?: return
-		run("Refreshing $selectedNode...", true,
-			Progressive {
-				val telemetry = TelemetryService.instance.action("refresh resource")
-				try {
-					descriptor.invalidate()
-					sendTelemetry(getResourceKind(descriptor.element), telemetry)
-				} catch (e: Exception) {
-					logger<ResourceWatchController>().warn("Could not refresh $descriptor resources.", e)
-					telemetry.error(e).send()
-				}
-			})
-	}
+    override fun actionPerformed(event: AnActionEvent?, path: TreePath?, selectedNode: Any?) {
+        val descriptor = selectedNode?.getDescriptor() ?: return
+        run("Refreshing $selectedNode...", true) {
+            val telemetry = TelemetryService.instance.action("refresh resource")
+            try {
+                descriptor.invalidate()
+                sendTelemetry(getResourceKind(descriptor.element), telemetry)
+            } catch (e: Exception) {
+                logger<ResourceWatchController>().warn("Could not refresh $descriptor resources.", e)
+                telemetry.error(e).send()
+            }
+        }
+    }
+
+    override fun isVisible(selected: Any?): Boolean {
+        val element = selected?.getElement<HasMetadata>()
+        return null == element
+                || (HelmRelease.KIND.kind != element.kind || false == (element as? HelmRelease?)?.isHistory)
+    }
 }

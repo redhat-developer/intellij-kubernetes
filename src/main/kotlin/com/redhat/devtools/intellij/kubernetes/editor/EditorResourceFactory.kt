@@ -11,8 +11,11 @@
 package com.redhat.devtools.intellij.kubernetes.editor
 
 import com.intellij.openapi.editor.Document
+import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.fileEditor.FileEditor
 import com.redhat.devtools.intellij.kubernetes.editor.util.getDocument
+import com.redhat.devtools.intellij.kubernetes.model.client.NativeHelm
+import com.redhat.devtools.intellij.kubernetes.model.helm.HelmRelease
 import com.redhat.devtools.intellij.kubernetes.model.util.ResourceException
 import com.redhat.devtools.intellij.kubernetes.model.util.createResource
 import io.fabric8.kubernetes.api.model.HasMetadata
@@ -40,6 +43,15 @@ object EditorResourceFactory {
             null
         } else {
             try {
+                val file = FileDocumentManager.getInstance().getFile(document)
+                if (null != file && file.name.startsWith("${HelmRelease.FILE_NAME_PREFIX}@")) {
+                    val name = file.name
+                    val releaseBeg = name.indexOf("@", HelmRelease.FILE_NAME_PREFIX.length + 1)
+                    val releaseEnd = name.lastIndexOf("@")
+                    val namespace = name.substring(HelmRelease.FILE_NAME_PREFIX.length + 1, releaseBeg)
+                    val release = name.substring(releaseBeg + 1, releaseEnd)
+                    return NativeHelm.get(release, namespace)
+                }
                 return createResource(document.text)
             } catch (e: RuntimeException) {
                 throw ResourceException("Invalid kubernetes yaml/json", e.cause ?: e)

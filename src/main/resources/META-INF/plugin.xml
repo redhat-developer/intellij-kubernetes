@@ -208,6 +208,10 @@
                     id="com.redhat.devtools.intellij.kubernetes.actions.CopyNameAction"
                     text="Copy Name"
                     icon="AllIcons.Actions.Copy"/>
+            <action class="com.redhat.devtools.intellij.kubernetes.actions.DescribeAction"
+                    id="com.redhat.devtools.intellij.kubernetes.actions.DescribeAction"
+                    text="Describe"
+                    icon="AllIcons.Actions.Show"/>
         </group>
 
         <group id="Kubernetes.Editor.Toolbar" class="com.intellij.openapi.actionSystem.DefaultActionGroup">

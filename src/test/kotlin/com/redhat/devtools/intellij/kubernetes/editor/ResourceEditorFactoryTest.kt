@@ -86,18 +86,27 @@ class ResourceEditorFactoryTest {
         doReturn(emptyArray<FileEditor>())
             .whenever(this).openFile(any(), any(), any())
     }
-    private val getFileEditorManager: (project: Project) -> FileEditorManager = mock<(project: Project) -> FileEditorManager>().apply {
-        doReturn(fileEditorManager)
-            .whenever(this).invoke(any())
-    }
+    private val getFileEditorManager: (project: Project) -> FileEditorManager =
+        mock<(project: Project) -> FileEditorManager>().apply {
+            doReturn(fileEditorManager)
+                .whenever(this).invoke(any())
+        }
     private val resourceFile: ResourceFile = mock<ResourceFile>().apply {
         doReturn(this@ResourceEditorFactoryTest.virtualFile)
             .whenever(this).write(any())
     }
-    private val createResourceFile: (resource: HasMetadata) -> ResourceFile =
-        mock<(resource: HasMetadata) -> ResourceFile>().apply {
+    private val createResourceFile: (
+        resource: HasMetadata,
+        extension: String?,
+        naming: ((resource: HasMetadata, extension: String) -> String)?
+    ) -> ResourceFile =
+        mock<(
+            resource: HasMetadata,
+            extension: String?,
+            naming: ((resource: HasMetadata, extension: String) -> String)?
+        ) -> ResourceFile>().apply {
             doReturn(resourceFile)
-                .whenever(this).invoke(any())
+                .whenever(this).invoke(any(), null, null)
         }
     private val isValidType: (file: VirtualFile?) -> Boolean = mock<(file: VirtualFile?) -> Boolean>().apply {
         doReturn(true)
@@ -112,10 +121,11 @@ class ResourceEditorFactoryTest {
             .whenever(this).text
     }
     private val getDocument: (editor: FileEditor) -> Document? = { document }
-    private val hasKubernetesResource: (editor: FileEditor, project: Project) -> Boolean = mock<(editor: FileEditor, project: Project) -> Boolean>().apply {
-        doReturn(true)
-            .whenever(this).invoke(any(), any())
-    }
+    private val hasKubernetesResource: (editor: FileEditor, project: Project) -> Boolean =
+        mock<(editor: FileEditor, project: Project) -> Boolean>().apply {
+            doReturn(true)
+                .whenever(this).invoke(any(), any())
+        }
     private val createResourceEditor: (FileEditor, Project) -> ResourceEditor =
         { editor, project -> mock() }
     private val reportTelemetry: (FileEditor, Project, TelemetryMessageBuilder.ActionMessage) -> Unit = mock()
@@ -143,7 +153,7 @@ class ResourceEditorFactoryTest {
     fun `#openEditor should NOT open editor if temporary resource file could not be created`() {
         // given
         doReturn(null)
-            .whenever(createResourceFile).invoke(any())
+            .whenever(createResourceFile).invoke(any(), null, null)
         // when
         editorFactory.openEditor(mock(), mock())
         // then
@@ -289,7 +299,11 @@ class ResourceEditorFactoryTest {
 
     private open class TestableResourceEditorFactory(
         getFileEditorManager: (project: Project) -> FileEditorManager,
-        createResourceFile: (resource: HasMetadata) -> ResourceFile?,
+        createResourceFile: (
+            resource: HasMetadata,
+            extension: String?,
+            naming: ((resource: HasMetadata, extension: String) -> String)?
+        ) -> ResourceFile?,
         isValidType: (file: VirtualFile?) -> Boolean,
         isTemporary: (file: VirtualFile?) -> Boolean,
         getDocument: (editor: FileEditor) -> Document?,

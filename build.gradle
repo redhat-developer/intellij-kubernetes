@@ -27,6 +27,7 @@ buildscript {
 plugins {
     id "org.jetbrains.intellij" version "${intellijPluginVersion}"
     id "org.jetbrains.kotlin.jvm" version "${kotlinVersion}"
+    id "org.jetbrains.kotlin.plugin.lombok" version "1.7.22"
     id "idea"
 }
 
@@ -50,11 +51,16 @@ task integrationTest(type: Test) {
 }
 
 tasks.withType(Test) {
-    environment 'GRADLE_RELEASE_REPOSITORY','https://services.gradle.org/distributions'
+    environment 'GRADLE_RELEASE_REPOSITORY', 'https://services.gradle.org/distributions'
 }
 
 dependencies {
     compileOnly 'org.projectlombok:lombok:1.18.24'
+    annotationProcessor 'org.projectlombok:lombok:1.18.24'
+
+    testCompileOnly 'org.projectlombok:lombok:1.18.24'
+    testAnnotationProcessor 'org.projectlombok:lombok:1.18.24'
+
     implementation(
             "org.jetbrains.kotlin:${kotlinStdlib}:${kotlinVersion}",
             "com.redhat.devtools.intellij:intellij-common:${intellijCommonVersion}",
@@ -62,7 +68,7 @@ dependencies {
             "io.fabric8:kubernetes-model:${kubernetesClientVersion}",
             "io.fabric8:kubernetes-model-common:${kubernetesClientVersion}",
             "io.fabric8:openshift-client:${kubernetesClientVersion}",
-	        "io.fabric8:kubernetes-httpclient-okhttp:${kubernetesClientVersion}",
+            "io.fabric8:kubernetes-httpclient-okhttp:${kubernetesClientVersion}",
             "com.squareup.okhttp3:okhttp:3.14.9",
             "org.apache.commons:commons-lang3:3.12.0"
     )
@@ -123,9 +129,10 @@ test {
 }
 
 intellij {
-    version = ideaVersion //for a full list of Jetbrains IDEA releases please see https://www.jetbrains.com/intellij-repository/releases
+    version = ideaVersion
+    //for a full list of Jetbrains IDEA releases please see https://www.jetbrains.com/intellij-repository/releases
     pluginName = 'Kubernetes by Red Hat'
-    plugins = ['yaml', 'com.redhat.devtools.intellij.telemetry:0.0.3.33' ]
+    plugins = ['yaml', 'com.redhat.devtools.intellij.telemetry:0.0.3.33']
     updateSinceUntilBuild = false
 }
 
@@ -213,14 +220,14 @@ private def getProjectProperty(String key, String defaultValue) {
 
 private def colorize(String color, String message) {
     final colors = [
-            black: 30,
-            red: 31,
-            green: 32,
-            yellow: 33,
-            blue: 34,
+            black  : 30,
+            red    : 31,
+            green  : 32,
+            yellow : 33,
+            blue   : 34,
             magenta: 35,
-            cyan: 36,
-            white: 37
+            cyan   : 36,
+            white  : 37
     ]
     return new String((char) 27) + "[${colors[color]}m${message}" + new String((char) 27) + "[0m"
 }
