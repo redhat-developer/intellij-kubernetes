@@ -54,7 +54,7 @@ class NativeHelm {
         val values: (release: String, namespace: String) -> String = { release, namespace ->
             KubernetesRelated.command(bin, listOf("get", "values"), false, null, release, namespace)
         }
-        val upgrade: (release: HelmRelease, values: ByteArray) -> String = { release, values ->
+        val upgrade: (release: HasMetadata, values: ByteArray) -> String = { release, values ->
             KubernetesRelated.command(
                 bin, "upgrade", false, null, release.metadata.name, release.metadata.namespace,
                 listOf("-f", "-"),

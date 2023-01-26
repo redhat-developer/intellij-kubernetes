@@ -26,6 +26,7 @@ import com.redhat.devtools.intellij.kubernetes.editor.util.hasKubernetesResource
 import com.redhat.devtools.intellij.kubernetes.model.IResourceModel
 import com.redhat.devtools.intellij.kubernetes.model.util.ResourceException
 import com.redhat.devtools.intellij.kubernetes.model.util.isSameResource
+import com.redhat.devtools.intellij.kubernetes.extension.CustomizableEditorProvider
 import com.redhat.devtools.intellij.kubernetes.telemetry.TelemetryService
 import com.redhat.devtools.intellij.telemetry.core.service.TelemetryMessageBuilder
 import io.fabric8.kubernetes.api.model.HasMetadata
@@ -60,7 +61,7 @@ open class ResourceEditorFactory protected constructor(
             editor,
             IResourceModel.getInstance(),
             project
-        )
+        ).initAfterCreated()
     },/* for mocking purposes */
     private val reportTelemetry: (FileEditor, Project, TelemetryMessageBuilder.ActionMessage) -> Unit = { editor, project, telemetry ->
         val resourceInfo =
@@ -98,7 +99,7 @@ open class ResourceEditorFactory protected constructor(
         extension: String? = null,
         serializer: ((res: HasMetadata) -> String)? = null,
         naming: ((resource: HasMetadata) -> String)? = null,
-        customizer: ((fe: FileEditor) -> FileEditor)? = null
+        customizer: ((fe: FileEditor, project: Project) -> FileEditor)? = null
     ) {
         runAsync {
             val file = getFile(resource, project, extension, serializer, naming) ?: return@runAsync
@@ -106,7 +107,7 @@ open class ResourceEditorFactory protected constructor(
             runInUI {
                 // invokes editor selection listeners before call returns
                 val fe = getFileEditorManager.invoke(project).openFile(file, true, true).firstOrNull() ?: return@runInUI
-                customizer?.invoke(fe)
+                customizer?.invoke(fe, project)
             }
         }
     }
@@ -153,7 +154,8 @@ open class ResourceEditorFactory protected constructor(
     }
 
     private fun create(editor: FileEditor, project: Project): ResourceEditor? {
-        val acceptable = CustomizableAction.acceptable(editor)
+        val provider = CustomizableEditorProvider.find(editor, project)
+        val acceptable = provider?.acceptable?.invoke(editor, project) ?: false
         if (!acceptable && (!isValidType.invoke(editor.file) || !hasKubernetesResource.invoke(editor, project))) {
             return null
         }
@@ -161,7 +163,10 @@ open class ResourceEditorFactory protected constructor(
         return try {
             runAsync { reportTelemetry.invoke(editor, project, telemetry) }
             if (acceptable) {
-                CustomizableAction.create(editor, project)
+                provider?.customizer?.invoke(editor, project)
+                val resourceEditor = CustomizableAction.create(editor, project)
+                CustomizableAction.render(editor, resourceEditor)
+                resourceEditor
             } else {
                 val resourceEditor = createResourceEditor.invoke(editor, project)
                 resourceEditor.createToolbar()

@@ -183,7 +183,7 @@ spec:
             documentReplaced,
             resourceVersion,
             diff
-        )
+        ).initAfterCreated()
 
     @Before
     fun before() {

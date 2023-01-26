@@ -30,7 +30,7 @@ class EditorToolbarFactory {
             return create(group, editor, project)
         }
 
-        fun create(actions: Array<Action>, editor: FileEditor, project: Project): ActionToolbar {
+        fun create(actions: List<Action>, editor: FileEditor, project: Project): ActionToolbar {
             val group = CustomizableAction.bindActionGroup(actions, editor)
             return create(group, editor, project)
         }

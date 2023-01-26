@@ -27,6 +27,7 @@ import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.PsiDocumentManager
 import com.redhat.devtools.intellij.common.utils.MetadataClutter
 import com.redhat.devtools.intellij.common.validation.KubernetesResourceInfo
+import com.redhat.devtools.intellij.kubernetes.editor.actions.CustomizableAction
 import com.redhat.devtools.intellij.kubernetes.editor.notification.DeletedNotification
 import com.redhat.devtools.intellij.kubernetes.editor.notification.ErrorNotification
 import com.redhat.devtools.intellij.kubernetes.editor.notification.PullNotification
@@ -34,6 +35,7 @@ import com.redhat.devtools.intellij.kubernetes.editor.notification.PulledNotific
 import com.redhat.devtools.intellij.kubernetes.editor.notification.PushNotification
 import com.redhat.devtools.intellij.kubernetes.editor.util.getDocument
 import com.redhat.devtools.intellij.kubernetes.editor.util.isKubernetesResource
+import com.redhat.devtools.intellij.kubernetes.extension.CustomizableEditorProvider
 import com.redhat.devtools.intellij.kubernetes.model.IResourceModel
 import com.redhat.devtools.intellij.kubernetes.model.IResourceModelListener
 import com.redhat.devtools.intellij.kubernetes.model.context.IActiveContext
@@ -92,10 +94,12 @@ open class ResourceEditor(
     private val notify: ((re: ResourceEditor, project: Project, deleted: Boolean, resource: HasMetadata, modified: Boolean, clusterResource: ClusterResource?) -> Unit)? = null
 ) : IResourceModelListener, Disposable {
 
-    init {
+    fun initAfterCreated(): ResourceEditor {
         Disposer.register(editor, this)
         resourceModel.addListener(this)
+        return this
     }
+
 
     companion object {
         val KEY_RESOURCE_EDITOR = Key<ResourceEditor>(ResourceEditor::class.java.name)
@@ -107,7 +111,7 @@ open class ResourceEditor(
     private val resourceChangeMutex = ReentrantLock()
     private var oldClusterResource: ClusterResource? = null
     private var _clusterResource: ClusterResource? = null
-    protected open val clusterResource: ClusterResource?
+    open val clusterResource: ClusterResource?
         get() {
             return resourceChangeMutex.withLock {
                 if (_clusterResource == null
@@ -128,7 +132,7 @@ open class ResourceEditor(
         createResource.invoke(editor)
     }
 
-    protected open var lastPushedPulled = ResettableLazyProperty<HasMetadata?> {
+    open var lastPushedPulled = ResettableLazyProperty<HasMetadata?> {
         if (true == clusterResource?.exists()) {
             resourceChangeMutex.withLock { editorResource.get() }
         } else {
@@ -146,6 +150,7 @@ open class ResourceEditor(
     fun update(deletedOnCluster: Boolean = false) {
         if (documentChanged.compareAndSet(true, false)) {
             /** update triggered by change in document [replaceDocument] */
+            CustomizableAction.render(editor, this)
             return
         }
         runAsync {
@@ -244,7 +249,7 @@ open class ResourceEditor(
      *
      * @return true if the resource is dirty
      */
-    protected open fun isModified(): Boolean {
+    open fun isModified(): Boolean {
         return resourceChangeMutex.withLock {
             val editorResource: HasMetadata? = this.editorResource.get()
             val lastPushedPulled: HasMetadata? = this.lastPushedPulled.get()
@@ -294,6 +299,18 @@ open class ResourceEditor(
         }
     }
 
+    fun replaceDocument(content: String) {
+        val manager = getPsiDocumentManager.invoke(project)
+        val document = getDocument.invoke(editor) ?: return
+        if (document.text.trim() != content) {
+            runWriteCommand {
+                document.replaceString(0, document.textLength, content)
+                documentChanged.set(true)
+                manager.commitDocument(document)
+            }
+        }
+    }
+
     private fun replaceDocument(resource: HasMetadata?) {
         if (resource == null) {
             return
@@ -321,6 +338,7 @@ open class ResourceEditor(
     }
 
     private fun serialize(resource: HasMetadata, fileType: FileType?): String? {
+        val provider = CustomizableEditorProvider.find(editor, project)
         val serializer = when (fileType) {
             YAMLFileType.YML ->
                 Serialization.yamlMapper().writerWithDefaultPrettyPrinter()
@@ -330,7 +348,7 @@ open class ResourceEditor(
 
             else -> null
         }
-        return serializer?.writeValueAsString(resource)?.trim()
+        return provider?.serializer?.invoke(resource) ?: serializer?.writeValueAsString(resource)?.trim()
     }
 
     /**
@@ -395,7 +413,7 @@ open class ResourceEditor(
     * Made callback protected to be able to override it with public visibility in TestableResourceEditor instead
     * so that tests can call it directly.
     */
-    protected open fun onDiffClosed(resource: HasMetadata, documentBeforeDiff: String?) {
+    open fun onDiffClosed(resource: HasMetadata, documentBeforeDiff: String?) {
         val afterDiff = getDocument.invoke(editor)?.text
         val modified = (documentBeforeDiff != afterDiff)
         if (modified) {
@@ -522,7 +540,7 @@ open class ResourceEditor(
     }
 
     /** for testing purposes */
-    protected open fun runAsync(runnable: () -> Unit) {
+    open fun runAsync(runnable: () -> Unit) {
         ApplicationManager.getApplication().executeOnPooledThread(runnable)
     }
 

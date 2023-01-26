@@ -27,7 +27,6 @@ buildscript {
 plugins {
     id "org.jetbrains.intellij" version "${intellijPluginVersion}"
     id "org.jetbrains.kotlin.jvm" version "${kotlinVersion}"
-    id "org.jetbrains.kotlin.plugin.lombok" version "1.7.22"
     id "idea"
 }
 

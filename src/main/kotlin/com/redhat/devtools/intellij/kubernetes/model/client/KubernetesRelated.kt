@@ -17,6 +17,9 @@ import java.util.concurrent.TimeUnit
 class KubernetesRelated {
 
     companion object Constants {
+        const val separator = "\n"
+
+        @JvmStatic
         val ready: (bin: String) -> Boolean = {
             val pb = ProcessBuilder(it, "version")
             pb.environment().putAll(System.getenv())
@@ -74,7 +77,7 @@ class KubernetesRelated {
             if (null != stdin) process.outputStream.write(stdin)
             process.waitFor(60, TimeUnit.SECONDS)
             val lines = BufferedReader(InputStreamReader(process.inputStream)).readLines()
-            return lines.joinToString(System.lineSeparator())
+            return lines.joinToString(separator)
         }
     }
 }

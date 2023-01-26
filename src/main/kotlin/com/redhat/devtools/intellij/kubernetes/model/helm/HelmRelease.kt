@@ -43,18 +43,27 @@ class HelmRelease(
         fun from(
             name: String,
             namespace: String,
-            revision: Int,
-            updated: String,
-            status: String,
-            chart: String,
-            api: String,
-            appVersion: String,
+            revision: Int? = -1,
+            updated: String? = "",
+            status: String? = "",
+            chart: String? = "",
+            api: String? = "v1",
+            appVersion: String? = "",
             isHistory: Boolean = false
         ): HelmRelease {
             val metadata = ObjectMeta()
             metadata.name = name
             metadata.namespace = namespace
-            return HelmRelease(metadata, revision, updated, status, chart, api, appVersion, isHistory)
+            return HelmRelease(
+                metadata,
+                revision ?: -1,
+                updated ?: "",
+                status ?: "",
+                chart ?: "",
+                api ?: "v1",
+                appVersion ?: "",
+                isHistory
+            )
         }
     }
 

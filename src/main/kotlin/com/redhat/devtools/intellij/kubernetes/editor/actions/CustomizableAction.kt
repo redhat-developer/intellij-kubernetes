@@ -14,6 +14,7 @@ import com.intellij.openapi.actionSystem.ActionManager
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.DefaultActionGroup
+import com.intellij.openapi.extensions.PluginId
 import com.intellij.openapi.fileEditor.FileEditor
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.project.ProjectManager
@@ -24,63 +25,55 @@ import com.redhat.devtools.intellij.kubernetes.model.IResourceModel
 import com.redhat.devtools.intellij.kubernetes.model.Notification
 import com.redhat.devtools.intellij.kubernetes.telemetry.TelemetryService
 import io.fabric8.kubernetes.api.model.HasMetadata
+import java.util.concurrent.ConcurrentHashMap
 
 class CustomizableAction private constructor(val id: Int) : AnAction() {
-
-    val title: Key<String> = actionTitle.invoke(id)
-    val keyword: Key<String> = actionKeyword.invoke(id)
-    private val callback: Key<(fe: FileEditor, re: ResourceEditor, project: Project) -> Unit> =
-        actionCallback.invoke(id)
-    val error: Key<String> = actionError.invoke(id)
-    val message: Key<(e: Exception) -> String> = actionMessage.invoke(id)
+    override fun displayTextInToolbar(): Boolean = true
+    override fun isDefaultIcon(): Boolean = false
 
     companion object Factory {
-        private val keyIndexes = HashMap<String, Int>()
+        private val pluginId = PluginId.getId("com.redhat.devtools.intellij.kubernetes")
+        private val keyIndexes = ConcurrentHashMap<String, Key<*>>()
 
         private fun <T> get(name: String): Key<T> {
-            keyIndexes.computeIfAbsent(name) { Key.create<T>(name).hashCode() }
-            return Key.getKeyByIndex(keyIndexes[name]!!)!!
+            keyIndexes.computeIfAbsent(name) { Key.create<T>(name) }
+            @Suppress("UNCHECKED_CAST")
+            return keyIndexes[name] as Key<T>
         }
 
-        private val keyActions: Key<Array<Action>> =
+        const val ID = "com.redhat.devtools.intellij.kubernetes.editor.actions.CustomizableAction"
+        val id: (i: Int) -> String get() = { "${ID}-${it}" }
+
+        private val keyActions: Key<List<Action>> =
             get("actions-com.redhat.devtools.intellij.kubernetes.editor.actions.CustomizableAction")
         private val keyNotification: Key<(re: ResourceEditor, project: Project, deleted: Boolean, resource: HasMetadata, modified: Boolean, clusterResource: ClusterResource?) -> Unit> =
             get("notifications-com.redhat.devtools.intellij.kubernetes.editor.actions.CustomizableAction")
-
-        val id: (i: Int) -> String =
-            { "com.redhat.devtools.intellij.kubernetes.editor.actions.CustomizableAction-${it}" }
-        val actionTitle: (i: Int) -> Key<String> = { get("title-${id.invoke(it)}") }
-        val actionError: (i: Int) -> Key<String> = { get("error-${id.invoke(it)}") }
-        val actionMessage: (i: Int) -> Key<(e: Exception) -> String> = { get("message-${id.invoke(it)}") }
-        val actionKeyword: (i: Int) -> Key<String> = { get("keyword-${id.invoke(it)}") }
-        val actionCallback: (i: Int) -> Key<(fe: FileEditor, re: ResourceEditor, project: Project) -> Unit> =
-            { get("callback-${id.invoke(it)}") }
+        private val keyAnActions = get<List<CustomizableAction>>("anactions-${ID}")
+        val keyAction: (i: Int) -> Key<Action> get() = { get("action-${id(it)}") }
 
         @JvmStatic
         private val actions = ArrayList<CustomizableAction>()
 
         @JvmStatic
-        fun bindActionGroup(actions: Array<Action>, fe: FileEditor): DefaultActionGroup {
+        fun bindActionGroup(actions: List<Action>, fe: FileEditor): DefaultActionGroup {
             val size = actions.size
             for (i in 0 until size) {
                 if (i >= this.actions.size) {
                     this.actions.add(CustomizableAction(i))
-                    ActionManager.getInstance().registerAction(id.invoke(i), this.actions[i])
+                    ActionManager.getInstance().registerAction(id(i), this.actions[i], pluginId)
                 }
-                fe.putUserData(actionTitle.invoke(i), actions[i].title)
-                fe.putUserData(actionKeyword.invoke(i), actions[i].keyword)
-                fe.putUserData(actionCallback.invoke(i), actions[i].callback)
-                fe.putUserData(actionError.invoke(i), actions[i].error)
-                fe.putUserData(actionMessage.invoke(i), actions[i].message)
+                fe.putUserData(keyAction(i), actions[i])
             }
-            return DefaultActionGroup(this.actions.take(actions.size))
+            val bound = this.actions.take(actions.size)
+            fe.putUserData(keyAnActions, bound)
+            return DefaultActionGroup(bound)
         }
 
         @JvmStatic
         fun register(
             fe: FileEditor,
             notify: (re: ResourceEditor, project: Project, deleted: Boolean, resource: HasMetadata, modified: Boolean, clusterResource: ClusterResource?) -> Unit,
-            actions: () -> Array<Action>
+            actions: () -> List<Action>
         ) {
             fe.putUserData(keyActions, actions.invoke())
             fe.putUserData(keyNotification, notify)
@@ -92,10 +85,25 @@ class CustomizableAction private constructor(val id: Int) : AnAction() {
         }
 
         @JvmStatic
+        fun render(editor: FileEditor, resourceEditor: ResourceEditor) {
+            val actions = editor.getUserData(keyActions) ?: return
+            val anActions = editor.getUserData(keyAnActions) ?: return
+            resourceEditor.runAsync {
+                for ((i, anAction) in anActions.withIndex()) {
+                    anAction.isDefaultIcon = false
+                    anAction.templatePresentation.text = actions[i].title
+                    anAction.templatePresentation.icon = actions[i].icon
+                    anAction.templatePresentation.description = actions[i].description
+                }
+            }
+        }
+
+        @JvmStatic
         fun create(editor: FileEditor, project: Project): ResourceEditor {
             val notify = editor.getUserData(keyNotification) ?: { _, _, _, _, _, _ ->
             }
-            val resourceEditor = NonClusterResourceEditor(editor, IResourceModel.getInstance(), project, notify)
+            val resourceEditor =
+                NonClusterResourceEditor(editor, IResourceModel.getInstance(), project, notify).initAfterCreated()
             val actions = editor.getUserData(keyActions)
             if (null != actions) {
                 resourceEditor.createToolbar { EditorToolbarFactory.create(actions, editor, project) }
@@ -112,21 +120,17 @@ class CustomizableAction private constructor(val id: Int) : AnAction() {
         val project = e.project ?: return
         val fileEditor = getSelectedFileEditor(project) ?: return
 
-        val title = fileEditor.getUserData(this.title) ?: return
-        val keyword = fileEditor.getUserData(this.keyword) ?: return
-        val callback = fileEditor.getUserData(this.callback) ?: return
-        val error = fileEditor.getUserData(this.error) ?: return
-        val message = fileEditor.getUserData(this.message) ?: return
+        val action = fileEditor.getUserData(keyAction(id)) ?: return
 
-        val telemetry = TelemetryService.instance.action(TelemetryService.NAME_PREFIX_EDITOR + keyword)
-        com.redhat.devtools.intellij.kubernetes.actions.run(title, true) {
+        val telemetry = TelemetryService.instance.action(TelemetryService.NAME_PREFIX_EDITOR + action.keyword)
+        com.redhat.devtools.intellij.kubernetes.actions.run(action.title, true) {
             try {
                 val editor =
                     ResourceEditorFactory.instance.getExistingOrCreate(fileEditor, project) ?: return@run
-                callback.invoke(fileEditor, editor, project)
+                action.callback.invoke(fileEditor, editor, project)
                 TelemetryService.sendTelemetry(editor.editorResource.get(), telemetry)
             } catch (e: Exception) {
-                Notification().error(error, message.invoke(e))
+                Notification().error(action.error, action.message.invoke(e))
                 telemetry.error(e).send()
             }
         }
