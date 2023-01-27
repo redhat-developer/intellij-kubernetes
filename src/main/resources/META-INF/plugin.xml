@@ -157,9 +157,6 @@
                         interface="com.redhat.devtools.intellij.kubernetes.model.resource.IResourceOperatorFactory"/>
         <extensionPoint name="structureContribution"
                         interface="com.redhat.devtools.intellij.kubernetes.tree.ITreeStructureContributionFactory"/>
-        <extensionPoint name="customizableEditorProvider"
-                        beanClass="com.redhat.devtools.intellij.kubernetes.extension.CustomizableEditorProvider"
-                        dynamic="true"/>
     </extensionPoints>
 
     <actions>

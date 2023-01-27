@@ -10,7 +10,6 @@
  ******************************************************************************/
 package com.redhat.devtools.intellij.kubernetes.extension
 
-import com.intellij.openapi.extensions.ExtensionPointName
 import com.intellij.openapi.fileEditor.FileEditor
 import com.intellij.openapi.project.Project
 import com.intellij.serviceContainer.LazyExtensionInstance
@@ -24,8 +23,6 @@ abstract class CustomizableEditorProvider(val provider: Class<*>) :
     abstract val customizer: (editor: FileEditor, project: Project) -> FileEditor
 
     companion object {
-        private val extensionPointName: ExtensionPointName<CustomizableEditorProvider> =
-            ExtensionPointName.create("com.redhat.devtools.intellij.kubernetes.customizableEditorProvider")
         private val providers = HashMap<String, CustomizableEditorProvider?>()
         private val registry = HashMap<Class<*>, CustomizableEditorProvider>()
 
@@ -40,8 +37,7 @@ abstract class CustomizableEditorProvider(val provider: Class<*>) :
 
         @JvmStatic
         fun find(editor: FileEditor, project: Project): CustomizableEditorProvider? {
-            val provider = extensionPointName.extensionList.firstOrNull { it.acceptable.invoke(editor, project) }
-                ?: registry.values.firstOrNull { it.acceptable.invoke(editor, project) }
+            val provider = registry.values.firstOrNull { it.acceptable.invoke(editor, project) }
             val key = provider?.keying?.invoke(editor, project)
             if (null != key)
                 providers[key] = provider

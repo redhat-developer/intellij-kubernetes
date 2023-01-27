@@ -24,6 +24,7 @@ import com.nhaarman.mockitokotlin2.never
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.whenever
 import com.redhat.devtools.intellij.kubernetes.editor.ResourceEditor.Companion.KEY_RESOURCE_EDITOR
+import com.redhat.devtools.intellij.kubernetes.model.util.ResettableLazyProperty
 import com.redhat.devtools.intellij.kubernetes.model.util.createResource
 import com.redhat.devtools.intellij.telemetry.core.service.TelemetryMessageBuilder
 import io.fabric8.kubernetes.api.model.HasMetadata
@@ -98,15 +99,15 @@ class ResourceEditorFactoryTest {
     private val createResourceFile: (
         resource: HasMetadata,
         extension: String?,
-        naming: ((resource: HasMetadata, extension: String) -> String)?
+        naming: ((resource: HasMetadata) -> String)?
     ) -> ResourceFile =
         mock<(
             resource: HasMetadata,
             extension: String?,
-            naming: ((resource: HasMetadata, extension: String) -> String)?
+            naming: ((resource: HasMetadata) -> String)?
         ) -> ResourceFile>().apply {
             doReturn(resourceFile)
-                .whenever(this).invoke(any(), null, null)
+                .whenever(this).invoke(any(), any(), any())
         }
     private val isValidType: (file: VirtualFile?) -> Boolean = mock<(file: VirtualFile?) -> Boolean>().apply {
         doReturn(true)
@@ -131,9 +132,9 @@ class ResourceEditorFactoryTest {
     private val reportTelemetry: (FileEditor, Project, TelemetryMessageBuilder.ActionMessage) -> Unit = mock()
     private val projectManager: ProjectManager = mock()
     private val getProjectManager: () -> ProjectManager = { projectManager }
-    private val resourceEditor: ResourceEditor = mock {
-        on { editor } doReturn fileEditor
-        on { editorResource } doReturn mock()
+    private val resourceEditor: ResourceEditor = mock<ResourceEditor>().apply {
+        doReturn(fileEditor).whenever(this).editor
+        doReturn(ResettableLazyProperty<HasMetadata?> { resource }).whenever(this).editorResource
     }
 
     private val editorFactory =
@@ -153,7 +154,7 @@ class ResourceEditorFactoryTest {
     fun `#openEditor should NOT open editor if temporary resource file could not be created`() {
         // given
         doReturn(null)
-            .whenever(createResourceFile).invoke(any(), null, null)
+            .whenever(createResourceFile).invoke(any(), any(), any())
         // when
         editorFactory.openEditor(mock(), mock())
         // then
@@ -302,7 +303,7 @@ class ResourceEditorFactoryTest {
         createResourceFile: (
             resource: HasMetadata,
             extension: String?,
-            naming: ((resource: HasMetadata, extension: String) -> String)?
+            naming: ((resource: HasMetadata) -> String)?
         ) -> ResourceFile?,
         isValidType: (file: VirtualFile?) -> Boolean,
         isTemporary: (file: VirtualFile?) -> Boolean,
