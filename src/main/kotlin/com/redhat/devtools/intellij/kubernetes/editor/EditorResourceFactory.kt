@@ -46,11 +46,8 @@ object EditorResourceFactory {
                 val file = FileDocumentManager.getInstance().getFile(document)
                 if (null != file && file.name.startsWith("${HelmRelease.FILE_NAME_PREFIX}@")) {
                     val name = file.name
-                    val releaseBeg = name.indexOf("@", HelmRelease.FILE_NAME_PREFIX.length + 1)
-                    val releaseEnd = name.lastIndexOf("@")
-                    val namespace = name.substring(HelmRelease.FILE_NAME_PREFIX.length + 1, releaseBeg)
-                    val release = name.substring(releaseBeg + 1, releaseEnd)
-                    return NativeHelm.get(release, namespace)
+                    val parts = name.split("@")
+                    return NativeHelm.get(parts[2], parts[2])
                 }
                 return createResource(document.text)
             } catch (e: RuntimeException) {

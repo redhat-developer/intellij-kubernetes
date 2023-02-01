@@ -54,12 +54,25 @@ class NativeHelm {
         val values: (release: String, namespace: String) -> String = { release, namespace ->
             KubernetesRelated.command(bin, listOf("get", "values"), false, null, release, namespace)
         }
-        val upgrade: (release: HasMetadata, values: ByteArray) -> String = { release, values ->
-            KubernetesRelated.command(
-                bin, "upgrade", false, null, release.metadata.name, release.metadata.namespace,
-                listOf("-f", "-"),
-                values
-            )
+        val upgrade: (release: HelmRelease, repository: String, values: ByteArray) -> String =
+            { release, repository, values ->
+                val versionStart = release.chart.lastIndexOf("-")
+                val chartName = release.chart.substring(0, versionStart)
+                val chartVersion = release.chart.substring(versionStart + 1)
+                KubernetesRelated.command(
+                    bin,
+                    listOf("upgrade", release.metadata.name, "${repository}/${chartName}"),
+                    false,
+                    null,
+                    null,
+                    release.metadata.namespace,
+                    listOf("--version", chartVersion, "-f", "-"),
+                    values
+                )
+            }
+        val delete: (release: String, namespace: String?) -> Boolean = { release, namespace ->
+            KubernetesRelated.command(bin, "delete", false, null, release, namespace)
+            true
         }
 
         val ready = KubernetesRelated.ready(bin)
@@ -68,5 +81,5 @@ class NativeHelm {
         fun isReady(): Boolean = ready
     }
 
-    class ListOfHelmRelease : TypeReference<List<HelmRelease>>() {}
+    class ListOfHelmRelease : TypeReference<List<HelmRelease>>()
 }

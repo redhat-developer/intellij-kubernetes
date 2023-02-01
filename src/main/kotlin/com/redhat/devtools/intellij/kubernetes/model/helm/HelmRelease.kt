@@ -30,7 +30,7 @@ class HelmRelease(
     var revision: Int,
     var updated: String,
     var status: String,
-    private var chart: String,
+    var chart: String,
     var api: String,
     @JsonAlias("app_version") private var appVersion: String,
     val isHistory: Boolean = false

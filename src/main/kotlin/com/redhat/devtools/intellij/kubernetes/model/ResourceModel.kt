@@ -16,6 +16,7 @@ import com.redhat.devtools.intellij.kubernetes.model.client.ClientAdapter
 import com.redhat.devtools.intellij.kubernetes.model.context.IActiveContext
 import com.redhat.devtools.intellij.kubernetes.model.context.IActiveContext.ResourcesIn
 import com.redhat.devtools.intellij.kubernetes.model.context.IContext
+import com.redhat.devtools.intellij.kubernetes.model.helm.HelmRelease
 import com.redhat.devtools.intellij.kubernetes.model.resource.ResourceKind
 import io.fabric8.kubernetes.api.model.Container
 import io.fabric8.kubernetes.api.model.HasMetadata
@@ -41,7 +42,7 @@ interface IResourceModel {
     fun setCurrentNamespace(namespace: String)
     fun getCurrentNamespace(): String?
     fun isCurrentNamespace(resource: HasMetadata): Boolean
-    fun <R: HasMetadata> resources(kind: ResourceKind<R>): Namespaceable<R>
+    fun <R : HasMetadata> resources(kind: ResourceKind<R>): Namespaceable<R>
     fun resources(definition: CustomResourceDefinition): ListableCustomResources
     fun watch(kind: ResourceKind<out HasMetadata>)
     fun watch(definition: CustomResourceDefinition)
@@ -106,15 +107,19 @@ open class ResourceModel : IResourceModel {
         return allContexts.current?.isCurrentNamespace(resource) ?: false
     }
 
-    override fun <R: HasMetadata> resources(kind: ResourceKind<R>): Namespaceable<R> {
+    override fun <R : HasMetadata> resources(kind: ResourceKind<R>): Namespaceable<R> {
         return Namespaceable(kind, this)
     }
 
     override fun resources(definition: CustomResourceDefinition): ListableCustomResources {
-        return ListableCustomResources(definition,this)
+        return ListableCustomResources(definition, this)
     }
 
-    fun <R: HasMetadata> getAllResources(kind: ResourceKind<R>, resourceIn: ResourcesIn, filter: Predicate<R>? = null): Collection<R> {
+    fun <R : HasMetadata> getAllResources(
+        kind: ResourceKind<R>,
+        resourceIn: ResourcesIn,
+        filter: Predicate<R>? = null
+    ): Collection<R> {
         val resources: Collection<R> = allContexts.current?.getAllResources(kind, resourceIn) ?: return emptyList()
         return if (filter == null) {
             resources
@@ -144,10 +149,16 @@ open class ResourceModel : IResourceModel {
     }
 
     override fun invalidate(element: Any?) {
-        when(element) {
+        when (element) {
             is IResourceModel -> invalidate()
             is IActiveContext<*, *> -> invalidate(element)
-            is ResourceKind<*> -> invalidate(element)
+            is ResourceKind<*> -> {
+                if (element.kind == HelmRelease.KIND.kind)
+                    modelChange.fireModified(element)
+                else
+                    invalidate(element)
+            }
+
             is HasMetadata -> replaced(element)
         }
     }

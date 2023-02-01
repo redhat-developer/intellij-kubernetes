@@ -108,9 +108,6 @@ class KubernetesStructure(model: IResourceModel) : AbstractTreeStructureContribu
         val SECRETS = Folder("Secrets", SecretsOperator.KIND) // Configuration / Secrets
         val CUSTOM_RESOURCES_DEFINITIONS = Folder("Custom Resources", CustomResourceDefinitionsOperator.KIND)
         val HELM_RELEASES = Folder("Helm Releases", HelmRelease.KIND)
-
-        const val HELM_RELEASE_NAME_PREFIX = "sh.helm.release."
-        const val HELM_RELEASE_NAME_START: Int = HELM_RELEASE_NAME_PREFIX.length
     }
 
     override val elementsTree: List<ElementNode<*>> = listOf(
@@ -487,24 +484,27 @@ class KubernetesStructure(model: IResourceModel) : AbstractTreeStructureContribu
     }
 
     private fun createHelmReleaseElements(): Array<ElementNode<*>> {
-        return arrayOf(
-            element<Any> {
-                applicableIf {
-                    it == HELM_RELEASES
+        return if (NativeHelm.isReady())
+            arrayOf(
+                element<Any> {
+                    applicableIf {
+                        it == HELM_RELEASES
+                    }
+                    children {
+                        NativeHelm.list(null).sortedBy(resourceName)
+                    }
+                },
+                element<HelmRelease> {
+                    applicableIf {
+                        it is HelmRelease && !it.isHistory
+                    }
+                    children { cur ->
+                        NativeHelm.history(cur.metadata.name, cur.metadata.namespace).sortedBy { it.revision }
+                    }
                 }
-                children {
-                    NativeHelm.list(null).sortedBy(resourceName)
-                }
-            },
-            element<HelmRelease> {
-                applicableIf {
-                    it is HelmRelease && !it.isHistory
-                }
-                children { cur ->
-                    NativeHelm.history(cur.metadata.name, cur.metadata.namespace).sortedBy { it.revision }
-                }
-            }
-        )
+            )
+        else
+            arrayOf()
     }
 
     override fun descriptorFactory(): (Any, ResourceKind<out HasMetadata>?, NodeDescriptor<*>?, IResourceModel, Project) -> NodeDescriptor<*>? {

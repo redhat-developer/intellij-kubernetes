@@ -17,18 +17,24 @@ import com.intellij.openapi.progress.ProgressManager
 import com.intellij.openapi.progress.Progressive
 import com.intellij.openapi.progress.Task
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.ui.Messages
 import com.redhat.devtools.intellij.kubernetes.model.IResourceModel
+import com.redhat.devtools.intellij.kubernetes.model.util.toMessage
 import com.redhat.devtools.intellij.kubernetes.tree.TreeStructure.Descriptor
+import io.fabric8.kubernetes.api.model.HasMetadata
 import javax.swing.tree.DefaultMutableTreeNode
 import org.jetbrains.annotations.NotNull
+
+enum class ExtendedResourceKind(val id: String) {
+    RESOURCE("NORMAL"), HELM_RELEASE("HELM");
+}
 
 fun AnAction.getResourceModel(): IResourceModel? {
     return ApplicationManager.getApplication().getService(IResourceModel::class.java)
 }
 
 fun Any.getDescriptor(): Descriptor<*>? {
-    return if (this is DefaultMutableTreeNode
-        && this.userObject is Descriptor<*>) {
+    return if (this is DefaultMutableTreeNode && this.userObject is Descriptor<*>) {
         return this.userObject as Descriptor<*>
     } else {
         null
@@ -54,10 +60,19 @@ fun run(title: String, canBeCancelled: Boolean, runnable: Progressive) {
 
 fun run(title: String, project: Project?, canBeCancelled: Boolean, runnable: Progressive) {
     ProgressManager.getInstance().run(object :
-        Task.Backgroundable(project, title, canBeCancelled){
+        Task.Backgroundable(project, title, canBeCancelled) {
 
         override fun run(@NotNull progress: ProgressIndicator) {
             runnable.run(progress)
         }
     })
+}
+
+fun userConfirmed(resources: List<HasMetadata>, action: String? = null): Boolean {
+    val answer = Messages.showYesNoDialog(
+        "${action ?: "Delete"} ${toMessage(resources, 30)}?",
+        "${action ?: "Delete"} resources?",
+        Messages.getQuestionIcon()
+    )
+    return answer == Messages.OK
 }

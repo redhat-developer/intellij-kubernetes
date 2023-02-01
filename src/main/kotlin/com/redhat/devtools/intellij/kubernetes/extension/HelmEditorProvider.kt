@@ -14,9 +14,12 @@ import com.intellij.icons.AllIcons
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.fileEditor.FileEditor
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.ui.Messages
+import com.redhat.devtools.intellij.kubernetes.actions.userConfirmed
 import com.redhat.devtools.intellij.kubernetes.editor.actions.Action
 import com.redhat.devtools.intellij.kubernetes.editor.actions.CustomizableAction
 import com.redhat.devtools.intellij.kubernetes.editor.notification.CustomizableNotification
+import com.redhat.devtools.intellij.kubernetes.model.Notification
 import com.redhat.devtools.intellij.kubernetes.model.client.NativeHelm
 import com.redhat.devtools.intellij.kubernetes.model.helm.HelmRelease
 import io.fabric8.kubernetes.api.model.HasMetadata
@@ -53,11 +56,15 @@ class HelmEditorProvider : CustomizableEditorProvider(HelmEditorProvider::class.
                         "Unable to refresh values",
                         { e -> "Exception on refresh values ${e.message}" },
                         { fe, re, _ ->
-                            re.runWriteCommand {
-                                val parts = fe.file?.name?.split("@") ?: listOf()
-                                // helmrelease@namespace@name@...
-                                if (parts.size >= 3) {
-                                    re.replaceDocument(NativeHelm.values(parts[2], parts[1]))
+                            val parts = fe.file?.name?.split("@") ?: listOf()
+                            re.runInUI {
+                                if (userConfirmed(listOf(HelmRelease.from(parts[2], parts[1])), "Refresh")) {
+                                    re.runWriteCommand {
+                                        // helmrelease@namespace@name@...
+                                        if (parts.size >= 3) {
+                                            re.replaceDocument(NativeHelm.values(parts[2], parts[1]))
+                                        }
+                                    }
                                 }
                             }
                         }),
@@ -68,13 +75,31 @@ class HelmEditorProvider : CustomizableEditorProvider(HelmEditorProvider::class.
                         "Update current helm release",
                         "Unable to upgrade helm release",
                         { e -> "Exception on upgrading release: ${e.message}" },
-                        { fe, re, _ ->
+                        { fe, re, project ->
                             val parts = fe.file?.name?.split("@") ?: listOf()
-                            if (parts.size >= 3) {
-                                val hr = HelmRelease.from(parts[2], parts[1])
-                                re.runReadCommand {
-                                    NativeHelm.upgrade(hr, fe.file!!.contentsToByteArray())
+                            val release = NativeHelm.get(parts[2], parts[1])
+                            if (null != release) {
+                                re.runInUI {
+                                    val helmRepository = Messages.showInputDialog(
+                                        project,
+                                        "Please specify the Helm repository to fetching chart ${release.chart}:",
+                                        "HELM REPOSITORY REQUIRED",
+                                        AllIcons.Actions.Help
+                                    )
+                                    re.runAsync {
+                                        val result = if (parts.size >= 3 && null != helmRepository) {
+                                            NativeHelm.upgrade(
+                                                release, helmRepository, fe.file!!.contentsToByteArray()
+                                            )
+                                            "Upgrade HelmRelease ${parts[2]} successfully or timeout in 10s."
+                                        } else {
+                                            "Abort to upgrade HelmRelease ${parts[2]}."
+                                        }
+                                        Notification().info("Upgrade result", result)
+                                    }
                                 }
+                            } else {
+                                Notification().info("Upgrade result", "HelmRelease ${parts[2]} doesn't exist.")
                             }
                         })
                 )

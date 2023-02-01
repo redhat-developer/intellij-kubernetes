@@ -10,8 +10,6 @@
  ******************************************************************************/
 package com.redhat.devtools.intellij.kubernetes.model.client
 
-import java.io.BufferedReader
-import java.io.InputStreamReader
 import java.util.concurrent.TimeUnit
 
 class KubernetesRelated {
@@ -75,8 +73,11 @@ class KubernetesRelated {
             pb.environment().putAll(System.getenv())
             val process: Process = pb.start()
             if (null != stdin) process.outputStream.write(stdin)
-            process.waitFor(60, TimeUnit.SECONDS)
-            val lines = BufferedReader(InputStreamReader(process.inputStream)).readLines()
+            process.waitFor(10, TimeUnit.SECONDS)
+            val lines = if (process.inputStream.available() > 0)
+                process.inputStream.reader().readLines()
+            else
+                listOf()
             return lines.joinToString(separator)
         }
     }

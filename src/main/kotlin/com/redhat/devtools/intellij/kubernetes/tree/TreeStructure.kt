@@ -254,7 +254,7 @@ open class TreeStructure(
             return "Error: ${element.message ?: "unspecified"}"
         }
 
-        override fun getIcon(element: java.lang.Exception): Icon? {
+        override fun getIcon(element: java.lang.Exception): Icon {
             return AllIcons.General.BalloonError
         }
     }
