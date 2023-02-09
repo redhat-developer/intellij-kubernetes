@@ -51,15 +51,14 @@ class NonCachingSingleResourceOperator(
      * @return resource that was retrieved from cluster
      */
     fun get(resource: HasMetadata): HasMetadata? {
-        return if (hasName(resource)) {
-            val genericKubernetesResource = toGenericKubernetesResource(resource)
-            val op = createOperation(resource)
-            op.withName(genericKubernetesResource.metadata.name)
-                .fromServer()
-                .get()
-        } else {
-            null
+        if (!hasName(resource)) {
+            return null
         }
+        val genericKubernetesResource = toGenericKubernetesResource(resource)
+        val op = createOperation(resource)
+        return op
+            .withName(genericKubernetesResource.metadata.name)
+            .get()
     }
 
     /**
@@ -103,12 +102,12 @@ class NonCachingSingleResourceOperator(
      */
     fun watch(resource: HasMetadata, watcher: Watcher<HasMetadata>): Watch? {
         val genericKubernetesResource = toGenericKubernetesResource(resource)
-        val op = createOperation(genericKubernetesResource)
-        return if (hasName(genericKubernetesResource)) {
-            op.watch(GenericKubernetesResourceWatcherAdapter(watcher))
-        } else {
-            null
+        if (!hasName(genericKubernetesResource)) {
+            return null
         }
+        return createOperation(genericKubernetesResource)
+                .withName(resource.metadata.name)
+                .watch(GenericKubernetesResourceWatcherAdapter(watcher))
     }
 
     private fun createOperation(resource: HasMetadata): NonNamespaceOperation<GenericKubernetesResource, GenericKubernetesResourceList, Resource<GenericKubernetesResource>> {

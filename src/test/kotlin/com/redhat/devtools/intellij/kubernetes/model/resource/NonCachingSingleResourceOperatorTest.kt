@@ -33,6 +33,7 @@ import io.fabric8.kubernetes.api.model.PodBuilder
 import io.fabric8.kubernetes.client.KubernetesClientException
 import io.fabric8.kubernetes.client.NamespacedKubernetesClient
 import io.fabric8.kubernetes.client.dsl.MixedOperation
+import io.fabric8.kubernetes.client.dsl.NonNamespaceOperation
 import io.fabric8.kubernetes.client.dsl.Resource
 import io.fabric8.kubernetes.client.dsl.base.ResourceDefinitionContext
 import io.fabric8.kubernetes.client.utils.ApiVersionUtil
@@ -166,6 +167,18 @@ class NonCachingSingleResourceOperatorTest {
         verify(genericResourceOperation, never()).inNamespace(any())
     }
 
+    @Test
+    fun `#get should call client#genericKubernetesResources()#inNamespace(clientNamespace)#withName() if custom has name`() {
+        // given
+        val apiResource = namespacedApiResource(namespacedCustomResource)
+        val operator = NonCachingSingleResourceOperator(clientAdapter, createAPIResources(apiResource))
+        // when
+        operator.get(namespacedCustomResource)
+        // then
+        verify(genericResourceOperation.inNamespace(namespacedCoreResource.metadata.name))
+            .withName(namespacedCustomResource.metadata.name)
+    }
+
     @Test(expected = KubernetesClientException::class)
     fun `#get should throw if custom resource is unknown api`() {
         // given
@@ -265,6 +278,28 @@ class NonCachingSingleResourceOperatorTest {
         verify(client).genericKubernetesResources(argThat {
             matchesContext(namespacedCustomResource,true, this)
         })
+    }
+
+    @Test
+    fun `#watch should call client#genericKubernetesResource(context)#withName(name) if resource has a name`() {
+        // given
+        val apiResource = namespacedApiResource(namespacedCustomResource)
+        val operator = NonCachingSingleResourceOperator(clientAdapter, createAPIResources(apiResource))
+        val inNamespaceOperation = mock<NonNamespaceOperation<GenericKubernetesResource, GenericKubernetesResourceList, Resource<GenericKubernetesResource>>> {
+            val withNameOperation = mock<Resource<GenericKubernetesResource>>()
+            on { withName(any()) } doReturn withNameOperation
+        }
+        val genericKubernetesResourceOperation =
+            mock<MixedOperation<GenericKubernetesResource, GenericKubernetesResourceList, Resource<GenericKubernetesResource>>> {
+                on { inNamespace(any()) } doReturn inNamespaceOperation
+            }
+        doReturn(genericKubernetesResourceOperation)
+            .whenever(client).genericKubernetesResources(any())
+        // when
+        operator.watch(namespacedCustomResource, mock())
+        // then
+        verify(inNamespaceOperation)
+            .withName(namespacedCustomResource.metadata.name)
     }
 
     @Test
