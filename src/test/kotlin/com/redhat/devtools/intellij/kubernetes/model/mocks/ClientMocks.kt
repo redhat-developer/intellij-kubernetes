@@ -56,6 +56,7 @@ import io.fabric8.kubernetes.client.dsl.NamespaceableResource
 import io.fabric8.kubernetes.client.dsl.NonNamespaceOperation
 import io.fabric8.kubernetes.client.dsl.PodResource
 import io.fabric8.kubernetes.client.dsl.Resource
+import io.fabric8.kubernetes.client.dsl.internal.HasMetadataOperation
 import java.net.URL
 
 
@@ -357,6 +358,12 @@ object ClientMocks {
             .whenever(op).watch(any<Watcher<GenericKubernetesResource>>())
         doReturn(resources)
             .whenever(op).list()
+        val nonNamespaceOperation = mock<NonNamespaceOperation<GenericKubernetesResource, GenericKubernetesResourceList, Resource<GenericKubernetesResource>>> {
+            val resourceOp = mock<HasMetadataOperation<GenericKubernetesResource, GenericKubernetesResourceList, Resource<GenericKubernetesResource>>>()
+            on { withName(any()) } doReturn resourceOp
+        }
+        doReturn(nonNamespaceOperation)
+            .whenever(op).inNamespace(any())
         return op
     }
 

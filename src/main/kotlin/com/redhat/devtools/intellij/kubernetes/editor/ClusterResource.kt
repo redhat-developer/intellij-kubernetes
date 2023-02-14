@@ -26,7 +26,7 @@ import io.fabric8.kubernetes.client.KubernetesClient
 import io.fabric8.kubernetes.client.KubernetesClientException
 
 /**
- * A resource that exists on the cluster. May be [pull], [push] etc.
+ * A resource that exists on the cluster. May be [pull]'ed, [push]'ed etc.
  * Notifies listeners of addition, removal and modification if [watch]
  */
 open class ClusterResource protected constructor(
