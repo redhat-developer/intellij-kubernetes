@@ -23,11 +23,13 @@ import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.client
 import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.customResource
 import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.namespacedCustomResourceOperation
 import com.redhat.devtools.intellij.kubernetes.model.resource.ResourceKind
+import io.fabric8.kubernetes.api.model.GenericKubernetesResource
 import io.fabric8.kubernetes.api.model.ObjectMetaBuilder
 import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinitionBuilder
 import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinitionNamesBuilder
 import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinitionSpecBuilder
 import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinitionVersionBuilder
+import io.fabric8.kubernetes.client.Watcher
 import io.fabric8.kubernetes.client.dsl.base.CustomResourceDefinitionContext
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test
@@ -168,5 +170,27 @@ class NamespacedCustomResourceOperatorTest {
         // then
         verify(op).inNamespace(namespaceUsed.capture())
         assertThat(namespaceUsed.value).isEqualTo(operator.namespace)
+    }
+
+    @Test
+    fun `#watchAll() is calling #inNamespace()#watch()`() {
+        // given
+        val watcher: Watcher<GenericKubernetesResource> = mock()
+        // when
+        operator.watchAll(watcher)
+        // then should not call inNamespace().withName(), only inNamespace()
+        verify(op.inNamespace(currentNamespace))
+            .watch(watcher)
+    }
+
+    @Test
+    fun `#watch() is calling #inNamespace()#withName()#watch()`() {
+        // given
+        val watcher: Watcher<GenericKubernetesResource> = mock()
+        // when
+        operator.watch(customResource, watcher)
+        // then should inNamespace().withName().watch()
+        verify(op.inNamespace(currentNamespace).withName(customResource.metadata.name))
+            .watch(watcher)
     }
 }

@@ -38,7 +38,14 @@ open class NamespacedCustomResourceOperator(
     }
 
     override fun watchAll(watcher: Watcher<in GenericKubernetesResource>): Watch? {
-		return watch(namespace, null, watcher)
+		if (namespace == null) {
+			return null
+		}
+		@Suppress("UNCHECKED_CAST")
+		val typedWatcher = watcher as? Watcher<GenericKubernetesResource>? ?: return null
+		return getOperation()
+				?.inNamespace(namespace)
+				?.watch(typedWatcher)
     }
 
 	override fun watch(resource: HasMetadata, watcher: Watcher<in GenericKubernetesResource>): Watch? {
@@ -46,13 +53,16 @@ open class NamespacedCustomResourceOperator(
 		return watch(inNamespace, resource.metadata.name, watcher)
 	}
 
-	private fun watch(namespace: String?, name: String?, watcher: Watcher<in GenericKubernetesResource>): Watch? {
+	private fun watch(namespace: String?, name: String, watcher: Watcher<in GenericKubernetesResource>): Watch? {
 		if (namespace == null) {
 			return null
 		}
 		@Suppress("UNCHECKED_CAST")
 		val typedWatcher = watcher as? Watcher<GenericKubernetesResource>? ?: return null
-		return getOperation()?.inNamespace(namespace)?.withName(name)?.watch(typedWatcher)
+		return getOperation()
+				?.inNamespace(namespace)
+				?.withName(name)
+				?.watch(typedWatcher)
 	}
 
 	override fun delete(resources: List<HasMetadata>): Boolean {
