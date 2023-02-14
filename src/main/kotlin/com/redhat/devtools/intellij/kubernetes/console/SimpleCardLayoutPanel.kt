@@ -54,7 +54,12 @@ abstract class SimpleCardLayoutPanel<V : JComponent?>(private val cardLayout: Ca
     }
 
     override fun getPreferredSize(): Dimension {
-        val component = (if (isPreferredSizeSet) null else visibleComponent) ?: return super.getPreferredSize()
+        val component = (
+                if (isPreferredSizeSet)
+                    null
+                else
+                    visibleComponent)
+            ?: return super.getPreferredSize()
         // preferred size of a visible component plus border insets of this panel
         val size = component.preferredSize
         JBInsets.addTo(size, insets) // add border of this panel
