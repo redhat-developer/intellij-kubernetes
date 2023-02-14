@@ -202,6 +202,8 @@ abstract class ConsoleTab<T : ConsoleView, W : Any?>(
 
         override fun dispose() {
             consoleView?.dispose()
+            errorView.dispose()
+            super.dispose()
         }
 
         private fun asyncStartWatch(consoleView: T?) {
@@ -220,7 +222,7 @@ abstract class ConsoleTab<T : ConsoleView, W : Any?>(
 
     }
 
-    private class ErrorView(private val parent: Disposable) {
+    private class ErrorView(private val parent: Disposable): Disposable {
         private val errorLabel: HyperlinkLabel by lazy {
             HyperlinkLabel().apply {
                 setIcon(AllIcons.General.Error)
@@ -241,9 +243,9 @@ abstract class ConsoleTab<T : ConsoleView, W : Any?>(
 
         val component by lazy {
             JPanel().apply {
-                layout = GridBagLayout()
+                this.layout = GridBagLayout()
                 add(JPanel().apply {
-                    layout = FlowLayout()
+                    this.layout = FlowLayout()
                     add(errorLabel)
                     add(reconnectLabel)
                 })
@@ -261,6 +263,11 @@ abstract class ConsoleTab<T : ConsoleView, W : Any?>(
                 Disposer.register(parent, balloon)
             }
             this.reconnectListener = listener
+        }
+
+        override fun dispose() {
+            this.reconnectListener = null
+            this.errorDetailsListener = null
         }
 
     }
