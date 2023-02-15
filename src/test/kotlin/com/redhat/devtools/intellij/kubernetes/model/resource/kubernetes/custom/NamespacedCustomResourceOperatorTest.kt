@@ -193,4 +193,30 @@ class NamespacedCustomResourceOperatorTest {
         verify(op.inNamespace(currentNamespace).withName(customResource.metadata.name))
             .watch(watcher)
     }
+
+    @Test
+    fun `#watch(namespace) is using operator namespace if resource has no namespace`() {
+        // given
+        val noNamespace = customResource("Luke Skywalker", null, definition)
+        assertThat(noNamespace.metadata.namespace).isNull()
+        assertThat(operator.namespace).isNotNull()
+        val namespaceUsed = ArgumentCaptor.forClass(String::class.java)
+        // when
+        operator.watch(noNamespace, mock())
+        // then
+        verify(op).inNamespace(namespaceUsed.capture())
+        assertThat(namespaceUsed.value).isEqualTo(operator.namespace)
+    }
+
+    @Test
+    fun `#watch(namespace) is using resource namespace if resource has namespace`() {
+        // given
+        val namespaceUsed = ArgumentCaptor.forClass(String::class.java)
+        // when
+        operator.watch(customResource, mock())
+        // then
+        verify(op).inNamespace(namespaceUsed.capture())
+        assertThat(namespaceUsed.value).isEqualTo(customResource.metadata.namespace)
+    }
+
 }
