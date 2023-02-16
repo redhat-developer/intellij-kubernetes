@@ -34,7 +34,7 @@ open class EditorResourceAttributes(
         return attributes[ResourceIdentifier(resource)]?.clusterResource
     }
 
-    fun getAllClusterResources(): List<ClusterResource> {
+    fun getAllClusterResources(): Collection<ClusterResource> {
         return attributes.values.mapNotNull { attributes -> attributes.clusterResource }
     }
 
@@ -84,7 +84,12 @@ open class EditorResourceAttributes(
 
     private fun removeOrphanedAttributes(new: Set<ResourceIdentifier>) {
         val toRemove = attributes
-            .filter { (identifier, _) -> !new.contains(identifier) }
+            .filter { (identifier, attributes) ->
+                // remove attribute for old resource that doesn't exist anymore
+                !new.contains(identifier)
+                        // or attribute that was disposed (ex. change in namespace, context)
+                        || attributes.disposed
+            }
         attributes.keys.removeAll(toRemove.keys)
         toRemove.values.forEach { attributes -> attributes.dispose() }
     }
@@ -117,6 +122,8 @@ open class EditorResourceAttributes(
 
     inner class ResourceAttributes(private val resource: HasMetadata) {
 
+        var disposed: Boolean = false
+
         val clusterResource: ClusterResource? = createClusterResource(resource)
 
         var lastPushedPulled: HasMetadata? = resource
@@ -142,6 +149,10 @@ open class EditorResourceAttributes(
         }
 
         fun dispose() {
+            if (disposed) {
+                return
+            }
+            this.disposed = true
             clusterResource?.close()
             lastPushedPulled = null
             resourceVersion = null

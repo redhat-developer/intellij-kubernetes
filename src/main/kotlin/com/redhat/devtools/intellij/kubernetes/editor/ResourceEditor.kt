@@ -131,10 +131,12 @@ open class ResourceEditor(
         }
         runAsync {
             try {
-                val resources = createEditorResources(getDocument(editor))
-                attributes.update(resources)
-                val states = getResourceStates(resources)
-                if (resources.size == 1) {
+                val states = resourceChangeMutex.withLock {
+                    val resources = createEditorResources(getDocument(editor))
+                    attributes.update(resources)
+                    getResourceStates(resources)
+                }
+                if (states.size == 1) {
                     // show notification for 1 resource
                     showNotification(true, states.firstOrNull())
                 } else {
@@ -155,18 +157,14 @@ open class ResourceEditor(
 
     protected fun createEditorResources(document: Document?): List<HasMetadata> {
         val resources = createResources.invoke(document?.text, editor.file?.fileType, resourceModel.getCurrentNamespace())
-        resourceChangeMutex.withLock {
-            this.editorResources.clear()
-            this.editorResources.addAll(resources)
-        }
+        this.editorResources.clear()
+        this.editorResources.addAll(resources)
         return resources
     }
 
     private fun getResourceStates(resources: Collection<HasMetadata>): List<ResourceState> {
-        return resourceChangeMutex.withLock {
-            resources
-                .map { resource -> getResourceState(resource) }
-        }
+        return resources
+            .map { resource -> getResourceState(resource) }
     }
 
     private fun getResourceState(resource: HasMetadata): ResourceState {
