@@ -20,8 +20,8 @@ import com.nhaarman.mockitokotlin2.whenever
 import com.redhat.devtools.intellij.kubernetes.model.IResourceModel
 import com.redhat.devtools.intellij.kubernetes.model.context.IActiveContext
 import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks
+import com.redhat.devtools.intellij.kubernetes.model.resource.ResourceIdentifier
 import io.fabric8.kubernetes.api.model.HasMetadata
-import io.fabric8.kubernetes.api.model.Pod
 import io.fabric8.kubernetes.api.model.PodBuilder
 import io.fabric8.kubernetes.client.KubernetesClient
 import org.assertj.core.api.Assertions.assertThat
@@ -39,7 +39,8 @@ class ResourceEditorAttributesTest {
         mock {
             on { invoke(any(), any()) } doReturn clusterResource
         }
-    private val attributes = EditorResourceAttributes(model, createClusterResource)
+    private val allAttributes = LinkedHashMap<ResourceIdentifier, EditorResourceAttributes.ResourceAttributes>()
+    private val attributes = EditorResourceAttributes(model, createClusterResource, allAttributes)
 
     @After
     fun after() {
@@ -49,7 +50,7 @@ class ResourceEditorAttributesTest {
     @Test
     fun `#update should create clusterResource for given resource`() {
         // given
-        val resource: HasMetadata = ClientMocks.POD2
+        val resource = ClientMocks.POD2
         // when
         attributes.update(listOf(resource)) // create attribute for resource
         // then
@@ -59,7 +60,7 @@ class ResourceEditorAttributesTest {
     @Test
     fun `#update should watch clusterResource for given resource`() {
         // given
-        val resource: HasMetadata = ClientMocks.POD2
+        val resource = ClientMocks.POD2
         // when
         attributes.update(listOf(resource)) // create attribute for resource
         // then
@@ -67,9 +68,37 @@ class ResourceEditorAttributesTest {
     }
 
     @Test
+    fun `#update should replace existing attribute by attribute for new resource`() {
+        // given
+        val initial = ClientMocks.POD2
+        attributes.update(listOf(initial)) // create attribute for resource
+        assertThat(getAttribute(initial)).isNotNull
+        val new: HasMetadata = ClientMocks.POD3
+        // when
+        attributes.update(listOf(new)) // create attribute for resource
+        // then
+        assertThat(getAttribute(initial)).isNull()
+        assertThat(getAttribute(new)).isNotNull
+    }
+
+    @Test
+    fun `#update should create new attribute if existing attribute is disposed`() {
+        // given
+        val given1 = ClientMocks.POD2
+        attributes.update(listOf(given1)) // create attribute for resource
+        val existing = getAttribute(given1)!!
+        existing.dispose()
+        // when
+        attributes.update(listOf(given1))
+        // then
+        val new = getAttribute(given1)
+        assertThat(new).isNotSameAs(existing)
+    }
+
+    @Test
     fun `#update should close existing clusterResource if new resource is given in #update`() {
         // given
-        val existing: HasMetadata = ClientMocks.POD2
+        val existing = ClientMocks.POD2
         val new: HasMetadata = ClientMocks.POD3
         attributes.update(listOf(existing)) // create attribute for resource
         // when
@@ -81,7 +110,7 @@ class ResourceEditorAttributesTest {
     @Test
     fun `#update should watch new clusterResource if #update contains additional resource`() {
         // given
-        val initial: HasMetadata = ClientMocks.POD2
+        val initial = ClientMocks.POD2
         val initialClusterResource: ClusterResource = mock()
         doReturn(initialClusterResource)
             .whenever(createClusterResource).invoke(eq(initial), any())
@@ -101,7 +130,7 @@ class ResourceEditorAttributesTest {
     @Test
     fun `#update should NOT close existing clusterResource if existing resource is given again in #update`() {
         // given
-        val existing: HasMetadata = ClientMocks.POD2
+        val existing = ClientMocks.POD2
         attributes.update(listOf(existing)) // create attribute for resource
         // when
         attributes.update(listOf(existing)) // create new attribute, close existing cluster resource
@@ -112,7 +141,7 @@ class ResourceEditorAttributesTest {
     @Test
     fun `#getClusterResource(HasMetadata) should return existing cluster resource for given resource`() {
         // given
-        val resource: HasMetadata = ClientMocks.POD2
+        val resource = ClientMocks.POD2
         attributes.update(listOf(resource)) // create attribute for resource
         // when
         val clusterResource = attributes.getClusterResource(resource)
@@ -123,7 +152,7 @@ class ResourceEditorAttributesTest {
     @Test
     fun `#getClusterResource(HasMetadata) should return null if given resource wasn't given in #update()`() {
         // given
-        val resource: HasMetadata = ClientMocks.POD2
+        val resource = ClientMocks.POD2
         attributes.update(listOf(resource)) // create attribute for resource
         // when
         val clusterResource = attributes.getClusterResource(ClientMocks.POD3)
@@ -134,7 +163,7 @@ class ResourceEditorAttributesTest {
     @Test
     fun `#getResourceVersion(HasMetadata) should return resourceVersion of given resource`() {
         // given
-        val resource: HasMetadata = ClientMocks.POD2
+        val resource = ClientMocks.POD2
         attributes.update(listOf(resource)) // create attribute for resource
         // when
         val resourceVersion = attributes.getResourceVersion(resource)
@@ -145,7 +174,7 @@ class ResourceEditorAttributesTest {
     @Test
     fun `#getLastPulledPushed(HasMetadata) should return resource that was given in #update`() {
         // given
-        val resource: HasMetadata = ClientMocks.POD2
+        val resource = ClientMocks.POD2
         attributes.update(listOf(resource)) // create attribute for resource
         // when
         val resourceVersion = attributes.getLastPulledPushed(resource)
@@ -156,7 +185,7 @@ class ResourceEditorAttributesTest {
     @Test
     fun `#getLastPulledPushed(HasMetadata) should return resource that was set`() {
         // given
-        val initial: Pod = ClientMocks.POD2
+        val initial = ClientMocks.POD2
         attributes.update(listOf(initial)) // create attribute for resource
         val new: HasMetadata = PodBuilder(initial)
             // same kind, apiversion, name, namespace
@@ -172,4 +201,23 @@ class ResourceEditorAttributesTest {
         assertThat(lastPulledPushed).isEqualTo(new)
     }
 
+    @Test
+    fun `#dispose should dispose all attributes`() {
+        // given
+        val resource1 = ClientMocks.POD1
+        val resource2 = ClientMocks.POD2
+        attributes.update(listOf(resource1, resource2)) // create attribute for resource
+        assertThat(allAttributes).hasSize(2)
+        val resource1Attribute = getAttribute(resource1)!!
+        val resource2Attribute = getAttribute(resource2)!!
+        // when
+        attributes.dispose()
+        // then
+        assertThat(resource1Attribute.disposed).isTrue
+        assertThat(resource2Attribute.disposed).isTrue
+    }
+
+    private fun getAttribute(resource: HasMetadata): EditorResourceAttributes.ResourceAttributes? {
+        return allAttributes[ResourceIdentifier(resource)]
+    }
 }
