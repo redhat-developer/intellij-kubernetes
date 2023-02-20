@@ -15,6 +15,9 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Key
 import com.intellij.ui.EditorNotificationPanel
 import com.intellij.util.containers.isNullOrEmpty
+import com.redhat.devtools.intellij.kubernetes.editor.EditorResource
+import com.redhat.devtools.intellij.kubernetes.editor.FILTER_PUSHED
+import com.redhat.devtools.intellij.kubernetes.editor.Pushed
 import com.redhat.devtools.intellij.kubernetes.editor.hideNotification
 import com.redhat.devtools.intellij.kubernetes.editor.showNotification
 import com.redhat.devtools.intellij.kubernetes.model.util.toKindAndNames
@@ -29,25 +32,27 @@ class PushedNotification(private val editor: FileEditor, private val project: Pr
         val KEY_PANEL = Key<JComponent>(PushedNotification::class.java.canonicalName)
     }
 
-    fun show(states: Collection<Different>) {
-        if (states.isEmpty()) {
+    fun show(editorResources: Collection<EditorResource>) {
+        if (editorResources.isEmpty()) {
             return
         }
-        editor.showNotification(KEY_PANEL, { createPanel(states) }, project)
+        editor.showNotification(KEY_PANEL, { createPanel(editorResources) }, project)
     }
 
     fun hide() {
         editor.hideNotification(KEY_PANEL, project)
     }
 
-    private fun createPanel(states: Collection<Different>): EditorNotificationPanel {
+    private fun createPanel(editorResources: Collection<EditorResource>): EditorNotificationPanel {
         val panel = EditorNotificationPanel()
-        val toCreateOrUpdate = states.groupBy { state ->
-            state.exists
-        }
-        val toCreate = toCreateOrUpdate[false]
-        val toUpdate = toCreateOrUpdate[true]
-        panel.text = createText(toCreate, toUpdate)
+        val createdOrUpdated = editorResources
+            .filter(FILTER_PUSHED)
+            .groupBy { editorResource ->
+                (editorResource.getState() as Pushed).updated
+            }
+        val created = createdOrUpdated[false]
+        val updated = createdOrUpdated[true]
+        panel.text = createText(created, updated)
         addDismiss(panel) {
             hide()
         }
@@ -55,17 +60,20 @@ class PushedNotification(private val editor: FileEditor, private val project: Pr
         return panel
     }
 
-    private fun createText(created: List<Different>?, updated: List<Different>?): String {
+    private fun createText(created: List<EditorResource>?, updated: List<EditorResource>?): String {
         return StringBuilder().apply {
             if (!created.isNullOrEmpty()) {
-                append("Created ${toKindAndNames(created?.map { state -> state.resource })} ")
+                append("Created ${toKindAndNames(created?.map { editorResource -> editorResource.getResource() })} ")
             }
             if (!updated.isNullOrEmpty()) {
                 if (isNotEmpty()) {
-                    append(", ")
+                    append(", updated")
+                } else {
+                    append("Updated")
                 }
-                append("updated ${toKindAndNames(updated?.map { state -> state.resource })}")
+                append(" ${toKindAndNames(updated?.map { editorResource -> editorResource.getResource() })}")
             }
+            append(" on cluster.")
         }
         .toString()
     }

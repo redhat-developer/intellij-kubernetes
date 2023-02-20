@@ -123,7 +123,6 @@ class ResourceEditorFactoryTest {
     private val getProjectManager: () -> ProjectManager = { projectManager }
     private val resourceEditor: ResourceEditor = mock {
         on { editor } doReturn fileEditor
-        on { editorResources } doReturn mock()
     }
 
     private val editorFactory =
@@ -132,7 +131,6 @@ class ResourceEditorFactoryTest {
             createResourceFile,
             isValidType,
             isTemporary,
-            getDocument,
             hasKubernetesResource,
             createResourceEditor,
             reportTelemetry,
@@ -292,7 +290,6 @@ class ResourceEditorFactoryTest {
         createResourceFile: (resource: HasMetadata) -> ResourceFile?,
         isValidType: (file: VirtualFile?) -> Boolean,
         isTemporary: (file: VirtualFile?) -> Boolean,
-        getDocument: (editor: FileEditor) -> Document?,
         hasKubernetesResource: (FileEditor, Project) -> Boolean,
         createResourceEditor: (FileEditor, Project) -> ResourceEditor,
         reportTelemetry: (FileEditor, Project, TelemetryMessageBuilder.ActionMessage) -> Unit,
@@ -302,7 +299,6 @@ class ResourceEditorFactoryTest {
         createResourceFile,
         isValidType,
         isTemporary,
-        getDocument,
         hasKubernetesResource,
         createResourceEditor,
         reportTelemetry,

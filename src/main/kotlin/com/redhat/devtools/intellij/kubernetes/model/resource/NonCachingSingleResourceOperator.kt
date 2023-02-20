@@ -124,8 +124,8 @@ class NonCachingSingleResourceOperator(
             return null
         }
         return createOperation(genericKubernetesResource)
-                .withName(resource.metadata.name)
-                .watch(GenericKubernetesResourceWatcherAdapter(watcher))
+            .withName(resource.metadata.name)
+            .watch(GenericKubernetesResourceWatcherAdapter(watcher))
     }
 
     private fun createOperation(resource: HasMetadata): NonNamespaceOperation<GenericKubernetesResource, GenericKubernetesResourceList, Resource<GenericKubernetesResource>> {

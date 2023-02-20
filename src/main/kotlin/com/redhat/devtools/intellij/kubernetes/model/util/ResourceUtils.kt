@@ -388,7 +388,7 @@ fun toString(toString: (resource: HasMetadata) -> String, resources: Collection<
  * * [io.fabric8.kubernetes.api.model.ObjectMeta.resourceVersion]
  * * [io.fabric8.kubernetes.api.model.ObjectMeta.uid]
  *
- * @return true if the resource is not equal to the same resource on the cluster
+ * @return true if the first given resource is equal to second one
  */
 fun areEqual(thisResource: HasMetadata?, thatResource: HasMetadata?): Boolean {
 	return runWithoutServerSetProperties(thisResource, thatResource) {
@@ -399,5 +399,5 @@ fun areEqual(thisResource: HasMetadata?, thatResource: HasMetadata?): Boolean {
 private fun toName(resource: HasMetadata) =
 	resource.metadata.name ?: resource.metadata.generateName
 
-private fun toKindAndName(resource: HasMetadata) =
+fun toKindAndName(resource: HasMetadata) =
 	"${resource.kind} '${resource.metadata.name ?: resource.metadata.generateName}'"

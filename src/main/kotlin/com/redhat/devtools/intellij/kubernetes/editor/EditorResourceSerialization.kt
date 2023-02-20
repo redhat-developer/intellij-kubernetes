@@ -15,6 +15,7 @@ import com.intellij.openapi.editor.Document
 import com.intellij.openapi.fileTypes.FileType
 import com.redhat.devtools.intellij.kubernetes.model.util.ResourceException
 import com.redhat.devtools.intellij.kubernetes.model.util.createResource
+import io.fabric8.kubernetes.api.model.GenericKubernetesResource
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.client.utils.Serialization
 import org.jetbrains.yaml.YAMLFileType
@@ -46,7 +47,7 @@ object EditorResourceSerialization {
             try {
                 resources
                     .map { jsonYaml ->
-                        setMissingNamespace(currentNamespace, createResource(jsonYaml))
+                        setMissingNamespace(currentNamespace, createResource<GenericKubernetesResource>(jsonYaml))
                     }
                     .toList()
             } catch (e: RuntimeException) {

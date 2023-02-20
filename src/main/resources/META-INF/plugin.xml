@@ -214,10 +214,14 @@
         </group>
 
         <group id="Kubernetes.Editor.Toolbar" class="com.intellij.openapi.actionSystem.DefaultActionGroup">
-            <action class="com.redhat.devtools.intellij.kubernetes.editor.actions.PushAction"
-                    id="com.redhat.devtools.intellij.kubernetes.editor.actions.PushAction"
-                    text="Push Editor to the Cluster"
+            <action class="com.redhat.devtools.intellij.kubernetes.editor.actions.PushAllAction"
+                    id="com.redhat.devtools.intellij.kubernetes.editor.actions.PushAllAction"
+                    text="Push All Resource(s) to Cluster"
                     icon="Icons.upload" />
+            <action class="com.redhat.devtools.intellij.kubernetes.editor.actions.PushModifiedAction"
+                    id="com.redhat.devtools.intellij.kubernetes.editor.actions.PushModifiedAction"
+                    text="Push Modified Resource(s) to Cluster"
+                    icon="Icons.uploadModified" />
             <action class="com.redhat.devtools.intellij.kubernetes.editor.actions.PullAction"
                     id="com.redhat.devtools.intellij.kubernetes.editor.actions.PullAction"
                     text="Pull from Cluster to the Editor"

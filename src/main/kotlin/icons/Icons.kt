@@ -12,6 +12,8 @@ object Icons {
     @JvmField
     val upload = loadIcon("icons/upload.svg")
     @JvmField
+    val uploadModified = loadIcon("icons/upload-modified.svg")
+    @JvmField
     val diff = loadIcon("icons/diff.svg")
     @JvmField
     val removeClutter = loadIcon("icons/remove-clutter.svg")
