@@ -11,7 +11,6 @@
 package com.redhat.devtools.intellij.kubernetes.editor
 
 import com.intellij.openapi.application.ApplicationManager
-import com.intellij.openapi.editor.Document
 import com.intellij.openapi.fileEditor.FileEditor
 import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.project.Project
@@ -40,10 +39,6 @@ open class ResourceEditorFactory protected constructor(
     private val isValidType: (file: VirtualFile?) -> Boolean = ResourceFile.Factory::isValidType,
     /* for mocking purposes */
     private val isTemporary: (file: VirtualFile?) -> Boolean = ResourceFile.Factory::isTemporary,
-    /* for mocking purposes */
-    private val getDocument: (editor: FileEditor) -> Document? = { editor ->
-        com.redhat.devtools.intellij.kubernetes.editor.util.getDocument(editor)
-    },
     /* for mocking purposes */
     private val hasKubernetesResource: (FileEditor, Project) -> Boolean = { editor, project ->
         hasKubernetesResource(editor.file, project)

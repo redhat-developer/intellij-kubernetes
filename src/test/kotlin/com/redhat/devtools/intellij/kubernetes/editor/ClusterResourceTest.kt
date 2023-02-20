@@ -165,11 +165,11 @@ class ClusterResourceTest {
     fun `#set should reset deleted`() {
         // given
         cluster.setDeleted(true)
-        assertThat(cluster.isDeleted()).isTrue()
+        assertThat(cluster.isDeleted()).isTrue
         // when
         cluster.set(modifiedEndorResourceOnCluster)
         // then
-        assertThat(cluster.isDeleted()).isFalse()
+        assertThat(cluster.isDeleted()).isFalse
     }
 
     @Test
@@ -178,7 +178,7 @@ class ClusterResourceTest {
         // when
         val deleted = cluster.isDeleted()
         // then
-        assertThat(deleted).isFalse()
+        assertThat(deleted).isFalse
     }
 
     @Test
@@ -187,7 +187,7 @@ class ClusterResourceTest {
         // when
         cluster.watchListeners.removed(endorResourceOnCluster)
         // then
-        assertThat(cluster.isDeleted()).isTrue()
+        assertThat(cluster.isDeleted()).isTrue
     }
 
     @Test
@@ -196,7 +196,7 @@ class ClusterResourceTest {
         // when
         val same = cluster.isSameResource(null)
         // then
-        assertThat(same).isFalse()
+        assertThat(same).isFalse
     }
 
     @Test
@@ -206,7 +206,7 @@ class ClusterResourceTest {
         // when
         val same = cluster.isSameResource(clone)
         // then
-        assertThat(same).isTrue()
+        assertThat(same).isTrue
     }
 
     @Test
@@ -215,7 +215,7 @@ class ClusterResourceTest {
         // when
         val same = cluster.isSameResource(nabooResource)
         // then
-        assertThat(same).isFalse()
+        assertThat(same).isFalse
     }
 
     @Test
@@ -227,7 +227,7 @@ class ClusterResourceTest {
         // when
         val outdated = cluster.isOutdatedVersion(resourceVersion)
         // then
-        assertThat(outdated).isFalse()
+        assertThat(outdated).isFalse
     }
 
     @Test
@@ -239,7 +239,7 @@ class ClusterResourceTest {
         // when
         val outdated = cluster.isOutdatedVersion(resourceVersion as String?)
         // then
-        assertThat(outdated).isFalse()
+        assertThat(outdated).isFalse
     }
 
     @Test
@@ -251,7 +251,7 @@ class ClusterResourceTest {
         // when
         val outdated = cluster.isOutdatedVersion(resourceVersion as String?)
         // then
-        assertThat(outdated).isTrue()
+        assertThat(outdated).isTrue
     }
 
     @Test
@@ -263,7 +263,7 @@ class ClusterResourceTest {
         // when
         val outdated = cluster.isOutdatedVersion(resourceVersion as String?)
         // then
-        assertThat(outdated).isTrue()
+        assertThat(outdated).isTrue
     }
 
     @Test
@@ -276,7 +276,7 @@ class ClusterResourceTest {
         val outdated = cluster.isOutdatedVersion(resourceVersion as String?)
         // then - resourceVersion is alphanumeric, no numeric comparison is possible
         // see https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions
-        assertThat(outdated).isTrue()
+        assertThat(outdated).isTrue
     }
 
     @Test
@@ -288,7 +288,7 @@ class ClusterResourceTest {
         // when
         val outdated = cluster.isOutdatedVersion(resourceVersion)
         // then
-        assertThat(outdated).isFalse()
+        assertThat(outdated).isFalse
     }
 
     @Test
@@ -299,7 +299,7 @@ class ClusterResourceTest {
         // when
         val exists = cluster.exists()
         // then
-        assertThat(exists).isFalse()
+        assertThat(exists).isFalse
     }
 
     @Test
@@ -428,7 +428,7 @@ class ClusterResourceTest {
         // when
         // then
         val closed = cluster.isClosed()
-        assertThat(closed).isFalse()
+        assertThat(closed).isFalse
     }
 
     @Test
@@ -437,7 +437,7 @@ class ClusterResourceTest {
         // when
         cluster.close()
         // then
-        assertThat(cluster.isClosed()).isTrue()
+        assertThat(cluster.isClosed()).isTrue
     }
 
     private class TestableClusterResource(

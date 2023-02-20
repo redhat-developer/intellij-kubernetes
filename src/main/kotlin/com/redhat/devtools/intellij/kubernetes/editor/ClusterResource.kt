@@ -50,6 +50,7 @@ open class ClusterResource protected constructor(
     private val initialResource: HasMetadata = resource
     protected open var updatedResource: HasMetadata? = null
     private var isDeleted: Boolean = false
+    private var isPushed: Boolean = false
     private var closed: Boolean = false
     protected open val watchListeners = WatchListeners(
         {

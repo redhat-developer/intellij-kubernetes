@@ -23,22 +23,22 @@ import com.redhat.devtools.intellij.kubernetes.telemetry.TelemetryService
 import com.redhat.devtools.intellij.kubernetes.telemetry.TelemetryService.NAME_PREFIX_EDITOR
 import com.redhat.devtools.intellij.kubernetes.telemetry.TelemetryService.sendTelemetry
 
-class PushAction: AnAction() {
+class PushModifiedAction: AnAction() {
 
     companion object {
-        const val ID = "com.redhat.devtools.intellij.kubernetes.editor.actions.PushAction"
+        const val ID = "com.redhat.devtools.intellij.kubernetes.editor.actions.PushModifiedAction"
     }
 
     override fun actionPerformed(e: AnActionEvent) {
         val project = e.dataContext.getData(CommonDataKeys.PROJECT) ?: return
         val editor = getSelectedFileEditor(project)
-        val telemetry = TelemetryService.instance.action(NAME_PREFIX_EDITOR + "push")
-        com.redhat.devtools.intellij.kubernetes.actions.run("Pushing...", true,
+        val telemetry = TelemetryService.instance.action(NAME_PREFIX_EDITOR + "push_modified")
+        com.redhat.devtools.intellij.kubernetes.actions.run("Pushing modified resources...", true,
             Progressive {
                 try {
                     val resourceEditor = ResourceEditorFactory.instance.getExistingOrCreate(editor, project) ?: return@Progressive
-                    resourceEditor.push()
-                    sendTelemetry(resourceEditor.editorResources, telemetry)
+                    resourceEditor.push(false)
+                    sendTelemetry(resourceEditor.getResources(), telemetry)
                 } catch (e: Exception) {
                     logger<ResourceFile>().warn("Could not push resource to cluster: ${e.message}", e)
                     Notification().error("Error Pushing", "Could not push resource to cluster: ${e.message}")
