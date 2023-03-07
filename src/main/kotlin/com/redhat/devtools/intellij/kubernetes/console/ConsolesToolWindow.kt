@@ -15,8 +15,8 @@ import com.intellij.openapi.util.Disposer
 import com.intellij.openapi.wm.ToolWindow
 import com.intellij.openapi.wm.ToolWindowManager
 import com.intellij.ui.content.Content
-import com.intellij.ui.content.ContentFactory
 import com.intellij.ui.content.ContentManager
+import com.redhat.devtools.intellij.common.utils.IDEAContentFactory
 import com.redhat.devtools.intellij.common.utils.UIHelper.executeInUI
 import java.util.function.Supplier
 
@@ -43,7 +43,7 @@ object ConsolesToolWindow {
     }
 
     private fun createContent(tab: ConsoleTab<*, *>): Content {
-        val content = ContentFactory.SERVICE.getInstance().createContent(
+        val content = IDEAContentFactory.getInstance().createContent(
             tab.createComponent(),
             tab.getDisplayName(),
             true
