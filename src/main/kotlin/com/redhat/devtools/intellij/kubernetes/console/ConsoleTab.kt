@@ -219,7 +219,6 @@ abstract class ConsoleTab<T : ConsoleView, W : Any?>(
                 }
             }
         }
-
     }
 
     private class ErrorView(private val parent: Disposable): Disposable {
