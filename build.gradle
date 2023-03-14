@@ -1,4 +1,5 @@
 buildscript {
+
     ext.ideaVersion = ideaVersion
     /*
      * for more complex conversion ideaVersion -> sinceIdeaBuild
@@ -11,22 +12,19 @@ buildscript {
 
     if (ext.sinceIdeaBuild >= 223) {
         ext.kotlinVersion = kotlinVersionIdea221
-        ext.kotlinStdlib = kotlinStdlibIdea221
         ext.java_version = "17"
     } else if (ext.sinceIdeaBuild >= 221) {
         ext.kotlinVersion = kotlinVersionIdea221
-        ext.kotlinStdlib = kotlinStdlibIdea221
         ext.java_version = "11"
     } else {
-        ext.kotlinVersion = kotlinVersion
-        ext.kotlinStdlib = kotlinStdlib
+        ext.kotlinVersion = kotlinVersionIdea211
         ext.java_version = "11"
     }
 }
 
 plugins {
     id "org.jetbrains.intellij" version "${intellijPluginVersion}"
-    id "org.jetbrains.kotlin.jvm" version "${kotlinVersion}"
+    id "org.jetbrains.kotlin.jvm" version "1.8.0"
     id "idea"
 }
 
@@ -55,20 +53,20 @@ tasks.withType(Test) {
 
 dependencies {
     implementation(
-            "org.jetbrains.kotlin:${kotlinStdlib}:${kotlinVersion}",
+            "org.jetbrains.kotlin:kotlin-stdlib:${kotlinVersion}",
             "com.redhat.devtools.intellij:intellij-common:${intellijCommonVersion}",
             "io.fabric8:kubernetes-client:${kubernetesClientVersion}",
             "io.fabric8:kubernetes-model:${kubernetesClientVersion}",
             "io.fabric8:kubernetes-model-common:${kubernetesClientVersion}",
             "io.fabric8:openshift-client:${kubernetesClientVersion}",
-	        "io.fabric8:kubernetes-httpclient-okhttp:${kubernetesClientVersion}",
+            "io.fabric8:kubernetes-httpclient-okhttp:${kubernetesClientVersion}",
             "org.apache.commons:commons-lang3:3.12.0"
     )
     testImplementation(
             "org.assertj:assertj-core:3.22.0",
             "org.mockito:mockito-inline:4.5.1",
             "com.nhaarman.mockitokotlin2:mockito-kotlin:2.2.0",
-            "org.jetbrains.kotlin:kotlin-test-junit"
+            "org.jetbrains.kotlin:kotlin-test-junit:${kotlinVersion}"
     )
     integrationTestImplementation(
             "com.redhat.devtools.intellij:intellij-common:1.1.0",
@@ -79,10 +77,12 @@ dependencies {
 configurations {
     implementation {
         exclude group: 'org.slf4j', module: 'slf4j-api'
+        exclude group: "org.jetbrains.kotlin", module: "kotlin-stdlib"
     }
+
     compileOptions {
-        sourceCompatibility = 11
-        targetCompatibility = 11
+        sourceCompatibility = java_version
+        targetCompatibility = java_version
     }
 
     compileKotlin {
@@ -123,7 +123,7 @@ test {
 intellij {
     version = ideaVersion //for a full list of Jetbrains IDEA releases please see https://www.jetbrains.com/intellij-repository/releases
     pluginName = 'Kubernetes by Red Hat'
-    plugins = ['yaml', 'com.redhat.devtools.intellij.telemetry:0.0.3.33' ]
+    plugins = ["yaml", "com.redhat.devtools.intellij.telemetry:${telemetryPluginVersion}" ]
     updateSinceUntilBuild = false
 }
 

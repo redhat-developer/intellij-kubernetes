@@ -79,7 +79,6 @@ class NonCachingSingleResourceOperator(
     fun replace(resource: HasMetadata): HasMetadata? {
         val genericKubernetesResource = toGenericKubernetesResource(resource)
         val op = createOperation(resource)
-
         return if (hasName(genericKubernetesResource)) {
             op.resource(genericKubernetesResource)
                 .createOrReplace()

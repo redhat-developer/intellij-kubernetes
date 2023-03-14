@@ -67,7 +67,7 @@ class ResourceEditorFactoryTest {
                           key: secret.password 
     """.trimIndent()
 
-    private val resource = createResource<HasMetadata>(deployment)!!
+    private val resource = createResource<HasMetadata>(deployment)
     private val virtualFile: VirtualFile = mock {
         on { isInLocalFileSystem } doReturn true
     }
