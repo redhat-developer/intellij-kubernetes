@@ -14,6 +14,7 @@ import com.redhat.devtools.intellij.kubernetes.model.client.ClientAdapter
 import com.redhat.devtools.intellij.kubernetes.model.util.ResourceException
 import com.redhat.devtools.intellij.kubernetes.model.util.hasGenerateName
 import com.redhat.devtools.intellij.kubernetes.model.util.hasName
+import com.redhat.devtools.intellij.kubernetes.model.util.runWithoutServerSetProperties
 import io.fabric8.kubernetes.api.model.APIResource
 import io.fabric8.kubernetes.api.model.GenericKubernetesResource
 import io.fabric8.kubernetes.api.model.GenericKubernetesResourceList
@@ -26,6 +27,8 @@ import io.fabric8.kubernetes.client.Watcher
 import io.fabric8.kubernetes.client.WatcherException
 import io.fabric8.kubernetes.client.dsl.NonNamespaceOperation
 import io.fabric8.kubernetes.client.dsl.Resource
+import io.fabric8.kubernetes.client.dsl.base.PatchContext
+import io.fabric8.kubernetes.client.dsl.base.PatchType
 import io.fabric8.kubernetes.client.dsl.base.ResourceDefinitionContext
 import io.fabric8.kubernetes.client.utils.ApiVersionUtil
 import io.fabric8.kubernetes.client.utils.Serialization
@@ -54,7 +57,7 @@ class NonCachingSingleResourceOperator(
         if (!hasName(resource)) {
             return null
         }
-        val genericKubernetesResource = toGenericKubernetesResource(resource)
+        val genericKubernetesResource = toGenericKubernetesResource(resource, false)
         val op = createOperation(resource)
         return op
             .withName(genericKubernetesResource.metadata.name)
@@ -77,16 +80,32 @@ class NonCachingSingleResourceOperator(
      * @return the resource that was created
      */
     fun replace(resource: HasMetadata): HasMetadata? {
-        val genericKubernetesResource = toGenericKubernetesResource(resource)
+        // force clone, patch changes the given resource
+        val genericKubernetesResource = toGenericKubernetesResource(resource, true)
         val op = createOperation(resource)
         return if (hasName(genericKubernetesResource)) {
-            op.resource(genericKubernetesResource)
-                .createOrReplace()
+            patch(genericKubernetesResource, op)
         } else if (hasGenerateName(genericKubernetesResource)) {
             op.resource(genericKubernetesResource)
                 .create()
         } else {
             throw ResourceException("Could not replace ${resource.kind ?: "resource"}: has neither name nor generateName.")
+        }
+    }
+
+    private fun patch(
+        genericKubernetesResource: GenericKubernetesResource,
+        op: NonNamespaceOperation<GenericKubernetesResource, GenericKubernetesResourceList, Resource<GenericKubernetesResource>>
+    ): HasMetadata? {
+        return runWithoutServerSetProperties(genericKubernetesResource) {
+            op
+                .resource(genericKubernetesResource)
+                .patch(
+                    PatchContext.Builder()
+                        .withForce(true)
+                        .withPatchType(PatchType.SERVER_SIDE_APPLY)
+                        .build()
+                )
         }
     }
 
@@ -100,7 +119,7 @@ class NonCachingSingleResourceOperator(
      * @return the resource that was created
      */
     fun watch(resource: HasMetadata, watcher: Watcher<HasMetadata>): Watch? {
-        val genericKubernetesResource = toGenericKubernetesResource(resource)
+        val genericKubernetesResource = toGenericKubernetesResource(resource, false)
         if (!hasName(genericKubernetesResource)) {
             return null
         }
@@ -148,13 +167,18 @@ class NonCachingSingleResourceOperator(
 
     /**
      * Returns a [GenericKubernetesResource] for a given [HasMetadata].
-     * The given resource is returned as if it is a [GenericKubernetesResource].
+     * If the given resource is a [GenericKubernetesResource] then the resource is returned as is unless
+     * [clone] is `true`. In this case a clone is returned instead.
+     * If the given resource is not a [GenericKubernetesResource] then an equivalent [GenericKubernetesResource]
+     * is created using serialization.
      *
      * @param resource a HasMetadata to convert
+     * @param clone force cloning the given resource
      * @return a GenericKubernetesResource
      */
-    private fun toGenericKubernetesResource(resource: HasMetadata): GenericKubernetesResource {
-        return if (resource is GenericKubernetesResource) {
+    private fun toGenericKubernetesResource(resource: HasMetadata, clone: Boolean = false): GenericKubernetesResource {
+        return if (resource is GenericKubernetesResource
+            && !clone) {
             resource
         } else {
             val yaml = Serialization.asYaml(resource)

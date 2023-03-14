@@ -35,11 +35,14 @@ import io.fabric8.kubernetes.client.NamespacedKubernetesClient
 import io.fabric8.kubernetes.client.dsl.MixedOperation
 import io.fabric8.kubernetes.client.dsl.NonNamespaceOperation
 import io.fabric8.kubernetes.client.dsl.Resource
+import io.fabric8.kubernetes.client.dsl.base.PatchContext
+import io.fabric8.kubernetes.client.dsl.base.PatchType
 import io.fabric8.kubernetes.client.dsl.base.ResourceDefinitionContext
 import io.fabric8.kubernetes.client.utils.ApiVersionUtil
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
 import org.junit.Test
+import org.mockito.ArgumentMatcher
 import org.mockito.ArgumentMatchers.anyString
 
 class NonCachingSingleResourceOperatorTest {
@@ -55,20 +58,12 @@ class NonCachingSingleResourceOperatorTest {
             .build()
     }
 
-    private val clusterCustomResource = GenericKubernetesResource().apply {
-        this.apiVersion = "rebels/tatooine"
-        this.kind = "Jedi"
-        this.metadata = ObjectMetaBuilder()
-            .withName("luke")
-            .build()
-    }
-
     private val namespacedCoreResource = PodBuilder()
         .withApiVersion("v1")
         .withKind("GrandJedi")
         .withNewMetadata()
-            .withName("obwian")
-            .withNamespace("jedis")
+        .withName("obwian")
+        .withNamespace("jedis")
         .endMetadata()
         .build()
 
@@ -76,8 +71,8 @@ class NonCachingSingleResourceOperatorTest {
         .withApiVersion("v1")
         .withKind("GrandJedi")
         .withNewMetadata()
-            // no namespace
-            .withName("Mace Windu")
+        // no namespace
+        .withName("Mace Windu")
         .endMetadata()
         .build()
 
@@ -120,10 +115,10 @@ class NonCachingSingleResourceOperatorTest {
         operator.get(namespacedCustomResource)
         // then
         verify(client).genericKubernetesResources(argThat {
-                kind == namespacedCustomResource.kind
-                        && isNamespaceScoped
-                        && group == ApiVersionUtil.trimGroupOrNull(namespacedCustomResource.apiVersion)
-                        && version == ApiVersionUtil.trimVersion(namespacedCustomResource.apiVersion)
+            kind == namespacedCustomResource.kind
+                    && isNamespaceScoped
+                    && group == ApiVersionUtil.trimGroupOrNull(namespacedCustomResource.apiVersion)
+                    && version == ApiVersionUtil.trimVersion(namespacedCustomResource.apiVersion)
         })
     }
 
@@ -191,7 +186,31 @@ class NonCachingSingleResourceOperatorTest {
     }
 
     @Test
-    fun `#replace should call #createOrReplace() if namespaced resource has a name`() {
+    fun `#replace should call #inNamespace for namespaced resource`() {
+        // given
+        val apiResource = namespacedApiResource(namespacedCoreResource)
+        val operator = NonCachingSingleResourceOperator(clientAdapter, createAPIResources(apiResource))
+        // when
+        operator.replace(namespacedCoreResource)
+        // then
+        verify(genericKubernetesResourcesOp)
+            .inNamespace(namespacedCoreResource.metadata.namespace)
+    }
+
+    @Test
+    fun `#replace should NOT call #inNamespace for clusterScoped resource`() {
+        // given
+        val apiResource = clusterScopedApiResource(clusterscopedCoreResource)
+        val operator = NonCachingSingleResourceOperator(clientAdapter, createAPIResources(apiResource))
+        // when
+        operator.replace(clusterscopedCoreResource)
+        // then
+        verify(genericKubernetesResourcesOp, never())
+            .inNamespace(any())
+    }
+
+    @Test
+    fun `#replace should call #patch() if resource has a name`() {
         // given
         val hasName = PodBuilder(namespacedCoreResource).build()
         hasName.metadata.name = "yoda"
@@ -202,11 +221,13 @@ class NonCachingSingleResourceOperatorTest {
         operator.replace(hasName)
         // then
         verify(resourceOp)
-            .createOrReplace()
+            .patch(argThat(ArgumentMatcher<PatchContext> { context ->
+                context.patchType == PatchType.SERVER_SIDE_APPLY
+            }))
     }
 
     @Test
-    fun `#replace should call #create() if namespaced resource has NO name but has generateName`() {
+    fun `#replace should call #create() if resource has NO name but has generateName`() {
         // given
         val hasGeneratedName = PodBuilder(namespacedCoreResource).build()
         hasGeneratedName.metadata.name = null
@@ -222,25 +243,8 @@ class NonCachingSingleResourceOperatorTest {
             .create()
     }
 
-    @Test
-    fun `#replace should call #create() if clusterscoped resource has NO name but has generateName`() {
-        // given
-        val hasGeneratedName = PodBuilder(clusterscopedCoreResource).build()
-        hasGeneratedName.metadata.name = null
-        hasGeneratedName.metadata.generateName = "storm trooper clone"
-        val operator = NonCachingSingleResourceOperator(
-            clientAdapter,
-            createAPIResources(clusterScopedApiResource(hasGeneratedName))
-        )
-        // when
-        operator.replace(hasGeneratedName)
-        // then
-        verify(resourceOp)
-            .create()
-    }
-
     @Test(expected = ResourceException::class)
-    fun `#replace should throw if namespaced resource has NO name NOR generateName`() {
+    fun `#replace should throw if resource has NO name NOR generateName`() {
         // given
         val generatedName = PodBuilder(namespacedCoreResource).build()
         generatedName.metadata.name = null
@@ -250,6 +254,18 @@ class NonCachingSingleResourceOperatorTest {
         // when
         operator.replace(generatedName)
         // then
+    }
+
+    @Test
+    fun `#replace should return a clone, NOT the resource that it was given`() {
+        // given
+        val resource = PodBuilder(namespacedCoreResource).build()
+        val apiResource = namespacedApiResource(namespacedCustomResource)
+        val operator = NonCachingSingleResourceOperator(clientAdapter, createAPIResources(apiResource))
+        // when
+        val returned = operator.replace(resource)
+        // then
+        assertThat(returned).isNotSameAs(resource)
     }
 
     @Test
