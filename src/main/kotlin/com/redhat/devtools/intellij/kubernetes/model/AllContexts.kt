@@ -30,6 +30,7 @@ import com.redhat.devtools.intellij.kubernetes.telemetry.TelemetryService.PROP_O
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.NamedContext
 import io.fabric8.kubernetes.api.model.NamedContextBuilder
+import io.fabric8.kubernetes.client.Config
 import io.fabric8.kubernetes.client.KubernetesClient
 import java.nio.file.Paths
 
@@ -242,7 +243,7 @@ open class AllContexts(
 	}
 
 	protected open fun watchKubeConfig() {
-		val path = Paths.get(ConfigHelper.getKubeConfigPath())
+		val path = Paths.get(Config.getKubeconfigFilename())
 		/**
 		 * [ConfigWatcher] cannot add/remove listeners nor can it get closed (and stop the [java.nio.file.WatchService]).
 		 * We therefore have to create a single instance in here rather than using it in a shielded/private way within
