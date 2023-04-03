@@ -11,7 +11,11 @@
 package com.redhat.devtools.intellij.kubernetes.model.client
 
 import com.redhat.devtools.intellij.kubernetes.model.util.isUnauthorized
-import io.fabric8.kubernetes.client.*
+import io.fabric8.kubernetes.client.Client
+import io.fabric8.kubernetes.client.Config
+import io.fabric8.kubernetes.client.KubernetesClient
+import io.fabric8.kubernetes.client.KubernetesClientBuilder
+import io.fabric8.kubernetes.client.KubernetesClientException
 import io.fabric8.kubernetes.client.impl.AppsAPIGroupClient
 import io.fabric8.kubernetes.client.impl.BatchAPIGroupClient
 import io.fabric8.kubernetes.client.impl.NetworkAPIGroupClient
@@ -54,7 +58,6 @@ abstract class ClientAdapter<C: KubernetesClient>(private val fabric8Client: C) 
 
         fun create(namespace: String? = null, config: Config): ClientAdapter<out KubernetesClient> {
             setNamespace(namespace, config)
-            //Thread.currentThread().contextClassLoader = javaClass.classLoader
             val kubeClient = KubernetesClientBuilder().withConfig(config).build()
             val osClient = kubeClient.adapt(NamespacedOpenShiftClient::class.java)
             val isOpenShift = isOpenShift(osClient)
