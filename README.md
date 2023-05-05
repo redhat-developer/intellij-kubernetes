@@ -1,6 +1,6 @@
 [![JetBrains Marketplace](https://img.shields.io/jetbrains/plugin/v/15921-kubernetes-by-red-hat?label=Jet%20Brains%20Marketplace&style=for-the-badge)](https://plugins.jetbrains.com/plugin/15921-kubernetes-by-red-hat)
 [![Downloads](https://img.shields.io/jetbrains/plugin/d/15921-kubernetes-by-red-hat?logo=jetbrains&style=for-the-badge)](https://plugins.jetbrains.com/plugin/15921-kubernetes-by-red-hat)
-[![Build Status](https://img.shields.io/github/workflow/status/redhat-developer/intellij-kubernetes/Java%20CI%20with%20Gradle?logo=github&style=for-the-badge)](https://github.com/redhat-developer/intellij-kubernetes/actions/workflows/ci.yml?query=workflow%3ACI)
+[![Build Status](https://img.shields.io/github/actions/workflow/status/redhat-developer/intellij-kubernetes/ci.yml?logo=github&style=for-the-badge)](https://github.com/redhat-developer/intellij-kubernetes/actions/workflows/ci.yml?query=workflow%3ACI)
 [![License](https://img.shields.io/github/license/redhat-developer/intellij-kubernetes?style=for-the-badge)](https://github.com/redhat-developer/intellij-kubernetes/blob/main/LICENSE)
 
 # Kubernetes
