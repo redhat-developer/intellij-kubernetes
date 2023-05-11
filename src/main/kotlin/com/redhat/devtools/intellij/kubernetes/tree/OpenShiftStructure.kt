@@ -33,10 +33,10 @@ import io.fabric8.openshift.api.model.Project
 class OpenShiftStructure(model: IResourceModel): AbstractTreeStructureContribution(model) {
 
     companion object Folders {
-        val PROJECTS = Folder("Projects", ProjectsOperator.KIND)
-        val IMAGESTREAMS = Folder("ImageStreams", ImageStreamsOperator.KIND)
-        val DEPLOYMENTCONFIGS = Folder("DeploymentConfigs", DeploymentConfigsOperator.KIND)
-        val BUILDCONFIGS = Folder("BuildConfigs", BuildConfigsOperator.KIND)
+        val PROJECTS = ProjectsFolder("Projects")
+        val IMAGESTREAMS = Folder("ImageStreams", kind = ImageStreamsOperator.KIND)
+        val DEPLOYMENTCONFIGS = Folder("DeploymentConfigs", kind = DeploymentConfigsOperator.KIND)
+        val BUILDCONFIGS = Folder("BuildConfigs", kind = BuildConfigsOperator.KIND)
     }
 
     override val elementsTree: List<ElementNode<*>> = listOf(
@@ -148,5 +148,7 @@ class OpenShiftStructure(model: IResourceModel): AbstractTreeStructureContributi
             else -> null
         }
     }
+
+    class ProjectsFolder(label: String): Folder(label, ProjectsOperator.KIND)
 
 }

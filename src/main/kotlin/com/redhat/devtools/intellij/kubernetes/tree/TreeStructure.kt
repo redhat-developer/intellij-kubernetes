@@ -20,6 +20,7 @@ import com.intellij.openapi.editor.colors.CodeInsightColors
 import com.intellij.openapi.extensions.ExtensionPointName
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.IconLoader
+import com.intellij.ui.SimpleTextAttributes
 import com.intellij.ui.tree.LeafState
 import com.redhat.devtools.intellij.kubernetes.model.IResourceModel
 import com.redhat.devtools.intellij.kubernetes.model.context.IActiveContext
@@ -199,7 +200,7 @@ open class TreeStructure(
         }
     }
 
-    private class FolderDescriptor(
+    open class FolderDescriptor(
         element: Folder,
         parent: NodeDescriptor<*>?,
         model: IResourceModel,
@@ -216,16 +217,12 @@ open class TreeStructure(
             return this.element?.kind == element
         }
 
-        override fun setElement(element: Any): Boolean {
-            return when(element) {
-                is ResourceKind<*> -> {
-                    val current = getElement() ?: return false
-                    super.setElement(Folder(current.label, element))
-                }
-                is Folder ->
-                    super.setElement(element)
-                else ->
-                    false
+        override fun setElement(newElement: Any): Boolean {
+            return if (newElement is ResourceKind<*>) {
+                val current = element ?: return false
+                super.setElement(Folder(current, newElement))
+            } else {
+                false
             }
         }
 
@@ -254,7 +251,7 @@ open class TreeStructure(
             return "Error: ${element.message ?: "unspecified"}"
         }
 
-        override fun getIcon(element: java.lang.Exception): Icon? {
+        override fun getIcon(element: java.lang.Exception): Icon {
             return AllIcons.General.BalloonError
         }
     }
@@ -304,11 +301,19 @@ open class TreeStructure(
 
         override fun update(presentation: PresentationData) {
             updateLabel(getLabel(element), presentation)
+            updateSubLabel(getSubLabel(element), presentation)
             updateIcon(getIcon(element), presentation)
         }
 
         private fun updateLabel(label: String?, presentation: PresentationData) {
-            presentation.presentableText = label
+            presentation.addText(label, SimpleTextAttributes.REGULAR_ATTRIBUTES)
+        }
+
+        protected open fun updateSubLabel(subLabel: String?, presentation: PresentationData) {
+            if (subLabel.isNullOrEmpty()) {
+                return
+            }
+            presentation.addText(" $subLabel", SimpleTextAttributes.GRAYED_ATTRIBUTES)
         }
 
         open fun hasElement(element: Any?): Boolean {
@@ -334,6 +339,10 @@ open class TreeStructure(
             return element?.toString()
         }
 
+        protected open fun getSubLabel(element: T): String? {
+            return null
+        }
+
         protected open fun getIcon(element: T): Icon? {
             return null
         }
@@ -355,7 +364,9 @@ open class TreeStructure(
         }
     }
 
-    data class Folder(val label: String, val kind: ResourceKind<out HasMetadata>?)
+    open class Folder(val label: String, val kind: ResourceKind<out HasMetadata>?) {
+        constructor(folder: Folder, kind: ResourceKind<out HasMetadata>?) : this(folder.label, kind)
+    }
 }
 
 

@@ -79,27 +79,27 @@ import io.fabric8.kubernetes.api.model.storage.StorageClass
 
 class KubernetesStructure(model: IResourceModel) : AbstractTreeStructureContribution(model) {
     object Folders {
-        val NAMESPACES = Folder("Namespaces", NamespacesOperator.KIND)
-        val NODES = Folder("Nodes", NodesOperator.KIND)
-        val WORKLOADS = Folder("Workloads", null)
-			val DEPLOYMENTS = Folder("Deployments", DeploymentsOperator.KIND) //  Workloads / Deployments
-			val STATEFULSETS = Folder("StatefulSets", StatefulSetsOperator.KIND) //  Workloads / StatefulSets
-			val DAEMONSETS = Folder("DaemonSets", DaemonSetsOperator.KIND) //  Workloads / DaemonSets
-			val JOBS = Folder("Jobs", JobsOperator.KIND) //  Workloads / Jobs
-			val CRONJOBS = Folder("CronJobs", CronJobsOperator.KIND) //  Workloads / CronJobs
-            val PODS = Folder("Pods", NamespacedPodsOperator.KIND) //  Workloads / Pods
-        val NETWORK = Folder("Network", null)
-            val SERVICES = Folder("Services", ServicesOperator.KIND) // Network / Services
-            val ENDPOINTS = Folder("Endpoints", EndpointsOperator.KIND) // Network / Endpoints
-			val INGRESS = Folder("Ingress", IngressOperator.KIND) // Network / Ingress
-		val STORAGE = Folder("Storage", null)
-			val PERSISTENT_VOLUMES = Folder("Persistent Volumes", PersistentVolumesOperator.KIND) // Storage / Persistent Volumes
-			val PERSISTENT_VOLUME_CLAIMS = Folder("Persistent Volume Claims", PersistentVolumeClaimsOperator.KIND) // Storage / Persistent Volume Claims
-			val STORAGE_CLASSES = Folder("Storage Classes", StorageClassesOperator.KIND) // Storage / Storage Classes
-		val CONFIGURATION = Folder("Configuration", null)
-			val CONFIG_MAPS = Folder("Config Maps", ConfigMapsOperator.KIND) // Configuration / Config Maps
-			val SECRETS = Folder("Secrets", SecretsOperator.KIND) // Configuration / Secrets
-		val CUSTOM_RESOURCES_DEFINITIONS = Folder("Custom Resources", CustomResourceDefinitionsOperator.KIND)
+        val NAMESPACES = NamespacesFolder("Namespaces")
+        val NODES = Folder("Nodes", kind = NodesOperator.KIND)
+        val WORKLOADS = Folder("Workloads", kind = null)
+			val DEPLOYMENTS = Folder("Deployments", kind = DeploymentsOperator.KIND) //  Workloads / Deployments
+			val STATEFULSETS = Folder("StatefulSets", kind = StatefulSetsOperator.KIND) //  Workloads / StatefulSets
+			val DAEMONSETS = Folder("DaemonSets", kind = DaemonSetsOperator.KIND) //  Workloads / DaemonSets
+			val JOBS = Folder("Jobs", kind = JobsOperator.KIND) //  Workloads / Jobs
+			val CRONJOBS = Folder("CronJobs", kind = CronJobsOperator.KIND) //  Workloads / CronJobs
+            val PODS = Folder("Pods", kind = NamespacedPodsOperator.KIND) //  Workloads / Pods
+        val NETWORK = Folder("Network", kind = null)
+            val SERVICES = Folder("Services", kind = ServicesOperator.KIND) // Network / Services
+            val ENDPOINTS = Folder("Endpoints", kind = EndpointsOperator.KIND) // Network / Endpoints
+			val INGRESS = Folder("Ingress", kind = IngressOperator.KIND) // Network / Ingress
+		val STORAGE = Folder("Storage", kind = null)
+			val PERSISTENT_VOLUMES = Folder("Persistent Volumes", kind = PersistentVolumesOperator.KIND) // Storage / Persistent Volumes
+			val PERSISTENT_VOLUME_CLAIMS = Folder("Persistent Volume Claims", kind = PersistentVolumeClaimsOperator.KIND) // Storage / Persistent Volume Claims
+			val STORAGE_CLASSES = Folder("Storage Classes", kind = StorageClassesOperator.KIND) // Storage / Storage Classes
+		val CONFIGURATION = Folder("Configuration", kind = null)
+			val CONFIG_MAPS = Folder("Config Maps", kind = ConfigMapsOperator.KIND) // Configuration / Config Maps
+			val SECRETS = Folder("Secrets", kind = SecretsOperator.KIND) // Configuration / Secrets
+		val CUSTOM_RESOURCES_DEFINITIONS = Folder("Custom Resources", kind = CustomResourceDefinitionsOperator.KIND)
     }
 
 	override val elementsTree: List<ElementNode<*>> = listOf(
@@ -481,4 +481,6 @@ class KubernetesStructure(model: IResourceModel) : AbstractTreeStructureContribu
 			else -> null
 		}
 	}
+
+	class NamespacesFolder(label: String): Folder(label, NamespacesOperator.KIND)
 }
