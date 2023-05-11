@@ -10,16 +10,18 @@
  ******************************************************************************/
 package com.redhat.devtools.intellij.kubernetes.tree
 
-import com.intellij.ide.projectView.PresentationData
 import com.intellij.ide.util.treeView.NodeDescriptor
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.IconLoader
-import com.intellij.ui.SimpleTextAttributes
 import com.redhat.devtools.intellij.kubernetes.model.IResourceModel
 import com.redhat.devtools.intellij.kubernetes.model.context.KubernetesContext
 import com.redhat.devtools.intellij.kubernetes.model.resource.ResourceKind
 import com.redhat.devtools.intellij.kubernetes.model.util.getHighestPriorityVersion
 import com.redhat.devtools.intellij.kubernetes.tree.AbstractTreeStructureContribution.DescriptorFactory
+import com.redhat.devtools.intellij.kubernetes.tree.KubernetesStructure.NamespacesFolder
+import com.redhat.devtools.intellij.kubernetes.tree.TreeStructure.ContextDescriptor
+import com.redhat.devtools.intellij.kubernetes.tree.TreeStructure.Folder
+import com.redhat.devtools.intellij.kubernetes.tree.TreeStructure.FolderDescriptor
 import com.redhat.devtools.intellij.kubernetes.tree.TreeStructure.ResourceDescriptor
 import com.redhat.devtools.intellij.kubernetes.tree.TreeStructure.ResourcePropertyDescriptor
 import io.fabric8.kubernetes.api.model.ConfigMap
@@ -50,6 +52,8 @@ object KubernetesDescriptors {
 		return when (element) {
 			is DescriptorFactory<*> -> element.create(parent, model, project)
 
+			(element is NamespacesFolder && isOpenShift(model))  -> NamespacesFolderDescriptor(element as NamespacesFolder, parent, model, project)
+
 			is KubernetesContext -> KubernetesContextDescriptor(element, model, project)
 			is Namespace -> NamespaceDescriptor(element, parent, model, project)
 			is Node -> ResourceDescriptor(element, childrenKind, parent, model, project)
@@ -77,17 +81,41 @@ object KubernetesDescriptors {
 		}
 	}
 
+	private fun isOpenShift(model: IResourceModel): Boolean {
+		return true == model.getCurrentContext()?.isOpenShift()
+	}
+
 	private class KubernetesContextDescriptor(
 		element: KubernetesContext,
 		model: IResourceModel,
 		project: Project
-	) : TreeStructure.ContextDescriptor<KubernetesContext>(
+	) : ContextDescriptor<KubernetesContext>(
 		context = element,
 		model = model,
 		project = project
 	) {
 		override fun getIcon(element: KubernetesContext): Icon {
 			return IconLoader.getIcon("/icons/kubernetes-cluster.svg", javaClass)
+		}
+	}
+
+	private class NamespacesFolderDescriptor(
+		element: Folder,
+		parent: NodeDescriptor<*>?,
+		model: IResourceModel,
+		project: Project
+	) : FolderDescriptor(
+		element,
+		parent,
+		model,
+		project
+	) {
+		override fun getLabel(element: Folder): String {
+			return element.label
+		}
+
+		override fun getSubLabel(element: Folder): String {
+			return "current: ${model.getCurrentNamespace()}"
 		}
 	}
 
@@ -160,12 +188,8 @@ object KubernetesDescriptors {
 			}
 		}
 
-		override fun postprocess(presentation: PresentationData) {
-			if (element == null) {
-				return
-			}
-			presentation.addText(getLabel(element!!), SimpleTextAttributes.REGULAR_ATTRIBUTES)
-			presentation.addText(" (${element!!.spec.group}/${getHighestPriorityVersion(element!!.spec)})", SimpleTextAttributes.GRAYED_SMALL_ATTRIBUTES)
+		override fun getSubLabel(element: CustomResourceDefinition): String? {
+			return " (${element.spec.group}/${getHighestPriorityVersion(element.spec)})"
 		}
 
 		override fun watchChildren() {
@@ -181,7 +205,7 @@ object KubernetesDescriptors {
 			PodIpDescriptorFactory(pod))
 	}
 
-	class PodContainersDescriptorFactory(pod: Pod) : AbstractTreeStructureContribution.DescriptorFactory<Pod>(pod) {
+	class PodContainersDescriptorFactory(pod: Pod) : DescriptorFactory<Pod>(pod) {
 
 		override fun create(
 			parent: NodeDescriptor<*>?, model: IResourceModel,
@@ -208,7 +232,7 @@ object KubernetesDescriptors {
 		}
 	}
 
-	class PodIpDescriptorFactory(pod: Pod) : AbstractTreeStructureContribution.DescriptorFactory<Pod>(pod) {
+	class PodIpDescriptorFactory(pod: Pod) : DescriptorFactory<Pod>(pod) {
 
 		override fun create(parent: NodeDescriptor<*>?, model: IResourceModel, project: Project): NodeDescriptor<Pod> {
 			return PodIpDescriptor(resource, parent, model, project)
@@ -269,7 +293,7 @@ object KubernetesDescriptors {
 	}
 
 	private class EmptyDataDescriptorFactory<R : HasMetadata>(resource: R)
-		: AbstractTreeStructureContribution.DescriptorFactory<R>(resource) {
+		: DescriptorFactory<R>(resource) {
 
 		override fun create(parent: NodeDescriptor<*>?, model: IResourceModel,
 							project: Project): NodeDescriptor<R> {
