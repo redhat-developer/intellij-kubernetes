@@ -35,7 +35,6 @@ import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.custom.
 import com.redhat.devtools.intellij.kubernetes.model.util.MultiResourceException
 import com.redhat.devtools.intellij.kubernetes.model.util.ResourceException
 import com.redhat.devtools.intellij.kubernetes.model.util.isNotFound
-import com.redhat.devtools.intellij.kubernetes.model.util.isSameResource
 import com.redhat.devtools.intellij.kubernetes.model.util.setWillBeDeleted
 import com.redhat.devtools.intellij.kubernetes.model.util.toMessage
 import io.fabric8.kubernetes.api.model.GenericKubernetesResource
@@ -94,8 +93,8 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
             @Suppress("UNCHECKED_CAST")
             val namespacesOperator: INonNamespacedResourceOperator<N, C> =
                 nonNamespacedOperators[namespaceKind] as INonNamespacedResourceOperator<N, C>
-            val namespace = getCurrentNamespace(namespacesOperator.allResources)
-            setCurrentNamespace(namespace?.metadata?.name, operators)
+            val namespace = getCurrentNamespace()
+            setCurrentNamespace(namespace, operators)
             watch(namespacesOperator) // always watch namespaces
         } catch (e: KubernetesClientException) {
             logger<ActiveContext<*, *>>().info("Could not set current namespace to all non namespaced operators.", e)
@@ -110,30 +109,11 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
     }
 
     override fun getCurrentNamespace(): String? {
-        return try {
-            val current = getCurrentNamespace(getAllResources(namespaceKind, NO_NAMESPACE))
-            current?.metadata?.name
-        } catch (e: KubernetesClientException) {
-            throw ResourceException(
-                "Could not get current namespace for server $masterUrl", e
-            )
-        }
-    }
-
-    private fun getCurrentNamespace(namespaces: Collection<N>): N? {
-        val name: String = client.namespace ?: return null
-        return namespaces.find { name == it.metadata?.name }
+        return client.namespace
     }
 
     override fun isCurrentNamespace(resource: HasMetadata): Boolean {
-        return try {
-            val current = getCurrentNamespace(getAllResources(namespaceKind, NO_NAMESPACE)) ?: return false
-            resource.isSameResource(current as HasMetadata)
-        } catch (e: KubernetesClientException) {
-            throw ResourceException(
-                "Could not get current namespace for server $masterUrl", e
-            )
-        }
+        return getCurrentNamespace() == resource.metadata.name
     }
 
     override fun isCurrentNamespace(namespace: String): Boolean {
