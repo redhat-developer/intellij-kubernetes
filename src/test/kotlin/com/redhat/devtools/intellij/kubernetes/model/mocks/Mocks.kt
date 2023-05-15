@@ -48,10 +48,12 @@ object Mocks {
                 .whenever(this).invoke(anyOrNull(), anyOrNull())
         }
 
-    fun clientAdapter(clientConfig: ClientConfig): ClientAdapter<KubernetesClient> {
+    fun clientAdapter(clientConfig: ClientConfig?, client: KubernetesClient? = null): ClientAdapter<KubernetesClient> {
         return mock<ClientAdapter<KubernetesClient>>().apply {
             doReturn(clientConfig)
                 .whenever(this).config
+            doReturn(client)
+                .whenever(this).get()
         }
     }
 

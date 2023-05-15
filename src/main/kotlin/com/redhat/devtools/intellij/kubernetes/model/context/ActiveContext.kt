@@ -109,11 +109,16 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
     }
 
     override fun getCurrentNamespace(): String? {
-        return client.namespace
+        val current = client.namespace
+        return if (current.isNullOrEmpty()) {
+            null
+        } else {
+            current
+        }
     }
 
     override fun isCurrentNamespace(resource: HasMetadata): Boolean {
-        return getCurrentNamespace() == resource.metadata.name
+        return getCurrentNamespace() == resource.metadata?.name
     }
 
     override fun isCurrentNamespace(namespace: String): Boolean {

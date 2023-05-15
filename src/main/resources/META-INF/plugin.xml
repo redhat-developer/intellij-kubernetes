@@ -187,9 +187,17 @@
                     id="com.redhat.devtools.intellij.kubernetes.actions.UseNamespaceAction"
                     text="Use Namespace"
                     icon="AllIcons.Nodes.EmptyNode"/>
+            <action class="com.redhat.devtools.intellij.kubernetes.actions.SetCurrentNamespaceAction"
+                    id="com.redhat.devtools.intellij.kubernetes.actions.SetCurrentNamespaceAction"
+                    text="Set Current Namespace"
+                    icon="AllIcons.Nodes.EmptyNode"/>
             <action class="com.redhat.devtools.intellij.kubernetes.actions.UseProjectAction"
                     id="com.redhat.devtools.intellij.kubernetes.actions.UseProjectAction"
                     text="Use Project"
+                    icon="AllIcons.Nodes.EmptyNode"/>
+            <action class="com.redhat.devtools.intellij.kubernetes.actions.SetCurrentProjectAction"
+                    id="com.redhat.devtools.intellij.kubernetes.actions.SetCurrentProjectAction"
+                    text="Set Current Project"
                     icon="AllIcons.Nodes.EmptyNode"/>
             <action class="com.redhat.devtools.intellij.kubernetes.actions.EditResourceAction"
                     id="com.redhat.devtools.intellij.kubernetes.actions.EditResourceAction"

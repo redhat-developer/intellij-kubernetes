@@ -214,18 +214,6 @@ class KubernetesContextTest {
 	}
 
 	@Test
-	fun `#getCurrentNamespace should return null if current namespace is set but doesnt exist`() {
-		// given
-		whenever(client.get().namespace)
-				.thenReturn("inexistent")
-
-		// when
-		val namespace = context.getCurrentNamespace()
-		// then
-		assertThat(namespace).isNull()
-	}
-
-	@Test
 	fun `#isCurrentNamespace should return false if given namespace is not in existing namespaces`() {
 		// given
 		// when

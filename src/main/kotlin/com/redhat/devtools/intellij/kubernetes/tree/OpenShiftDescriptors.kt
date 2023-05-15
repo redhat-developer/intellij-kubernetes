@@ -68,7 +68,7 @@ object OpenShiftDescriptors {
     }
 
     private class ProjectsFolderDescriptor(
-        element: Folder,
+        element: ProjectsFolder,
         parent: NodeDescriptor<*>?,
         model: IResourceModel,
         project: Project
@@ -83,7 +83,14 @@ object OpenShiftDescriptors {
         }
 
         override fun getSubLabel(element: Folder): String {
-            return "current: ${model.getCurrentNamespace()}"
+            val current = model.getCurrentNamespace()
+            return "current: ${
+                if (current.isNullOrEmpty()) {
+                    "<none>"
+                } else {
+                    current
+                }
+            }"
         }
     }
 
