@@ -14,7 +14,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        IJ: [IC-2021.1, IC-2021.2, IC-2021.3, IC-2022.1, IC-2022.2, IC-2022.3, IC-2023.1]
+        IJ: [IC-2021.1, IC-2021.2, IC-2021.3, IC-2022.1, IC-2022.2, IC-2022.3, IC-2023.1, IC-2023.2]
 
     steps:
     - uses: actions/checkout@v2
@@ -44,7 +44,7 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
       - name: Build with Gradle
-        run: ./gradlew runPluginVerifier -PideaVersion=IC-2023.1
+        run: ./gradlew runPluginVerifier -PideaVersion=IC-2023.2
       - name: Upload report
         uses: actions/upload-artifact@v2
         if: always()
