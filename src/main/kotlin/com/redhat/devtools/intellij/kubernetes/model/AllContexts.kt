@@ -22,16 +22,16 @@ import com.redhat.devtools.intellij.kubernetes.model.context.IActiveContext
 import com.redhat.devtools.intellij.kubernetes.model.context.IContext
 import com.redhat.devtools.intellij.kubernetes.model.resource.ResourceKind
 import com.redhat.devtools.intellij.kubernetes.model.util.ResettableLazyProperty
+import com.redhat.devtools.intellij.kubernetes.model.util.ResourceException
 import com.redhat.devtools.intellij.kubernetes.telemetry.TelemetryService
 import com.redhat.devtools.intellij.kubernetes.telemetry.TelemetryService.NAME_PREFIX_CONTEXT
 import com.redhat.devtools.intellij.kubernetes.telemetry.TelemetryService.PROP_IS_OPENSHIFT
 import com.redhat.devtools.intellij.kubernetes.telemetry.TelemetryService.PROP_KUBERNETES_VERSION
 import com.redhat.devtools.intellij.kubernetes.telemetry.TelemetryService.PROP_OPENSHIFT_VERSION
 import io.fabric8.kubernetes.api.model.HasMetadata
-import io.fabric8.kubernetes.api.model.NamedContext
-import io.fabric8.kubernetes.api.model.NamedContextBuilder
 import io.fabric8.kubernetes.client.Config
 import io.fabric8.kubernetes.client.KubernetesClient
+import io.fabric8.kubernetes.client.KubernetesClientException
 import java.nio.file.Paths
 
 interface IAllContexts {
@@ -107,7 +107,11 @@ open class AllContexts(
 		}
 
 	override fun setCurrentContext(context: IContext): IActiveContext<out HasMetadata, out KubernetesClient>? {
-		val new = setCurrentContext(context, current, emptyList())
+		if (current == context) {
+			return current
+		}
+		val newClient = clientFactory.invoke(context.context.context.namespace, context.context.name)
+		val new = setCurrentContext(newClient, emptyList())
 		if (new != null) {
 			modelChange.fireAllContextsChanged()
 		}
@@ -116,37 +120,39 @@ open class AllContexts(
 
 	override fun setCurrentNamespace(namespace: String): IActiveContext<out HasMetadata, out KubernetesClient>? {
 		val old = this.current ?: return null
-		val context = NamedContextBuilder(old.context).build()
-		context.context.namespace = namespace
-		val new = setCurrentContext(Context(context), old, old.getWatched())
-		modelChange.fireCurrentNamespaceChanged(new, old)
+		val newClient = clientFactory.invoke(namespace, old.context.name)
+		throwIfNotAccessible(namespace, newClient.get())
+		val new = setCurrentContext(newClient, old.getWatched())
+		if (new != null) {
+			modelChange.fireCurrentNamespaceChanged(new, old)
+		}
 		return new
 	}
 
 	private fun setCurrentContext(
-		toSet: IContext,
-		current: IActiveContext<out HasMetadata, out KubernetesClient>?,
-		toWatch: Collection<ResourceKind<out HasMetadata>>?
+		newClient: ClientAdapter<out KubernetesClient>,
+		toWatch: Collection<ResourceKind<out HasMetadata>>?,
 	) : IActiveContext<out HasMetadata, out KubernetesClient>? {
 		synchronized(this) {
-			if (toSet == current) {
-				return current
-			}
-			if (!exists(toSet, all)) {
-				return null
-			}
-			recreateClient(
-				toSet.context.context.namespace,
-				toSet.context.name,
-				client.get()
+			replaceClient(
+				newClient,
+				this.client.get()
 			)
-			current?.close()
+			this.current?.close()
 			all.clear() // causes reload of all contexts when accessed afterwards
 			val newCurrent = this.current // gets new current from all
 			if (toWatch != null) {
 				newCurrent?.watchAll(toWatch)
 			}
 			return newCurrent
+		}
+	}
+
+	private fun throwIfNotAccessible(namespace: String, client: KubernetesClient) {
+		try {
+			client.namespaces()?.withName(namespace)?.isReady
+		} catch(e: KubernetesClientException) {
+			throw ResourceException("Namespace $namespace is not accessible", e)
 		}
 	}
 
@@ -184,10 +190,9 @@ open class AllContexts(
 			}
 	}
 
-	private fun recreateClient(namespace: String?, context: String?, client: ClientAdapter<out KubernetesClient>?)
+	private fun replaceClient(new: ClientAdapter<out KubernetesClient>, old: ClientAdapter<out KubernetesClient>?)
 			: ClientAdapter<out KubernetesClient> {
-		client?.close()
-		val new = clientFactory.invoke(namespace, context)
+		old?.close()
 		new.config.save()
 		this.client.set(new)
 		return new
@@ -221,25 +226,6 @@ open class AllContexts(
 				logger<AllContexts>().warn("Could not report context/cluster versions", e)
 			}
 		}
-	}
-
-	private fun exists(context: IContext, all: MutableList<IContext>): Boolean {
-		return find(context, all) != null
-	}
-
-	private fun find(context: IContext, all: MutableList<IContext>): IContext? {
-		val found = all.find { sameButNamespace(context.context, it.context) } ?: return null
-		val indexOf = all.indexOf(found)
-		if (indexOf < 0) {
-			return null
-		}
-		return all[indexOf]
-	}
-
-	private fun sameButNamespace(toFind: NamedContext, toCheck: NamedContext): Boolean {
-		return toFind.name == toCheck.name
-				&& toFind.context.cluster == toCheck.context.cluster
-				&& toFind.context.user == toCheck.context.user
 	}
 
 	protected open fun watchKubeConfig() {

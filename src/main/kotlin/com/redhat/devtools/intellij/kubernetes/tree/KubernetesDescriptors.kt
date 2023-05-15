@@ -49,32 +49,39 @@ import javax.swing.Icon
 object KubernetesDescriptors {
 
 	fun createDescriptor(element: Any, childrenKind: ResourceKind<out HasMetadata>?, parent: NodeDescriptor<*>?, model: IResourceModel, project: Project): NodeDescriptor<*>? {
-		return when (element) {
-			is DescriptorFactory<*> -> element.create(parent, model, project)
+		return when {
+			element is DescriptorFactory<*> ->
+				element.create(parent, model, project)
 
-			(element is NamespacesFolder && isOpenShift(model))  -> NamespacesFolderDescriptor(element as NamespacesFolder, parent, model, project)
+			element is NamespacesFolder
+					&& !isOpenShift(model) ->
+				NamespacesFolderDescriptor(element, parent, model, project)
 
-			is KubernetesContext -> KubernetesContextDescriptor(element, model, project)
-			is Namespace -> NamespaceDescriptor(element, parent, model, project)
-			is Node -> ResourceDescriptor(element, childrenKind, parent, model, project)
-			is Pod -> PodDescriptor(element, parent, model, project)
+			element is KubernetesContext ->
+				KubernetesContextDescriptor(element, model, project)
+			element is Namespace ->
+				NamespaceDescriptor(element, parent, model, project)
+			element is Node ->
+				ResourceDescriptor(element, childrenKind, parent, model, project)
+			element is Pod ->
+				PodDescriptor(element, parent, model, project)
 
-			is Deployment,
-			is StatefulSet,
-			is DaemonSet,
-			is Job,
-			is CronJob,
-			is Service,
-			is Endpoints,
-			is Ingress,
-			is PersistentVolume,
-			is PersistentVolumeClaim,
-			is StorageClass,
-			is ConfigMap,
-			is Secret,
-			is GenericKubernetesResource ->
-				ResourceDescriptor(element as HasMetadata, childrenKind, parent, model, project)
-			is CustomResourceDefinition ->
+			element is Deployment
+					|| element is StatefulSet
+					|| element is DaemonSet
+					|| element is Job
+					|| element is CronJob
+					|| element is Service
+					|| element is Endpoints
+					|| element is Ingress
+					|| element is PersistentVolume
+					|| element is PersistentVolumeClaim
+					|| element is StorageClass
+					|| element is ConfigMap
+					|| element is Secret
+					|| element is GenericKubernetesResource ->
+					ResourceDescriptor(element as HasMetadata, childrenKind, parent, model, project)
+			element is CustomResourceDefinition ->
 				CustomResourceDefinitionDescriptor(element, parent, model, project)
 			else ->
 				null
@@ -100,7 +107,7 @@ object KubernetesDescriptors {
 	}
 
 	private class NamespacesFolderDescriptor(
-		element: Folder,
+		element: NamespacesFolder,
 		parent: NodeDescriptor<*>?,
 		model: IResourceModel,
 		project: Project
@@ -115,7 +122,14 @@ object KubernetesDescriptors {
 		}
 
 		override fun getSubLabel(element: Folder): String {
-			return "current: ${model.getCurrentNamespace()}"
+			val current = model.getCurrentNamespace()
+			return "current: ${
+				if (current.isNullOrEmpty()) {
+					"<none>"
+				} else {
+					current
+				}
+			}"
 		}
 	}
 

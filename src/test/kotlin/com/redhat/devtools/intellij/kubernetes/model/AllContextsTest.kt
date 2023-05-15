@@ -15,6 +15,7 @@ import com.nhaarman.mockitokotlin2.anyOrNull
 import com.nhaarman.mockitokotlin2.argThat
 import com.nhaarman.mockitokotlin2.clearInvocations
 import com.nhaarman.mockitokotlin2.doReturn
+import com.nhaarman.mockitokotlin2.doThrow
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.never
 import com.nhaarman.mockitokotlin2.times
@@ -34,14 +35,19 @@ import com.redhat.devtools.intellij.kubernetes.model.mocks.Mocks.clientConfig
 import com.redhat.devtools.intellij.kubernetes.model.mocks.Mocks.clientFactory
 import com.redhat.devtools.intellij.kubernetes.model.mocks.Mocks.context
 import com.redhat.devtools.intellij.kubernetes.model.resource.ResourceKind
+import com.redhat.devtools.intellij.kubernetes.model.util.ResourceException
 import io.fabric8.kubernetes.api.model.Config
 import io.fabric8.kubernetes.api.model.ConfigBuilder
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.NamedAuthInfoBuilder
 import io.fabric8.kubernetes.api.model.Namespace
+import io.fabric8.kubernetes.api.model.NamespaceList
 import io.fabric8.kubernetes.api.model.Pod
 import io.fabric8.kubernetes.api.model.apps.Deployment
 import io.fabric8.kubernetes.client.KubernetesClient
+import io.fabric8.kubernetes.client.KubernetesClientException
+import io.fabric8.kubernetes.client.dsl.NonNamespaceOperation
+import io.fabric8.kubernetes.client.dsl.Resource
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test
 import org.mockito.ArgumentCaptor
@@ -69,8 +75,9 @@ class AllContextsTest {
 		on { contexts } doReturn contexts
 		on { oauthToken } doReturn token
 	}
+	private val client = client(true)
 	private val clientConfig = clientConfig(currentContext, contexts, configuration)
-	private val clientAdapter = clientAdapter(clientConfig)
+	private val clientAdapter = clientAdapter(clientConfig, client)
 	private val clientFactory = clientFactory(clientAdapter)
 
 	private val allContexts = TestableAllContexts(modelChange, contextFactory, clientFactory)
@@ -182,22 +189,6 @@ class AllContextsTest {
 	}
 
 	@Test
-	fun `#setCurrentContext(context) should create new active context regardless of existing current context being null`() {
-		// given
-		val clientConfig = clientConfig(null, contexts, configuration)
-		doReturn(activeContext.context)
-			.whenever(clientConfig).currentContext // returned on 2nd call
-		val clientAdapter = clientAdapter(clientConfig)
-		val clientFactory = clientFactory(clientAdapter)
-		val allContexts = TestableAllContexts(modelChange, contextFactory, clientFactory)
-		clearInvocations(contextFactory) // clear invocation so initial creation is not counted
-		// when
-		allContexts.setCurrentContext(activeContext)
-		// then
-		verify(contextFactory).invoke(any(), any())
-	}
-
-	@Test
 	fun `#setCurrentContext(context) should create new active context`() {
 		// given
 		assertThat(allContexts.current?.context).isNotEqualTo(namedContext3) // create current context
@@ -234,22 +225,6 @@ class AllContextsTest {
 		// then
 		assertThat(allContexts.all).contains(currentContext)
 		assertThat(allContexts.all).doesNotContain(old)
-	}
-
-	@Test
-	fun `#setCurrentContext(context) should NOT set current context if given context doesnt exist in list of all contexts`() {
-		// given
-		val allContexts = TestableAllContexts(modelChange, contextFactory, clientFactory)
-		val newCurrentContext = context(namedContext("notContained", "bogus", "bogus", "bogus"))
-		assertThat(allContexts.current).isNotEqualTo(newCurrentContext)
-		val old = allContexts.current
-		assertThat(old).isNotEqualTo(newCurrentContext)
-		allContexts.all // create all contexts
-		// when
-		val currentContext = allContexts.setCurrentContext(newCurrentContext)
-		// then
-		assertThat(allContexts.all).contains(old)
-		assertThat(currentContext).isNull()
 	}
 
 	@Test
@@ -363,7 +338,8 @@ class AllContextsTest {
 	fun `#setCurrentNamespace(namespace) should return null if current context is null`() {
 		// given
 		val clientConfig = clientConfig(null, contexts, configuration)
-		val clientAdapter = clientAdapter(clientConfig)
+		val client = client(true)
+		val clientAdapter = clientAdapter(clientConfig, client)
 		val clientFactory = clientFactory(clientAdapter)
 		val allContexts = TestableAllContexts(modelChange, contextFactory, clientFactory)
 		// when
@@ -382,6 +358,19 @@ class AllContextsTest {
 	}
 
 	@Test
+	fun `#setCurrentNamespace(namespace) should NOT observable#fireCurrentNamespaceChanged if new current context is null`() {
+		// given
+		val client = client(true)
+		val clientAdapter = clientAdapter(null, client) // no config so there are no contexts
+		val clientFactory = clientFactory(clientAdapter)
+		val allContexts = TestableAllContexts(modelChange, contextFactory, clientFactory)
+		// when
+		allContexts.setCurrentNamespace("dark side")
+		// then
+		verify(modelChange, never()).fireCurrentNamespaceChanged(anyOrNull(), anyOrNull())
+	}
+
+	@Test
 	fun `#setCurrentNamespace(namespace) should create client with given namespace`() {
 		// given
 		// when
@@ -393,6 +382,20 @@ class AllContextsTest {
 		verify(clientFactory, times(2)).invoke(namespace.capture(), contextName.capture())
 		assertThat(namespace.allValues[1]).isEqualTo("dark side")
 		assertThat(contextName.allValues[1]).isEqualTo(activeContext.context.name)
+	}
+
+	@Test(expected = ResourceException::class)
+	fun `#setCurrentNamespace(namespace) should throw if current namespace is forbidden`() {
+		// given
+		val client = client(KubernetesClientException("a disturbance in the force")) // throws upon client#namespaces
+		val clientConfig = clientConfig(currentContext, contexts, configuration)
+		val clientAdapter = clientAdapter(clientConfig, client) // no config so there are no contexts
+		val clientFactory = clientFactory(clientAdapter)
+		val allContexts = TestableAllContexts(modelChange, contextFactory, clientFactory)
+		// when
+		allContexts.setCurrentNamespace("dark side")
+		// then
+		verify(modelChange, never()).fireCurrentNamespaceChanged(anyOrNull(), anyOrNull())
 	}
 
 	@Test
@@ -494,6 +497,35 @@ class AllContextsTest {
 		allContexts.onKubeConfigChanged(kubeConfig)
 		// then
 		verify(activeContext).close()
+	}
+
+	/**
+	 * Returns a client mock that answers with the given boolean to the call
+	 * [client.namespaces().withName("<name>").isReady]
+	 *
+	 * @param namespaceResourceIsReady the boolean to return to the call
+	 * @return a client mock that answers to the query if a given namespace is ready
+	 */
+	private fun client(namespaceResourceIsReady: Boolean): KubernetesClient {
+		val namespaceResource: Resource<Namespace> = mock {
+			on { isReady } doReturn namespaceResourceIsReady
+		}
+		val namespacesOperation: NonNamespaceOperation<Namespace, NamespaceList, Resource<Namespace>> = mock {
+			on { withName(any()) } doReturn namespaceResource
+		}
+		return client(namespacesOperation)
+	}
+
+	private fun client(namespacesOp: NonNamespaceOperation<Namespace, NamespaceList, Resource<Namespace>>): KubernetesClient {
+		return mock<KubernetesClient> {
+			on { namespaces() } doReturn namespacesOp
+		}
+	}
+
+	private fun client(e: KubernetesClientException): KubernetesClient {
+		return mock<KubernetesClient> {
+			on { namespaces() } doThrow e
+		}
 	}
 
 	private class TestableAllContexts(
