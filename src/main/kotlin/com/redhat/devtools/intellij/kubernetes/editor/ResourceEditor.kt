@@ -245,20 +245,25 @@ open class ResourceEditor(
         runAsync {
             editorResources.pull(resource)
             runInUI {
-                replaceDocument(editorResources.getAllResources())
+                if (!replaceDocument(editorResources.getAllResources())) {
+                    update()
+                }
             }
         }
     }
 
-    private fun replaceDocument(resources: Collection<HasMetadata>) {
+    private fun replaceDocument(resources: Collection<HasMetadata>): Boolean {
         val manager = getPsiDocumentManager.invoke(project)
-        val document = getDocument.invoke(editor) ?: return
-        val jsonYaml = serialize.invoke(resources, getFileType(document, manager)) ?: return
-        if (document.text.trim() != jsonYaml) {
+        val document = getDocument.invoke(editor) ?: return false
+        val jsonYaml = serialize.invoke(resources, getFileType(document, manager)) ?: return false
+        return if (document.text.trim() != jsonYaml) {
             runWriteCommand {
                 document.replaceString(0, document.textLength, jsonYaml)
                 manager.commitDocument(document)
             }
+            true
+        } else {
+            false
         }
     }
 

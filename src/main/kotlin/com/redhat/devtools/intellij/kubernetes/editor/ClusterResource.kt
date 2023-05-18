@@ -172,6 +172,26 @@ open class ClusterResource protected constructor(
         }
     }
 
+    /**
+     * Returns `true` if the resource kind and apiVersion of this ClusterResource is supported by the cluster.
+     * Returns `false` otherwise.
+     *
+     * @return true if the kind and apiVersion of this ClusterResource is supported by the cluster
+     *
+     * @see HasMetadata.getKind
+     * @see HasMetadata.getApiVersion
+     */
+    fun isSupported(): Boolean {
+        val e = try {
+            pull()
+            null
+        } catch(re: ResourceException) {
+            re.cause
+        }
+        return !(e is KubernetesClientException
+            && e.isUnsupported())
+    }
+
     fun isDeleted(): Boolean {
         synchronized(this) {
             return isDeleted
