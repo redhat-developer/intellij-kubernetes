@@ -10,6 +10,7 @@
  ******************************************************************************/
 package com.redhat.devtools.intellij.kubernetes.console
 
+import com.intellij.openapi.application.invokeLater
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Disposer
 import com.intellij.openapi.wm.ToolWindow
@@ -18,28 +19,24 @@ import com.intellij.ui.content.Content
 import com.intellij.ui.content.ContentManager
 import com.redhat.devtools.intellij.common.utils.IDEAContentFactory
 import com.redhat.devtools.intellij.common.utils.UIHelper.executeInUI
-import java.util.function.Supplier
 
 object ConsolesToolWindow {
 
     const val ID = "Kubernetes Consoles"
 
-    fun add(tab: ConsoleTab<*, *>, project: Project): Boolean {
-        return executeInUI(Supplier {
-            var added = false
+    fun add(tab: ConsoleTab<*, *>, project: Project) {
+        invokeLater {
             val toolWindow = ToolWindowManager.getInstance(project).getToolWindow(ID)
             if (toolWindow != null) {
                 val existing = toolWindow.contentManager.findContent(tab.getDisplayName())
                 if (existing == null) {
                     val content = createContent(tab)
                     addContent(toolWindow, content)
-                    added = true
                 }
                 selectTab(tab.getDisplayName(), toolWindow.contentManager)
                 ensureOpened(toolWindow)
             }
-            added
-        })
+        }
     }
 
     private fun createContent(tab: ConsoleTab<*, *>): Content {
