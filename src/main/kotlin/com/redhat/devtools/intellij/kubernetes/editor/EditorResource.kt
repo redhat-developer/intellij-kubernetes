@@ -23,6 +23,7 @@ import com.redhat.devtools.intellij.kubernetes.model.util.toMessage
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.client.KubernetesClient
 import io.fabric8.kubernetes.client.utils.KubernetesResourceUtil
+import io.fabric8.kubernetes.client.utils.Serialization
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
 
@@ -41,7 +42,7 @@ open class EditorResource(
     /** for testing purposes */
     protected open val clusterResource: ClusterResource? = createClusterResource(resource)
 
-    private var lastPushedPulled: HasMetadata? = null
+    private var lastPushedPulled: HasMetadata? = Serialization.clone(resource)
     private var resourceVersion: String? = resource.metadata.resourceVersion
 
     private val resourceChangeMutex = ReentrantLock()
@@ -101,35 +102,39 @@ open class EditorResource(
 
     private fun getState(resource: HasMetadata, existingState: EditorResourceState?): EditorResourceState {
         val isModified = isModified(resource)
-        val isOutdated = isOutdatedVersion()
-        val existsOnCluster = existsOnCluster()
         return when {
             !isConnected() ->
                 Error("Error contacting cluster. Make sure it's reachable, current context set, etc.", null as String?)
+
+            isSupported() ->
+                Error("Unsupported kind ${resource.kind} in version ${resource.apiVersion}")
 
             !hasName(resource)
                     && !hasGenerateName(resource) ->
                 Error("Resource has neither name nor generateName.", null as String?)
 
-            existingState is Error
-                    && !isModified->
-                existingState
-
             isDeleted() ->
                 DeletedOnCluster()
 
-            isModified
-                || !existsOnCluster ->
+            isModified ->
                 Modified(
-                    existsOnCluster,
-                    isOutdated
+                    existsOnCluster(),
+                    isOutdatedVersion()
                 )
 
-            isOutdated ->
+            isOutdatedVersion() ->
                 Outdated()
 
-            existingState != null ->
-                existingState
+            existingState is Pulled
+                    || existingState is Pushed
+                    || existingState is Error ->
+                        existingState
+
+            !existsOnCluster() ->
+                Modified(
+                    existsOnCluster(),
+                    isOutdatedVersion()
+                )
 
             else ->
                 Identical()
@@ -139,20 +144,29 @@ open class EditorResource(
     fun pull(): EditorResourceState {
         val state = try {
             val cluster = clusterResource
-                ?: return Error("Could not pull ${toKindAndName(resource)}", "cluster not connected.")
-            val pulled = cluster.pull(true)
-                ?: return Error("Could not pull ${toKindAndName(resource)}", "resource not found on cluster.")
-            setResource(pulled)
-            setResourceVersion(KubernetesResourceUtil.getResourceVersion(pulled))
-            setLastPushedPulled(pulled)
-            Pulled()
-        } catch (e: Exception) {
+            val pulled = cluster?.pull(true)
             /**
              * Store resource that we tried to push but failed.
              * In this way this resource is not in modified state anymore
-             * @see [isModified]
+             * @see isModified
+             * @see getState(resource: HasMetadata, existingState: EditorResourceState?)
              */
             setLastPushedPulled(resource)
+            when {
+                cluster == null ->
+                    Error("Could not pull ${toKindAndName(resource)}", "cluster not connected.")
+
+                pulled == null ->
+                    Error("Could not pull ${toKindAndName(resource)}", "resource not found on cluster.")
+
+                else -> {
+                    setResource(pulled)
+                    setResourceVersion(KubernetesResourceUtil.getResourceVersion(pulled))
+                    setLastPushedPulled(pulled)
+                    Pulled()
+                }
+            }
+        } catch (e: Exception) {
             logger<ResourceEditor>().warn(e)
             Error(
                 "Could not pull  ${toKindAndName(resource)}",
@@ -234,10 +248,19 @@ open class EditorResource(
     }
 
     fun isOutdatedVersion(): Boolean {
-        val version =  resourceChangeMutex.withLock {
-            resourceVersion
+        return try {
+            val version =  resourceChangeMutex.withLock {
+                resourceVersion
+            }
+            true == clusterResource?.isOutdatedVersion(version)
+        } catch (e: Exception) {
+            logger<EditorResource>().warn("Could not check if resource ${toKindAndName(resource)} is outdated when compared to the cluster", e);
+            false
         }
-        return true == clusterResource?.isOutdatedVersion(version)
+    }
+
+    private fun isSupported(): Boolean {
+        return clusterResource?.isSupported() ?: false
     }
 
     /**
@@ -258,7 +281,12 @@ open class EditorResource(
     }
 
     private fun existsOnCluster(): Boolean {
-        return true == clusterResource?.exists()
+        return try {
+            true == clusterResource?.exists()
+        } catch (e: Exception) {
+            logger<EditorResource>().warn("Could not check if resource ${toKindAndName(resource)} exists on cluster.", e)
+            return false
+        }
     }
 
     private fun isConnected(): Boolean {

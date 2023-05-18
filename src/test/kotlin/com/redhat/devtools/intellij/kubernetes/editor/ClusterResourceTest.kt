@@ -28,9 +28,11 @@ import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.Namespace
 import io.fabric8.kubernetes.api.model.Pod
 import io.fabric8.kubernetes.api.model.PodBuilder
+import io.fabric8.kubernetes.api.model.StatusBuilder
 import io.fabric8.kubernetes.client.KubernetesClient
 import io.fabric8.kubernetes.client.KubernetesClientException
 import io.fabric8.kubernetes.client.Watch
+import java.net.HttpURLConnection
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test
 
@@ -170,6 +172,47 @@ class ClusterResourceTest {
         cluster.set(modifiedEndorResourceOnCluster)
         // then
         assertThat(cluster.isDeleted()).isFalse
+    }
+
+    @Test
+    fun `#isSupported() should return false if cluster returns unsupported`() {
+        // given
+        val e = KubernetesClientException(
+            "you dont have the force",
+            HttpURLConnection.HTTP_UNSUPPORTED_TYPE,
+            StatusBuilder().withMessage("").build()
+        )
+        doThrow(e)
+            .whenever(context).get(any())
+        // when
+        val supported = cluster.isSupported()
+        // then
+        assertThat(supported).isFalse
+    }
+
+    @Test
+    fun `#isSupported() should return true if cluster returns 404`() {
+        // given
+        val e = KubernetesClientException(
+            "force not found",
+            HttpURLConnection.HTTP_NOT_FOUND,
+            StatusBuilder().withMessage("").build()
+        )
+        doThrow(e)
+            .whenever(context).get(any())
+        // when
+        val supported = cluster.isSupported()
+        // then
+        assertThat(supported).isTrue
+    }
+
+    @Test
+    fun `#isSupported() should return true if cluster returns resource`() {
+        // given
+        // when
+        val supported = cluster.isSupported()
+        // then
+        assertThat(supported).isTrue
     }
 
     @Test

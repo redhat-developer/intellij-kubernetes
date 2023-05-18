@@ -60,7 +60,9 @@ class PushNotification(private val editor: FileEditor, private val project: Proj
         val text = createText(toCreate, toUpdate)
         return createPanel(text,
             toUpdate.isNotEmpty(),
-            showPull && toUpdate.any { editorResource -> editorResource.isOutdatedVersion() })
+            showPull && toUpdate.any {
+                editorResource -> editorResource.isOutdatedVersion()
+            })
     }
 
     private fun createText(toCreate: Collection<EditorResource>?, toUpdate: Collection<EditorResource>?): String {
