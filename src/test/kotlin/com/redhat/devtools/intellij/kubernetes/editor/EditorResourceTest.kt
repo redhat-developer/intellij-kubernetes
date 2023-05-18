@@ -140,7 +140,20 @@ class EditorResourceTest {
         // given
         val toPush = PodBuilder(POD2).build()
         val editorResource = createEditorResource(toPush)
+        // when
+        editorResource.push()
+        // then
+        // stored local resource that was pushed (not resource return from cluster)
         assertThat(editorResource.getLastPushedPulled()).isEqualTo(toPush)
+    }
+
+    @Test
+    fun `#push should store local resource that was pushed even if pushing fails`() {
+        // given
+        val toPush = PodBuilder(POD2).build()
+        val editorResource = createEditorResource(toPush)
+        doThrow(ResourceException::class)
+            .whenever(clusterResource).push(any())
         // when
         editorResource.push()
         // then
@@ -203,14 +216,14 @@ class EditorResourceTest {
     }
 
     @Test
-    fun `#pull should store local resource that was pulled`() {
+    fun `#pull should store local resource that existed when pulling`() {
         // given
         val toPull = PodBuilder(POD2).build()
         val pulled = POD3
         doReturn(pulled)
             .whenever(clusterResource).pull(any())
         val editorResource = createEditorResource(toPull)
-        assertThat(editorResource.getLastPushedPulled()).isEqualTo(toPull)
+        editorResource.setLastPushedPulled(toPull)
         // when
         editorResource.pull()
         // then
@@ -247,6 +260,7 @@ class EditorResourceTest {
     fun `#pull should set to error state if pulling from the cluster fails`() {
         // given
         val editorResource = createEditorResource(POD2)
+        editorResource.setLastPushedPulled(POD2) // not modified
         assertThat(editorResource.getState()).isNotInstanceOf(Error::class.java)
         doThrow(ResourceException("interference with the force"))
             .whenever(clusterResource).pull(any())
@@ -257,15 +271,29 @@ class EditorResourceTest {
     }
 
     @Test
-    fun `#getState should return error if previous state was error`() {
+    fun `#getState should return error if previous state was error and it is not modified`() {
         // given
         val editorResource = createEditorResource(POD2)
         val error = Error("oh my!")
         editorResource.setState(error)
+        editorResource.setLastPushedPulled(POD2) // modified = (current resource != lastPushedPulled)
         // when
         val state = editorResource.getState()
         // then
         assertThat(state).isEqualTo(error)
+    }
+
+    @Test
+    fun `#getState should return modified state if previous state was error but editor is modified`() {
+        // given
+        val editorResource = createEditorResource(POD2)
+        val error = Error("oh my!")
+        editorResource.setState(error)
+        editorResource.setLastPushedPulled(POD3) // modified = (current resource != lastPushedPulled)
+        // when
+        val state = editorResource.getState()
+        // then
+        assertThat(state).isInstanceOf(Modified::class.java)
     }
 
     @Test
