@@ -167,6 +167,8 @@ class EditorResourceTest {
         val toPush = PodBuilder(POD2).build()
         val editorResource = createEditorResource(toPush)
         assertThat(editorResource.getState()).isNotInstanceOf(Pushed::class.java)
+        doReturn(true)
+            .whenever(clusterResource).isSupported()
         doReturn(true) // after a push: resource exists on cluster
             .whenever(clusterResource).exists()
         doReturn(false) // after a push: resource is not deleted on cluster
@@ -183,6 +185,8 @@ class EditorResourceTest {
     fun `#push should set to error state if pushing to the cluster fails`() {
         // given
         val editorResource = createEditorResource(POD2)
+        doReturn(true)
+            .whenever(clusterResource).isSupported()
         assertThat(editorResource.getState()).isNotInstanceOf(Error::class.java)
         doThrow(ResourceException("interference with the force"))
             .whenever(clusterResource).push(any())
@@ -244,6 +248,8 @@ class EditorResourceTest {
             .whenever(clusterResource).pull(any())
         val editorResource = createEditorResource(toPull)
         assertThat(editorResource.getState()).isNotInstanceOf(Pushed::class.java)
+        doReturn(true)
+            .whenever(clusterResource).isSupported()
         doReturn(true) // after a pull: resource exists on cluster
             .whenever(clusterResource).exists()
         doReturn(false) // after a pull: resource is not deleted on cluster
@@ -261,6 +267,8 @@ class EditorResourceTest {
         // given
         val editorResource = createEditorResource(POD2)
         editorResource.setLastPushedPulled(POD2) // not modified
+        doReturn(true)
+            .whenever(clusterResource).isSupported()
         assertThat(editorResource.getState()).isNotInstanceOf(Error::class.java)
         doThrow(ResourceException("interference with the force"))
             .whenever(clusterResource).pull(any())
@@ -277,6 +285,8 @@ class EditorResourceTest {
         val error = Error("oh my!")
         editorResource.setState(error)
         editorResource.setLastPushedPulled(POD2) // modified = (current resource != lastPushedPulled)
+        doReturn(true)
+            .whenever(clusterResource).isSupported()
         // when
         val state = editorResource.getState()
         // then
@@ -286,6 +296,8 @@ class EditorResourceTest {
     @Test
     fun `#getState should return modified state if previous state was error but editor is modified`() {
         // given
+        doReturn(true)
+            .whenever(clusterResource).isSupported()
         val editorResource = createEditorResource(POD2)
         val error = Error("oh my!")
         editorResource.setState(error)
@@ -333,6 +345,8 @@ class EditorResourceTest {
             .endMetadata()
             .build()
         val editorResource = createEditorResource(resource)
+        doReturn(true)
+            .whenever(clusterResource).isSupported()
         // when
         val state = editorResource.getState()
         // then
@@ -349,6 +363,8 @@ class EditorResourceTest {
             .endMetadata()
             .build()
         val editorResource = createEditorResource(resource)
+        doReturn(true)
+            .whenever(clusterResource).isSupported()
         // when
         val state = editorResource.getState()
         // then
@@ -359,6 +375,8 @@ class EditorResourceTest {
     fun `#getState should return DeletedOnCluster if resource is deleted on cluster`() {
         // given
         val editorResource = createEditorResource(POD2)
+        doReturn(true)
+            .whenever(clusterResource).isSupported()
         doReturn(true)
             .whenever(clusterResource).isDeleted()
         // when
@@ -371,6 +389,8 @@ class EditorResourceTest {
     fun `#getState should return Modified if resource doesnt exist on cluster`() {
         // given
         val editorResource = createEditorResource(POD2)
+        doReturn(true)
+            .whenever(clusterResource).isSupported()
         doReturn(false)
             .whenever(clusterResource).exists()
         // when
@@ -391,6 +411,8 @@ class EditorResourceTest {
             .build()
         editorResource.setResource(modified)
         editorResource.setLastPushedPulled(POD2)
+        doReturn(true)
+            .whenever(clusterResource).isSupported()
         doReturn(true) // don't create modified state because it doesnt exist on cluster
             .whenever(clusterResource).exists()
         // when
@@ -403,6 +425,8 @@ class EditorResourceTest {
     fun `#getState should return Outdated if resource is outdated (when compared to the cluster resource)`() {
         // given
         val editorResource = createEditorResource(POD2)
+        doReturn(true)
+            .whenever(clusterResource).isSupported()
         doReturn(true)
             .whenever(clusterResource).isOutdatedVersion(any())
         doReturn(true) // don't return modified state because it doesnt exist
