@@ -106,7 +106,7 @@ open class EditorResource(
             !isConnected() ->
                 Error("Error contacting cluster. Make sure it's reachable, current context set, etc.", null as String?)
 
-            isSupported() ->
+            !isSupported() ->
                 Error("Unsupported kind ${resource.kind} in version ${resource.apiVersion}")
 
             !hasName(resource)
