@@ -142,7 +142,7 @@ open class ResourceFile protected constructor(
         } else {
             virtualFile.refresh(false, false)
         }
-        enableNonProjectFileEditing()
+        enableEditingNonProjectFile()
         return virtualFile
     }
 
@@ -177,7 +177,7 @@ open class ResourceFile protected constructor(
         return Factory.isTemporary(virtualFile)
     }
 
-    open fun enableNonProjectFileEditing() {
+    open fun enableEditingNonProjectFile() {
         virtualFile.putUserData(AllowNonProjectEditing.ALLOW_NON_PROJECT_EDITING, true)
     }
 

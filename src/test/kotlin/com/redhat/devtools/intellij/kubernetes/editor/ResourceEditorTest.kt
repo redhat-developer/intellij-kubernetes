@@ -22,6 +22,7 @@ import com.intellij.psi.util.PsiUtilCore
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.anyOrNull
 import com.nhaarman.mockitokotlin2.argWhere
+import com.nhaarman.mockitokotlin2.clearInvocations
 import com.nhaarman.mockitokotlin2.doAnswer
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.doThrow
@@ -180,6 +181,14 @@ class ResourceEditorTest {
         // when
         // then
         verify(resourceModel).addListener(any())
+    }
+
+    @Test
+    fun `#constructor should enable editing for non-project files`() {
+        // given
+        // when
+        // then
+        verify(resourceFile).enableEditingNonProjectFile()
     }
 
     @Test
@@ -488,49 +497,43 @@ class ResourceEditorTest {
     }
 
     @Test
-    fun `#enableNonProjectFileEditing should call #enableNonProjectFileEditing on editor file`() {
-        // given
-        // when
-        editor.enableNonProjectFileEditing()
-        // then
-        verify(resourceFile).enableNonProjectFileEditing()
-    }
-
-    @Test
-    fun `#enableNonProjectFileEditing should NOT call #enableNonProjectFileEditing if editor file is null`() {
+    fun `#enableEditingNonProjectFile should NOT call #enableNonProjectFileEditing if editor file is null`() {
         // given
         doReturn(null)
             .whenever(fileEditor).file
+        clearInvocations(resourceFile) // don't count invocation in constructor
         // when
-        editor.enableNonProjectFileEditing()
+        editor.enableEditingNonProjectFile()
         // then
-        verify(resourceFile, never()).enableNonProjectFileEditing()
+        verify(resourceFile, never()).enableEditingNonProjectFile()
     }
 
     @Test
-    fun `#enableNonProjectFileEditing should NOT call #enableNonProjectFileEditing if editor has no kind`() {
+    fun `#enableEditingNonProjectFile should NOT call #enableNonProjectFileEditing if editor has no kind`() {
         // given
         doReturn("apiGroup")
             .whenever(kubernetesTypeInfo).apiGroup
         doReturn(null)
             .whenever(kubernetesTypeInfo).kind
+        clearInvocations(resourceFile) // don't count invocation in constructor
         // when
-        editor.enableNonProjectFileEditing()
+        editor.enableEditingNonProjectFile()
         // then
-        verify(resourceFile, never()).enableNonProjectFileEditing()
+        verify(resourceFile, never()).enableEditingNonProjectFile()
     }
 
     @Test
-    fun `#enableNonProjectFileEditing should NOT call #enableNonProjectFileEditing if editor has no apiGroup`() {
+    fun `#enableEditingNonProjectFile should NOT call #enableNonProjectFileEditing if editor has no apiGroup`() {
         // given
         doReturn(null)
             .whenever(kubernetesTypeInfo).apiGroup
         doReturn("kind")
             .whenever(kubernetesTypeInfo).kind
+        clearInvocations(resourceFile) // don't count invocation in constructor
         // when
-        editor.enableNonProjectFileEditing()
+        editor.enableEditingNonProjectFile()
         // then
-        verify(resourceFile, never()).enableNonProjectFileEditing()
+        verify(resourceFile, never()).enableEditingNonProjectFile()
     }
 
     @Test
@@ -763,6 +766,10 @@ class ResourceEditorTest {
         editorResources
     ) {
 
+        public override fun enableEditingNonProjectFile() {
+            super.enableEditingNonProjectFile()
+        }
+
         public override fun onDiffClosed(documentBeforeDiff: String?) {
             // allow public visibility
             return super.onDiffClosed(documentBeforeDiff)
@@ -789,7 +796,7 @@ class ResourceEditorTest {
         }
     }
 
-    class NopEditorResourceState(): EditorResourceState()
+    class NopEditorResourceState: EditorResourceState()
 }
 
 
