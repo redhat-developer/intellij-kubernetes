@@ -86,6 +86,7 @@ open class ResourceEditor(
         Disposer.register(editor, this)
         editorResources.resourceChangedListener = onResourceChanged()
         resourceModel.addListener(onNamespaceOrContextChanged())
+        runAsync { enableEditingNonProjectFile() }
     }
 
     companion object {
@@ -416,13 +417,13 @@ open class ResourceEditor(
      * Enables editing of non project files for the file in this editor. This prevents the IDE from presenting the
      * "edit non-project" files dialog.
      */
-    fun enableNonProjectFileEditing() {
+    protected open fun enableEditingNonProjectFile() {
         if (editor.file == null
             || !isKubernetesResource(
                 getKubernetesResourceInfo.invoke(editor.file, project))){
             return
         }
-        createResourceFileForVirtual(editor.file)?.enableNonProjectFileEditing()
+        createResourceFileForVirtual(editor.file)?.enableEditingNonProjectFile()
     }
 
     fun createToolbar() {

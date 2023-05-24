@@ -28,18 +28,11 @@ class KubernetesPluginInitializer : StartupActivity {
         project.messageBus.connect().subscribe(FileEditorManagerListener.Before.FILE_EDITOR_MANAGER,
             EditorFocusListener(project)
         )
-        enableAllEditorsNonProjectEditing(project)
         showResourceEditorNotifications(project)
 
         project.messageBus.connect().subscribe(PsiDocumentTransactionListener.TOPIC,
             EditorTransactionListener()
         )
-    }
-
-    private fun enableAllEditorsNonProjectEditing(project: Project) {
-        FileEditorManager.getInstance(project).allEditors
-            .mapNotNull { editor -> ResourceEditorFactory.instance.getExistingOrCreate(editor, project) }
-            .forEach { resourceEditor -> resourceEditor.enableNonProjectFileEditing() }
     }
 
     private fun showResourceEditorNotifications(project: Project) {
