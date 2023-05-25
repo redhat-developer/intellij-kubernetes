@@ -10,6 +10,7 @@
  ******************************************************************************/
 package com.redhat.devtools.intellij.kubernetes.model.client
 
+import com.intellij.util.net.ssl.CertificateManager
 import com.redhat.devtools.intellij.kubernetes.model.util.isUnauthorized
 import io.fabric8.kubernetes.client.Client
 import io.fabric8.kubernetes.client.Config
@@ -53,12 +54,16 @@ abstract class ClientAdapter<C: KubernetesClient>(private val fabric8Client: C) 
 
     companion object Factory {
         fun create(namespace: String? = null, context: String? = null): ClientAdapter<out KubernetesClient> {
-            return create(namespace, Config.autoConfigure(context))
+            val config = Config.autoConfigure(context)
+            setAcceptCertificates(config)
+            return create(namespace, config)
         }
 
         fun create(namespace: String? = null, config: Config): ClientAdapter<out KubernetesClient> {
             setNamespace(namespace, config)
-            val kubeClient = KubernetesClientBuilder().withConfig(config).build()
+            val kubeClient = KubernetesClientBuilder()
+                .withConfig(config)
+                .build()
             val osClient = kubeClient.adapt(NamespacedOpenShiftClient::class.java)
             val isOpenShift = isOpenShift(osClient)
             return if (isOpenShift) {
@@ -66,6 +71,12 @@ abstract class ClientAdapter<C: KubernetesClient>(private val fabric8Client: C) 
             } else {
                 KubeClientAdapter(kubeClient)
             }
+        }
+
+        private fun setAcceptCertificates(config: Config) {
+            val manager = CertificateManager.getInstance().state;
+            config.isTrustCerts = manager.ACCEPT_AUTOMATICALLY
+            config.isDisableHostnameVerification = manager.ACCEPT_AUTOMATICALLY
         }
 
         private fun isOpenShift(osClient: NamespacedOpenShiftClient): Boolean {
