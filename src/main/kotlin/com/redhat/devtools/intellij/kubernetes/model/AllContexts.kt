@@ -77,7 +77,11 @@ open class AllContexts(
 	private val contextFactory: (ClientAdapter<out KubernetesClient>, IResourceModelObservable) -> IActiveContext<out HasMetadata, out KubernetesClient>? =
 		IActiveContext.Factory::create,
 	private val modelChange: IResourceModelObservable,
-	private val clientFactory: (String?, String?) -> ClientAdapter<out KubernetesClient> = ClientAdapter.Factory::create
+	private val clientFactory: (
+		namespace: String?,
+		context: String?
+	) -> ClientAdapter<out KubernetesClient>
+	= { namespace, context -> ClientAdapter.Factory.create(namespace, context) }
 ) : IAllContexts {
 
 	init {
