@@ -10,6 +10,7 @@
  ******************************************************************************/
 package com.redhat.devtools.intellij.kubernetes.model.client
 
+import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.verify
@@ -17,10 +18,23 @@ import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.config
 import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.namedContext
 import io.fabric8.kubernetes.client.NamespacedKubernetesClient
 import io.fabric8.kubernetes.client.impl.AppsAPIGroupClient
+import java.security.cert.X509Certificate
+import javax.net.ssl.X509ExtendedTrustManager
+import javax.net.ssl.X509TrustManager
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test
 
 class ClientAdapterTest {
+
+    private val certificate: X509Certificate = mock {
+        on { subjectX500Principal } doReturn mock()
+    }
+    private val trustManager: X509TrustManager = mock {
+        on { acceptedIssuers } doReturn arrayOf(certificate)
+    }
+    private val trustManagerProvider: (toIntegrate: Array<out X509ExtendedTrustManager>) -> X509TrustManager = mock() {
+        on { invoke(any()) } doReturn trustManager
+    }
 
     @Test
     fun `#isOpenShift should return true if has OpenShiftClient`() {
@@ -101,10 +115,20 @@ class ClientAdapterTest {
         val ctx2 = namedContext("Death Start", "Navy Garrison", "Empire", "Darh Vader" )
         val config = config(ctx1, listOf(ctx1, ctx2))
         // when
-        ClientAdapter.Factory.create(namespace, config)
+        ClientAdapter.Factory.create(namespace,  config, trustManagerProvider)
         // then
         verify(config).namespace = namespace
         verify(config.currentContext.context).namespace = namespace
     }
 
+    @Test
+    fun `#create should call trust manager provider`() {
+        // given
+        val ctx1 = namedContext("Aldeeran", "Aldera", "Republic", "Organa" )
+        val config = config(ctx1, listOf(ctx1))
+        // when
+        ClientAdapter.Factory.create("namespace",  config, trustManagerProvider)
+        // then
+        verify(trustManagerProvider).invoke(any())
+    }
 }

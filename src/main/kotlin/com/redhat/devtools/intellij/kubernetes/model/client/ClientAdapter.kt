@@ -10,20 +10,24 @@
  ******************************************************************************/
 package com.redhat.devtools.intellij.kubernetes.model.client
 
-import com.intellij.util.net.ssl.CertificateManager
+import com.redhat.devtools.intellij.kubernetes.model.client.ssl.IDEATrustManager
 import com.redhat.devtools.intellij.kubernetes.model.util.isUnauthorized
 import io.fabric8.kubernetes.client.Client
 import io.fabric8.kubernetes.client.Config
 import io.fabric8.kubernetes.client.KubernetesClient
 import io.fabric8.kubernetes.client.KubernetesClientBuilder
 import io.fabric8.kubernetes.client.KubernetesClientException
+import io.fabric8.kubernetes.client.http.HttpClient
 import io.fabric8.kubernetes.client.impl.AppsAPIGroupClient
 import io.fabric8.kubernetes.client.impl.BatchAPIGroupClient
 import io.fabric8.kubernetes.client.impl.NetworkAPIGroupClient
 import io.fabric8.kubernetes.client.impl.StorageAPIGroupClient
+import io.fabric8.kubernetes.client.internal.SSLUtils
 import io.fabric8.openshift.client.NamespacedOpenShiftClient
 import io.fabric8.openshift.client.OpenShiftClient
 import java.util.concurrent.ConcurrentHashMap
+import javax.net.ssl.X509ExtendedTrustManager
+import javax.net.ssl.X509TrustManager
 
 open class OSClientAdapter(client: OpenShiftClient, private val kubeClient: KubernetesClient) :
     ClientAdapter<OpenShiftClient>(client) {
@@ -50,19 +54,31 @@ open class KubeClientAdapter(client: KubernetesClient) :
     }
 }
 
-abstract class ClientAdapter<C: KubernetesClient>(private val fabric8Client: C) {
+abstract class ClientAdapter<C : KubernetesClient>(private val fabric8Client: C) {
 
     companion object Factory {
-        fun create(namespace: String? = null, context: String? = null): ClientAdapter<out KubernetesClient> {
+        fun create(
+            namespace: String? = null,
+            context: String? = null,
+            trustManagerProvider: ((toIntegrate: Array<out X509ExtendedTrustManager>) -> X509TrustManager)
+            = IDEATrustManager()::configure
+        ): ClientAdapter<out KubernetesClient> {
             val config = Config.autoConfigure(context)
-            setAcceptCertificates(config)
-            return create(namespace, config)
+            return create(namespace, config, trustManagerProvider)
         }
 
-        fun create(namespace: String? = null, config: Config): ClientAdapter<out KubernetesClient> {
+        fun create(
+            namespace: String? = null,
+            config: Config,
+            externalTrustManagerProvider: (toIntegrate: Array<out X509ExtendedTrustManager>) -> X509TrustManager
+            = IDEATrustManager()::configure
+        ): ClientAdapter<out KubernetesClient> {
             setNamespace(namespace, config)
             val kubeClient = KubernetesClientBuilder()
                 .withConfig(config)
+                .withHttpClientBuilderConsumer { builder ->
+                    setSslContext(builder, config, externalTrustManagerProvider)
+                }
                 .build()
             val osClient = kubeClient.adapt(NamespacedOpenShiftClient::class.java)
             val isOpenShift = isOpenShift(osClient)
@@ -73,10 +89,16 @@ abstract class ClientAdapter<C: KubernetesClient>(private val fabric8Client: C) 
             }
         }
 
-        private fun setAcceptCertificates(config: Config) {
-            val manager = CertificateManager.getInstance().state;
-            config.isTrustCerts = manager.ACCEPT_AUTOMATICALLY
-            config.isDisableHostnameVerification = manager.ACCEPT_AUTOMATICALLY
+        private fun setSslContext(
+            builder: HttpClient.Builder,
+            config: Config,
+            externalTrustManagerProvider: (toIntegrate: Array<out X509ExtendedTrustManager>) -> X509TrustManager
+        ) {
+            val clientTrustManagers = SSLUtils.trustManagers(config)
+                .filterIsInstance<X509ExtendedTrustManager>()
+                .toTypedArray()
+            val externalTrustManager = externalTrustManagerProvider.invoke(clientTrustManagers)
+            builder.sslContext(SSLUtils.keyManagers(config), arrayOf(externalTrustManager))
         }
 
         private fun isOpenShift(osClient: NamespacedOpenShiftClient): Boolean {

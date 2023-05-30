@@ -35,7 +35,10 @@ import java.io.IOException
 import java.io.OutputStream
 import java.util.concurrent.ConcurrentHashMap
 
-open class ProcessWatches(private val clientFactory: (String?, String?) -> ClientAdapter<out KubernetesClient> = ClientAdapter.Factory::create) {
+open class ProcessWatches(
+    private val clientFactory: (String?, String?) -> ClientAdapter<out KubernetesClient>
+    = { namespace: String?, context: String? -> ClientAdapter.Factory.create(namespace, context) }
+) {
 
     @Suppress("UNCHECKED_CAST")
     protected open val operators: Map<ResourceKind<out HasMetadata>, OperatorSpecs> = mapOf(
