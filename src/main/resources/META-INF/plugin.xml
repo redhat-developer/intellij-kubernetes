@@ -10,6 +10,12 @@
     </description>
     <change-notes>
         <![CDATA[
+        <h3>1.0.0</h3>
+        <ul>
+            <li><a href="https://github.com/redhat-developer/intellij-kubernetes/issues/600">"unable to find valid certification path to requested target" when trying to edit a resource</a></li>
+            <li><a href="https://github.com/redhat-developer/intellij-kubernetes/issues/570">Should reduce number of editor notifications, they are detrimental for user focus when editing</a></li>
+            <li><a href="https://github.com/redhat-developer/intellij-kubernetes/issues/521">allow user to set ns/project with ctx menu</a></li>
+        </ul>
         <h3>0.8.1</h3>
         <ul>
             <li><a href="https://github.com/redhat-developer/intellij-kubernetes/issues/586">As a user I want to be able to use a KUBECONFIG at any location, not just the default</a></li>
