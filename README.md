@@ -80,7 +80,7 @@ There is a `Push` button available in the editor toolbar to make the action more
 ![editor toolbar push](images/editor-toolbar-push.png)
 
 Alternatively the editor notifies you whenever you may push your content to the cluster.
-Clicking the `Push` link in the editor notification saves your editor to the cluster.
+Clicking the `Push` link in the editor notification saves your file changes on to the cluster.
 
 ![editor push](images/editor-push.png)
 
