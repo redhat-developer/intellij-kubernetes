@@ -18,8 +18,9 @@ It is available for install from the [JetBrains Marketplace](https://plugins.jet
  - Edit Kubernetes resource manifests and apply them to your cluster
  - View Kubernetes and OpenShift clusters in an explorer tree view
  - Tree View supports dynamic update of K8s resources
- - Allow Push and Pull Feature to keep the editor in sync with the Kubernetes resource
- - Support Creation and Deletion of new Kubernetes resources on Cluster
+ - Push and Pull Feature to keep the editor in sync with the Kubernetes resource
+ - Allows users to Push multiple resources in an editor to create several resources at once.
+ - Support Creation and Deletion of Kubernetes resources on Cluster
  - Navigate into Kubernetes workloads, services, pods and nodes
  - Switching contexts and namespaces within Kubernetes
  - Follow logs from the connected cluster resource
@@ -79,7 +80,7 @@ There is a `Push` button available in the editor toolbar to make the action more
 ![editor toolbar push](images/editor-toolbar-push.png)
 
 Alternatively the editor notifies you whenever you may push your content to the cluster.
-Clicking the "Push" link in the editor notification saves your editor to the cluster.
+Clicking the `Push` link in the editor notification saves your file changes on to the cluster.
 
 ![editor push](images/editor-push.png)
 
@@ -88,16 +89,10 @@ The new resource will then appear in the resource tree that's displayed in our t
 
 #### Pull (Load) from Cluster
 
-The editor also notifies you if your resource has changed on the cluster.
-The notification informs you of a newer version that is available on the cluster and allows you to `Pull` it into your editor.
+You can `Pull` the resource from the cluster into the local file opened in the editor. 
+Clicking on the `Pull` icon in the toolbar replaces the content of your local file in the editor with the version that exists on the cluster.
 
-![editor pulled](images/editor-pulled.png)
-
-Competing changes in your editor and on the cluster get notified with 2 options:
-You can either overwrite the cluster by pushing the editor to the cluster.
-Alternatively you can replace your local version with the one on the cluster and pull it.
-
-![editor pull or push](images/editor-pull-push.png)
+![editor pull](images/editor-toolbar-pull.png)
 
 #### Diff
 

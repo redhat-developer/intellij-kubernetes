@@ -10,6 +10,12 @@
     </description>
     <change-notes>
         <![CDATA[
+        <h3>1.0.0</h3>
+        <ul>
+            <li><a href="https://github.com/redhat-developer/intellij-kubernetes/issues/600">Support editing a K8s resource on a logged in cluster using private certificate </a></li>
+            <li><a href="https://github.com/redhat-developer/intellij-kubernetes/issues/570">Reduces number of editor notification messages when updating K8s resource files.</a></li>
+            <li><a href="https://github.com/redhat-developer/intellij-kubernetes/issues/521">Allows the user to set the Namespace/Project from Context Menu</a></li>
+        </ul>
         <h3>0.8.1</h3>
         <ul>
             <li><a href="https://github.com/redhat-developer/intellij-kubernetes/issues/586">As a user I want to be able to use a KUBECONFIG at any location, not just the default</a></li>
