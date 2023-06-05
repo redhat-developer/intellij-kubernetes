@@ -14,7 +14,7 @@
         <ul>
             <li><a href="https://github.com/redhat-developer/intellij-kubernetes/issues/600">"unable to find valid certification path to requested target" when trying to edit a resource</a></li>
             <li><a href="https://github.com/redhat-developer/intellij-kubernetes/issues/570">Should reduce number of editor notifications, they are detrimental for user focus when editing</a></li>
-            <li><a href="https://github.com/redhat-developer/intellij-kubernetes/issues/521">allow user to set ns/project with ctx menu</a></li>
+            <li><a href="https://github.com/redhat-developer/intellij-kubernetes/issues/521">Allows the user to set the Namespace/Project from Context Menu</a></li>
         </ul>
         <h3>0.8.1</h3>
         <ul>
