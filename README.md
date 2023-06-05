@@ -89,7 +89,7 @@ The new resource will then appear in the resource tree that's displayed in our t
 
 #### Pull (Load) from Cluster
 
-You can `Pull` the resource from the cluster into you editor. 
+You can `Pull` the resource from the cluster into the local file opened in the editor. 
 You click the `Pull` icon in the toolbar and replace the content of your editor with the version that exists on the cluster.
 
 ![editor pull](images/editor-toolbar-pull.png)
