@@ -22,7 +22,9 @@ import com.redhat.devtools.intellij.kubernetes.model.resource.openshift.Deployme
 import com.redhat.devtools.intellij.kubernetes.model.resource.openshift.ImageStreamsOperator
 import com.redhat.devtools.intellij.kubernetes.model.resource.openshift.ProjectsOperator
 import com.redhat.devtools.intellij.kubernetes.model.resource.openshift.ReplicationControllersOperator
+import com.redhat.devtools.intellij.kubernetes.model.resource.openshift.RoutesOperator
 import com.redhat.devtools.intellij.kubernetes.model.resourceName
+import com.redhat.devtools.intellij.kubernetes.tree.KubernetesStructure.Folders.NETWORK
 import com.redhat.devtools.intellij.kubernetes.tree.KubernetesStructure.Folders.WORKLOADS
 import com.redhat.devtools.intellij.kubernetes.tree.TreeStructure.Folder
 import io.fabric8.kubernetes.api.model.HasMetadata
@@ -37,11 +39,13 @@ class OpenShiftStructure(model: IResourceModel): AbstractTreeStructureContributi
         val IMAGESTREAMS = Folder("ImageStreams", kind = ImageStreamsOperator.KIND)
         val DEPLOYMENTCONFIGS = Folder("DeploymentConfigs", kind = DeploymentConfigsOperator.KIND)
         val BUILDCONFIGS = Folder("BuildConfigs", kind = BuildConfigsOperator.KIND)
+        val ROUTES = Folder("Routes", kind = RoutesOperator.KIND)
     }
 
     override val elementsTree: List<ElementNode<*>> = listOf(
         *createProjectsElements(),
-        *createWorkloadElements()
+        *createWorkloadElements(),
+        *createNetworkElements()
     )
 
     private fun createProjectsElements(): Array<ElementNode<*>> {
@@ -127,6 +131,29 @@ class OpenShiftStructure(model: IResourceModel): AbstractTreeStructureContributi
                     model.resources(BuildsOperator.KIND)
                         .inCurrentNamespace()
                         .filtered(BuildFor(it))
+                        .list()
+                        .sortedBy(resourceName)
+                }
+            }
+        )
+    }
+
+    private fun createNetworkElements(): Array<ElementNode<*>> {
+        return arrayOf(
+            element<Any> {
+                applicableIf { it == NETWORK }
+                children {
+                    listOf<Any>(
+                        ROUTES
+                    )
+                }
+            },
+            element<Any> {
+                applicableIf { it == ROUTES }
+                childrenKind { RoutesOperator.KIND }
+                children {
+                    model.resources(RoutesOperator.KIND)
+                        .inCurrentNamespace()
                         .list()
                         .sortedBy(resourceName)
                 }
