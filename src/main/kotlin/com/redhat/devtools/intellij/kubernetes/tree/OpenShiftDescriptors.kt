@@ -27,6 +27,7 @@ import io.fabric8.openshift.api.model.Build
 import io.fabric8.openshift.api.model.BuildConfig
 import io.fabric8.openshift.api.model.DeploymentConfig
 import io.fabric8.openshift.api.model.ImageStream
+import io.fabric8.openshift.api.model.Route
 import javax.swing.Icon
 
 object OpenShiftDescriptors {
@@ -48,7 +49,8 @@ object OpenShiftDescriptors {
             is DeploymentConfig,
             is ReplicationController,
             is BuildConfig,
-            is Build -> ResourceDescriptor(element as HasMetadata, childrenKind, parent, model, project)
+            is Build,
+            is Route -> ResourceDescriptor(element as HasMetadata, childrenKind, parent, model, project)
             else -> null
         }
     }
