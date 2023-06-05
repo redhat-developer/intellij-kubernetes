@@ -13,7 +13,7 @@
         <h3>1.0.0</h3>
         <ul>
             <li><a href="https://github.com/redhat-developer/intellij-kubernetes/issues/600">"unable to find valid certification path to requested target" when trying to edit a resource</a></li>
-            <li><a href="https://github.com/redhat-developer/intellij-kubernetes/issues/570">Should reduce number of editor notifications, they are detrimental for user focus when editing</a></li>
+            <li><a href="https://github.com/redhat-developer/intellij-kubernetes/issues/570">Reduces number of editor notification messages when updating K8s resource files.</a></li>
             <li><a href="https://github.com/redhat-developer/intellij-kubernetes/issues/521">Allows the user to set the Namespace/Project from Context Menu</a></li>
         </ul>
         <h3>0.8.1</h3>
