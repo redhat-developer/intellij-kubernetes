@@ -19,7 +19,7 @@ It is available for install from the [JetBrains Marketplace](https://plugins.jet
  - View Kubernetes and OpenShift clusters in an explorer tree view
  - Tree View supports dynamic update of K8s resources
  - Push and Pull Feature to keep the editor in sync with the Kubernetes resource
- - Push multiple resources in an editor to create several resources at the time
+ - Allows users to Push multiple resources in an editor to create several resources at once.
  - Support Creation and Deletion of Kubernetes resources on Cluster
  - Navigate into Kubernetes workloads, services, pods and nodes
  - Switching contexts and namespaces within Kubernetes
