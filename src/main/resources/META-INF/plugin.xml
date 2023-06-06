@@ -10,6 +10,10 @@
     </description>
     <change-notes>
         <![CDATA[
+        <h3>1.0.1</h3>
+        <ul>
+            <li><a href="https://github.com/redhat-developer/intellij-kubernetes/issues/611">Display routes for OpenShift clusters</a></li>
+        </ul>
         <h3>1.0.0</h3>
         <ul>
             <li><a href="https://github.com/redhat-developer/intellij-kubernetes/issues/600">Support editing a K8s resource on a logged in cluster using private certificate </a></li>
