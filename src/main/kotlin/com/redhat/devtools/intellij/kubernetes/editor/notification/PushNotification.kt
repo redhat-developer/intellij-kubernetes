@@ -33,12 +33,20 @@ class PushNotification(private val editor: FileEditor, private val project: Proj
 
     fun show(showPull: Boolean, editorResources: Collection<EditorResource>) {
         val toCreateOrUpdate = editorResources
-            .filter { editorResource ->
-                editorResource.getState() is Different
+            .map { editorResource ->
+                // extract state, it may change when accessed again
+                Pair(editorResource.getState(), editorResource)
             }
-            .groupBy { editorResource ->
-                (editorResource.getState() as Different).exists
+            .filter { resourceByState ->
+                resourceByState.first is Different
             }
+            .groupBy(
+                { resourceByState ->
+                    (resourceByState.first as Different).exists
+                }, { resourceByState ->
+                    resourceByState.second
+                }
+            )
         val toCreate = toCreateOrUpdate[false] ?: emptyList()
         val toUpdate = toCreateOrUpdate[true] ?: emptyList()
         if (toCreate.isEmpty()

@@ -16,7 +16,6 @@ import com.intellij.openapi.util.Key
 import com.intellij.ui.EditorNotificationPanel
 import com.intellij.util.containers.isNullOrEmpty
 import com.redhat.devtools.intellij.kubernetes.editor.EditorResource
-import com.redhat.devtools.intellij.kubernetes.editor.FILTER_PUSHED
 import com.redhat.devtools.intellij.kubernetes.editor.Pushed
 import com.redhat.devtools.intellij.kubernetes.editor.hideNotification
 import com.redhat.devtools.intellij.kubernetes.editor.showNotification
@@ -46,10 +45,20 @@ class PushedNotification(private val editor: FileEditor, private val project: Pr
     private fun createPanel(editorResources: Collection<EditorResource>): EditorNotificationPanel {
         val panel = EditorNotificationPanel()
         val createdOrUpdated = editorResources
-            .filter(FILTER_PUSHED)
-            .groupBy { editorResource ->
-                (editorResource.getState() as Pushed).updated
+            .map { editorResource ->
+                Pair(editorResource.getState(), editorResource)
             }
+            .filter { resourceByState ->
+                resourceByState.first is Pushed
+            }
+            .groupBy(
+                { resourceByState ->
+                    (resourceByState.first as Pushed).updated
+                },
+                { resourceByState ->
+                    resourceByState.second
+                }
+            )
         val created = createdOrUpdated[false]
         val updated = createdOrUpdated[true]
         panel.text = createText(created, updated)
