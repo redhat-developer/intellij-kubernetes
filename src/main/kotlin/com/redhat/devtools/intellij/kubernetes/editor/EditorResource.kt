@@ -62,6 +62,7 @@ open class EditorResource(
                 && !areEqual(new, existing)) {
                 this.resource = new
             }
+            setState(null) // reset state
         }
     }
 
@@ -94,13 +95,18 @@ open class EditorResource(
      */
     fun getState(): EditorResourceState {
         return resourceChangeMutex.withLock {
-            val state = getState(resource, state)
-            this.state = state
-            state
+            val existingState = this.state
+            if (existingState == null) {
+                val newState = createState(resource, null)
+                setState(newState)
+                newState
+            } else {
+                existingState
+            }
         }
     }
 
-    private fun getState(resource: HasMetadata, existingState: EditorResourceState?): EditorResourceState {
+    private fun createState(resource: HasMetadata, existingState: EditorResourceState?): EditorResourceState {
         val isModified = isModified(resource)
         return when {
             !isConnected() ->
@@ -122,12 +128,14 @@ open class EditorResource(
                     isOutdatedVersion()
                 )
 
+            existingState is Error ->
+                existingState
+
             isOutdatedVersion() ->
                 Outdated()
 
             existingState is Pulled
-                    || existingState is Pushed
-                    || existingState is Error ->
+                    || existingState is Pushed ->
                         existingState
 
             !existsOnCluster() ->
@@ -149,7 +157,7 @@ open class EditorResource(
              * Store resource that we tried to push but failed.
              * In this way this resource is not in modified state anymore
              * @see isModified
-             * @see getState(resource: HasMetadata, existingState: EditorResourceState?)
+             * @see createState(resource: HasMetadata, existingState: EditorResourceState?)
              */
             setLastPushedPulled(resource)
             when {
