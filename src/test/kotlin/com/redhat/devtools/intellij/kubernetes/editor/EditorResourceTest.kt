@@ -302,6 +302,7 @@ class EditorResourceTest {
         val error = Error("oh my!")
         editorResource.setState(error)
         editorResource.setLastPushedPulled(POD3) // modified = (current resource != lastPushedPulled)
+        editorResource.setResource(POD2) // cause state to be recreated
         // when
         val state = editorResource.getState()
         // then
@@ -403,6 +404,10 @@ class EditorResourceTest {
     @Test
     fun `#getState should return Modified if resource is modified when compared to last pulled pushed resource`() {
         // given
+        doReturn(true)
+            .whenever(clusterResource).isSupported()
+        doReturn(true) // don't create modified state because it doesnt exist on cluster
+            .whenever(clusterResource).exists()
         val editorResource = createEditorResource(POD2)
         val modified = PodBuilder(POD2)
             .editMetadata()
@@ -411,10 +416,6 @@ class EditorResourceTest {
             .build()
         editorResource.setResource(modified)
         editorResource.setLastPushedPulled(POD2)
-        doReturn(true)
-            .whenever(clusterResource).isSupported()
-        doReturn(true) // don't create modified state because it doesnt exist on cluster
-            .whenever(clusterResource).exists()
         // when
         val state = editorResource.getState()
         // then
@@ -436,6 +437,24 @@ class EditorResourceTest {
         val state = editorResource.getState()
         // then
         assertThat(state).isInstanceOf(Outdated::class.java)
+    }
+
+    @Test
+    fun `#getState should return Error if resource is outdated but in error`() {
+        // given
+        val editorResource = createEditorResource(POD2)
+        doReturn(true)
+            .whenever(clusterResource).isSupported()
+        doReturn(true)
+            .whenever(clusterResource).isOutdatedVersion(any())
+        doReturn(true) // don't return modified state because it doesnt exist
+            .whenever(clusterResource).exists()
+        editorResource.setLastPushedPulled(POD2) // don't return modified because last pulled pushed is different
+        editorResource.setState(mock<Error>())
+        // when
+        val state = editorResource.getState()
+        // then
+        assertThat(state).isInstanceOf(Error::class.java)
     }
 
     @Test
