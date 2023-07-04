@@ -28,6 +28,7 @@ import com.redhat.devtools.intellij.kubernetes.model.ResourceWatch
 import com.redhat.devtools.intellij.kubernetes.model.client.ClientAdapter
 import com.redhat.devtools.intellij.kubernetes.model.client.KubeClientAdapter
 import com.redhat.devtools.intellij.kubernetes.model.context.IActiveContext.ResourcesIn
+import com.redhat.devtools.intellij.kubernetes.model.dashboard.IDashboard
 import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.NAMESPACE1
 import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.NAMESPACE2
 import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.NAMESPACE3
@@ -37,6 +38,7 @@ import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.POD3
 import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.client
 import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.customResource
 import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.customResourceDefinition
+import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.namedContext
 import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.resource
 import com.redhat.devtools.intellij.kubernetes.model.mocks.Mocks.namespacedResourceOperator
 import com.redhat.devtools.intellij.kubernetes.model.mocks.Mocks.nonNamespacedResourceOperator
@@ -181,7 +183,7 @@ class KubernetesContextTest {
 	private fun createContext(internalResourcesOperators: List<IResourceOperator<*>>, extensionResourceOperators: List<IResourceOperator<*>>): TestableKubernetesContext {
 		return spy(
 			TestableKubernetesContext(
-				mock(),
+				namedContext("death star"),
 				modelChange,
 				this@KubernetesContextTest.client,
 				internalResourcesOperators,
@@ -904,6 +906,24 @@ class KubernetesContextTest {
 		verify(client.get(), never()).close()
 	}
 
+	@Test
+	fun `#close should close watch`() {
+		// given
+		// when
+		context.close()
+		// then
+		verify(context.watch).close()
+	}
+
+	@Test
+	fun `#close should close dashboard`() {
+		// given
+		// when
+		context.close()
+		// then
+		verify(context.dashboard).close()
+	}
+
 	private fun givenCustomResourceOperatorInContext(
 		definition: CustomResourceDefinition,
 		definitionOperator: IResourceOperator<CustomResourceDefinition>,
@@ -944,6 +964,8 @@ class KubernetesContextTest {
         public override var watch: ResourceWatch<ResourceKind<out HasMetadata>>,
         override val notification: Notification)
 		: KubernetesContext(context, observable, client) {
+
+		public override val dashboard: IDashboard = mock()
 
 		public override val namespacedOperators
 				: MutableMap<ResourceKind<out HasMetadata>, INamespacedResourceOperator<out HasMetadata, KubernetesClient>>

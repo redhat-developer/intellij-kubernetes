@@ -13,6 +13,7 @@ package com.redhat.devtools.intellij.kubernetes.model.context
 import com.redhat.devtools.intellij.kubernetes.model.IResourceModelObservable
 import com.redhat.devtools.intellij.kubernetes.model.client.ClientAdapter
 import com.redhat.devtools.intellij.kubernetes.model.client.KubeClientAdapter
+import com.redhat.devtools.intellij.kubernetes.model.dashboard.KubernetesDashboard
 import com.redhat.devtools.intellij.kubernetes.model.resource.IResourceOperator
 import com.redhat.devtools.intellij.kubernetes.model.resource.OperatorFactory
 import com.redhat.devtools.intellij.kubernetes.model.resource.ResourceKind
@@ -26,7 +27,16 @@ open class KubernetesContext(
 	context: NamedContext,
 	modelChange: IResourceModelObservable,
 	client: KubeClientAdapter,
-) : ActiveContext<Namespace, KubernetesClient>(context, modelChange, client) {
+) : ActiveContext<Namespace, KubernetesClient>(
+		context,
+		modelChange,
+		client,
+		KubernetesDashboard(
+			client.get(),
+			context.name,
+			client.get().masterUrl.toExternalForm()
+		)
+) {
 
 	override val namespaceKind : ResourceKind<Namespace> =  NamespacesOperator.KIND
 
@@ -36,4 +46,7 @@ open class KubernetesContext(
 	}
 
 	override fun isOpenShift() = false
+	override fun getDashboardUrl(): String? {
+		return dashboard.get()
+	}
 }

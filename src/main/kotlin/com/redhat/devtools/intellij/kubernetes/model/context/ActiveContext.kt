@@ -23,6 +23,7 @@ import com.redhat.devtools.intellij.kubernetes.model.context.IActiveContext.Reso
 import com.redhat.devtools.intellij.kubernetes.model.context.IActiveContext.ResourcesIn.ANY_NAMESPACE
 import com.redhat.devtools.intellij.kubernetes.model.context.IActiveContext.ResourcesIn.CURRENT_NAMESPACE
 import com.redhat.devtools.intellij.kubernetes.model.context.IActiveContext.ResourcesIn.NO_NAMESPACE
+import com.redhat.devtools.intellij.kubernetes.model.dashboard.IDashboard
 import com.redhat.devtools.intellij.kubernetes.model.resource.INamespacedResourceOperator
 import com.redhat.devtools.intellij.kubernetes.model.resource.INonNamespacedResourceOperator
 import com.redhat.devtools.intellij.kubernetes.model.resource.IResourceOperator
@@ -52,8 +53,9 @@ import java.net.URL
 abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
     context: NamedContext,
     private val modelChange: IResourceModelObservable,
-    override val client: ClientAdapter<out C>,
-    private var singleResourceOperator: NonCachingSingleResourceOperator = NonCachingSingleResourceOperator(client)
+    val client: ClientAdapter<out C>,
+    protected open val dashboard: IDashboard,
+    private var singleResourceOperator: NonCachingSingleResourceOperator = NonCachingSingleResourceOperator(client),
 ) : Context(context), IActiveContext<N, C> {
 
     override val active: Boolean = true
@@ -470,6 +472,7 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
     override fun close() {
         logger<ActiveContext<*, *>>().debug("Closing context ${context.name}.")
         watch.close()
+        dashboard.close()
     }
 
     private inline fun <R: HasMetadata, reified O: Any> getResourceOperator(resource: R): O? {

@@ -48,8 +48,6 @@ interface IActiveContext<N: HasMetadata, C: KubernetesClient>: IContext {
         }
     }
 
-    val client: ClientAdapter<out KubernetesClient>
-
     /**
      * The scope in which resources may exist.
      */
@@ -66,6 +64,10 @@ interface IActiveContext<N: HasMetadata, C: KubernetesClient>: IContext {
         }
     }
 
+    val name: String?
+        get() {
+            return context.name
+        }
     /**
      * The master url for this context. This is the url of the cluster for this context.
      */
@@ -241,6 +243,8 @@ interface IActiveContext<N: HasMetadata, C: KubernetesClient>: IContext {
      * @return true if the resource was replaced
      */
     fun replaced(resource: HasMetadata): Boolean
+
+    fun getDashboardUrl(): String?
 
     /**
      * Closes and disposes this context.

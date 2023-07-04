@@ -355,6 +355,17 @@ fun <R: HasMetadata> hasName(resource: R): Boolean {
 	return true == resource.metadata.name?.isNotEmpty()
 }
 
+/**
+ * Return `true` if the name of the given resource starts with the given value.
+ * Returns `false` otherwise.
+ *
+ * @param startsWith the string that the name should start with
+ * @param resource the resource whose name should start with the given value
+ * @return `true` if the name of the resource starts with the given value
+ */
+fun <R: HasMetadata> nameStartsWith(startsWith: String, resource: R): Boolean {
+	return resource.metadata?.name?.startsWith(startsWith) ?: false
+}
 
 /**
  * Returns a string stating kinds and names for the given resources.
@@ -401,3 +412,7 @@ private fun toName(resource: HasMetadata) =
 
 fun toKindAndName(resource: HasMetadata) =
 	"${resource.kind} '${resource.metadata.name ?: resource.metadata.generateName}'"
+
+fun <R: HasMetadata> hasLabel(value: String, label: String, resource: R): Boolean {
+	return value == resource.metadata?.labels?.get(label)
+}

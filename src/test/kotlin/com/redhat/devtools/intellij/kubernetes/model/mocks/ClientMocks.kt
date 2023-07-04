@@ -228,7 +228,7 @@ object ClientMocks {
         return namedContext(name, context)
     }
 
-    fun namedContext(name: String, context: Context): NamedContext {
+    fun namedContext(name: String, context: Context? = null): NamedContext {
         return mock {
             on { this.name } doReturn name
             on { this.context } doReturn context
@@ -445,7 +445,6 @@ object ClientMocks {
             .whenever(podSpec).containers
         return job
     }
-
 
     fun statusDetails(num: Int): List<StatusDetails> {
         return (1..num)
