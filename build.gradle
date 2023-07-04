@@ -70,7 +70,12 @@ dependencies {
     )
     integrationTestImplementation(
             "com.redhat.devtools.intellij:intellij-common:1.1.0",
-            "com.redhat.devtools.intellij:intellij-common-ui-test-library:0.2.0"
+            "com.redhat.devtools.intellij:intellij-common-ui-test-library:0.2.0",
+            'org.junit.jupiter:junit-jupiter-engine:5.8.2',
+            'org.junit.jupiter:junit-jupiter-api:5.8.2',
+            'org.junit.jupiter:junit-jupiter:5.8.2',
+            'org.junit.platform:junit-platform-launcher:1.9.3',
+            "com.google.code.gson:gson:2.8.9"
     )
 }
 
