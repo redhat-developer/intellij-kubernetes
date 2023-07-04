@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2020 Red Hat, Inc.
+ * Copyright (c) 2023 Red Hat, Inc.
  * Distributed under license by Red Hat, Inc. All rights reserved.
  * This program is made available under the terms of the
  * Eclipse Public License v2.0 which accompanies this distribution,
@@ -10,10 +10,5 @@
  ******************************************************************************/
 package com.redhat.devtools.intellij.kubernetes.model.util
 
-import io.fabric8.kubernetes.api.model.HasMetadata
-
-class ResourceException(
-    message: String?,
-    cause: Throwable? = null,
-    val resources: List<HasMetadata> = emptyList())
-    : PluginException(message, cause)
+open class PluginException(message: String?, cause: Throwable? = null)
+    : RuntimeException(message, cause)

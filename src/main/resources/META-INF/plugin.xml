@@ -229,6 +229,10 @@
                     id="com.redhat.devtools.intellij.kubernetes.actions.TerminalAction"
                     text="Terminal"
                     icon="Icons.terminal"/>
+            <action class="com.redhat.devtools.intellij.kubernetes.actions.OpenDashboardAction"
+                    id="com.redhat.devtools.intellij.kubernetes.actions.OpenDashboardAction"
+                    text="Open Dashboard"
+                    icon="AllIcons.Nodes.EmptyNode"/>
         </group>
 
         <group id="Kubernetes.Editor.Toolbar" class="com.intellij.openapi.actionSystem.DefaultActionGroup">

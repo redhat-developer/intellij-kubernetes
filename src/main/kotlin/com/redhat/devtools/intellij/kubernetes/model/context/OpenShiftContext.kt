@@ -13,6 +13,7 @@ package com.redhat.devtools.intellij.kubernetes.model.context
 import com.redhat.devtools.intellij.kubernetes.model.IResourceModelObservable
 import com.redhat.devtools.intellij.kubernetes.model.client.ClientAdapter
 import com.redhat.devtools.intellij.kubernetes.model.client.OSClientAdapter
+import com.redhat.devtools.intellij.kubernetes.model.dashboard.OpenShiftDashboard
 import com.redhat.devtools.intellij.kubernetes.model.resource.IResourceOperator
 import com.redhat.devtools.intellij.kubernetes.model.resource.OperatorFactory
 import com.redhat.devtools.intellij.kubernetes.model.resource.openshift.ProjectsOperator
@@ -22,10 +23,19 @@ import io.fabric8.openshift.api.model.Project
 import io.fabric8.openshift.client.OpenShiftClient
 
 open class OpenShiftContext(
-    context: NamedContext,
-    modelChange: IResourceModelObservable,
-    client: OSClientAdapter,
-) : ActiveContext<Project, OpenShiftClient>(context, modelChange, client) {
+	context: NamedContext,
+	modelChange: IResourceModelObservable,
+	client: OSClientAdapter,
+) : ActiveContext<Project, OpenShiftClient>(
+		context,
+		modelChange,
+		client,
+		OpenShiftDashboard(
+			client.get(),
+			context.name,
+			client.get().masterUrl.toExternalForm()
+		)
+) {
 
 	override val namespaceKind =  ProjectsOperator.KIND
 
@@ -34,4 +44,7 @@ open class OpenShiftContext(
 	}
 
 	override fun isOpenShift() = true
+	override fun getDashboardUrl(): String? {
+		return dashboard.get()
+	}
 }
