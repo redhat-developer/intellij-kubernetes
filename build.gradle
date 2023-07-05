@@ -81,7 +81,7 @@ dependencies {
 
 configurations {
     implementation {
-        exclude group: 'org.slf4j', module: 'slf4j-api'
+        exclude group: "org.slf4j", module: "slf4j-api"
         exclude group: "org.jetbrains.kotlin", module: "kotlin-stdlib"
     }
 
@@ -127,13 +127,13 @@ test {
 
 intellij {
     version = ideaVersion //for a full list of Jetbrains IDEA releases please see https://www.jetbrains.com/intellij-repository/releases
-    pluginName = 'Kubernetes by Red Hat'
+    pluginName = "Kubernetes by Red Hat"
     plugins = ["yaml", "com.redhat.devtools.intellij.telemetry:${telemetryPluginVersion}" ]
     updateSinceUntilBuild = false
 }
 
 runIde {
-    systemProperties['com.redhat.devtools.intellij.telemetry.mode'] = 'debug'
+    systemProperties["com.redhat.devtools.intellij.telemetry.mode"] = "debug"
 }
 
 patchPluginXml {
@@ -151,7 +151,7 @@ publishPlugin {
 
 runIdeForUiTests {
     systemProperty "robot-server.port", System.getProperty("robot-server.port")
-    systemProperties['com.redhat.devtools.intellij.telemetry.mode'] = 'debug'
+    systemProperties["com.redhat.devtools.intellij.telemetry.mode"] = "debug"
 }
 
 task generateSchemas {
@@ -171,8 +171,8 @@ task generateSchemas {
          * openapi2jsonschema -o src/main/resources/schemas/k8s.io --kubernetes --expanded --stand-alone --strict https://raw.githubusercontent.com/kubernetes/kubernetes/v1.20.5/api/openapi-spec/swagger.json
          */
         def process = exec {
-            executable 'openapi2jsonschema'
-            args '-o', destination, "--kubernetes", "--expanded", "--stand-alone", "--strict", url
+            executable "openapi2jsonschema"
+            args "-o", destination, "--kubernetes", "--expanded", "--stand-alone", "--strict", url
         }
         if (isSuccess(process.exitValue)) {
             createIndexFile("${projectDir}/${destination}")
@@ -232,12 +232,12 @@ repositories {
     mavenLocal()
     mavenCentral()
     maven {
-        url 'https://repository.jboss.org'
+        url "https://repository.jboss.org"
     }
     maven {
-        url 'https://packages.jetbrains.team/maven/p/ij/intellij-dependencies'
+        url "https://packages.jetbrains.team/maven/p/ij/intellij-dependencies"
     }
 }
 
-group 'com.redhat.devtools.intellij'
+group "com.redhat.devtools.intellij"
 version projectVersion
