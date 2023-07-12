@@ -46,7 +46,7 @@ open class KubernetesContext(
 	}
 
 	override fun isOpenShift() = false
-	override fun getDashboardUrl(): String? {
+	override fun getDashboardUrl(): String {
 		return dashboard.get()
 	}
 }

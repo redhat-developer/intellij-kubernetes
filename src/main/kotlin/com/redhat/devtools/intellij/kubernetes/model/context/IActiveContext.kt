@@ -244,7 +244,13 @@ interface IActiveContext<N: HasMetadata, C: KubernetesClient>: IContext {
      */
     fun replaced(resource: HasMetadata): Boolean
 
-    fun getDashboardUrl(): String?
+    /**
+     * Returns the url of the Dashboard for this context.
+     * Throws if the url could not be determined.
+     *
+     * @return the url of the Dashboard for this context
+     */
+    fun getDashboardUrl(): String
 
     /**
      * Closes and disposes this context.

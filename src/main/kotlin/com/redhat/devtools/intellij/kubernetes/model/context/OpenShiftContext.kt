@@ -44,7 +44,7 @@ open class OpenShiftContext(
 	}
 
 	override fun isOpenShift() = true
-	override fun getDashboardUrl(): String? {
+	override fun getDashboardUrl(): String {
 		return dashboard.get()
 	}
 }
