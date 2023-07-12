@@ -17,7 +17,6 @@ import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.progress.Progressive
 import com.redhat.devtools.intellij.kubernetes.actions.run
 import com.redhat.devtools.intellij.kubernetes.editor.ResourceEditorFactory
-import com.redhat.devtools.intellij.kubernetes.editor.ResourceFile
 import com.redhat.devtools.intellij.kubernetes.editor.util.getSelectedFileEditor
 import com.redhat.devtools.intellij.kubernetes.model.Notification
 import com.redhat.devtools.intellij.kubernetes.telemetry.TelemetryService
@@ -41,7 +40,7 @@ class PullAction: AnAction() {
                     editor.pull()
                     sendTelemetry(editor.getResources(), telemetry)
                 } catch (e: Exception) {
-                    logger<ResourceFile>().warn("Could not pull resource from cluster: ${e.message}", e)
+                    logger<PullAction>().warn("Could not pull resource from cluster: ${e.message}", e)
                     Notification().error("Error Pulling", "Could not pull resource from cluster: ${e.message}")
                     telemetry.error(e).send()
                 }

@@ -41,7 +41,7 @@ open class ClusterResource protected constructor(
                 && context != null) {
                 ClusterResource(resource, context)
             } else {
-                logger<ResourceEditor>().warn("Could not create ClusterResource: no resource or context (resource = $resource, context = $context)")
+                logger<ClusterResource>().warn("Could not create ClusterResource: no resource or context (resource = $resource, context = $context)")
                 null
             }
         }

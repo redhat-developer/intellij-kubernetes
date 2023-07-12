@@ -175,7 +175,7 @@ open class EditorResource(
                 }
             }
         } catch (e: Exception) {
-            logger<ResourceEditor>().warn(e)
+            logger<EditorResource>().warn(e)
             Error(
                 "Could not pull  ${toKindAndName(resource)}",
                 toMessage(e.cause)

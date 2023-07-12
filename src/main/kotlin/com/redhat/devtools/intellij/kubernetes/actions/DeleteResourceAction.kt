@@ -22,7 +22,6 @@ import com.redhat.devtools.intellij.kubernetes.model.util.toMessage
 import com.redhat.devtools.intellij.kubernetes.telemetry.TelemetryService
 import com.redhat.devtools.intellij.kubernetes.telemetry.TelemetryService.PROP_RESOURCE_KIND
 import com.redhat.devtools.intellij.kubernetes.telemetry.TelemetryService.getKinds
-import com.redhat.devtools.intellij.kubernetes.tree.ResourceWatchController
 import io.fabric8.kubernetes.api.model.HasMetadata
 import javax.swing.tree.TreePath
 
@@ -49,7 +48,7 @@ class DeleteResourceAction: StructureTreeAction() {
                 } catch (e: MultiResourceException) {
                     val resources = e.causes.flatMap { it.resources }
                     Notification().error("Could not delete resource(s)", toMessage(resources, 30))
-                    logger<ResourceWatchController>().warn("Could not delete resources.", e)
+                    logger<DeleteResourceAction>().warn("Could not delete resources.", e)
                     telemetry.error(e).send()
                 }
             })

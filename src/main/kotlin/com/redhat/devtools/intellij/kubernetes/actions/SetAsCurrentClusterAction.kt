@@ -17,7 +17,6 @@ import com.redhat.devtools.intellij.common.actions.StructureTreeAction
 import com.redhat.devtools.intellij.kubernetes.model.context.IContext
 import com.redhat.devtools.intellij.kubernetes.telemetry.TelemetryService
 import com.redhat.devtools.intellij.kubernetes.telemetry.TelemetryService.NAME_PREFIX_CONTEXT
-import com.redhat.devtools.intellij.kubernetes.tree.ResourceWatchController
 import javax.swing.tree.TreePath
 
 class SetAsCurrentClusterAction: StructureTreeAction(IContext::class.java) {
@@ -32,7 +31,7 @@ class SetAsCurrentClusterAction: StructureTreeAction(IContext::class.java) {
                     getResourceModel()?.setCurrentContext(context)
                     telemetry.success().send()
                 } catch (e: Exception) {
-                    logger<ResourceWatchController>().warn(
+                    logger<SetAsCurrentClusterAction>().warn(
                         "Could not set current context to ${context.context.name}.", e
                     )
                     telemetry.error(e).send()

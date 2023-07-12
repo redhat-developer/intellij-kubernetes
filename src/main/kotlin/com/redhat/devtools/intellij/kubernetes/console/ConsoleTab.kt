@@ -214,7 +214,7 @@ abstract class ConsoleTab<T : ConsoleView, W : Any?>(
                 try {
                     startWatch(container, consoleView)
                 } catch (e: ResourceException) {
-                    logger<TerminalTab>().warn(e)
+                    logger<ConsoleTab<*,*>>().warn(e)
                     showError("Could not connect to container \"${container.name}\".", e)
                 }
             }

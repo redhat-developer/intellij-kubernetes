@@ -46,7 +46,7 @@ abstract class NonNamespacedResourceOperator<R : HasMetadata, C : Client>(
         }
 
     protected open fun loadAllResources(): List<R> {
-        logger<NamespacedResourceOperator<*, *>>().debug("Loading all $kind resources.")
+        logger<NonNamespacedResourceOperator<*, *>>().debug("Loading all $kind resources.")
         return getOperation()
             ?.list()?.items
             ?: emptyList()

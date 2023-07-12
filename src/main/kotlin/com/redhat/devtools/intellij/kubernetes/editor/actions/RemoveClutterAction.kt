@@ -15,7 +15,6 @@ import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.progress.Progressive
 import com.redhat.devtools.intellij.kubernetes.editor.ResourceEditorFactory
-import com.redhat.devtools.intellij.kubernetes.editor.ResourceFile
 import com.redhat.devtools.intellij.kubernetes.editor.util.getSelectedFileEditor
 import com.redhat.devtools.intellij.kubernetes.model.Notification
 import com.redhat.devtools.intellij.kubernetes.telemetry.TelemetryService
@@ -37,7 +36,7 @@ class RemoveClutterAction: AnAction() {
                     editor.removeClutter()
                     TelemetryService.sendTelemetry(editor.getResources(), telemetry)
                 } catch (e: Exception) {
-                    logger<ResourceFile>().warn("Could not remove clutter resource to cluster: ${e.message}", e)
+                    logger<RemoveClutterAction>().warn("Could not remove clutter resource to cluster: ${e.message}", e)
                     Notification().error("Error removing metadata clutter", "Could not remove metadata clutter: ${e.message}")
                     telemetry.error(e).send()
                 }

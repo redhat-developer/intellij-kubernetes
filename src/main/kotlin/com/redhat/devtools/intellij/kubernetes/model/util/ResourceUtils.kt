@@ -20,6 +20,7 @@ import io.fabric8.kubernetes.model.annotation.Group
 import io.fabric8.kubernetes.model.annotation.Version
 import io.fabric8.kubernetes.model.util.Helper
 import java.util.stream.Collectors
+import org.apache.tools.ant.util.ResourceUtils
 
 const val MARKER_WILL_BE_DELETED = "willBeDeleted"
 const val API_GROUP_VERSION_DELIMITER = '/'
@@ -244,7 +245,7 @@ fun getHighestPriorityVersion(spec: CustomResourceDefinitionSpec): String? {
 	val versions = spec.versions.map { it.name }
 	val version = KubernetesVersionPriority.highestPriority(versions)
 	if (version == null) {
-		logger<CustomResourceDefinitionSpec>().warn(
+		logger<ResourceUtils>().warn(
 			"Could not find version with highest priority in ${spec.group}/${spec.names.kind}."
 		)
 	}

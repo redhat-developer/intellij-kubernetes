@@ -16,7 +16,6 @@ import com.intellij.openapi.actionSystem.CommonDataKeys
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.progress.Progressive
 import com.redhat.devtools.intellij.kubernetes.editor.ResourceEditorFactory
-import com.redhat.devtools.intellij.kubernetes.editor.ResourceFile
 import com.redhat.devtools.intellij.kubernetes.editor.util.getSelectedFileEditor
 import com.redhat.devtools.intellij.kubernetes.model.Notification
 import com.redhat.devtools.intellij.kubernetes.telemetry.TelemetryService
@@ -40,7 +39,7 @@ class PushModifiedAction: AnAction() {
                     resourceEditor.push(false)
                     sendTelemetry(resourceEditor.getResources(), telemetry)
                 } catch (e: Exception) {
-                    logger<ResourceFile>().warn("Could not push resource to cluster: ${e.message}", e)
+                    logger<PushModifiedAction>().warn("Could not push resource to cluster: ${e.message}", e)
                     Notification().error("Error Pushing", "Could not push resource to cluster: ${e.message}")
                     telemetry.error(e).send()
                 }

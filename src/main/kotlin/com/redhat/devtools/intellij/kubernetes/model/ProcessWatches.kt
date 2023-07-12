@@ -11,9 +11,7 @@
 package com.redhat.devtools.intellij.kubernetes.model
 
 import com.intellij.openapi.diagnostic.logger
-import com.redhat.devtools.intellij.kubernetes.console.TerminalTab
 import com.redhat.devtools.intellij.kubernetes.model.client.ClientAdapter
-import com.redhat.devtools.intellij.kubernetes.model.context.ActiveContext
 import com.redhat.devtools.intellij.kubernetes.model.resource.IWatchableExec
 import com.redhat.devtools.intellij.kubernetes.model.resource.IWatchableLog
 import com.redhat.devtools.intellij.kubernetes.model.resource.IWatchableProcess
@@ -63,7 +61,7 @@ open class ProcessWatches(
     }
 
     fun watchLog(container: Container, resource: HasMetadata, out: OutputStream): LogWatch? {
-        logger<ActiveContext<*, *>>().debug("Watching log of container in ${toMessage(resource, -1)}")
+        logger<ProcessWatches>().debug("Watching log of container in ${toMessage(resource, -1)}")
         val operator = createOperator<IWatchableLog<HasMetadata>>(resource) ?: return null
         return try {
             val watch = operator.watchLog(container, resource, out)
@@ -87,7 +85,7 @@ open class ProcessWatches(
     }
 
     fun watchExec(container: Container, resource: HasMetadata, listener: ExecListener): ExecWatch? {
-        logger<ActiveContext<*, *>>().debug("Watching exec of container \"${container.name}\" in ${toMessage(resource, -1)}.")
+        logger<ProcessWatches>().debug("Watching exec of container \"${container.name}\" in ${toMessage(resource, -1)}.")
         val operator = createOperator<IWatchableExec<HasMetadata>>(resource)
         return try {
             val watch = operator?.watchExec(container, resource, listener)
@@ -114,7 +112,7 @@ open class ProcessWatches(
             operator?.close()
             operator != null
         } catch (e: Exception) {
-            logger<TerminalTab>().warn(
+            logger<ProcessWatches>().warn(
                 "Could not close exec watch $watch",
                 e.cause)
             false
