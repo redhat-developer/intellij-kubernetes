@@ -35,14 +35,12 @@ import com.redhat.devtools.intellij.kubernetes.editor.util.getDocument
 import com.redhat.devtools.intellij.kubernetes.editor.util.isKubernetesResource
 import com.redhat.devtools.intellij.kubernetes.model.IResourceModel
 import com.redhat.devtools.intellij.kubernetes.model.IResourceModelListener
-import com.redhat.devtools.intellij.kubernetes.model.Notification
 import com.redhat.devtools.intellij.kubernetes.model.context.IActiveContext
-import com.redhat.devtools.intellij.kubernetes.model.util.KubernetesClientExceptionUtils.statusMessage
 import com.redhat.devtools.intellij.kubernetes.model.util.ResourceException
 import com.redhat.devtools.intellij.kubernetes.model.util.toMessage
 import com.redhat.devtools.intellij.kubernetes.model.util.toTitle
-import com.redhat.devtools.intellij.kubernetes.model.util.trimWithEllipsis
 import io.fabric8.kubernetes.api.model.HasMetadata
+import java.util.concurrent.CompletableFuture
 
 /**
  * A Decorator for [FileEditor] instances that allows to push or pull the editor content to/from a remote cluster.
@@ -77,14 +75,14 @@ open class ResourceEditor(
     private val getPsiDocumentManager: (Project) -> PsiDocumentManager = { PsiDocumentManager.getInstance(project) },
     // for mocking purposes
     @Suppress("NAME_SHADOWING")
-    private val getKubernetesResourceInfo: (VirtualFile?, Project) -> KubernetesResourceInfo? = {
-            file, project -> com.redhat.devtools.intellij.kubernetes.editor.util.getKubernetesResourceInfo(file,project)
+    private val getKubernetesResourceInfo: (VirtualFile?, Project) -> KubernetesResourceInfo? = { file, project ->
+        com.redhat.devtools.intellij.kubernetes.editor.util.getKubernetesResourceInfo(file, project)
     },
     // for mocking purposes
     private val diff: ResourceDiff = ResourceDiff(project),
     // for mocking purposes
     protected val editorResources: EditorResources = EditorResources(resourceModel)
-): Disposable {
+) : Disposable {
 
     init {
         Disposer.register(editor, this)
@@ -112,14 +110,15 @@ open class ResourceEditor(
                 val resources = createResources(
                     getDocument(editor),
                     editor.file?.fileType,
-                    resourceModel.getCurrentNamespace())
+                    resourceModel.getCurrentNamespace()
+                )
                 val editorResources = editorResources.setResources(resources)
 
                 if (editorResources.size == 1) {
                     // show notification for 1 resource
                     val editorResource = editorResources.firstOrNull() ?: return@runAsync
                     showNotification(editorResource)
-                } else if (editorResources.size > 1){
+                } else if (editorResources.size > 1) {
                     // show notification for multiple resources
                     showNotification(editorResources)
                 }
@@ -155,6 +154,7 @@ open class ResourceEditor(
  */
             is Modified ->
                 showPushNotification(true, listOf(editorResource))
+
             else ->
                 runInUI {
                     hideNotifications()
@@ -170,7 +170,7 @@ open class ResourceEditor(
         }
         val inError = editorResources.filter(FILTER_ERROR)
         if (inError.isNotEmpty()) {
-                showErrorNotification(inError)
+            showErrorNotification(inError)
         } else {
             runInUI {
                 hideNotifications()
@@ -300,43 +300,38 @@ open class ResourceEditor(
         }
     }
 
-    fun diff() {
-        val manager = getPsiDocumentManager.invoke(project)
-        val file = editor.file ?: return
-        var fileType: FileType? = null
-        var beforeDiff: String? = null
-        runInUI {
-            val document = getDocument.invoke(editor) ?: return@runInUI
-            fileType = getFileType(document, manager) ?: return@runInUI
-            beforeDiff = document.text
-        }
-        if (fileType == null
-            || beforeDiff == null
-        ) {
-            return
-        }
-        runAsync {
-            try {
+    open fun diff(): CompletableFuture<Unit> {
+        return CompletableFuture
+            .supplyAsync(
+                // UI thread required
+                {
+                    val file = editor.file ?: throw ResourceException("Editor ${editor.name} has no file.")
+                    val manager = getPsiDocumentManager.invoke(project)
+                    val document = getDocument.invoke(editor) ?: throw ResourceException("Could not get document for editor ${editor.name}.")
+                    val fileType = getFileType(document, manager) ?: throw ResourceException("Could not determine file type for editor ${editor.name}.")
+                    DiffContext(file, fileType, document.text)
+                },
+                { runInUI { it.run() } }
+            ).thenApplyAsync { context ->
                 val resourcesOnCluster = editorResources.getAllResourcesOnCluster()
-                val serialized = serialize(resourcesOnCluster, fileType) ?: return@runAsync
-                runInUI {
-                    diff.open(file, serialized) { onDiffClosed(beforeDiff) }
-                }
-            } catch(e: ResourceException) {
-                val message = trimWithEllipsis(e.message, 100)
-                val causeMessage = statusMessage(e.cause)
-                Notification()
-                    .error("Could not open diff",
-                        if (causeMessage == null) {
-                            message ?: ""
-                        } else if (message == null) {
-                            causeMessage
-                        } else {
-                            "$message: $causeMessage"
-                        }
-                    )
-            }
-        }
+                val serialized = serialize(resourcesOnCluster, context.fileType) ?: throw ResourceException("Could not serialize cluster resources for editor ${editor.name}.")
+                context.clusterResources = serialized
+                context
+            }.thenApplyAsync(
+                // UI thread required
+                { context ->
+                    diff.open(context.file, context.clusterResources) { onDiffClosed(context.document) }
+                },
+                { runInUI { it.run() } }
+            )
+    }
+
+    private class DiffContext(
+        val file: VirtualFile,
+        val fileType: FileType,
+        val document: String
+    ) {
+        lateinit var clusterResources: String
     }
 
     /*
@@ -423,13 +418,14 @@ open class ResourceEditor(
                 }
             }
 
-            override fun currentNamespaceChanged(new: IActiveContext<*,*>?, old: IActiveContext<*,*>?) {
+            override fun currentNamespaceChanged(new: IActiveContext<*, *>?, old: IActiveContext<*, *>?) {
                 // current namespace in same context has changed, recreate cluster resource
                 editorResources.disposeAll()
                 update()
             }
         }
     }
+
     /**
      * Closes this instance and cleans up references to it.
      * - Removes the resource model listener,
@@ -452,7 +448,9 @@ open class ResourceEditor(
     protected open fun enableEditingNonProjectFile() {
         if (editor.file == null
             || !isKubernetesResource(
-                getKubernetesResourceInfo.invoke(editor.file, project))){
+                getKubernetesResourceInfo.invoke(editor.file, project)
+            )
+        ) {
             return
         }
         createResourceFileForVirtual(editor.file)?.enableEditingNonProjectFile()
@@ -477,7 +475,7 @@ open class ResourceEditor(
     }
 
     /** for testing purposes */
-    protected open fun <R: Any> runReadCommand(runnable: () -> R?): R? {
+    protected open fun <R : Any> runReadCommand(runnable: () -> R?): R? {
         return ReadAction.compute<R, Exception>(runnable)
     }
 

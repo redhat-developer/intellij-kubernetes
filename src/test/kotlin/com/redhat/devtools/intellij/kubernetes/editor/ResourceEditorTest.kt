@@ -50,6 +50,7 @@ import io.fabric8.kubernetes.api.model.PodBuilder
 import io.fabric8.kubernetes.client.KubernetesClient
 import io.fabric8.kubernetes.client.KubernetesClientException
 import io.fabric8.kubernetes.client.utils.Serialization
+import java.util.concurrent.CompletionException
 import org.assertj.core.api.Assertions.assertThat
 import org.jetbrains.yaml.YAMLFileType
 import org.junit.Before
@@ -563,7 +564,7 @@ class ResourceEditorTest {
         doReturn(JsonFileType.INSTANCE)
             .whenever(psiFile).fileType
         // when
-        editor.diff()
+        editor.diff().join()
         // then
         verify(serialize).invoke(any(), eq(JsonFileType.INSTANCE))
     }
@@ -577,13 +578,13 @@ class ResourceEditorTest {
         doReturn(YAMLFileType.YML)
             .whenever(psiFile).fileType
         // when
-        editor.diff()
+        editor.diff().join()
         // then
         verify(serialize).invoke(any(), eq(YAMLFileType.YML))
     }
 
-    @Test
-    fun `#diff should NOT open diff if editor file type is null`() {
+    @Test(expected = CompletionException::class)
+    fun `#diff should throw if editor file type is null`() {
         // given
         givenResources(mapOf(GARGAMEL to NopEditorResourceState()))
         doReturn(GARGAMEL_YAML)
@@ -591,9 +592,8 @@ class ResourceEditorTest {
         doReturn(null)
             .whenever(psiFile).fileType
         // when
-        editor.diff()
+        editor.diff().join()
         // then
-        verify(diff, never()).open(any(), any(), any())
     }
 
     @Test
