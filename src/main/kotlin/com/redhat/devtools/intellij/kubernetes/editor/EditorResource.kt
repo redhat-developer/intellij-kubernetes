@@ -115,6 +115,9 @@ open class EditorResource(
             !isSupported() ->
                 Error("Unsupported kind ${resource.kind} in version ${resource.apiVersion}")
 
+            !isAuthorized() ->
+                Error("Authentication with cluster failed. Verify username and password, refresh token, etc.")
+
             !hasName(resource)
                     && !hasGenerateName(resource) ->
                 Error("Resource has neither name nor generateName.", null as String?)
@@ -269,6 +272,10 @@ open class EditorResource(
 
     private fun isSupported(): Boolean {
         return clusterResource?.isSupported() ?: false
+    }
+
+    private fun isAuthorized(): Boolean {
+        return clusterResource?.isAuthorized() ?: false
     }
 
     /**

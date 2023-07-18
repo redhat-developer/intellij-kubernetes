@@ -20,6 +20,7 @@ import com.redhat.devtools.intellij.kubernetes.model.util.ResourceException
 import com.redhat.devtools.intellij.kubernetes.model.util.areEqual
 import com.redhat.devtools.intellij.kubernetes.model.util.isNotFound
 import com.redhat.devtools.intellij.kubernetes.model.util.isSameResource
+import com.redhat.devtools.intellij.kubernetes.model.util.isUnauthorized
 import com.redhat.devtools.intellij.kubernetes.model.util.isUnsupported
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.client.KubernetesClient
@@ -190,6 +191,25 @@ open class ClusterResource protected constructor(
         }
         return !(e is KubernetesClientException
             && e.isUnsupported())
+    }
+
+    /**
+     * Returns `true` if this [ClusterResource] is authorized. Returns `false` otherwise.
+     *
+     * @return true if this ClusterResource is authorized
+     *
+     * @see HasMetadata.getKind
+     * @see HasMetadata.getApiVersion
+     */
+    fun isAuthorized(): Boolean {
+        val e = try {
+            pull()
+            null
+        } catch(re: ResourceException) {
+            re.cause
+        }
+        return !(e is KubernetesClientException
+                && e.isUnauthorized())
     }
 
     fun isDeleted(): Boolean {
