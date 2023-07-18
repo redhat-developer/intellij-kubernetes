@@ -35,9 +35,13 @@ import com.redhat.devtools.intellij.kubernetes.editor.util.getDocument
 import com.redhat.devtools.intellij.kubernetes.editor.util.isKubernetesResource
 import com.redhat.devtools.intellij.kubernetes.model.IResourceModel
 import com.redhat.devtools.intellij.kubernetes.model.IResourceModelListener
+import com.redhat.devtools.intellij.kubernetes.model.Notification
 import com.redhat.devtools.intellij.kubernetes.model.context.IActiveContext
+import com.redhat.devtools.intellij.kubernetes.model.util.KubernetesClientExceptionUtils.statusMessage
+import com.redhat.devtools.intellij.kubernetes.model.util.ResourceException
 import com.redhat.devtools.intellij.kubernetes.model.util.toMessage
 import com.redhat.devtools.intellij.kubernetes.model.util.toTitle
+import com.redhat.devtools.intellij.kubernetes.model.util.trimWithEllipsis
 import io.fabric8.kubernetes.api.model.HasMetadata
 
 /**
@@ -299,11 +303,39 @@ open class ResourceEditor(
     fun diff() {
         val manager = getPsiDocumentManager.invoke(project)
         val file = editor.file ?: return
+        var fileType: FileType? = null
+        var beforeDiff: String? = null
         runInUI {
             val document = getDocument.invoke(editor) ?: return@runInUI
-            val resourcesOnCluster = editorResources.getAllResourcesOnCluster()
-            val serialized = serialize(resourcesOnCluster, getFileType(document, manager)) ?: return@runInUI
-            diff.open(file, serialized) { onDiffClosed(document.text) }
+            fileType = getFileType(document, manager) ?: return@runInUI
+            beforeDiff = document.text
+        }
+        if (fileType == null
+            || beforeDiff == null
+        ) {
+            return
+        }
+        runAsync {
+            try {
+                val resourcesOnCluster = editorResources.getAllResourcesOnCluster()
+                val serialized = serialize(resourcesOnCluster, fileType) ?: return@runAsync
+                runInUI {
+                    diff.open(file, serialized) { onDiffClosed(beforeDiff) }
+                }
+            } catch(e: ResourceException) {
+                val message = trimWithEllipsis(e.message, 100)
+                val causeMessage = statusMessage(e.cause)
+                Notification()
+                    .error("Could not open diff",
+                        if (causeMessage == null) {
+                            message ?: ""
+                        } else if (message == null) {
+                            causeMessage
+                        } else {
+                            "$message: $causeMessage"
+                        }
+                    )
+            }
         }
     }
 
