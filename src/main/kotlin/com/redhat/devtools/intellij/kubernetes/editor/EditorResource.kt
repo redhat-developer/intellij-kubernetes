@@ -50,10 +50,13 @@ open class EditorResource(
     /**
      * Sets the resource to this instance. Only modified versions of the same resource are processed.
      * Will do nothing if the given resource is a different resource in name, namespace, kind etc.
+     * Resets the existing resource state if a new resource is set
      *
      * @param new the new resource that should be set to this editor resource
      *
-     * @see isSameResource
+     * @see [areEqual]
+     * @see [isSameResource]
+     * @see [setState]
      */
     fun setResource(new: HasMetadata) {
         resourceChangeMutex.withLock {
@@ -61,8 +64,8 @@ open class EditorResource(
             if (new.isSameResource(existing)
                 && !areEqual(new, existing)) {
                 this.resource = new
+                setState(null) // reset state
             }
-            setState(null) // reset state
         }
     }
 
@@ -90,8 +93,11 @@ open class EditorResource(
 
     /**
      * Returns the state of this editor resource.
+     * Returns a cached state if it exists, creates it if it doesn't.
      *
      * @return the state of this editor resource.
+     *
+     * @see [createState]
      */
     fun getState(): EditorResourceState {
         return resourceChangeMutex.withLock {
