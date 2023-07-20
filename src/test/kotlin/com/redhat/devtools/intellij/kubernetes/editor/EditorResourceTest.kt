@@ -311,10 +311,14 @@ class EditorResourceTest {
         doReturn(true)
             .whenever(clusterResource).isAuthorized()
         val editorResource = createEditorResource(POD2)
+        val modifiedPod2 = PodBuilder(POD2)
+            .editMetadata()
+            .withLabels<String, String>(mapOf("jedi" to "yoda"))
+            .endMetadata()
+            .build()
         val error = Error("oh my!")
         editorResource.setState(error)
-        editorResource.setLastPushedPulled(POD3) // modified = (current resource != lastPushedPulled)
-        editorResource.setResource(POD2) // cause state to be recreated
+        editorResource.setResource(modifiedPod2) // new resource != existing resource, causes state to be reset and then recreated
         // when
         val state = editorResource.getState()
         // then
