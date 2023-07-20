@@ -57,6 +57,7 @@ open class EditorResource(
      * @see [areEqual]
      * @see [isSameResource]
      * @see [setState]
+     * @see [getState]
      */
     fun setResource(new: HasMetadata) {
         resourceChangeMutex.withLock {
@@ -64,7 +65,11 @@ open class EditorResource(
             if (new.isSameResource(existing)
                 && !areEqual(new, existing)) {
                 this.resource = new
-                setState(null) // reset state
+                /**
+                 * only reset state if resource is modified
+                 * to preserve existing error, pushed/pulled state
+                 */
+                setState(null)
             }
         }
     }
