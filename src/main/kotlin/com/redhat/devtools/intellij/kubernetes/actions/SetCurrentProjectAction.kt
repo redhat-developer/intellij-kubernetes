@@ -11,10 +11,10 @@
 package com.redhat.devtools.intellij.kubernetes.actions
 
 import com.intellij.openapi.actionSystem.AnActionEvent
-import com.intellij.openapi.application.runInEdt
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.project.Project
 import com.redhat.devtools.intellij.common.actions.StructureTreeAction
+import com.redhat.devtools.intellij.kubernetes.CompletableFutureUtils
 import com.redhat.devtools.intellij.kubernetes.dialogs.ResourceNameDialog
 import com.redhat.devtools.intellij.kubernetes.model.IResourceModel
 import com.redhat.devtools.intellij.kubernetes.model.Notification
@@ -26,8 +26,8 @@ import com.redhat.devtools.intellij.kubernetes.telemetry.TelemetryService
 import com.redhat.devtools.intellij.kubernetes.tree.OpenShiftStructure.ProjectsFolder
 import java.awt.Point
 import java.awt.event.MouseEvent
+import java.util.concurrent.CompletableFuture
 import javax.swing.tree.TreePath
-import org.jetbrains.concurrency.runAsync
 
 class SetCurrentProjectAction : StructureTreeAction(false) {
 
@@ -39,23 +39,26 @@ class SetCurrentProjectAction : StructureTreeAction(false) {
     }
 
     private fun openNameDialog(project: Project, model: IResourceModel, location: Point?) {
-        runAsync {
-            val projects = loadProjects(model)
-            runInEdt {
+        CompletableFuture.supplyAsync(
+            { loadProjects(model) },
+            CompletableFutureUtils.PLATFORM_EXECUTOR
+        ).thenApplyAsync(
+            { projects ->
                 val dialog = ResourceNameDialog(project, "Project", projects, onOk(model), location)
-                dialog.showAndGet()
-            }
-        }
+                dialog.show()
+            },
+            CompletableFutureUtils.UI_EXECUTOR
+        )
     }
 
-    private fun loadProjects(model: IResourceModel) = try {
-        model.getCurrentContext()?.getAllResources(ProjectsOperator.KIND, ResourcesIn.NO_NAMESPACE)
-    } catch (e: ResourceException) {
-        logger<SetCurrentProjectAction>().warn(
-            "Could not get all projects.", e
-        )
-        null
-    } ?: emptyList()
+    private fun loadProjects(model: IResourceModel): Collection<io.fabric8.openshift.api.model.Project> {
+        return try {
+            model.getCurrentContext()?.getAllResources(ProjectsOperator.KIND, ResourcesIn.NO_NAMESPACE)
+        } catch (e: ResourceException) {
+            logger<SetCurrentProjectAction>().warn("Could not get all projects.", e)
+            emptyList()
+        } ?: emptyList()
+    }
 
     private fun onOk(model: IResourceModel): (projectName: String) -> Unit {
         return { name ->
