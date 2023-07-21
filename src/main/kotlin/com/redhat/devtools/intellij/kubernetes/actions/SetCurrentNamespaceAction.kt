@@ -11,10 +11,11 @@
 package com.redhat.devtools.intellij.kubernetes.actions
 
 import com.intellij.openapi.actionSystem.AnActionEvent
-import com.intellij.openapi.application.runInEdt
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.project.Project
 import com.redhat.devtools.intellij.common.actions.StructureTreeAction
+import com.redhat.devtools.intellij.kubernetes.CompletableFutureUtils.PLATFORM_EXECUTOR
+import com.redhat.devtools.intellij.kubernetes.CompletableFutureUtils.UI_EXECUTOR
 import com.redhat.devtools.intellij.kubernetes.dialogs.ResourceNameDialog
 import com.redhat.devtools.intellij.kubernetes.model.IResourceModel
 import com.redhat.devtools.intellij.kubernetes.model.Notification
@@ -24,9 +25,10 @@ import com.redhat.devtools.intellij.kubernetes.model.util.ResourceException
 import com.redhat.devtools.intellij.kubernetes.model.util.toMessage
 import com.redhat.devtools.intellij.kubernetes.telemetry.TelemetryService
 import com.redhat.devtools.intellij.kubernetes.tree.KubernetesStructure.NamespacesFolder
+import io.fabric8.kubernetes.api.model.Namespace
 import java.awt.Point
 import java.awt.event.MouseEvent
-import java.util.concurrent.CompletableFuture.runAsync
+import java.util.concurrent.CompletableFuture
 import javax.swing.tree.TreePath
 
 class SetCurrentNamespaceAction : StructureTreeAction(false) {
@@ -39,23 +41,28 @@ class SetCurrentNamespaceAction : StructureTreeAction(false) {
     }
 
     private fun openNameDialog(project: Project, model: IResourceModel, location: Point?) {
-        runAsync {
-            val projects = loadNamespaces(model)
-            runInEdt {
+        CompletableFuture.supplyAsync(
+            { loadNamespaces(model) },
+            PLATFORM_EXECUTOR
+        ).thenApplyAsync (
+            { projects ->
                 val dialog = ResourceNameDialog(project, "Namespace", projects, onOk(model), location)
-                dialog.showAndGet()
-            }
-        }
+                dialog.show()
+            },
+            UI_EXECUTOR
+        )
     }
 
-    private fun loadNamespaces(model: IResourceModel) = try {
-        model.getCurrentContext()?.getAllResources(NamespacesOperator.KIND, ResourcesIn.NO_NAMESPACE)
-    } catch (e: ResourceException) {
-        logger<SetCurrentNamespaceAction>().warn(
-            "Could not get all namespaces.", e
-        )
-        null
-    } ?: emptyList()
+    private fun loadNamespaces(model: IResourceModel): Collection<Namespace> {
+        return try {
+            model.getCurrentContext()?.getAllResources(NamespacesOperator.KIND, ResourcesIn.NO_NAMESPACE)
+        } catch (e: ResourceException) {
+            logger<SetCurrentNamespaceAction>().warn(
+                "Could not get all namespaces.", e
+            )
+            null
+        } ?: emptyList()
+    }
 
     private fun onOk(model: IResourceModel): (projectName: String) -> Unit {
         return { name ->
