@@ -10,12 +10,13 @@
  ******************************************************************************/
 package com.redhat.devtools.intellij.kubernetes.console
 
+import com.intellij.openapi.project.DumbAware
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.wm.ToolWindow
 import com.intellij.openapi.wm.ToolWindowFactory
 
 
-class ConsolesToolWindowFactory: ToolWindowFactory {
+class ConsolesToolWindowFactory: ToolWindowFactory, DumbAware {
 
     override fun createToolWindowContent(project: Project, toolWindow: ToolWindow) {
         toolWindow.stripeTitle = "Kubernetes Consoles"

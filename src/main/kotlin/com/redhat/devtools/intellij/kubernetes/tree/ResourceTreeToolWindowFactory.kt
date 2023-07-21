@@ -13,6 +13,7 @@ package com.redhat.devtools.intellij.kubernetes.tree
 import com.intellij.ide.util.treeView.AbstractTreeStructure
 import com.intellij.ide.util.treeView.NodeRenderer
 import com.intellij.openapi.actionSystem.ActionPlaces
+import com.intellij.openapi.project.DumbAware
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.wm.ToolWindow
 import com.intellij.openapi.wm.ToolWindowFactory
@@ -37,7 +38,7 @@ import javax.swing.JTree
 import javax.swing.tree.MutableTreeNode
 
 
-class ResourceTreeToolWindowFactory: ToolWindowFactory {
+class ResourceTreeToolWindowFactory: ToolWindowFactory, DumbAware {
 
     companion object {
         const val ID = "Kubernetes"
