@@ -33,6 +33,7 @@ import io.fabric8.kubernetes.client.Config
 import io.fabric8.kubernetes.client.KubernetesClient
 import io.fabric8.kubernetes.client.KubernetesClientException
 import java.nio.file.Paths
+import java.util.concurrent.CompletionException
 
 interface IAllContexts {
 	/**
@@ -137,19 +138,21 @@ open class AllContexts(
 		newClient: ClientAdapter<out KubernetesClient>,
 		toWatch: Collection<ResourceKind<out HasMetadata>>?,
 	) : IActiveContext<out HasMetadata, out KubernetesClient>? {
-		synchronized(this) {
-			replaceClient(
-				newClient,
-				this.client.get()
-			)
-			this.current?.close()
-			newClient.config.save().join()
-			all.clear() // causes reload of all contexts when accessed afterwards
-			val newCurrent = this.current // gets new current from all
-			if (toWatch != null) {
-				newCurrent?.watchAll(toWatch)
+		try {
+			synchronized(this) {
+				replaceClient(newClient, this.client.get())
+				newClient.config.save().join()
+				current?.close()
+				all.clear() // causes reload of all contexts when accessed afterwards
+				val newCurrent = current // gets new current from all
+				if (toWatch != null) {
+					newCurrent?.watchAll(toWatch)
+				}
+				return newCurrent
 			}
-			return newCurrent
+		} catch (e: CompletionException) {
+			val cause = e.cause ?: throw e
+			throw cause
 		}
 	}
 
