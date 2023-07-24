@@ -10,19 +10,21 @@
  ******************************************************************************/
 package com.redhat.devtools.intellij.kubernetes.model.client
 
-import com.intellij.openapi.application.ApplicationManager
 import com.redhat.devtools.intellij.common.utils.ConfigHelper
+import com.redhat.devtools.intellij.kubernetes.CompletableFutureUtils.PLATFORM_EXECUTOR
 import io.fabric8.kubernetes.api.model.Context
 import io.fabric8.kubernetes.api.model.NamedContext
 import io.fabric8.kubernetes.client.Client
 import io.fabric8.kubernetes.client.Config
 import io.fabric8.kubernetes.client.internal.KubeConfigUtils
+import java.util.concurrent.CompletableFuture
+import java.util.concurrent.Executor
 
 /**
  * An adapter to access [io.fabric8.kubernetes.client.Config].
  * It also saves the kube config [KubeConfigUtils] when it changes the client config.
  */
-open class ClientConfig(private val client: Client) {
+open class ClientConfig(private val client: Client, private val executor: Executor = PLATFORM_EXECUTOR) {
 
 	open var currentContext: NamedContext?
 		get() {
@@ -45,26 +47,33 @@ open class ClientConfig(private val client: Client) {
 		KubeConfigAdapter()
 	}
 
-	fun save() {
-		runAsync {
-			if (!kubeConfig.exists()) {
-				return@runAsync
-			}
-			val fromFile = kubeConfig.load() ?: return@runAsync
-			val currentContextInFile = KubeConfigUtils.getCurrentContext(fromFile)
-			if (setCurrentContext(
-					currentContext,
-					currentContextInFile,
-					fromFile
-				).or( // no short-circuit
-				setCurrentNamespace(
-					currentContext?.context,
-					currentContextInFile?.context)
-				)
-			) {
-				kubeConfig.save(fromFile)
-			}
-		}
+	fun save(): CompletableFuture<Boolean> {
+		return CompletableFuture.supplyAsync(
+			{
+				if (!kubeConfig.exists()) {
+					return@supplyAsync false
+				}
+				val fromFile = kubeConfig.load() ?: return@supplyAsync false
+				val currentContextInFile = KubeConfigUtils.getCurrentContext(fromFile)
+				if (setCurrentContext(
+						currentContext,
+						currentContextInFile,
+						fromFile
+					).or( // no short-circuit
+						setCurrentNamespace(
+							currentContext?.context,
+							currentContextInFile?.context
+						)
+					)
+				) {
+					kubeConfig.save(fromFile)
+					return@supplyAsync true
+				} else {
+					return@supplyAsync false
+				}
+			},
+			executor
+		)
 	}
 
 	private fun setCurrentContext(
@@ -111,10 +120,4 @@ open class ClientConfig(private val client: Client) {
 	fun isCurrent(context: NamedContext): Boolean {
 		return context == currentContext
 	}
-
-	/** for testing purposes */
-	protected open fun runAsync(runnable: () -> Unit) {
-		ApplicationManager.getApplication().executeOnPooledThread(runnable)
-	}
-
 }

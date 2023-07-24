@@ -88,7 +88,7 @@ class ClientConfigTest {
 		doReturn(false)
 			.whenever(kubeConfig).exists()
 		// when
-		clientConfig.save()
+		clientConfig.save().join()
 		// then
 		verify(kubeConfig, never()).save(any())
 	}
@@ -97,7 +97,7 @@ class ClientConfigTest {
 	fun `#save should NOT save if kubeConfig has same current context same namespace and same current context as client config`() {
 		// given
 		// when
-		clientConfig.save()
+		clientConfig.save().join()
 		// then
 		verify(kubeConfig, never()).save(any())
 	}
@@ -108,7 +108,7 @@ class ClientConfigTest {
 		f8clientConfig.currentContext.name = namedContext3.name
 		assertThat(f8kubeConfig.currentContext).isNotEqualTo(f8clientConfig.currentContext.name)
 		// when
-		clientConfig.save()
+		clientConfig.save().join()
 		// then
 		verify(kubeConfig).save(any())
 	}
@@ -126,7 +126,7 @@ class ClientConfigTest {
 		newAllContexts.add(newCurrentContext)
 		f8kubeConfig.contexts = newAllContexts
 		// when
-		clientConfig.save()
+		clientConfig.save().join()
 		// then
 		verify(kubeConfig).save(any())
 	}
@@ -140,7 +140,7 @@ class ClientConfigTest {
 		assertThat(KubeConfigUtils.getCurrentContext(f8kubeConfig))
 			.isNotEqualTo(f8clientConfig.currentContext)
 		// when
-		clientConfig.save()
+		clientConfig.save().join()
 		// then
 		verify(kubeConfig).save(argThat {
 			this.currentContext == newCurrentContext.name
@@ -159,7 +159,7 @@ class ClientConfigTest {
 		assertThat(KubeConfigUtils.getCurrentContext(f8kubeConfig).context.namespace)
 			.isNotEqualTo(f8clientConfig.currentContext.context.namespace)
 		// when
-		clientConfig.save()
+		clientConfig.save().join()
 		// then
 		verify(kubeConfig).save(argThat {
 			this.currentContext == this@ClientConfigTest.currentContext.name
@@ -211,10 +211,6 @@ class ClientConfigTest {
 			.build()
 	}
 
-	private class TestableClientConfig(client: Client, override val kubeConfig: KubeConfigAdapter) : ClientConfig(client) {
-		override fun runAsync(runnable: () -> Unit) {
-			// dont use jetbrains application threadpool
-			runnable.invoke()
-		}
-	}
+	private class TestableClientConfig(client: Client, override val kubeConfig: KubeConfigAdapter)
+		: ClientConfig(client, { it.run() })
 }

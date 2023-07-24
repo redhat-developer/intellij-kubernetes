@@ -143,6 +143,7 @@ open class AllContexts(
 				this.client.get()
 			)
 			this.current?.close()
+			newClient.config.save().join()
 			all.clear() // causes reload of all contexts when accessed afterwards
 			val newCurrent = this.current // gets new current from all
 			if (toWatch != null) {
@@ -197,7 +198,6 @@ open class AllContexts(
 	private fun replaceClient(new: ClientAdapter<out KubernetesClient>, old: ClientAdapter<out KubernetesClient>?)
 			: ClientAdapter<out KubernetesClient> {
 		old?.close()
-		new.config.save()
 		this.client.set(new)
 		return new
 	}
