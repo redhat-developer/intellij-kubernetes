@@ -15,10 +15,10 @@ import com.intellij.openapi.actionSystem.ActionManager
 import com.intellij.openapi.actionSystem.ActionPlaces
 import com.intellij.openapi.actionSystem.ActionToolbar
 import com.intellij.openapi.actionSystem.impl.ActionToolbarImpl
+import com.intellij.openapi.application.invokeLater
 import com.intellij.openapi.fileEditor.FileEditor
 import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.project.Project
-import com.intellij.ui.AppUIUtil
 import com.intellij.util.ui.JBEmptyBorder
 
 class EditorToolbarFactory {
@@ -26,11 +26,12 @@ class EditorToolbarFactory {
         fun create(actionId: String, editor: FileEditor, project: Project): ActionToolbar {
             val actionManager = ActionManager.getInstance()
             val group = actionManager.getAction(actionId) as ActionGroup
-            val toolbar =
-                actionManager.createActionToolbar(ActionPlaces.EDITOR_TOOLBAR, group, true) as ActionToolbarImpl
+            val toolbar = actionManager
+                .createActionToolbar(ActionPlaces.EDITOR_TOOLBAR, group, true) as ActionToolbarImpl
+            toolbar.targetComponent = editor.component
             toolbar.isOpaque = false
             toolbar.border = JBEmptyBorder(0, 2, 0, 2)
-            AppUIUtil.invokeOnEdt {
+            invokeLater {
                 FileEditorManager.getInstance(project).addTopComponent(editor, toolbar)
             }
             return toolbar
