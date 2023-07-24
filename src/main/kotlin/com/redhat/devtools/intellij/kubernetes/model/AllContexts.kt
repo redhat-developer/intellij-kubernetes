@@ -247,14 +247,16 @@ open class AllContexts(
 	}
 
 	protected open fun onKubeConfigChanged(fileConfig: io.fabric8.kubernetes.api.model.Config) {
-		val client = client.get() ?: return
-		val clientConfig = client.config.configuration
-		if (ConfigHelper.areEqual(fileConfig, clientConfig)) {
-			return
+		synchronized(this) {
+			val client = client.get() ?: return
+			val clientConfig = client.config.configuration
+			if (ConfigHelper.areEqual(fileConfig, clientConfig)) {
+				return
+			}
+			this.client.reset() // create new client when accessed
+			client.close()
+			refresh()
 		}
-		client.close()
-		this.client.reset() // create new client when accessed
-		refresh()
 	}
 
 	/** for testing purposes */
