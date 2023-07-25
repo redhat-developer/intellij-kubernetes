@@ -31,6 +31,15 @@ open class EditorResources(
     /** mutex to exclude concurrent execution of push & watch notification **/
     private val resourceChangeMutex = ReentrantLock()
 
+    fun setDeleted(resource: HasMetadata): Collection<EditorResource> {
+        val identifier = ResourceIdentifier(resource)
+        return resourceChangeMutex.withLock {
+            val editorResource = resources[identifier]
+            editorResource?.setState(DeletedOnCluster())
+            this.resources.values
+        }
+    }
+
     fun setResources(new: List<HasMetadata>): Collection<EditorResource> {
         val identifiers = new
             .map { resource -> ResourceIdentifier(resource) }

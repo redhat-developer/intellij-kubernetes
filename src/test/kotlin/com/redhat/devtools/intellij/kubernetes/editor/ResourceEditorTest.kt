@@ -340,6 +340,17 @@ class ResourceEditorTest {
     }
 
     @Test
+    fun `#updateDeleted(removed) should set editorResource to deleted`() {
+        // given
+        givenResources(mapOf(GARGAMEL to Identical()))
+        val removed = GARGAMEL
+        // when
+        editor.updateDeleted(GARGAMEL)
+        // then
+        verify(editorResources).setDeleted(GARGAMEL)
+    }
+
+    @Test
     fun `#pull should NOT pull if there are several resources`() {
         // given
         givenResources(mapOf(
@@ -765,6 +776,10 @@ class ResourceEditorTest {
         diff,
         editorResources
     ) {
+
+        public override fun updateDeleted(deleted: HasMetadata?) {
+            super.updateDeleted(deleted)
+        }
 
         public override fun enableEditingNonProjectFile() {
             super.enableEditingNonProjectFile()

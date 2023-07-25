@@ -134,6 +134,14 @@ open class ResourceEditor(
         }
     }
 
+    open protected fun updateDeleted(deleted: HasMetadata?) {
+        if (deleted == null) {
+            return
+        }
+        editorResources.setDeleted(deleted)
+        update()
+    }
+
     private fun showNotification(editorResource: EditorResource) {
         val state = editorResource.getState()
         val resource = editorResource.getResource()
@@ -399,7 +407,7 @@ open class ResourceEditor(
             }
 
             override fun removed(removed: Any) {
-                update()
+                updateDeleted(removed as? HasMetadata)
             }
 
             override fun modified(modified: Any) {
