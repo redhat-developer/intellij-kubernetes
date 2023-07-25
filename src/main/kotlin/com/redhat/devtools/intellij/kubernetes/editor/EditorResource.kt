@@ -90,7 +90,7 @@ open class EditorResource(
     }
 
     /** for testing purposes */
-    protected open fun setState(state: EditorResourceState?) {
+    open fun setState(state: EditorResourceState?) {
         resourceChangeMutex.withLock {
             this.state = state
         }
