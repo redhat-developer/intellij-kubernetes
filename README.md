@@ -25,6 +25,7 @@ It is available for install from the [JetBrains Marketplace](https://plugins.jet
  - Switching contexts and namespaces within Kubernetes
  - Follow logs from the connected cluster resource
  - Open a Terminal Shell to a Running Container in the connected cluster
+ - Open the Dashboard for the connected cluster (works on any Hybrid cloud cluster)
  - Support [init containers](https://kubernetes.io/docs/concepts/workloads/pods/init-containers/) for logs and terminals.
 
 ## Features
