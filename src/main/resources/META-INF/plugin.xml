@@ -221,6 +221,10 @@
                     id="com.redhat.devtools.intellij.kubernetes.actions.SetCurrentProjectAction"
                     text="Set Current Project"
                     icon="AllIcons.Nodes.EmptyNode"/>
+            <action class="com.redhat.devtools.intellij.kubernetes.actions.ScaleReplicaAction"
+                    id="com.redhat.devtools.intellij.kubernetes.actions.ScaleReplicaAction"
+                    text="Scale"
+                    icon="AllIcons.Nodes.EmptyNode"/>
             <action class="com.redhat.devtools.intellij.kubernetes.actions.EditResourceAction"
                     id="com.redhat.devtools.intellij.kubernetes.actions.EditResourceAction"
                     text="Edit..."

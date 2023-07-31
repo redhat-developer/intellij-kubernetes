@@ -10,6 +10,7 @@
  ******************************************************************************/
 package com.redhat.devtools.intellij.kubernetes.model
 
+import com.google.api.ResourceProto.resource
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.diagnostic.logger
 import com.redhat.devtools.intellij.kubernetes.model.client.ClientAdapter
@@ -17,6 +18,7 @@ import com.redhat.devtools.intellij.kubernetes.model.context.IActiveContext
 import com.redhat.devtools.intellij.kubernetes.model.context.IActiveContext.ResourcesIn
 import com.redhat.devtools.intellij.kubernetes.model.context.IContext
 import com.redhat.devtools.intellij.kubernetes.model.resource.ResourceKind
+import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.KubernetesReplicas.*
 import io.fabric8.kubernetes.api.model.Container
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinition
@@ -43,6 +45,8 @@ interface IResourceModel {
     fun isCurrentNamespace(resource: HasMetadata): Boolean
     fun <R: HasMetadata> resources(kind: ResourceKind<R>): Namespaceable<R>
     fun resources(definition: CustomResourceDefinition): ListableCustomResources
+    fun setReplicas(replicas: Int, replicator: Replicator)
+    fun getReplicas(resource: HasMetadata): Replicator?
     fun watch(kind: ResourceKind<out HasMetadata>)
     fun watch(definition: CustomResourceDefinition)
     fun stopWatch(kind: ResourceKind<out HasMetadata>)
@@ -125,6 +129,14 @@ open class ResourceModel : IResourceModel {
 
     fun getAllResources(definition: CustomResourceDefinition): Collection<HasMetadata> {
         return allContexts.current?.getAllResources(definition) ?: emptyList()
+    }
+
+    override fun setReplicas(replicas: Int, replicator: Replicator) {
+        allContexts.current?.setReplicas(replicas, replicator)
+    }
+
+    override fun getReplicas(resource: HasMetadata): Replicator? {
+        return allContexts.current?.getReplicas(resource)
     }
 
     override fun watch(kind: ResourceKind<out HasMetadata>) {

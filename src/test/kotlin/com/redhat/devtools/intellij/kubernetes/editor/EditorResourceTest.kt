@@ -313,7 +313,7 @@ class EditorResourceTest {
         val editorResource = createEditorResource(POD2)
         val modifiedPod2 = PodBuilder(POD2)
             .editMetadata()
-            .withLabels<String, String>(mapOf("jedi" to "yoda"))
+                .withLabels<String, String>(mapOf("jedi" to "yoda"))
             .endMetadata()
             .build()
         val error = Error("oh my!")
