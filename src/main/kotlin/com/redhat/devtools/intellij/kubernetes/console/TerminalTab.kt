@@ -12,8 +12,6 @@ package com.redhat.devtools.intellij.kubernetes.console
 
 import com.intellij.openapi.project.Project
 import com.intellij.terminal.TerminalExecutionConsole
-import com.pty4j.PtyProcess
-import com.pty4j.WinSize
 import com.redhat.devtools.intellij.common.utils.ExecProcessHandler
 import com.redhat.devtools.intellij.kubernetes.model.IResourceModel
 import io.fabric8.kubernetes.api.model.Container
@@ -42,7 +40,6 @@ open class TerminalTab(pod: Pod, model: IResourceModel, project: Project) :
         return watch
     }
 
-
     override fun createConsoleView(project: Project): TerminalExecutionConsole? {
         return TerminalExecutionConsole(project, null)
     }
@@ -62,25 +59,9 @@ open class TerminalTab(pod: Pod, model: IResourceModel, project: Project) :
     }
 
     /**
-     * An adapter for [ExecWatch] that adapts it to be accessed like a [PtyProcess]
+     * An adapter that adapts an [ExecWatch] so that it can be accessed like a [Process]
      */
-    inner class ExecWatchProcessAdapter(private val watch: ExecWatch) : PtyProcess() {
-        override fun isRunning(): Boolean {
-            return true
-        }
-
-        override fun setWinSize(winSize: WinSize) {
-            // dont act upon
-        }
-
-        override fun getWinSize(): WinSize {
-            // has no effect
-            return WinSize(80, 200)
-        }
-
-        override fun getPid(): Int {
-            return -1
-        }
+    inner class ExecWatchProcessAdapter(private val watch: ExecWatch) : Process() {
 
         @Override
         override fun getOutputStream(): OutputStream? {
@@ -95,6 +76,14 @@ open class TerminalTab(pod: Pod, model: IResourceModel, project: Project) :
             return watch.error
         }
 
+        override fun destroy() {
+            watch.close()
+        }
+
+        override fun supportsNormalTermination(): Boolean {
+            return true
+        }
+
         override fun waitFor(): Int {
             return 0
         }
@@ -102,11 +91,6 @@ open class TerminalTab(pod: Pod, model: IResourceModel, project: Project) :
         override fun exitValue(): Int {
             return 0
         }
-
-        override fun destroy() {
-            watch.close()
-        }
-
     }
 
     private inner class ContainerExecListener(private val container: Container): ExecListener {
