@@ -27,14 +27,27 @@ class ReplicationControllerFor(private val dc: DeploymentConfig) : Predicate<Rep
 	}
 }
 
-class DeploymentConfigFor(rc: ReplicationController) : Predicate<DeploymentConfig> {
+class DeploymentConfigForReplicationController(rc: ReplicationController) : Predicate<DeploymentConfig> {
 
-	private val dcConfigAnnotation = "openshift.io/deployment-config.name"
-	private val dcName: String? = rc.metadata.annotations[dcConfigAnnotation]
+	private val labelKey = "openshift.io/deployment-config.name"
+	private val labelValue: String? = rc.metadata.annotations[labelKey]
 
 	override fun test(dc: DeploymentConfig): Boolean {
-		return dcName != null
-				&& dcName == dc.metadata.annotations[dcConfigAnnotation]
+		return labelValue != null
+				&& labelValue == dc.metadata.name
+	}
+}
+
+class DeploymentConfigForPod(pod: Pod) : Predicate<DeploymentConfig> {
+
+	private val versionKey = "app.kubernetes.io/version"
+	private val versionValue = pod.metadata.labels[versionKey]
+	private val nameKey = "app.kubernetes.io/name"
+	private val nameValue = pod.metadata.labels[nameKey]
+
+	override fun test(dc: DeploymentConfig): Boolean {
+		return versionValue == dc.spec?.selector?.get(versionKey)
+				&& nameValue == dc.spec?.selector?.get(nameKey)
 	}
 }
 
@@ -66,5 +79,3 @@ class PodForBuild(private val build: Build)
 		return build.metadata.name == pod.metadata?.labels?.get(BuildOperationsImpl.OPENSHIFT_IO_BUILD_NAME)
 	}
 }
-
-

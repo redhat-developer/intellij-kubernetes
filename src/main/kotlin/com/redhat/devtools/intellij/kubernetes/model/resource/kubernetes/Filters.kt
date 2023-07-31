@@ -10,6 +10,7 @@
  ******************************************************************************/
 package com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes
 
+import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.Pod
 import io.fabric8.kubernetes.api.model.ReplicationController
 import io.fabric8.kubernetes.api.model.Service
@@ -42,16 +43,60 @@ class PodForReplicationController(replicationController: ReplicationController)
 open class PodForResource(private val selectorLabels: Map<String, String>?): Predicate<Pod> {
 
 	override fun test(pod: Pod): Boolean {
-		return selectorLabels?.all { pod.metadata.labels?.entries?.contains(it) ?: false } ?: false
+		return selectorLabels?.all {
+			pod.metadata.labels?.entries?.contains(it) ?: false
+		} ?: false
 	}
 }
 
-class PodForJob(private val job: Job)
-	: Predicate<Pod> {
+class PodForJob(private val job: Job) : Predicate<Pod> {
 
 	override fun test(pod: Pod): Boolean {
 		return job.metadata.uid == pod.metadata?.labels?.get("controller-uid")
 	}
 }
 
+class DeploymentForPod(pod: Pod) : ResourceForPod<Deployment>(pod) {
 
+	override fun getSelectorLabels(resource: Deployment): Map<String, String> {
+		return resource.spec?.selector?.matchLabels ?: emptyMap()
+	}
+
+}
+
+class ReplicaSetForPod(pod: Pod) : ResourceForPod<ReplicaSet>(pod) {
+
+	override fun getSelectorLabels(resource: ReplicaSet): Map<String, String> {
+		return resource.spec?.selector?.matchLabels ?: emptyMap()
+	}
+}
+
+class StatefulSetForPod(pod: Pod) : ResourceForPod<StatefulSet>(pod) {
+
+	override fun getSelectorLabels(resource: StatefulSet): Map<String, String> {
+		return resource.spec?.selector?.matchLabels ?: emptyMap()
+	}
+}
+
+class ReplicationControllerForPod(pod: Pod) : ResourceForPod<ReplicationController>(pod) {
+
+	override fun getSelectorLabels(resource: ReplicationController): Map<String, String> {
+		return resource.spec?.selector ?: emptyMap()
+	}
+}
+
+abstract class ResourceForPod<R: HasMetadata>(private val pod: Pod) : Predicate<R> {
+
+	override fun test(resource: R): Boolean {
+		val selectorLabels = getSelectorLabels(resource)
+		return if (selectorLabels.isEmpty()) {
+			false
+		} else {
+			selectorLabels.all {
+				pod.metadata.labels?.entries?.contains(it) ?: false
+			}
+		}
+	}
+
+	abstract fun getSelectorLabels(resource: R): Map<String, String>
+}

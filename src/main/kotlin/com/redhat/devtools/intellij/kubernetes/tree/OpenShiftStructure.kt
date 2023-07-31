@@ -13,7 +13,10 @@ package com.redhat.devtools.intellij.kubernetes.tree
 import com.intellij.ide.util.treeView.NodeDescriptor
 import com.intellij.ui.tree.LeafState
 import com.redhat.devtools.intellij.kubernetes.model.IResourceModel
+import com.redhat.devtools.intellij.kubernetes.model.context.IActiveContext
 import com.redhat.devtools.intellij.kubernetes.model.resource.ResourceKind
+import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.NamespacedPodsOperator
+import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.PodForReplicationController
 import com.redhat.devtools.intellij.kubernetes.model.resource.openshift.BuildConfigsOperator
 import com.redhat.devtools.intellij.kubernetes.model.resource.openshift.BuildFor
 import com.redhat.devtools.intellij.kubernetes.model.resource.openshift.BuildsOperator
@@ -28,6 +31,7 @@ import com.redhat.devtools.intellij.kubernetes.tree.KubernetesStructure.Folders.
 import com.redhat.devtools.intellij.kubernetes.tree.KubernetesStructure.Folders.WORKLOADS
 import com.redhat.devtools.intellij.kubernetes.tree.TreeStructure.Folder
 import io.fabric8.kubernetes.api.model.HasMetadata
+import io.fabric8.kubernetes.api.model.ReplicationController
 import io.fabric8.openshift.api.model.BuildConfig
 import io.fabric8.openshift.api.model.DeploymentConfig
 import io.fabric8.openshift.api.model.Project
@@ -50,7 +54,7 @@ class OpenShiftStructure(model: IResourceModel): AbstractTreeStructureContributi
 
     private fun createProjectsElements(): Array<ElementNode<*>> {
         return arrayOf(
-            element<Any> {
+            element<IActiveContext<*,*>> {
                 applicableIf { it == getRootElement() }
                 children {
                     listOf(
@@ -58,7 +62,7 @@ class OpenShiftStructure(model: IResourceModel): AbstractTreeStructureContributi
                     )
                 }
             },
-            element<Any> {
+            element<Folder> {
                 applicableIf { it == PROJECTS }
                 childrenKind { ProjectsOperator.KIND }
                 children {
@@ -73,17 +77,17 @@ class OpenShiftStructure(model: IResourceModel): AbstractTreeStructureContributi
 
     private fun createWorkloadElements(): Array<ElementNode<*>> {
         return arrayOf(
-            element<Any> {
+            element<Folder> {
                 applicableIf { it == WORKLOADS }
                 children {
-                    listOf<Any>(
+                    listOf(
                         IMAGESTREAMS,
                         DEPLOYMENTCONFIGS,
                         BUILDCONFIGS
                     )
                 }
             },
-            element<Any> {
+            element<Folder> {
                 applicableIf { it == IMAGESTREAMS }
                 childrenKind { ImageStreamsOperator.KIND }
                 children {
@@ -93,7 +97,7 @@ class OpenShiftStructure(model: IResourceModel): AbstractTreeStructureContributi
                         .sortedBy(resourceName)
                 }
             },
-            element<Any> {
+            element<Folder> {
                 applicableIf { it == DEPLOYMENTCONFIGS }
                 childrenKind { DeploymentConfigsOperator.KIND }
                 children {
@@ -114,7 +118,18 @@ class OpenShiftStructure(model: IResourceModel): AbstractTreeStructureContributi
                         .sortedBy(resourceName)
                 }
             },
-            element<Any> {
+            element<ReplicationController> {
+                applicableIf { it is ReplicationController }
+                childrenKind { NamespacedPodsOperator.KIND }
+                children {
+                    model.resources(NamespacedPodsOperator.KIND)
+                        .inCurrentNamespace()
+                        .filtered(PodForReplicationController(it))
+                        .list()
+                        .sortedBy(resourceName)
+                }
+            },
+            element<Folder> {
                 applicableIf { it == BUILDCONFIGS }
                 childrenKind { BuildConfigsOperator.KIND }
                 children {
@@ -140,15 +155,15 @@ class OpenShiftStructure(model: IResourceModel): AbstractTreeStructureContributi
 
     private fun createNetworkElements(): Array<ElementNode<*>> {
         return arrayOf(
-            element<Any> {
+            element<Folder> {
                 applicableIf { it == NETWORK }
                 children {
-                    listOf<Any>(
+                    listOf(
                         ROUTES
                     )
                 }
             },
-            element<Any> {
+            element<Folder> {
                 applicableIf { it == ROUTES }
                 childrenKind { RoutesOperator.KIND }
                 children {

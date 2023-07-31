@@ -14,32 +14,9 @@ import com.intellij.ide.util.treeView.NodeDescriptor
 import com.intellij.openapi.project.Project
 import com.intellij.ui.tree.LeafState
 import com.redhat.devtools.intellij.kubernetes.model.IResourceModel
+import com.redhat.devtools.intellij.kubernetes.model.context.IActiveContext
 import com.redhat.devtools.intellij.kubernetes.model.resource.ResourceKind
-import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.AllPodsOperator
-import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.ConfigMapsOperator
-import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.CronJobsOperator
-import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.DaemonSetsOperator
-import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.DeploymentsOperator
-import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.EndpointsOperator
-import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.IngressOperator
-import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.JobsOperator
-import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.NamespacedPodsOperator
-import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.NamespacesOperator
-import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.NodesOperator
-import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.PersistentVolumeClaimsOperator
-import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.PersistentVolumesOperator
-import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.PodForDaemonSet
-import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.PodForDeployment
-import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.PodForJob
-import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.PodForReplicaSet
-import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.PodForReplicationController
-import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.PodForService
-import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.PodForStatefulSet
-import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.ReplicaSetsOperator
-import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.SecretsOperator
-import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.ServicesOperator
-import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.StatefulSetsOperator
-import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.StorageClassesOperator
+import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.*
 import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.custom.CustomResourceDefinitionsOperator
 import com.redhat.devtools.intellij.kubernetes.model.resource.openshift.ReplicationControllersOperator
 import com.redhat.devtools.intellij.kubernetes.model.resourceName
@@ -67,15 +44,7 @@ import com.redhat.devtools.intellij.kubernetes.tree.KubernetesStructure.Folders.
 import com.redhat.devtools.intellij.kubernetes.tree.KubernetesStructure.Folders.STORAGE_CLASSES
 import com.redhat.devtools.intellij.kubernetes.tree.KubernetesStructure.Folders.WORKLOADS
 import com.redhat.devtools.intellij.kubernetes.tree.TreeStructure.Folder
-import io.fabric8.kubernetes.api.model.ConfigMap
-import io.fabric8.kubernetes.api.model.GenericKubernetesResource
-import io.fabric8.kubernetes.api.model.HasMetadata
-import io.fabric8.kubernetes.api.model.Namespace
-import io.fabric8.kubernetes.api.model.Node
-import io.fabric8.kubernetes.api.model.Pod
-import io.fabric8.kubernetes.api.model.ReplicationController
-import io.fabric8.kubernetes.api.model.Secret
-import io.fabric8.kubernetes.api.model.Service
+import io.fabric8.kubernetes.api.model.*
 import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinition
 import io.fabric8.kubernetes.api.model.apps.DaemonSet
 import io.fabric8.kubernetes.api.model.apps.Deployment
@@ -113,7 +82,7 @@ class KubernetesStructure(model: IResourceModel) : AbstractTreeStructureContribu
     }
 
 	override val elementsTree: List<ElementNode<*>> = listOf(
-			element<Any> {
+			element<IActiveContext<*,*>> {
 				applicableIf { it == getRootElement() }
 				children {
 					listOf(
@@ -141,7 +110,7 @@ class KubernetesStructure(model: IResourceModel) : AbstractTreeStructureContribu
 
 	private fun createNamespacesElements(): Array<ElementNode<*>> {
 		return arrayOf(
-				element<Any> {
+				element<Folder> {
 					applicableIf { it == NAMESPACES }
 					children {
 						model.resources(NamespacesOperator.KIND)
@@ -150,9 +119,6 @@ class KubernetesStructure(model: IResourceModel) : AbstractTreeStructureContribu
 								.sortedBy(resourceName)
 					}
 				},
-				element<Any> {
-					applicableIf { it is Namespace }
-				}
 		)
 	}
 
@@ -169,7 +135,7 @@ class KubernetesStructure(model: IResourceModel) : AbstractTreeStructureContribu
 
 	private fun createNodesElements(): Array<ElementNode<*>> {
 		return arrayOf(
-				element<Any> {
+				element<Folder> {
 					applicableIf { it == NODES }
 					childrenKind { NodesOperator.KIND }
 					children {
@@ -194,10 +160,10 @@ class KubernetesStructure(model: IResourceModel) : AbstractTreeStructureContribu
 
 	private fun createWorkloadElements(): Array<ElementNode<*>> {
 		return arrayOf(
-				element<Any> {
+				element<Folder> {
 					applicableIf { it == WORKLOADS }
 					children {
-						listOf<Any>(DEPLOYMENTS,
+						listOf(DEPLOYMENTS,
 								STATEFULSETS,
 								DAEMONSETS,
 								JOBS,
@@ -207,7 +173,7 @@ class KubernetesStructure(model: IResourceModel) : AbstractTreeStructureContribu
 								REPLICATIONCONTROLLERS)
 					}
 				},
-				element<Any> {
+				element<Folder> {
 					applicableIf { it == DEPLOYMENTS }
 					childrenKind { DeploymentsOperator.KIND }
 					children {
@@ -228,7 +194,7 @@ class KubernetesStructure(model: IResourceModel) : AbstractTreeStructureContribu
 								.sortedBy(resourceName)
 					}
 				},
-				element<Any> {
+				element<Folder> {
 					applicableIf { it == STATEFULSETS }
 					childrenKind { StatefulSetsOperator.KIND }
 					children {
@@ -249,7 +215,7 @@ class KubernetesStructure(model: IResourceModel) : AbstractTreeStructureContribu
 								.sortedBy(resourceName)
 					}
 				},
-				element<Any> {
+				element<Folder> {
 					applicableIf { it == DAEMONSETS }
 					childrenKind { DaemonSetsOperator.KIND }
 					children {
@@ -270,7 +236,7 @@ class KubernetesStructure(model: IResourceModel) : AbstractTreeStructureContribu
 								.sortedBy(resourceName)
 					}
 				},
-				element<Any> {
+				element<Folder> {
 					applicableIf { it == JOBS }
 					childrenKind { JobsOperator.KIND }
 					children {
@@ -291,7 +257,7 @@ class KubernetesStructure(model: IResourceModel) : AbstractTreeStructureContribu
 							.sortedBy(resourceName)
 					}
 				},
-				element<Any> {
+				element<Folder> {
 					applicableIf { it == CRONJOBS }
 					childrenKind { CronJobsOperator.KIND }
 					children {
@@ -301,7 +267,7 @@ class KubernetesStructure(model: IResourceModel) : AbstractTreeStructureContribu
 								.sortedBy(resourceName)
 					}
 				},
-				element<Any> {
+				element<Folder> {
 					applicableIf { it == PODS }
 					childrenKind { NamespacedPodsOperator.KIND }
 					children {
@@ -311,7 +277,7 @@ class KubernetesStructure(model: IResourceModel) : AbstractTreeStructureContribu
 								.sortedBy(resourceName)
 					}
 				},
-				element<Any> {
+				element<Folder> {
 					applicableIf { it == REPLICASETS }
 					childrenKind { ReplicaSetsOperator.KIND }
 					children {
@@ -332,7 +298,7 @@ class KubernetesStructure(model: IResourceModel) : AbstractTreeStructureContribu
 							.sortedBy(resourceName)
 					}
 				},
-				element<Any> {
+				element<Folder> {
 					applicableIf { it == REPLICATIONCONTROLLERS }
 					childrenKind { ReplicationControllersOperator.KIND }
 					children {
@@ -341,33 +307,22 @@ class KubernetesStructure(model: IResourceModel) : AbstractTreeStructureContribu
 							.list()
 							.sortedBy(resourceName)
 					}
-				},
-				element<ReplicationController> {
-					applicableIf { it is ReplicationController }
-					childrenKind { NamespacedPodsOperator.KIND }
-					children {
-						model.resources(NamespacedPodsOperator.KIND)
-							.inCurrentNamespace()
-							.filtered(PodForReplicationController(it))
-							.list()
-							.sortedBy(resourceName)
-					}
-				},
+				}
 		)
 	}
 
 	private fun createNetworkElements(): Array<ElementNode<*>> {
 		return arrayOf(
-				element<Any> {
+				element<Folder> {
 					applicableIf { it == NETWORK }
 					children {
-						listOf<Any>(
+						listOf(
 								SERVICES,
 								ENDPOINTS,
 								INGRESS)
 					}
 				},
-				element<Any> {
+				element<Folder> {
 					applicableIf { it == SERVICES }
 					childrenKind { ServicesOperator.KIND }
 					children {
@@ -388,7 +343,7 @@ class KubernetesStructure(model: IResourceModel) : AbstractTreeStructureContribu
 								.sortedBy(resourceName)
 					}
 				},
-				element<Any> {
+				element<Folder> {
 					applicableIf { it == ENDPOINTS }
 					childrenKind { EndpointsOperator.KIND }
 					children {
@@ -398,7 +353,7 @@ class KubernetesStructure(model: IResourceModel) : AbstractTreeStructureContribu
 								.sortedBy(resourceName)
 					}
 				},
-				element<Any> {
+				element<Folder> {
 					applicableIf { it == INGRESS }
 					childrenKind { IngressOperator.KIND }
 					children {
@@ -413,16 +368,16 @@ class KubernetesStructure(model: IResourceModel) : AbstractTreeStructureContribu
 
 	private fun createStorageElements(): Array<ElementNode<*>> {
 		return arrayOf(
-				element<Any> {
+				element<Folder> {
 					applicableIf { it == STORAGE }
 					children {
-						listOf<Any>(
+						listOf(
 								PERSISTENT_VOLUMES,
 								PERSISTENT_VOLUME_CLAIMS,
 								STORAGE_CLASSES)
 					}
 				},
-				element<Any> {
+				element<Folder> {
 					applicableIf { it == PERSISTENT_VOLUMES }
 					children {
 						model.resources(PersistentVolumesOperator.KIND)
@@ -431,7 +386,7 @@ class KubernetesStructure(model: IResourceModel) : AbstractTreeStructureContribu
 								.sortedBy(resourceName)
 					}
 				},
-				element<Any> {
+				element<Folder> {
 					applicableIf { it == PERSISTENT_VOLUME_CLAIMS }
 					childrenKind { PersistentVolumeClaimsOperator.KIND }
 					children {
@@ -441,7 +396,7 @@ class KubernetesStructure(model: IResourceModel) : AbstractTreeStructureContribu
 								.sortedBy(resourceName)
 					}
 				},
-				element<Any> {
+				element<Folder> {
 					applicableIf { it == STORAGE_CLASSES }
 					childrenKind { StorageClassesOperator.KIND }
 					children {
@@ -456,15 +411,15 @@ class KubernetesStructure(model: IResourceModel) : AbstractTreeStructureContribu
 
 	private fun createConfigurationElements(): Array<ElementNode<*>> {
 		return arrayOf(
-				element<Any> {
+				element<Folder> {
 					applicableIf { it == CONFIGURATION }
 					children {
-						listOf<Any>(
+						listOf(
 								CONFIG_MAPS,
 								SECRETS)
 					}
 				},
-				element<Any> {
+				element<Folder> {
 					applicableIf { it == CONFIG_MAPS }
 					childrenKind { ConfigMapsOperator.KIND }
 					children {
@@ -480,7 +435,7 @@ class KubernetesStructure(model: IResourceModel) : AbstractTreeStructureContribu
 						KubernetesDescriptors.createDataDescriptorFactories((it).data, it)
 					}
 				},
-				element<Any> {
+				element<Folder> {
 					applicableIf { it == SECRETS }
 					childrenKind { SecretsOperator.KIND }
 					children {
@@ -501,7 +456,7 @@ class KubernetesStructure(model: IResourceModel) : AbstractTreeStructureContribu
 
 	private fun createCustomResourcesElements(): Array<ElementNode<*>> {
 		return arrayOf(
-				element<Any> {
+				element<Folder> {
 					applicableIf { it == CUSTOM_RESOURCES_DEFINITIONS }
 					childrenKind { CustomResourceDefinitionsOperator.KIND }
 					children {

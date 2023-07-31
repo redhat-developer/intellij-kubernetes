@@ -16,6 +16,7 @@ import com.redhat.devtools.intellij.kubernetes.model.client.ClientAdapter
 import com.redhat.devtools.intellij.kubernetes.model.client.KubeClientAdapter
 import com.redhat.devtools.intellij.kubernetes.model.client.OSClientAdapter
 import com.redhat.devtools.intellij.kubernetes.model.resource.ResourceKind
+import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.KubernetesReplicas.Replicator
 import io.fabric8.kubernetes.api.model.GenericKubernetesResource
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinition
@@ -144,6 +145,25 @@ interface IActiveContext<N: HasMetadata, C: KubernetesClient>: IContext {
      * @return the resource that was created
      */
     fun replace(resource: HasMetadata): HasMetadata?
+
+    /**
+     * Sets the replicas for the given [Replicator]
+     *
+     * @param replicas the number of replicas to set
+     * @param replicator the resource to set the replicas to
+     *
+     * @see Replicator
+     */
+    fun setReplicas(replicas: Int, replicator: Replicator)
+
+    /**
+     * Returns the replicas for the given resource.
+     * Returns `null` replicas are not defined or the given resource does not specify those.
+     *
+     * @param resource the resource to get the replicas from
+     * @return returns an instance of the resource that can be replicated or null if there's none
+     */
+    fun getReplicas(resource: HasMetadata): Replicator?
 
     /**
      * Watches all resources of the given resource kind
