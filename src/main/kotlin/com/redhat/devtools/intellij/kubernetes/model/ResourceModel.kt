@@ -70,7 +70,7 @@ interface IResourceModel {
  */
 open class ResourceModel : IResourceModel {
 
-    protected val processWatches by lazy {
+    private val processWatches by lazy {
         ProcessWatches(ClientAdapter.Factory::create)
     }
 
