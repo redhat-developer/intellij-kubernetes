@@ -10,7 +10,7 @@
  ******************************************************************************/
 package com.redhat.devtools.intellij.kubernetes.model.dashboard
 
-import com.redhat.devtools.intellij.kubernetes.model.resource.PodForService
+import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.PodForService
 import io.fabric8.kubernetes.api.model.Pod
 import io.fabric8.kubernetes.api.model.Service
 import io.fabric8.kubernetes.client.KubernetesClient

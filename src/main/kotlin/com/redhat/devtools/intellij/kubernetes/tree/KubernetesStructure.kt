@@ -14,11 +14,6 @@ import com.intellij.ide.util.treeView.NodeDescriptor
 import com.intellij.openapi.project.Project
 import com.intellij.ui.tree.LeafState
 import com.redhat.devtools.intellij.kubernetes.model.IResourceModel
-import com.redhat.devtools.intellij.kubernetes.model.resource.PodForDaemonSet
-import com.redhat.devtools.intellij.kubernetes.model.resource.PodForDeployment
-import com.redhat.devtools.intellij.kubernetes.model.resource.PodForJob
-import com.redhat.devtools.intellij.kubernetes.model.resource.PodForService
-import com.redhat.devtools.intellij.kubernetes.model.resource.PodForStatefulSet
 import com.redhat.devtools.intellij.kubernetes.model.resource.ResourceKind
 import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.AllPodsOperator
 import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.ConfigMapsOperator
@@ -33,6 +28,11 @@ import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.Namespa
 import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.NodesOperator
 import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.PersistentVolumeClaimsOperator
 import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.PersistentVolumesOperator
+import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.PodForDaemonSet
+import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.PodForDeployment
+import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.PodForJob
+import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.PodForService
+import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.PodForStatefulSet
 import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.SecretsOperator
 import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.ServicesOperator
 import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.StatefulSetsOperator

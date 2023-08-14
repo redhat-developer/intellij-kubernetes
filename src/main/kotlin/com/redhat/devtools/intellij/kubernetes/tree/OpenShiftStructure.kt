@@ -13,14 +13,14 @@ package com.redhat.devtools.intellij.kubernetes.tree
 import com.intellij.ide.util.treeView.NodeDescriptor
 import com.intellij.ui.tree.LeafState
 import com.redhat.devtools.intellij.kubernetes.model.IResourceModel
-import com.redhat.devtools.intellij.kubernetes.model.resource.BuildFor
-import com.redhat.devtools.intellij.kubernetes.model.resource.ReplicationControllerFor
 import com.redhat.devtools.intellij.kubernetes.model.resource.ResourceKind
 import com.redhat.devtools.intellij.kubernetes.model.resource.openshift.BuildConfigsOperator
+import com.redhat.devtools.intellij.kubernetes.model.resource.openshift.BuildFor
 import com.redhat.devtools.intellij.kubernetes.model.resource.openshift.BuildsOperator
 import com.redhat.devtools.intellij.kubernetes.model.resource.openshift.DeploymentConfigsOperator
 import com.redhat.devtools.intellij.kubernetes.model.resource.openshift.ImageStreamsOperator
 import com.redhat.devtools.intellij.kubernetes.model.resource.openshift.ProjectsOperator
+import com.redhat.devtools.intellij.kubernetes.model.resource.openshift.ReplicationControllerFor
 import com.redhat.devtools.intellij.kubernetes.model.resource.openshift.ReplicationControllersOperator
 import com.redhat.devtools.intellij.kubernetes.model.resource.openshift.RoutesOperator
 import com.redhat.devtools.intellij.kubernetes.model.resourceName
