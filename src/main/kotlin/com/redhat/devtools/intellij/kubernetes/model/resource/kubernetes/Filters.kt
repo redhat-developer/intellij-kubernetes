@@ -11,9 +11,11 @@
 package com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes
 
 import io.fabric8.kubernetes.api.model.Pod
+import io.fabric8.kubernetes.api.model.ReplicationController
 import io.fabric8.kubernetes.api.model.Service
 import io.fabric8.kubernetes.api.model.apps.DaemonSet
 import io.fabric8.kubernetes.api.model.apps.Deployment
+import io.fabric8.kubernetes.api.model.apps.ReplicaSet
 import io.fabric8.kubernetes.api.model.apps.StatefulSet
 import io.fabric8.kubernetes.api.model.batch.v1.Job
 import java.util.function.Predicate
@@ -31,6 +33,11 @@ class PodForStatefulSet(statefulSet: StatefulSet)
 class PodForDaemonSet(daemonSet: DaemonSet)
 	: PodForResource(daemonSet.spec.selector?.matchLabels)
 
+class PodForReplicaSet(replicaSet: ReplicaSet)
+	: PodForResource(replicaSet.spec.selector.matchLabels)
+
+class PodForReplicationController(replicationController: ReplicationController)
+	: PodForResource(replicationController.spec.selector)
 
 open class PodForResource(private val selectorLabels: Map<String, String>?): Predicate<Pod> {
 

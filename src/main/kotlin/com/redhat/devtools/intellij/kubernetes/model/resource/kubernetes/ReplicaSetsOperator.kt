@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2020 Red Hat, Inc.
+ * Copyright (c) 2023 Red Hat, Inc.
  * Distributed under license by Red Hat, Inc. All rights reserved.
  * This program is made available under the terms of the
  * Eclipse Public License v2.0 which accompanies this distribution,
@@ -8,26 +8,26 @@
  * Contributors:
  * Red Hat, Inc. - initial API and implementation
  ******************************************************************************/
-package com.redhat.devtools.intellij.kubernetes.model.resource.openshift
+package com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes
 
 import com.redhat.devtools.intellij.kubernetes.model.client.ClientAdapter
 import com.redhat.devtools.intellij.kubernetes.model.resource.NamespacedOperation
 import com.redhat.devtools.intellij.kubernetes.model.resource.NamespacedResourceOperator
 import com.redhat.devtools.intellij.kubernetes.model.resource.ResourceKind
-import io.fabric8.kubernetes.api.model.ReplicationController
+import io.fabric8.kubernetes.api.model.apps.ReplicaSet
 import io.fabric8.kubernetes.client.KubernetesClient
-import io.fabric8.openshift.client.OpenShiftClient
+import io.fabric8.kubernetes.client.impl.AppsAPIGroupClient
 
-class ReplicationControllersOperator(client: ClientAdapter<out KubernetesClient>)
-    : NamespacedResourceOperator<ReplicationController, KubernetesClient>(client.get()) {
+class ReplicaSetsOperator(client: ClientAdapter<out KubernetesClient>)
+    : NamespacedResourceOperator<ReplicaSet, AppsAPIGroupClient>(client.getApps()) {
 
     companion object {
-        val KIND = ResourceKind.create(ReplicationController::class.java)
+        val KIND = ResourceKind.create(ReplicaSet::class.java)
     }
 
     override val kind = KIND
 
-    override fun getOperation(): NamespacedOperation<ReplicationController> {
-        return client.replicationControllers()
+    override fun getOperation(): NamespacedOperation<ReplicaSet> {
+        return client.replicaSets()
     }
 }
