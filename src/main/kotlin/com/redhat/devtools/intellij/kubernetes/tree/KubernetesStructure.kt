@@ -31,13 +31,17 @@ import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.Persist
 import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.PodForDaemonSet
 import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.PodForDeployment
 import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.PodForJob
+import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.PodForReplicaSet
+import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.PodForReplicationController
 import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.PodForService
 import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.PodForStatefulSet
+import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.ReplicaSetsOperator
 import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.SecretsOperator
 import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.ServicesOperator
 import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.StatefulSetsOperator
 import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.StorageClassesOperator
 import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.custom.CustomResourceDefinitionsOperator
+import com.redhat.devtools.intellij.kubernetes.model.resource.openshift.ReplicationControllersOperator
 import com.redhat.devtools.intellij.kubernetes.model.resourceName
 import com.redhat.devtools.intellij.kubernetes.tree.KubernetesStructure.Folders.CONFIGURATION
 import com.redhat.devtools.intellij.kubernetes.tree.KubernetesStructure.Folders.CONFIG_MAPS
@@ -54,6 +58,8 @@ import com.redhat.devtools.intellij.kubernetes.tree.KubernetesStructure.Folders.
 import com.redhat.devtools.intellij.kubernetes.tree.KubernetesStructure.Folders.PERSISTENT_VOLUMES
 import com.redhat.devtools.intellij.kubernetes.tree.KubernetesStructure.Folders.PERSISTENT_VOLUME_CLAIMS
 import com.redhat.devtools.intellij.kubernetes.tree.KubernetesStructure.Folders.PODS
+import com.redhat.devtools.intellij.kubernetes.tree.KubernetesStructure.Folders.REPLICASETS
+import com.redhat.devtools.intellij.kubernetes.tree.KubernetesStructure.Folders.REPLICATIONCONTROLLERS
 import com.redhat.devtools.intellij.kubernetes.tree.KubernetesStructure.Folders.SECRETS
 import com.redhat.devtools.intellij.kubernetes.tree.KubernetesStructure.Folders.SERVICES
 import com.redhat.devtools.intellij.kubernetes.tree.KubernetesStructure.Folders.STATEFULSETS
@@ -67,11 +73,13 @@ import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.Namespace
 import io.fabric8.kubernetes.api.model.Node
 import io.fabric8.kubernetes.api.model.Pod
+import io.fabric8.kubernetes.api.model.ReplicationController
 import io.fabric8.kubernetes.api.model.Secret
 import io.fabric8.kubernetes.api.model.Service
 import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinition
 import io.fabric8.kubernetes.api.model.apps.DaemonSet
 import io.fabric8.kubernetes.api.model.apps.Deployment
+import io.fabric8.kubernetes.api.model.apps.ReplicaSet
 import io.fabric8.kubernetes.api.model.apps.StatefulSet
 import io.fabric8.kubernetes.api.model.batch.v1.Job
 import io.fabric8.kubernetes.api.model.discovery.v1beta1.Endpoint
@@ -79,20 +87,22 @@ import io.fabric8.kubernetes.api.model.storage.StorageClass
 
 class KubernetesStructure(model: IResourceModel) : AbstractTreeStructureContribution(model) {
     object Folders {
-        val NAMESPACES = NamespacesFolder("Namespaces")
-        val NODES = Folder("Nodes", kind = NodesOperator.KIND)
-        val WORKLOADS = Folder("Workloads", kind = null)
-			val DEPLOYMENTS = Folder("Deployments", kind = DeploymentsOperator.KIND) //  Workloads / Deployments
-			val STATEFULSETS = Folder("StatefulSets", kind = StatefulSetsOperator.KIND) //  Workloads / StatefulSets
-			val DAEMONSETS = Folder("DaemonSets", kind = DaemonSetsOperator.KIND) //  Workloads / DaemonSets
-			val JOBS = Folder("Jobs", kind = JobsOperator.KIND) //  Workloads / Jobs
-			val CRONJOBS = Folder("CronJobs", kind = CronJobsOperator.KIND) //  Workloads / CronJobs
-            val PODS = Folder("Pods", kind = NamespacedPodsOperator.KIND) //  Workloads / Pods
-        val NETWORK = Folder("Network", kind = null)
-            val SERVICES = Folder("Services", kind = ServicesOperator.KIND) // Network / Services
-            val ENDPOINTS = Folder("Endpoints", kind = EndpointsOperator.KIND) // Network / Endpoints
+		val NAMESPACES = NamespacesFolder("Namespaces")
+		val NODES = Folder("Nodes", kind = NodesOperator.KIND)
+		val WORKLOADS = Folder("Workloads", kind = null)
+			val DEPLOYMENTS = Folder("Deployments", kind = DeploymentsOperator.KIND) // Workloads / Deployments
+			val STATEFULSETS = Folder("Stateful Sets", kind = StatefulSetsOperator.KIND) // Workloads / StatefulSets
+			val DAEMONSETS = Folder("Daemon Sets", kind = DaemonSetsOperator.KIND) // Workloads / DaemonSets
+			val JOBS = Folder("Jobs", kind = JobsOperator.KIND) // Workloads / Jobs
+			val CRONJOBS = Folder("Cron Jobs", kind = CronJobsOperator.KIND) // Workloads / CronJobs
+			val PODS = Folder("Pods", kind = NamespacedPodsOperator.KIND) // Workloads / Pods
+			val REPLICASETS = Folder("Replica Sets", kind = ReplicaSetsOperator.KIND) // Workloads / ReplicaSets
+			val REPLICATIONCONTROLLERS = Folder("Replication Controllers", kind = ReplicationControllersOperator.KIND) // Workloads / ReplicationControllers
+		val NETWORK = Folder("Network", kind = null)
+			val SERVICES = Folder("Services", kind = ServicesOperator.KIND) // Network / Services
+			val ENDPOINTS = Folder("Endpoints", kind = EndpointsOperator.KIND) // Network / Endpoints
 			val INGRESS = Folder("Ingress", kind = IngressOperator.KIND) // Network / Ingress
-		val STORAGE = Folder("Storage", kind = null)
+			val STORAGE = Folder("Storage", kind = null)
 			val PERSISTENT_VOLUMES = Folder("Persistent Volumes", kind = PersistentVolumesOperator.KIND) // Storage / Persistent Volumes
 			val PERSISTENT_VOLUME_CLAIMS = Folder("Persistent Volume Claims", kind = PersistentVolumeClaimsOperator.KIND) // Storage / Persistent Volume Claims
 			val STORAGE_CLASSES = Folder("Storage Classes", kind = StorageClassesOperator.KIND) // Storage / Storage Classes
@@ -192,7 +202,9 @@ class KubernetesStructure(model: IResourceModel) : AbstractTreeStructureContribu
 								DAEMONSETS,
 								JOBS,
 								CRONJOBS,
-								PODS)
+								PODS,
+								REPLICASETS,
+								REPLICATIONCONTROLLERS)
 					}
 				},
 				element<Any> {
@@ -298,7 +310,49 @@ class KubernetesStructure(model: IResourceModel) : AbstractTreeStructureContribu
 								.list()
 								.sortedBy(resourceName)
 					}
-				}
+				},
+				element<Any> {
+					applicableIf { it == REPLICASETS }
+					childrenKind { ReplicaSetsOperator.KIND }
+					children {
+						model.resources(ReplicaSetsOperator.KIND)
+							.inCurrentNamespace()
+							.list()
+							.sortedBy(resourceName)
+					}
+				},
+				element<ReplicaSet> {
+					applicableIf { it is ReplicaSet }
+					childrenKind { NamespacedPodsOperator.KIND }
+					children {
+						model.resources(NamespacedPodsOperator.KIND)
+							.inCurrentNamespace()
+							.filtered(PodForReplicaSet(it))
+							.list()
+							.sortedBy(resourceName)
+					}
+				},
+				element<Any> {
+					applicableIf { it == REPLICATIONCONTROLLERS }
+					childrenKind { ReplicationControllersOperator.KIND }
+					children {
+						model.resources(ReplicationControllersOperator.KIND)
+							.inCurrentNamespace()
+							.list()
+							.sortedBy(resourceName)
+					}
+				},
+				element<ReplicationController> {
+					applicableIf { it is ReplicationController }
+					childrenKind { NamespacedPodsOperator.KIND }
+					children {
+						model.resources(NamespacedPodsOperator.KIND)
+							.inCurrentNamespace()
+							.filtered(PodForReplicationController(it))
+							.list()
+							.sortedBy(resourceName)
+					}
+				},
 		)
 	}
 

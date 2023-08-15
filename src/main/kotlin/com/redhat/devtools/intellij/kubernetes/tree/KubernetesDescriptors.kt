@@ -33,11 +33,13 @@ import io.fabric8.kubernetes.api.model.Node
 import io.fabric8.kubernetes.api.model.PersistentVolume
 import io.fabric8.kubernetes.api.model.PersistentVolumeClaim
 import io.fabric8.kubernetes.api.model.Pod
+import io.fabric8.kubernetes.api.model.ReplicationController
 import io.fabric8.kubernetes.api.model.Secret
 import io.fabric8.kubernetes.api.model.Service
 import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinition
 import io.fabric8.kubernetes.api.model.apps.DaemonSet
 import io.fabric8.kubernetes.api.model.apps.Deployment
+import io.fabric8.kubernetes.api.model.apps.ReplicaSet
 import io.fabric8.kubernetes.api.model.apps.StatefulSet
 import io.fabric8.kubernetes.api.model.batch.v1.Job
 import io.fabric8.kubernetes.api.model.batch.v1beta1.CronJob
@@ -79,10 +81,13 @@ object KubernetesDescriptors {
 					|| element is StorageClass
 					|| element is ConfigMap
 					|| element is Secret
-					|| element is GenericKubernetesResource ->
+					|| element is GenericKubernetesResource
+					|| element is ReplicaSet
+					|| element is ReplicationController ->
 					ResourceDescriptor(element as HasMetadata, childrenKind, parent, model, project)
 			element is CustomResourceDefinition ->
 				CustomResourceDefinitionDescriptor(element, parent, model, project)
+
 			else ->
 				null
 		}
