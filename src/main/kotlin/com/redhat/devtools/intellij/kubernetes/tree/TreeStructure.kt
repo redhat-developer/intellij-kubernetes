@@ -248,8 +248,35 @@ open class TreeStructure(
         project
     ) {
         override fun getLabel(element: java.lang.Exception): String {
-            return "Error: ${element.message ?: "unspecified"}"
+            return "Error: ${getMessage(element)}"
         }
+
+        private fun getMessage(e: Exception): String {
+            val causeMessage = e.cause?.message
+            return if (causeMessage == null) {
+                getMessageOrDefault(e)
+            } else if (causeMessage.contains("Operation: ")) {
+                /**
+                 * ex. minikube: KubernetesClientException:
+                 * "Operation: [list]  for kind: [Service]  with name: [null]  in namespace: [default]  failed."
+                 */
+                return e.cause?.cause?.message
+                    ?: getMessageOrDefault(e)
+            } else {
+                /**
+                 * ex. OpenShift: KubernetesClientException:
+                 * "Failure executing: GET at: https://api.sandbox-m3.1530.p1.openshiftapps.com:6443/apis/project.openshift.io/v1/projects.
+                 * Message: Unauthorized! Token may have expired! Please log-in again. Unauthorized."
+                 */
+                causeMessage.substringAfter("Message: ", causeMessage)
+            }
+        }
+
+        private fun getMessageOrDefault(e: Exception): String {
+            return e.message
+                ?: "unspecified"
+        }
+
 
         override fun getIcon(element: java.lang.Exception): Icon {
             return AllIcons.General.BalloonError
