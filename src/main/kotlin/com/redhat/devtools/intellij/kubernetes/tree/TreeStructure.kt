@@ -248,7 +248,19 @@ open class TreeStructure(
         project
     ) {
         override fun getLabel(element: java.lang.Exception): String {
-            return "Error: ${element.message ?: "unspecified"}"
+            return "Error: ${getMessage(element)}"
+        }
+
+        private fun getMessage(e: Exception): String {
+            val causeMessage = e.cause?.message
+            /**
+             * ex. KubernetesClientException:
+             * "Failure executing: GET at: https://api.sandbox-m3.1530.p1.openshiftapps.com:6443/apis/project.openshift.io/v1/projects.
+             * Message: Unauthorized! Token may have expired! Please log-in again. Unauthorized."
+             */
+            return causeMessage?.substringAfter("Message: ", causeMessage)
+                ?: e.message
+                ?: "unspecified"
         }
 
         override fun getIcon(element: java.lang.Exception): Icon {
