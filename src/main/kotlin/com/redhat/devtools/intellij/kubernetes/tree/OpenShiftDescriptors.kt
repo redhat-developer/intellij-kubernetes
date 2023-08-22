@@ -80,10 +80,6 @@ object OpenShiftDescriptors {
         model,
         project
     ) {
-        override fun getLabel(element: Folder): String {
-            return element.label
-        }
-
         override fun getSubLabel(element: Folder): String {
             val current = model.getCurrentNamespace()
             return "current: ${
@@ -109,12 +105,12 @@ object OpenShiftDescriptors {
         project
     ) {
 
-        override fun getLabel(element: io.fabric8.openshift.api.model.Project): String {
-            var label = element.metadata.name
+        override fun getLabel(element: io.fabric8.openshift.api.model.Project?): String {
+            var label = element?.metadata?.name
             if (label == model.getCurrentNamespace()) {
                 label = "* $label"
             }
-            return label
+            return label ?: "unknown"
         }
     }
 }
