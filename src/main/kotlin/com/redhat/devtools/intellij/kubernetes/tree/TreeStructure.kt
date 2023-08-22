@@ -165,8 +165,8 @@ open class TreeStructure(
         model,
         project
     ) {
-        override fun getLabel(element: C): String {
-            return if (element.context.name == null) {
+        override fun getLabel(element: C?): String {
+            return if (element?.context?.name == null) {
                 "<unknown context>"
             } else {
                 element.context.name
@@ -230,8 +230,8 @@ open class TreeStructure(
             model.invalidate(element?.kind)
         }
 
-        override fun getLabel(element: Folder): String {
-            return element.label
+        override fun getLabel(element: Folder?): String {
+            return element?.label ?: "<unknown folder>"
         }
     }
 
@@ -247,12 +247,12 @@ open class TreeStructure(
         model,
         project
     ) {
-        override fun getLabel(element: java.lang.Exception): String {
+        override fun getLabel(element: java.lang.Exception?): String {
             return "Error: ${getMessage(element)}"
         }
 
-        private fun getMessage(e: Exception): String {
-            val causeMessage = e.cause?.message
+        private fun getMessage(e: Exception?): String {
+            val causeMessage = e?.cause?.message
             return if (causeMessage == null) {
                 getMessageOrDefault(e)
             } else if (causeMessage.contains("Operation: ")) {
@@ -272,8 +272,8 @@ open class TreeStructure(
             }
         }
 
-        private fun getMessageOrDefault(e: Exception): String {
-            return e.message
+        private fun getMessageOrDefault(e: Exception?): String {
+            return e?.message
                 ?: "unspecified"
         }
 
@@ -291,8 +291,8 @@ open class TreeStructure(
         project: Project
     ) : Descriptor<T>(element, childrenKind, parent, model, project) {
 
-        override fun getLabel(element: T): String {
-            return element.metadata.name
+        override fun getLabel(element: T?): String {
+            return element?.metadata?.name ?: "<unknown resource>"
         }
 
         override fun update(presentation: PresentationData) {
@@ -362,8 +362,8 @@ open class TreeStructure(
             model.invalidate(element)
         }
 
-        protected open fun getLabel(element: T): String? {
-            return element?.toString()
+        protected open fun getLabel(element: T?): String {
+            return element?.toString() ?: "<unknown element>"
         }
 
         protected open fun getSubLabel(element: T): String? {
@@ -388,6 +388,10 @@ open class TreeStructure(
         open fun stopWatchChildren() {
             val kind = childrenKind ?: return
             model.stopWatch(kind)
+        }
+
+        override fun toString(): String {
+            return getLabel(element)
         }
     }
 
