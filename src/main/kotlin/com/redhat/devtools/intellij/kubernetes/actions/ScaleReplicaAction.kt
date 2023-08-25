@@ -13,8 +13,12 @@ package com.redhat.devtools.intellij.kubernetes.actions
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.redhat.devtools.intellij.common.actions.StructureTreeAction
 import com.redhat.devtools.intellij.kubernetes.dialogs.ScaleReplicaDialog
+import com.redhat.devtools.intellij.kubernetes.model.IResourceModel
 import com.redhat.devtools.intellij.kubernetes.model.Notification
+import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.KubernetesReplicas
 import com.redhat.devtools.intellij.kubernetes.model.util.toMessage
+import com.redhat.devtools.intellij.kubernetes.telemetry.TelemetryService
+import com.redhat.devtools.intellij.telemetry.core.service.TelemetryMessageBuilder
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.Pod
 import io.fabric8.kubernetes.api.model.ReplicationController
@@ -32,18 +36,16 @@ class ScaleReplicaAction: StructureTreeAction() {
     }
 
     override fun actionPerformed(event: AnActionEvent?, path: Array<out TreePath>?, selected: Array<out Any>?) {
-        val project = getEventProject(event) ?: return
-        val toScale = selected?.firstOrNull()?.getElement<HasMetadata>() ?: return
-        val model = getResourceModel() ?: return
+        val telemetry = TelemetryService.instance.action("scale")
+        val project = getEventProject(event) ?: return aborting("no project", telemetry)
+        val toScale = selected?.firstOrNull()?.getElement<HasMetadata>() ?: return aborting("no resource selected", telemetry)
+        val model = getResourceModel() ?: return aborting("resource model not found", telemetry)
         try {
             val replicator = model.getReplicas(toScale)
             val replicas = replicator?.replicas
             if (replicator == null
                 || replicas == null) {
-                Notification().error(
-                    "Error Scaling",
-                    "Could not scale ${toScale.kind} '${toScale.metadata.name}: unsupported resource"
-                )
+                error("replicator not found/unsupported kind", toScale, telemetry)
                 return
             }
             val resourceLabel = "${replicator.resource.kind} ${replicator.resource.metadata.name}"
@@ -51,14 +53,29 @@ class ScaleReplicaAction: StructureTreeAction() {
                 project,
                 resourceLabel,
                 replicas,
-                { replicas: Int -> model.setReplicas(replicas, replicator)},
+                setReplicas(replicator, model, telemetry),
                 (event?.inputEvent as? MouseEvent)?.locationOnScreen
             ).show()
         } catch (e: RuntimeException) {
-            Notification().error(
-                "Error Scaling",
-                "Could not scale ${toScale.kind} '${toScale.metadata.name}': ${toMessage(e)}"
-            )
+            error(toMessage(e), toScale, telemetry)
+        }
+    }
+
+    private fun setReplicas(
+        replicator: KubernetesReplicas.Replicator,
+        model: IResourceModel,
+        telemetry: TelemetryMessageBuilder.ActionMessage
+    ): (Int) -> Unit {
+        return { replicas: Int ->
+            try {
+                model.setReplicas(replicas, replicator)
+                telemetry
+                    .property(TelemetryService.PROP_RESOURCE_KIND, replicator.resource.kind)
+                    .success()
+                    .send()
+            } catch (e: RuntimeException) {
+                error(toMessage(e), replicator.resource, telemetry)
+            }
         }
     }
 
@@ -75,5 +92,20 @@ class ScaleReplicaAction: StructureTreeAction() {
                 || element is ReplicaSet
                 || element is StatefulSet
                 || element is Pod
+    }
+
+    private fun error(cause: String, resource: HasMetadata, telemetry: TelemetryMessageBuilder.ActionMessage) {
+        Notification().error(
+            "Error Scaling",
+            "Could not scale ${resource.kind} '${resource.metadata.name}: $cause"
+        )
+        telemetry
+            .property(TelemetryService.PROP_RESOURCE_KIND, resource.kind)
+            .error("Could not scale ${resource.kind}: $cause")
+            .send()
+    }
+
+    private fun aborting(cause: String, telemetry: TelemetryMessageBuilder.ActionMessage) {
+        telemetry.error("aborting: $cause").send()
     }
 }
