@@ -11,12 +11,15 @@
 package com.redhat.devtools.intellij.kubernetes.editor
 
 import com.intellij.openapi.fileEditor.impl.EditorTabTitleProvider
+import com.intellij.openapi.fileEditor.impl.UniqueNameEditorTabTitleProvider
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.VirtualFile
 import com.redhat.devtools.intellij.common.validation.KubernetesResourceInfo
 import com.redhat.devtools.intellij.kubernetes.editor.util.isKubernetesResource
 
-open class ResourceEditorTabTitleProvider : EditorTabTitleProvider {
+open class ResourceEditorTabTitleProvider(
+    private val fallback: EditorTabTitleProvider = UniqueNameEditorTabTitleProvider()
+) : EditorTabTitleProvider {
 
     companion object {
         const val TITLE_UNKNOWN_CLUSTERRESOURCE = "Unknown Cluster Resource"
@@ -34,12 +37,8 @@ open class ResourceEditorTabTitleProvider : EditorTabTitleProvider {
                 TITLE_UNKNOWN_CLUSTERRESOURCE
             }
         } else {
-            getTitleFor(file)
+            fallback.getEditorTabTitle(project, file)
         }
-    }
-
-    private fun getTitleFor(file: VirtualFile): String {
-        return file.name
     }
 
     private fun getTitleFor(info: KubernetesResourceInfo): String {
