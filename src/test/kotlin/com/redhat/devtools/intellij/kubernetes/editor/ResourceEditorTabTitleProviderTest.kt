@@ -11,10 +11,10 @@
 
 package com.redhat.devtools.intellij.kubernetes.editor
 
+import com.intellij.openapi.fileEditor.impl.EditorTabTitleProvider
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.VirtualFile
-import com.nhaarman.mockitokotlin2.doReturn
-import com.nhaarman.mockitokotlin2.mock
+import com.nhaarman.mockitokotlin2.*
 import com.redhat.devtools.intellij.common.validation.KubernetesResourceInfo
 import com.redhat.devtools.intellij.kubernetes.editor.ResourceEditorTabTitleProvider.Companion.TITLE_UNKNOWN_NAME
 import com.redhat.devtools.intellij.kubernetes.model.mocks.Mocks.kubernetesResourceInfo
@@ -28,7 +28,6 @@ class ResourceEditorTabTitleProviderTest {
     private val namespace = "WildWest"
     private val kind = "Cowboy"
     private val apiGroup = "sillyLads/v1"
-    private val resourceInfo = kubernetesResourceInfo(name, namespace, kubernetesTypeInfo(kind, apiGroup))
 
     @Test
     fun `#getTitle should return 'resourcename@namespace' if file is temporary and contains kubernetes resource with namespace`() {
@@ -71,28 +70,28 @@ class ResourceEditorTabTitleProviderTest {
     }
 
     @Test
-    fun `#getTitle should return filename if file is NOT temporary`() {
+    fun `#getTitle should ask fallback provider for title if file is NOT temporary`() {
         // given
-        val fileName = "JollyJumper"
         val isTemporary = false
-        val file: VirtualFile = mock {
-            on { getName() } doReturn fileName
-        }
+        val file: VirtualFile = mock()
         val resourceInfo = kubernetesResourceInfo(
             "<none>",
             "<none>",
             kubernetesTypeInfo("<none>", "<none>"))
-        val provider = createResourceEditorTabTitleProvider(isTemporary, resourceInfo)
+        val fallback: EditorTabTitleProvider = mock()
+        val provider = createResourceEditorTabTitleProvider(isTemporary, resourceInfo, fallback)
         // when
-        val title = provider.getEditorTabTitle(mock(), file)
+        provider.getEditorTabTitle(mock(), file)
         // then
-        assertThat(title).isEqualTo(fileName)
+        verify(fallback).getEditorTabTitle(any(), eq(file))
     }
 
     private fun createResourceEditorTabTitleProvider(
-        isTemporary: Boolean, info: KubernetesResourceInfo
+        isTemporary: Boolean,
+        info: KubernetesResourceInfo,
+        fallback: EditorTabTitleProvider = mock()
     ): ResourceEditorTabTitleProvider {
-        return object : ResourceEditorTabTitleProvider() {
+        return object : ResourceEditorTabTitleProvider(fallback) {
 
             override fun getKubernetesResourceInfo(file: VirtualFile, project: Project): KubernetesResourceInfo {
                 return info
