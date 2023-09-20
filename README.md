@@ -27,6 +27,7 @@ It is available for install from the [JetBrains Marketplace](https://plugins.jet
  - Open a Terminal Shell to a Running Container in the connected cluster
  - Open the Dashboard for the connected cluster (works on any Hybrid cloud cluster)
  - Support [init containers](https://kubernetes.io/docs/concepts/workloads/pods/init-containers/) for logs and terminals.
+ - Scale a deployment
 
 ## Features
 
@@ -106,9 +107,15 @@ The very same dialog may also be opened with a link that's present in the notifi
 
 ![editor diff](images/editor-diff.png)
 
-
 #### Delete Resources
 You may delete any resource that is listed in the resource tree by choosing "Delete" in the context menu.
+
+#### Scale Deployment
+You may scale a deployment, deployment config, replication/stateful set or a replication controller.
+A context action allows you to set the replicas for these kind of resources in the resource tree.
+This very action is also available for pods that are replicated by either of those resources.
+
+![set replicas](images/set-replicas.png)
 
 #### Follow Logs of Running Containers
 
