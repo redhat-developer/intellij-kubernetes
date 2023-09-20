@@ -113,7 +113,7 @@ You may delete any resource that is listed in the resource tree by choosing "Del
 #### Scale Deployment
 You may scale a deployment, deployment config, replication/stateful set or a replication controller.
 A context action allows you to set the replicas for these kind of resources in the resource tree.
-This very action is also available for pods that are replicated by either of those resources.
+Furthermore, this same action is accessible for pods that are replicated by either of those resource types.
 
 ![set replicas](images/set-replicas.png)
 
