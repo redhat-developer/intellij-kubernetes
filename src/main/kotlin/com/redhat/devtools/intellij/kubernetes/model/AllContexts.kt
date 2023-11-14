@@ -245,12 +245,13 @@ open class AllContexts(
 		 * The latter gets closed/recreated whenever the context changes in
 		 * [com.redhat.devtools.intellij.kubernetes.model.client.KubeConfigAdapter].
 		 */
-		val watcher = ConfigWatcher(path) { _, config -> onKubeConfigChanged(config) }
+		val watcher = ConfigWatcher(path) { _, config: io.fabric8.kubernetes.api.model.Config? -> onKubeConfigChanged(config) }
 		runAsync(watcher::run)
 	}
 
-	protected open fun onKubeConfigChanged(fileConfig: io.fabric8.kubernetes.api.model.Config) {
+	protected open fun onKubeConfigChanged(fileConfig: io.fabric8.kubernetes.api.model.Config?) {
 		synchronized(this) {
+			fileConfig ?: return
 			val client = client.get() ?: return
 			val clientConfig = client.config.configuration
 			if (ConfigHelper.areEqual(fileConfig, clientConfig)) {
