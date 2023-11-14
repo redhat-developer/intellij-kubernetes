@@ -399,6 +399,15 @@ class AllContextsTest {
 	}
 
 	@Test
+	fun `#onKubeConfigChanged() should NOT fire if new config is null`() {
+		// given
+		// when
+		allContexts.onKubeConfigChanged(null)
+		// then
+		verify(modelChange, never()).fireAllContextsChanged()
+	}
+
+	@Test
 	fun `#onKubeConfigChanged() should NOT fire if existing config and given config are equal`() {
 		// given
 		val kubeConfig = ConfigBuilder()
@@ -550,7 +559,7 @@ class AllContextsTest {
 		}
 
 		/** override with public method so that it can be tested**/
-		public override fun onKubeConfigChanged(fileConfig: Config) {
+		public override fun onKubeConfigChanged(fileConfig: Config?) {
 			super.onKubeConfigChanged(fileConfig)
 		}
 
