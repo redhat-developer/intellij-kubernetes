@@ -54,15 +54,14 @@ open class ClientConfig(private val client: Client, private val executor: Execut
 					return@supplyAsync false
 				}
 				val fromFile = kubeConfig.load() ?: return@supplyAsync false
-				val currentContextInFile = KubeConfigUtils.getCurrentContext(fromFile)
 				if (setCurrentContext(
 						currentContext,
-						currentContextInFile,
+						KubeConfigUtils.getCurrentContext(fromFile),
 						fromFile
 					).or( // no short-circuit
 						setCurrentNamespace(
 							currentContext?.context,
-							currentContextInFile?.context
+							KubeConfigUtils.getCurrentContext(fromFile)?.context
 						)
 					)
 				) {

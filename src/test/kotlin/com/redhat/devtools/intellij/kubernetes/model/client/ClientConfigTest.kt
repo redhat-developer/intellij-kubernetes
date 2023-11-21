@@ -40,11 +40,11 @@ class ClientConfigTest {
 		context("ctx3", "namespace3", "cluster3", "user3")
 	private val currentContext = namedContext2
 	private val allContexts = listOf(namedContext1, namedContext2, namedContext3)
-	private val f8clientConfig: Config = ClientMocks.config(currentContext, allContexts)
-	private val client: Client = createClient(f8clientConfig)
-	private val f8kubeConfig: io.fabric8.kubernetes.api.model.Config = apiConfig(currentContext.name, allContexts)
-	private val kubeConfig: KubeConfigAdapter = kubeConfig(true, f8kubeConfig)
-	private val clientConfig = spy(TestableClientConfig(client, kubeConfig))
+	private val clientKubeConfig: Config = ClientMocks.config(currentContext, allContexts)
+	private val client: Client = createClient(clientKubeConfig)
+	private val fileKubeConfig: io.fabric8.kubernetes.api.model.Config = apiConfig(currentContext.name, allContexts)
+	private val kubeConfigAdapter: KubeConfigAdapter = kubeConfig(true, fileKubeConfig)
+	private val clientConfig = spy(TestableClientConfig(client, kubeConfigAdapter))
 
 	@Test
 	fun `#currentContext should return config#currentContext`() {
@@ -52,7 +52,7 @@ class ClientConfigTest {
 		// when
 		clientConfig.currentContext
 		// then
-		verify(f8clientConfig).currentContext
+		verify(clientKubeConfig).currentContext
 	}
 
 	@Test
@@ -61,7 +61,7 @@ class ClientConfigTest {
 		// when
 		clientConfig.allContexts
 		// then
-		verify(f8clientConfig).contexts
+		verify(clientKubeConfig).contexts
 	}
 
 	@Test
@@ -86,11 +86,11 @@ class ClientConfigTest {
 	fun `#save should NOT save if kubeConfig doesnt exist`() {
 		// given
 		doReturn(false)
-			.whenever(kubeConfig).exists()
+			.whenever(kubeConfigAdapter).exists()
 		// when
 		clientConfig.save().join()
 		// then
-		verify(kubeConfig, never()).save(any())
+		verify(kubeConfigAdapter, never()).save(any())
 	}
 
 	@Test
@@ -99,18 +99,18 @@ class ClientConfigTest {
 		// when
 		clientConfig.save().join()
 		// then
-		verify(kubeConfig, never()).save(any())
+		verify(kubeConfigAdapter, never()).save(any())
 	}
 
 	@Test
 	fun `#save should save if kubeConfig has different current context as client config`() {
 		// given
-		f8clientConfig.currentContext.name = namedContext3.name
-		assertThat(f8kubeConfig.currentContext).isNotEqualTo(f8clientConfig.currentContext.name)
+		clientKubeConfig.currentContext.name = namedContext3.name
+		assertThat(fileKubeConfig.currentContext).isNotEqualTo(clientKubeConfig.currentContext.name)
 		// when
 		clientConfig.save().join()
 		// then
-		verify(kubeConfig).save(any())
+		verify(kubeConfigAdapter).save(any())
 	}
 
 	@Test
@@ -124,11 +124,11 @@ class ClientConfigTest {
 		val newAllContexts = mutableListOf(*allContexts.toTypedArray())
 		newAllContexts.removeIf { it.name == currentContext.name }
 		newAllContexts.add(newCurrentContext)
-		f8kubeConfig.contexts = newAllContexts
+		fileKubeConfig.contexts = newAllContexts
 		// when
 		clientConfig.save().join()
 		// then
-		verify(kubeConfig).save(any())
+		verify(kubeConfigAdapter).save(any())
 	}
 
 	@Test
@@ -136,14 +136,35 @@ class ClientConfigTest {
 		// given
 		val newCurrentContext = namedContext3
 		doReturn(newCurrentContext)
-			.whenever(f8clientConfig).currentContext
-		assertThat(KubeConfigUtils.getCurrentContext(f8kubeConfig))
-			.isNotEqualTo(f8clientConfig.currentContext)
+			.whenever(clientKubeConfig).currentContext
+		assertThat(KubeConfigUtils.getCurrentContext(fileKubeConfig))
+			.isNotEqualTo(clientKubeConfig.currentContext)
 		// when
 		clientConfig.save().join()
 		// then
-		verify(kubeConfig).save(argThat {
+		verify(kubeConfigAdapter).save(argThat {
 			this.currentContext == newCurrentContext.name
+		})
+	}
+
+	@Test
+	fun `#save should leave current namespace in old context untouched when updating current context in kube config`() {
+		// given
+		val newCurrentContext = namedContext3
+		doReturn(newCurrentContext)
+			.whenever(clientKubeConfig).currentContext
+		assertThat(KubeConfigUtils.getCurrentContext(fileKubeConfig))
+			.isNotEqualTo(clientKubeConfig.currentContext)
+		val context = KubeConfigUtils.getCurrentContext(fileKubeConfig)
+		val currentBeforeSave = context.name
+		val namespaceBeforeSave = context.context.namespace
+		// when
+		clientConfig.save().join()
+		// then
+		verify(kubeConfigAdapter).save(argThat {
+			val afterSave = fileKubeConfig.contexts.find {
+				namedContext -> namedContext.name == currentBeforeSave }
+			afterSave!!.context.namespace == namespaceBeforeSave
 		})
 	}
 
@@ -155,13 +176,13 @@ class ClientConfigTest {
 		currentContext.context.cluster,
 		currentContext.context.user)
 		val newAllContexts = replaceCurrentContext(newCurrentContext, currentContext.name, allContexts)
-		doReturnCurrentContextAndAllContexts(newCurrentContext, newAllContexts, f8clientConfig)
-		assertThat(KubeConfigUtils.getCurrentContext(f8kubeConfig).context.namespace)
-			.isNotEqualTo(f8clientConfig.currentContext.context.namespace)
+		doReturnCurrentContextAndAllContexts(newCurrentContext, newAllContexts, clientKubeConfig)
+		assertThat(KubeConfigUtils.getCurrentContext(fileKubeConfig).context.namespace)
+			.isNotEqualTo(clientKubeConfig.currentContext.context.namespace)
 		// when
 		clientConfig.save().join()
 		// then
-		verify(kubeConfig).save(argThat {
+		verify(kubeConfigAdapter).save(argThat {
 			this.currentContext == this@ClientConfigTest.currentContext.name
 					&& KubeConfigUtils.getCurrentContext(this).context.namespace == newCurrentContext.context.namespace
 		})
@@ -173,7 +194,7 @@ class ClientConfigTest {
 		allContexts: List<NamedContext>
 	): List<NamedContext> {
 		val newAllContexts = mutableListOf(*allContexts.toTypedArray())
-		val existingContext = f8clientConfig.contexts.find { it.name == currentContext }
+		val existingContext = clientKubeConfig.contexts.find { it.name == currentContext }
 		newAllContexts.remove(existingContext)
 		newAllContexts.add(newContext)
 		return newAllContexts
