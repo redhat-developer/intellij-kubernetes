@@ -10,13 +10,12 @@
  ******************************************************************************/
 package com.redhat.devtools.intellij.kubernetes.model.client
 
+import com.redhat.devtools.intellij.common.kubernetes.ClusterHelper
 import com.redhat.devtools.intellij.kubernetes.model.client.ssl.IDEATrustManager
-import com.redhat.devtools.intellij.kubernetes.model.util.isUnauthorized
 import io.fabric8.kubernetes.client.Client
 import io.fabric8.kubernetes.client.Config
 import io.fabric8.kubernetes.client.KubernetesClient
 import io.fabric8.kubernetes.client.KubernetesClientBuilder
-import io.fabric8.kubernetes.client.KubernetesClientException
 import io.fabric8.kubernetes.client.http.HttpClient
 import io.fabric8.kubernetes.client.impl.AppsAPIGroupClient
 import io.fabric8.kubernetes.client.impl.BatchAPIGroupClient
@@ -81,8 +80,7 @@ abstract class ClientAdapter<C : KubernetesClient>(private val fabric8Client: C)
                 }
                 .build()
             val osClient = kubeClient.adapt(NamespacedOpenShiftClient::class.java)
-            val isOpenShift = isOpenShift(osClient)
-            return if (isOpenShift) {
+            return if (ClusterHelper.isOpenShift(osClient)) {
                 OSClientAdapter(osClient, kubeClient)
             } else {
                 KubeClientAdapter(kubeClient)
@@ -99,14 +97,6 @@ abstract class ClientAdapter<C : KubernetesClient>(private val fabric8Client: C)
                 .toTypedArray()
             val externalTrustManager = externalTrustManagerProvider.invoke(clientTrustManagers)
             builder.sslContext(SSLUtils.keyManagers(config), arrayOf(externalTrustManager))
-        }
-
-        private fun isOpenShift(osClient: NamespacedOpenShiftClient): Boolean {
-            return try {
-                osClient.isSupported
-            } catch (e: KubernetesClientException) {
-                e.isUnauthorized()
-            }
         }
 
         private fun setNamespace(namespace: String?, config: Config) {
