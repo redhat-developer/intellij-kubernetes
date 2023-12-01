@@ -148,11 +148,8 @@ open class ResourceEditor(
         when (state) {
             is Error ->
                 showErrorNotification(state.title, state.message)
-/**
- * avoid too many notifications, don't notify outdated
             is Pushed ->
                 showPushedNotification(listOf(editorResource))
- */
             is DeletedOnCluster ->
                 showDeletedNotification(resource)
 /**
