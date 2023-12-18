@@ -97,7 +97,7 @@ object ClientMocks {
         }
     }
 
-    private fun namespaceListOperation(namespaces: Array<Namespace>): NamespaceListOperation {
+    fun namespaceListOperation(namespaces: Array<Namespace>): NamespaceListOperation {
         val namespaceList: NamespaceList = mock()
         doReturn(namespaces.asList())
             .whenever(namespaceList).items

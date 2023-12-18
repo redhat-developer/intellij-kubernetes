@@ -58,6 +58,10 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
     private var singleResourceOperator: NonCachingSingleResourceOperator = NonCachingSingleResourceOperator(client),
 ) : Context(context), IActiveContext<N, C> {
 
+    companion object {
+        private const val DEFAULT_NAMESPACE = "default"
+    }
+
     override val active: Boolean = true
     override val masterUrl: URL
         get() {
@@ -112,10 +116,12 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
 
     override fun getCurrentNamespace(): String? {
         val current = client.namespace
-        return if (current.isNullOrEmpty()) {
-            null
-        } else {
+        return if (!current.isNullOrEmpty()) {
             current
+        } else {
+            val allNamespaces = getAllResources(namespaceKind, NO_NAMESPACE)
+            val namespace = allNamespaces.find { namespace:HasMetadata -> DEFAULT_NAMESPACE == namespace.metadata.name } ?: allNamespaces.firstOrNull()
+            return namespace?.metadata?.name
         }
     }
 
@@ -473,14 +479,6 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
         logger<ActiveContext<*, *>>().debug("Closing context ${context.name}.")
         watch.close()
         dashboard.close()
-    }
-
-    private inline fun <R: HasMetadata, reified O: Any> getResourceOperator(resource: R): O? {
-        val kind = ResourceKind.create(resource::class.java)
-        return getAllResourceOperators(IResourceOperator::class.java)
-            .filter {it.key == kind && it.value is O }
-            .map { it.value }
-            .firstOrNull() as O?
     }
 
     private fun <P: IResourceOperator<out HasMetadata>> getAllResourceOperators(type: Class<P>)
