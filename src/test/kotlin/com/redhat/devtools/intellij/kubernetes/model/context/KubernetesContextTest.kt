@@ -10,18 +10,7 @@
  ******************************************************************************/
 package com.redhat.devtools.intellij.kubernetes.model.context
 
-import com.nhaarman.mockitokotlin2.any
-import com.nhaarman.mockitokotlin2.argThat
-import com.nhaarman.mockitokotlin2.atLeastOnce
-import com.nhaarman.mockitokotlin2.clearInvocations
-import com.nhaarman.mockitokotlin2.doReturn
-import com.nhaarman.mockitokotlin2.eq
-import com.nhaarman.mockitokotlin2.mock
-import com.nhaarman.mockitokotlin2.never
-import com.nhaarman.mockitokotlin2.spy
-import com.nhaarman.mockitokotlin2.times
-import com.nhaarman.mockitokotlin2.verify
-import com.nhaarman.mockitokotlin2.whenever
+import com.nhaarman.mockitokotlin2.*
 import com.redhat.devtools.intellij.kubernetes.model.Notification
 import com.redhat.devtools.intellij.kubernetes.model.ResourceModelObservable
 import com.redhat.devtools.intellij.kubernetes.model.ResourceWatch
@@ -46,19 +35,10 @@ import com.redhat.devtools.intellij.kubernetes.model.resource.INamespacedResourc
 import com.redhat.devtools.intellij.kubernetes.model.resource.INonNamespacedResourceOperator
 import com.redhat.devtools.intellij.kubernetes.model.resource.IResourceOperator
 import com.redhat.devtools.intellij.kubernetes.model.resource.ResourceKind
-import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.AllPodsOperator
-import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.NamespacedPodsOperator
-import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.NamespacesOperator
-import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.NodesOperator
-import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.ServicesOperator
+import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.*
 import com.redhat.devtools.intellij.kubernetes.model.util.MultiResourceException
 import com.redhat.devtools.intellij.kubernetes.model.util.ResourceException
-import io.fabric8.kubernetes.api.model.GenericKubernetesResource
-import io.fabric8.kubernetes.api.model.HasMetadata
-import io.fabric8.kubernetes.api.model.NamedContext
-import io.fabric8.kubernetes.api.model.Namespace
-import io.fabric8.kubernetes.api.model.Node
-import io.fabric8.kubernetes.api.model.Pod
+import io.fabric8.kubernetes.api.model.*
 import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinition
 import io.fabric8.kubernetes.client.KubernetesClient
 import io.fabric8.kubernetes.client.NamespacedKubernetesClient
@@ -71,8 +51,10 @@ import org.junit.Test
 
 class KubernetesContextTest {
 
+	private val DEFAULT_NAMESPACE = resource<Namespace>("default", null, "defaultNsUid1", "v1", "1")
+
 	private val modelChange: ResourceModelObservable = mock()
-	private val allNamespaces = arrayOf(NAMESPACE1, NAMESPACE2, NAMESPACE3)
+	private val allNamespaces = arrayOf(NAMESPACE1, NAMESPACE2, DEFAULT_NAMESPACE, NAMESPACE3)
 	private val currentNamespace = NAMESPACE2
 	private val client = KubeClientAdapter(client(currentNamespace.metadata.name, allNamespaces))
 	private val namespaceWatchOperation: (watcher: Watcher<in Namespace>) -> Watch? = { null }
@@ -205,10 +187,37 @@ class KubernetesContextTest {
 	}
 
 	@Test
-	fun `#getCurrentNamespace should use null if no namespace set in client`() {
+	fun `#getCurrentNamespace should return 'default' namespace if no current namespace set in client`() {
 		// given
 		whenever(client.get().namespace)
 				.thenReturn(null)
+		// when
+		val namespace = context.getCurrentNamespace()
+		// then
+		assertThat(namespace).isEqualTo(DEFAULT_NAMESPACE.metadata.name)
+	}
+
+	@Test
+	fun `#getCurrentNamespace should return 1st namespace if no current namespace set in client and there's no 'default' namespace`() {
+		// given
+		val allNamespaces = arrayOf(NAMESPACE1, NAMESPACE2, NAMESPACE3)
+		whenever(namespacesOperator.allResources)
+			.thenReturn(allNamespaces.asList())
+		whenever(client.get().namespace)
+			.thenReturn(null)
+		// when
+		val namespace = context.getCurrentNamespace()
+		// then
+		assertThat(namespace).isEqualTo(NAMESPACE1.metadata.name)
+	}
+
+	@Test
+	fun `#getCurrentNamespace should return null if no current namespace set in client and there are no namespaces`() {
+		// given
+		whenever(namespacesOperator.allResources)
+			.thenReturn(emptyList())
+		whenever(client.get().namespace)
+			.thenReturn(null)
 		// when
 		val namespace = context.getCurrentNamespace()
 		// then

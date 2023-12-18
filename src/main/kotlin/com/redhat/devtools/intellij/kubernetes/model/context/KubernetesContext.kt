@@ -44,6 +44,7 @@ open class KubernetesContext(
 ) {
 
 	override val namespaceKind : ResourceKind<Namespace> =  NamespacesOperator.KIND
+
 	private val replicasOperator = KubernetesReplicas(
 		NonCachingSingleResourceOperator(client),
 		object: ResourcesRetrieval {
