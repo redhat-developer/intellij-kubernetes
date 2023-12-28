@@ -47,13 +47,7 @@ open class ResourceEditorFactory protected constructor(
     private val createResourceEditor: (FileEditor, Project) -> ResourceEditor =
         { editor, project -> ResourceEditor(editor, IResourceModel.getInstance(), project) },
     /* for mocking purposes */
-    private val reportTelemetry: (FileEditor, Project, TelemetryMessageBuilder.ActionMessage) -> Unit = { editor, project, telemetry ->
-        val resourceInfo = getKubernetesResourceInfo(editor.file, project)
-        TelemetryService.sendTelemetry(resourceInfo, telemetry)
-    },
-    /* for mocking purposes */
-    private val getProjectManager: () -> ProjectManager = {  ProjectManager.getInstance() }
-
+    private val getProjectManager: () -> ProjectManager = {  ProjectManager.getInstance() },
 ) {
 
     companion object {
@@ -123,9 +117,9 @@ open class ResourceEditorFactory protected constructor(
         ) {
             return null
         }
-        val telemetry = TelemetryService.instance.action(TelemetryService.NAME_PREFIX_EDITOR + "open")
-        return try {
-            runAsync { reportTelemetry.invoke(editor, project, telemetry) }
+        val telemetry = getTelemetryMessageBuilder().action(TelemetryService.NAME_PREFIX_EDITOR + "open")
+      return try {
+            runAsync { TelemetryService.sendTelemetry(getKubernetesResourceInfo(editor.file, project), telemetry) }
             val resourceEditor = createResourceEditor.invoke(editor, project)
             resourceEditor.createToolbar()
             getProjectManager.invoke().addProjectManagerListener(project, onProjectClosed(resourceEditor))
@@ -159,5 +153,10 @@ open class ResourceEditorFactory protected constructor(
         } else {
             ApplicationManager.getApplication().invokeLater(runnable)
         }
+    }
+
+    /* for testing purposes */
+    protected open fun getTelemetryMessageBuilder(): TelemetryMessageBuilder {
+      return TelemetryService.instance;
     }
 }
