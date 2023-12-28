@@ -26,6 +26,7 @@ import com.nhaarman.mockitokotlin2.whenever
 import com.redhat.devtools.intellij.kubernetes.editor.ResourceEditor.Companion.KEY_RESOURCE_EDITOR
 import com.redhat.devtools.intellij.kubernetes.model.util.createResource
 import com.redhat.devtools.intellij.telemetry.core.service.TelemetryMessageBuilder
+import com.redhat.devtools.intellij.telemetry.core.service.TelemetryMessageBuilder.ActionMessage
 import io.fabric8.kubernetes.api.model.HasMetadata
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test
@@ -64,7 +65,7 @@ class ResourceEditorFactoryTest {
                       valueFrom:
                         secretKeyRef:
                           name: postgres-secret
-                          key: secret.password 
+                          key: secret.password
     """.trimIndent()
 
     private val resource = createResource<HasMetadata>(deployment)
@@ -125,7 +126,13 @@ class ResourceEditorFactoryTest {
         on { editor } doReturn fileEditor
     }
 
-    private val editorFactory =
+    private val actionMessage: ActionMessage = mock {
+      on { property(any(), any()) } doReturn mock
+    }
+
+    private val telemetryMessageBuilder: TelemetryMessageBuilder = mockTelemetryMessageBuilder()
+
+  private val editorFactory =
         TestableResourceEditorFactory(
             getFileEditorManager,
             createResourceFile,
@@ -133,7 +140,6 @@ class ResourceEditorFactoryTest {
             isTemporary,
             hasKubernetesResource,
             createResourceEditor,
-            reportTelemetry,
             getProjectManager
         )
 
@@ -285,14 +291,24 @@ class ResourceEditorFactoryTest {
         verify(virtualFile).putUserData(KEY_RESOURCE_EDITOR, editor)
     }
 
-    private open class TestableResourceEditorFactory(
+    private fun mockTelemetryMessageBuilder(): TelemetryMessageBuilder {
+      val actionMessage: ActionMessage = mock {
+        on { property(any(), any()) } doReturn mock
+      }
+
+      return mock {
+        on { action(any()) } doReturn actionMessage
+      }
+
+    }
+
+  private open inner class TestableResourceEditorFactory(
         getFileEditorManager: (project: Project) -> FileEditorManager,
         createResourceFile: (resource: HasMetadata) -> ResourceFile?,
         isValidType: (file: VirtualFile?) -> Boolean,
         isTemporary: (file: VirtualFile?) -> Boolean,
         hasKubernetesResource: (FileEditor, Project) -> Boolean,
         createResourceEditor: (FileEditor, Project) -> ResourceEditor,
-        reportTelemetry: (FileEditor, Project, TelemetryMessageBuilder.ActionMessage) -> Unit,
         getProjectManager: () -> ProjectManager
     ) : ResourceEditorFactory(
         getFileEditorManager,
@@ -301,7 +317,6 @@ class ResourceEditorFactoryTest {
         isTemporary,
         hasKubernetesResource,
         createResourceEditor,
-        reportTelemetry,
         getProjectManager
     ) {
 
@@ -313,6 +328,10 @@ class ResourceEditorFactoryTest {
         override fun runInUI(runnable: () -> Unit) {
             // dont execute in UI thread
             runnable.invoke()
+        }
+
+        override fun getTelemetryMessageBuilder(): TelemetryMessageBuilder {
+          return telemetryMessageBuilder
         }
     }
 }
