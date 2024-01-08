@@ -5,15 +5,15 @@ buildscript {
      * for more complex conversion ideaVersion -> sinceIdeaBuild
      * see https://github.com/rhdunn/xquery-intellij-plugin/blob/master/build.gradle#L1-L47
      */
-    def since = ideaVersion =~ /IC-20(\d\d)\.([1-3])(\.\d+)?$/
-    if (since.matches()) {
-        ext.sinceIdeaBuild = "${since.group(1)}${since.group(2)}".toInteger()
+    def versionMatcher = ideaVersion =~ /IC-20(\d\d)\.([1-3])(\.\d+)?$/
+    if (versionMatcher.matches()) {
+        ext.ideaNumericVersion = "${versionMatcher.group(1)}${versionMatcher.group(2)}".toInteger()
     }
 
-    if (ext.sinceIdeaBuild.toInteger() >= 223) {
+    if (ext.ideaNumericVersion.toInteger() >= 223) {
         ext.kotlinVersion = kotlinVersionIdea221
         ext.java_version = "17"
-    } else if (ext.sinceIdeaBuild.toInteger() >= 221) {
+    } else if (ext.ideaNumericVersion.toInteger() >= 221) {
         ext.kotlinVersion = kotlinVersionIdea221
         ext.java_version = "11"
     } else {
