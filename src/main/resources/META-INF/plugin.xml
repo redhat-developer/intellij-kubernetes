@@ -10,6 +10,10 @@
     </description>
     <change-notes>
         <![CDATA[
+        <h3>1.2.3</h3>
+        <ul>
+            <li><a href="https://github.com/redhat-developer/intellij-kubernetes/issues/696">1.2.2 is only compatible with IDEA 2023.2+, should be IDEA 2022.1+</a></li>
+        </ul>
         <h3>1.2.2</h3>
         <ul>
             <li><a href="https://github.com/redhat-developer/intellij-kubernetes/issues/693">bump telemetry to 1.1.0.52</a></li>
