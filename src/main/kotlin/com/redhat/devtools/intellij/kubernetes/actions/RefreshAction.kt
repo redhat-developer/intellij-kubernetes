@@ -14,12 +14,13 @@ import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.progress.Progressive
 import com.redhat.devtools.intellij.common.actions.StructureTreeAction
+import com.redhat.devtools.intellij.kubernetes.model.context.IActiveContext
 import com.redhat.devtools.intellij.kubernetes.telemetry.TelemetryService
 import com.redhat.devtools.intellij.kubernetes.telemetry.TelemetryService.sendTelemetry
 import com.redhat.devtools.intellij.kubernetes.tree.util.getResourceKind
 import javax.swing.tree.TreePath
 
-class RefreshAction : StructureTreeAction(Any::class.java) {
+class RefreshAction : StructureTreeAction(IActiveContext::class.java) {
 
 	override fun actionPerformed(event: AnActionEvent?, path: TreePath?, selectedNode: Any?) {
 		val descriptor = selectedNode?.getDescriptor() ?: return
