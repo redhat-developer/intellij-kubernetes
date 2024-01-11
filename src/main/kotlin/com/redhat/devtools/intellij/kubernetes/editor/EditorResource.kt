@@ -206,6 +206,7 @@ open class EditorResource(
                     "Could not push ${toKindAndName(resource)} to cluster.",
                     "Not connected."
                 )
+            val exists = cluster.exists()
             val updatedResource = cluster.push(resource)
             setResourceVersion(KubernetesResourceUtil.getResourceVersion(updatedResource))
             /**
@@ -213,7 +214,7 @@ open class EditorResource(
              * In this way this resource is not in modified state anymore
              */
             setLastPushedPulled(resource)
-            createPushedState(resource, cluster.exists())
+            createPushedState(resource, exists)
         } catch (e: Exception) {
             /**
              * Store resource that we tried to push but failed.
