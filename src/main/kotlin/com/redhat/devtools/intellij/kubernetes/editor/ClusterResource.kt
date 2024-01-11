@@ -84,7 +84,7 @@ open class ClusterResource protected constructor(
                 return
             }
             this.updatedResource = resource
-            setDeleted(false)
+            setDeleted(resource == null)
         }
     }
 
