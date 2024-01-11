@@ -52,7 +52,7 @@ interface IResourceModel {
     fun stopWatch(kind: ResourceKind<out HasMetadata>)
     fun stopWatch(definition: CustomResourceDefinition)
     fun invalidate(element: Any?)
-    fun delete(resources: List<HasMetadata>)
+    fun delete(resources: List<HasMetadata>, force: Boolean)
     fun canWatchLog(resource: HasMetadata): Boolean
     fun watchLog(container: Container, resource: HasMetadata, out: OutputStream): LogWatch?
     fun stopWatch(watch: LogWatch): Boolean
@@ -189,8 +189,8 @@ open class ResourceModel : IResourceModel {
         allContexts.current?.replaced(resource)
     }
 
-    override fun delete(resources: List<HasMetadata>) {
-        allContexts.current?.delete(resources)
+    override fun delete(resources: List<HasMetadata>, force: Boolean) {
+      allContexts.current?.delete(resources, force)
     }
 
     override fun canWatchLog(resource: HasMetadata): Boolean {

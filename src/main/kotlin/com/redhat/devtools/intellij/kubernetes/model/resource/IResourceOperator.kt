@@ -27,7 +27,7 @@ interface IResourceOperator<R: HasMetadata>: Closeable {
     fun replaced(resource: HasMetadata): Boolean
     fun added(resource: HasMetadata): Boolean
     fun removed(resource: HasMetadata): Boolean
-    fun delete(resources: List<HasMetadata>): Boolean
+    fun delete(resources: List<HasMetadata>, force: Boolean): Boolean
     fun replace(resource: HasMetadata): HasMetadata?
     fun create(resource: HasMetadata): HasMetadata?
     fun get(resource: HasMetadata): HasMetadata?

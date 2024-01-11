@@ -434,14 +434,14 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
                 .filter { it.namespace == namespace }
     }
 
-    override fun delete(resources: List<HasMetadata>) {
+    override fun delete(resources: List<HasMetadata>, force: Boolean) {
         logger<ActiveContext<*, *>>().debug("Deleting ${toMessage(resources)}.")
         val exceptions = resources
             .distinct()
             .groupBy { Pair(ResourceKind.create(it), ResourcesIn.valueOf(it, getCurrentNamespace())) }
             .mapNotNull {
                 try {
-                    delete(it.key.first, it.key.second, it.value)
+                    delete(it.key.first, it.key.second, it.value, force)
                     modelChange.fireModified(it.value)
                     null
                 } catch (e: KubernetesClientException) {
@@ -454,7 +454,7 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
         }
     }
 
-    private fun delete(kind: ResourceKind<out HasMetadata>, scope: ResourcesIn, resources: List<HasMetadata>): Collection<HasMetadata> {
+    private fun delete(kind: ResourceKind<out HasMetadata>, scope: ResourcesIn, resources: List<HasMetadata>, force: Boolean): Collection<HasMetadata> {
         val operator = getOperator(kind, scope)
         if (operator == null) {
             logger<ActiveContext<*,*>>().warn(
@@ -463,7 +463,7 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
             return emptyList()
         }
         try {
-            val deleted = operator.delete(resources)
+            val deleted = operator.delete(resources, force)
             return if (deleted) {
                 resources.forEach { setWillBeDeleted(it) }
                 resources

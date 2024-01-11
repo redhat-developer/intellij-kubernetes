@@ -57,6 +57,7 @@ import io.fabric8.kubernetes.client.dsl.NonNamespaceOperation
 import io.fabric8.kubernetes.client.dsl.PodResource
 import io.fabric8.kubernetes.client.dsl.Resource
 import io.fabric8.kubernetes.client.dsl.internal.HasMetadataOperation
+import io.fabric8.kubernetes.client.extension.ExtensibleResource
 import java.net.URL
 
 
@@ -149,18 +150,26 @@ object ClientMocks {
         statusDetails: List<StatusDetails> = statusDetails(1),
         client: KubernetesClient
     ) {
+        val extensibleResource: ExtensibleResource<HasMetadata> = mock {
+            on { delete() } doReturn statusDetails
+        }
+
         val resourceListInNamespaceOp: ListVisitFromServerGetDeleteRecreateWaitApplicable<HasMetadata> = mock {
             on { delete() } doReturn statusDetails
             on { replace() } doReturn resourceList
             on { create() } doReturn resourceList
             on { get() } doReturn resourceList
+            on { withGracePeriod(any()) } doReturn extensibleResource
         }
+
         /** [KubernetesClient.resourceList] */
         val resourceListOperation: NamespaceListVisitFromServerGetDeleteRecreateWaitApplicable<HasMetadata> = mock {
             on { inNamespace(any()) } doReturn resourceListInNamespaceOp
             on { delete() } doReturn statusDetails
             on { replace() } doReturn resourceList
+            on { withGracePeriod(any()) } doReturn extensibleResource
         }
+
         doReturn(resourceListOperation)
             .whenever(client).resourceList(any<Collection<HasMetadata>>())
     }

@@ -334,9 +334,19 @@ class KubernetesContextTest {
 		// given
 		val toDelete = listOf(POD2)
 		// when
-		context.delete(toDelete)
+		context.delete(toDelete, false)
 		// then
-		verify(namespacedPodsOperator).delete(toDelete)
+		verify(namespacedPodsOperator).delete(toDelete, false)
+	}
+
+	@Test
+	fun `#delete should call operator#delete with force = true`() {
+		// given
+		val toDelete = listOf(POD2)
+		// when
+		context.delete(toDelete, true)
+		// then
+		verify(namespacedPodsOperator).delete(toDelete, true)
 	}
 
 	@Test
@@ -344,9 +354,9 @@ class KubernetesContextTest {
 		// given
 		val toDelete = listOf(resource<HasMetadata>("lord sith", "ns1", "uid", "v1"))
 		// when
-		context.delete(toDelete)
+		context.delete(toDelete, false)
 		// then
-		verify(namespacedPodsOperator, never()).delete(toDelete)
+		verify(namespacedPodsOperator, never()).delete(any(), any())
 	}
 
 	@Test
@@ -354,9 +364,9 @@ class KubernetesContextTest {
 		// given
 		val toDelete = listOf(POD2, POD2)
 		// when
-		context.delete(toDelete)
+		context.delete(toDelete, false)
 		// then
-		verify(namespacedPodsOperator, times(1)).delete(eq(listOf(POD2)))
+		verify(namespacedPodsOperator, times(1)).delete(eq(listOf(POD2)), eq(false))
 	}
 
 	@Test
@@ -364,20 +374,20 @@ class KubernetesContextTest {
 		// given
 		val toDelete = listOf(POD2, NAMESPACE2)
 		// when
-		context.delete(toDelete)
+		context.delete(toDelete, false)
 		// then
-		verify(namespacedPodsOperator, times(1)).delete(eq(listOf(POD2)))
-		verify(namespacesOperator, times(1)).delete(eq(listOf(NAMESPACE2)))
+		verify(namespacedPodsOperator, times(1)).delete(eq(listOf(POD2)), eq(false))
+		verify(namespacesOperator, times(1)).delete(eq(listOf(NAMESPACE2)), eq(false))
 	}
 
 	@Test
 	fun `#delete should fire if resource was deleted`() {
 		// given
 		val toDelete = listOf(POD2)
-		whenever(allPodsOperator.delete(any()))
+		whenever(allPodsOperator.delete(any(), any()))
 				.thenReturn(true)
 		// when
-		context.delete(toDelete)
+		context.delete(toDelete, false)
 		// then
 		verify(modelChange).fireModified(toDelete)
 	}
@@ -387,7 +397,7 @@ class KubernetesContextTest {
 		// given
 		val toDelete = listOf(POD2, POD3)
 		// when
-		context.delete(toDelete)
+		context.delete(toDelete, false)
 		// then
 		verify(POD2.metadata, atLeastOnce()).deletionTimestamp = any()
 		verify(POD3.metadata, atLeastOnce()).deletionTimestamp = any()
@@ -397,10 +407,10 @@ class KubernetesContextTest {
 	fun `#delete should throw if resource was NOT deleted`() {
 		// given
 		val toDelete = listOf(POD2)
-		whenever(namespacedPodsOperator.delete(any()))
+		whenever(namespacedPodsOperator.delete(any(), any()))
 			.thenReturn(false)
 		// when
-		context.delete(toDelete)
+		context.delete(toDelete, false)
 		// then
 		// expect exception
 	}
@@ -409,11 +419,11 @@ class KubernetesContextTest {
 	fun `#delete should throw for operator that failed, not successful ones`() {
 		// given
 		val toDelete = listOf(POD2, NAMESPACE2)
-		whenever(namespacedPodsOperator.delete(any()))
+		whenever(namespacedPodsOperator.delete(any(), any()))
 			.thenReturn(false)
 		// when
 		val ex = try {
-			context.delete(toDelete)
+			context.delete(toDelete, false)
 			null
 		} catch (e: MultiResourceException) {
 			e
@@ -428,11 +438,11 @@ class KubernetesContextTest {
 	fun `#delete should NOT fire if resource was NOT deleted`() {
 		// given
 		val toDelete = listOf(POD2)
-		whenever(namespacedPodsOperator.delete(any()))
+		whenever(namespacedPodsOperator.delete(any(), any()))
 			.thenReturn(false)
 		// when
 		try {
-			context.delete(toDelete)
+			context.delete(toDelete, false)
 		} catch (e: MultiResourceException) {
 			// ignore expected exception
 		}

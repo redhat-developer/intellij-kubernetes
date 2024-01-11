@@ -152,7 +152,7 @@ class NamespacedCustomResourceOperatorTest {
         val namespaceUsed = ArgumentCaptor.forClass(String::class.java)
         assertThat(operator.namespace).isNotEqualTo(customResource.metadata.namespace)
         // when
-        operator.delete(listOf(customResource))
+        operator.delete(listOf(customResource), false)
         // then
         verify(op).inNamespace(namespaceUsed.capture())
         assertThat(namespaceUsed.value).isEqualTo(customResource.metadata.namespace)
@@ -166,7 +166,7 @@ class NamespacedCustomResourceOperatorTest {
         assertThat(operator.namespace).isNotNull()
         val namespaceUsed = ArgumentCaptor.forClass(String::class.java)
         // when
-        operator.delete(listOf(noNamespace))
+        operator.delete(listOf(noNamespace), false)
         // then
         verify(op).inNamespace(namespaceUsed.capture())
         assertThat(namespaceUsed.value).isEqualTo(operator.namespace)

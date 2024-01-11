@@ -49,18 +49,20 @@ class NonNamespacedCustomResourceOperator(
             ?.watch(typedWatcher)
     }
 
-    override fun delete(resources: List<HasMetadata>): Boolean {
+    override fun delete(resources: List<HasMetadata>, force: Boolean): Boolean {
         @Suppress("UNCHECKED_CAST")
         val toDelete = resources as? List<GenericKubernetesResource> ?: return false
         return toDelete.stream()
-            .map { delete(it.metadata.name) }
+            .map { delete(it.metadata.name, force) }
             .reduce(false ) { thisDelete, thatDelete -> thisDelete || thatDelete }
     }
 
-    private fun delete(name: String): Boolean {
-        getOperation()
-            ?.withName(name)
-            ?.delete()
+    private fun delete(name: String, force: Boolean): Boolean {
+        val operation = getOperation()
+            ?.withName(name) ?: return false
+      	operation
+          .immediate(force)
+          ?.delete()
         return true
     }
 

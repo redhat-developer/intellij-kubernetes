@@ -322,15 +322,29 @@ class NamespacedPodsOperatorTest {
     }
 
     @Test
-    fun `#delete(List) deletes given resources`() {
+    fun `#delete(List, false) deletes given resources`() {
         // given
         val toDelete = listOf(POD2)
         resourceListOperation(resourceList = toDelete, client = client.get())
         // when
-        operator.delete(toDelete)
+        operator.delete(toDelete, false)
         // then
         verify(client.get().adapt(KubernetesClient::class.java)
             .resourceList(toDelete))
+            .delete()
+    }
+
+    @Test
+    fun `#delete(List, true) deletes given resources with grace period 0`() {
+        // given
+        val toDelete = listOf(POD2)
+        resourceListOperation(resourceList = toDelete, client = client.get())
+        // when
+        operator.delete(toDelete, true)
+        // then
+        verify(client.get().adapt(KubernetesClient::class.java)
+            .resourceList(toDelete)
+            .withGracePeriod(0))
             .delete()
     }
 
@@ -340,7 +354,7 @@ class NamespacedPodsOperatorTest {
         val toDelete = listOf(POD2)
         resourceListOperation(resourceList = toDelete, client = client.get())
         // when
-        val success = operator.delete(toDelete)
+        val success = operator.delete(toDelete, false)
         // then
         assertThat(success).isTrue
     }
@@ -351,7 +365,7 @@ class NamespacedPodsOperatorTest {
         val toDelete = listOf(POD2)
         resourceListOperation(resourceList = toDelete, statusDetails = emptyList(), client = client.get())
         // when
-        val success = operator.delete(toDelete)
+        val success = operator.delete(toDelete, false)
         // then
         assertThat(success).isFalse
     }
