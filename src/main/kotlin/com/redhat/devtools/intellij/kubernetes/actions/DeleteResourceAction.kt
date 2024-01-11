@@ -10,6 +10,7 @@
  ******************************************************************************/
 package com.redhat.devtools.intellij.kubernetes.actions
 
+import com.intellij.icons.AllIcons
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.progress.Progressive
@@ -23,6 +24,7 @@ import com.redhat.devtools.intellij.kubernetes.telemetry.TelemetryService
 import com.redhat.devtools.intellij.kubernetes.telemetry.TelemetryService.PROP_RESOURCE_KIND
 import com.redhat.devtools.intellij.kubernetes.telemetry.TelemetryService.getKinds
 import io.fabric8.kubernetes.api.model.HasMetadata
+import javax.swing.JCheckBox
 import javax.swing.tree.TreePath
 
 class DeleteResourceAction: StructureTreeAction() {
@@ -34,7 +36,8 @@ class DeleteResourceAction: StructureTreeAction() {
     override fun actionPerformed(event: AnActionEvent?, path: Array<out TreePath>?, selected: Array<out Any>?) {
         val model = getResourceModel() ?: return
         val toDelete = selected?.map { it.getDescriptor()?.element as HasMetadata} ?: return
-        if (!userConfirmed(toDelete)) {
+        val operation = userConfirms(toDelete)
+        if (operation.isNo) {
             return
         }
         run("Deleting ${toMessage(toDelete, 30)}...", true,
@@ -42,7 +45,7 @@ class DeleteResourceAction: StructureTreeAction() {
                 val telemetry = TelemetryService.instance.action("delete resource")
                     .property(PROP_RESOURCE_KIND, getKinds(toDelete))
                 try {
-                    model.delete(toDelete)
+                    model.delete(toDelete, operation.isForce)
                     Notification().info("Resources Deleted", toMessage(toDelete, 30))
                     telemetry.success().send()
                 } catch (e: MultiResourceException) {
@@ -54,12 +57,18 @@ class DeleteResourceAction: StructureTreeAction() {
             })
     }
 
-    private fun userConfirmed(resources: List<HasMetadata>): Boolean {
-        val answer = Messages.showYesNoDialog(
+    private fun userConfirms(resources: List<HasMetadata>): DeleteOperation {
+        val answer = Messages.showCheckboxMessageDialog(
             "Delete ${toMessage(resources, 30)}?",
-            "Delete resources?",
-            Messages.getQuestionIcon())
-        return answer == Messages.OK
+            "Delete",
+            arrayOf(Messages.getYesButton(), Messages.getNoButton()),
+            "Force (immediate)",
+            false,
+            0,
+            0,
+            AllIcons.General.QuestionDialog,
+            DeleteOperation.processDialogReturnValue)
+        return DeleteOperation(answer)
     }
 
     override fun isVisible(selected: Array<out Any>?): Boolean {
@@ -72,4 +81,29 @@ class DeleteResourceAction: StructureTreeAction() {
         return element != null
                     && !hasDeletionTimestamp(element)
     }
+
+  private class DeleteOperation(private val dialogReturn: Int) {
+
+    companion object {
+        const val FORCE_MASK = 0b1000000
+
+        val processDialogReturnValue = { exitCode: Int, checkbox: JCheckBox ->
+            if (exitCode == -1) {
+                Messages.CANCEL
+            } else {
+                exitCode or (if (checkbox.isSelected) FORCE_MASK else 0)
+            }
+        }
+    }
+
+    val isForce: Boolean
+        get() {
+            return (dialogReturn and FORCE_MASK) == FORCE_MASK
+        }
+
+    val isNo: Boolean
+        get() {
+            return (dialogReturn and Messages.NO) == Messages.NO
+        }
+  }
 }

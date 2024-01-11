@@ -163,7 +163,7 @@ object Mocks {
             .whenever(mock).watchAll(any())
 
         doReturn(deleteSuccess)
-            .whenever(mock).delete(any())
+            .whenever(mock).delete(any(), any())
         doReturn(getReturnValue)
             .whenever(mock).get(any())
     }
@@ -183,7 +183,7 @@ object Mocks {
             on { watchAll(any()) } doAnswer { invocation ->
                 watchOperation.invoke(invocation.getArgument(0))
             }
-            on { delete(any()) } doReturn deleteSuccess
+            on { delete(any(), any()) } doReturn deleteSuccess
         }
     }
 

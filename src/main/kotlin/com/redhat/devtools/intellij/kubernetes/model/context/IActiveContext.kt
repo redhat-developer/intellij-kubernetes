@@ -100,10 +100,14 @@ interface IActiveContext<N: HasMetadata, C: KubernetesClient>: IContext {
      * Returns `false` otherwise.
      */
     fun isCurrentNamespace(namespace: String): Boolean
+
     /**
      * Deletes the given resources.
+     *
+     * @param resources the resources to delete
+     * @param force whether deletion should be forced (immediate deletion, no grace period)
      */
-    fun delete(resources: List<HasMetadata>)
+    fun delete(resources: List<HasMetadata>, force: Boolean)
 
     /**
      * Returns all resources of the given kind in the given scope.
