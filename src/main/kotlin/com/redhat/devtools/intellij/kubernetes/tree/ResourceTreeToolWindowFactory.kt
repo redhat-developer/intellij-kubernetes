@@ -51,7 +51,7 @@ class ResourceTreeToolWindowFactory: ToolWindowFactory, DumbAware {
         toolWindow.contentManager.addContent(content)
 
         val tree = createTree(content, project)
-        PopupHandlerAdapter.install(tree, "com.redhat.devtools.intellij.kubernetes.tree", ActionPlaces.UNKNOWN)
+        PopupHandlerAdapter.install(tree, "com.redhat.devtools.intellij.kubernetes.tree", ActionPlaces.TOOLWINDOW_POPUP)
         panel.setViewportView(tree)
     }
 
