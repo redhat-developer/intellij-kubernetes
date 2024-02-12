@@ -206,6 +206,9 @@
         <nonProjectFileWritingAccessExtension implementation="com.redhat.devtools.intellij.common.editor.AllowNonProjectEditing" />
         <postStartupActivity implementation="com.redhat.devtools.intellij.kubernetes.KubernetesPluginInitializer" />
         <editorTabTitleProvider implementation="com.redhat.devtools.intellij.kubernetes.editor.ResourceEditorTabTitleProvider"/>
+        <codeInsight.inlayProvider language="yaml"
+                                   implementationClass="com.redhat.devtools.intellij.kubernetes.editor.inlay.Base64ValueInlayHintsProvider"
+                                   id="MarkdownTableInlayProvider"/>
     </extensions>
 
     <extensionPoints>
