@@ -294,6 +294,10 @@
                     id="com.redhat.devtools.intellij.kubernetes.editor.actions.RemoveClutterAction"
                     text="Remove Metadata Clutter in Editor"
                     icon="Icons.removeClutter" />
+            <action class="com.redhat.devtools.intellij.kubernetes.editor.actions.K8ResourceAIAction"
+                    id="com.redhat.devtools.intellij.kubernetes.editor.actions.K8ResourceAIAction"
+                    text="Yaml AI"
+                    icon="Icons.ai" />
         </group>
     </actions>
 
