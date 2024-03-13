@@ -56,12 +56,10 @@ class ResourceNameDialog<NAMESPACE: HasMetadata>(
 
         override fun createCenterPanel(): JComponent {
             return JPanel(BorderLayout()).apply {
-                layout = BoxLayout(this, BoxLayout.Y_AXIS)
                 val label = JBLabel("Current $kind:", SwingConstants.LEFT)
-                label.border = JBUI.Borders.empty(0, 0, 10, 0)
-                add(label)
-                add(nameTextField)
-                add(Box.createVerticalBox())
+                label.border = JBUI.Borders.empty(0, 2, 2, 0)
+                add(label, BorderLayout.PAGE_START)
+                add(nameTextField, BorderLayout.CENTER)
             }
         }
 
