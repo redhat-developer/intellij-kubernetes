@@ -10,7 +10,7 @@
  ******************************************************************************/
 package com.redhat.devtools.intellij.kubernetes.model.util
 
-import com.intellij.openapi.diagnostic.logger
+import com.intellij.openapi.diagnostic.Logger
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinitionSpec
 import io.fabric8.kubernetes.client.utils.ApiVersionUtil
@@ -20,7 +20,6 @@ import io.fabric8.kubernetes.model.annotation.Group
 import io.fabric8.kubernetes.model.annotation.Version
 import io.fabric8.kubernetes.model.util.Helper
 import java.util.stream.Collectors
-import org.apache.tools.ant.util.ResourceUtils
 
 const val MARKER_WILL_BE_DELETED = "willBeDeleted"
 const val API_GROUP_VERSION_DELIMITER = '/'
@@ -245,7 +244,7 @@ fun getHighestPriorityVersion(spec: CustomResourceDefinitionSpec): String? {
 	val versions = spec.versions.map { it.name }
 	val version = KubernetesVersionPriority.highestPriority(versions)
 	if (version == null) {
-		logger<ResourceUtils>().warn(
+		Logger.getInstance("ResourceUtils").warn(
 			"Could not find version with highest priority in ${spec.group}/${spec.names.kind}."
 		)
 	}
