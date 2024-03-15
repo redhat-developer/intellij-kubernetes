@@ -384,20 +384,6 @@ class AllContextsTest {
 		assertThat(contextName.allValues[1]).isEqualTo(activeContext.context.name)
 	}
 
-	@Test(expected = ResourceException::class)
-	fun `#setCurrentNamespace(namespace) should throw if current namespace is forbidden`() {
-		// given
-		val client = client(KubernetesClientException("a disturbance in the force")) // throws upon client#namespaces
-		val clientConfig = clientConfig(currentContext, contexts, configuration)
-		val clientAdapter = clientAdapter(clientConfig, client) // no config so there are no contexts
-		val clientFactory = clientFactory(clientAdapter)
-		val allContexts = TestableAllContexts(modelChange, contextFactory, clientFactory)
-		// when
-		allContexts.setCurrentNamespace("dark side")
-		// then
-		verify(modelChange, never()).fireCurrentNamespaceChanged(anyOrNull(), anyOrNull())
-	}
-
 	@Test
 	fun `#onKubeConfigChanged() should NOT fire if new config is null`() {
 		// given

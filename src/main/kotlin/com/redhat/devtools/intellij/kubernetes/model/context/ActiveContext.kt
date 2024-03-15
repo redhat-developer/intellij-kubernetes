@@ -119,9 +119,16 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
         return if (!current.isNullOrEmpty()) {
             current
         } else {
-            val allNamespaces = getAllResources(namespaceKind, NO_NAMESPACE)
-            val namespace = allNamespaces.find { namespace:HasMetadata -> DEFAULT_NAMESPACE == namespace.metadata.name } ?: allNamespaces.firstOrNull()
-            return namespace?.metadata?.name
+            return try {
+                val allNamespaces = getAllResources(namespaceKind, NO_NAMESPACE)
+                val namespace =
+                    allNamespaces.find { namespace: HasMetadata -> DEFAULT_NAMESPACE == namespace.metadata.name }
+                        ?: allNamespaces.firstOrNull()
+                namespace?.metadata?.name
+            } catch (e: ResourceException) {
+                logger<ActiveContext<*,*>>().warn("Could not list all namespaces to use 1st as current namespace.", e)
+                null
+            }
         }
     }
 
