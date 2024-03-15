@@ -126,7 +126,6 @@ open class AllContexts(
 	override fun setCurrentNamespace(namespace: String): IActiveContext<out HasMetadata, out KubernetesClient>? {
 		val old = this.current ?: return null
 		val newClient = clientFactory.invoke(namespace, old.context.name)
-		throwIfNotAccessible(namespace, newClient.get())
 		val new = setCurrentContext(newClient, old.getWatched())
 		if (new != null) {
 			modelChange.fireCurrentNamespaceChanged(new, old)
