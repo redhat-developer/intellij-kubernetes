@@ -117,7 +117,7 @@ abstract class NamespacedResourceOperator<R : HasMetadata, C: Client>(
             client.adapt(KubernetesClient::class.java)
                 .resource(toReplace)
                 .inNamespace(inNamespace)
-                .replace()
+                .patch()
         }
     }
 

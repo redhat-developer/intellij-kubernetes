@@ -16,9 +16,6 @@ import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinition
 import io.fabric8.kubernetes.client.utils.ApiVersionUtil
 import io.fabric8.kubernetes.client.utils.KubernetesVersionPriority
 import io.fabric8.kubernetes.client.utils.Serialization
-import io.fabric8.kubernetes.model.annotation.Group
-import io.fabric8.kubernetes.model.annotation.Version
-import io.fabric8.kubernetes.model.util.Helper
 import java.util.stream.Collectors
 
 const val MARKER_WILL_BE_DELETED = "willBeDeleted"
@@ -128,13 +125,13 @@ fun String.isGreaterIntThan(other: String?): Boolean {
  * @see io.fabric8.kubernetes.model.annotation.Group (annotation)
  */
 fun getApiVersion(clazz: Class<out HasMetadata>): String {
-	val apiVersion = Helper.getAnnotationValue(clazz, Version::class.java)
-	return if (!apiVersion.isNullOrBlank()) {
-		val apiGroup = Helper.getAnnotationValue(clazz, Group::class.java)
-		if (!apiGroup.isNullOrBlank()) {
-			getApiVersion(apiGroup, apiVersion)
+	val version = HasMetadata.getVersion(clazz)
+	return if (!version.isNullOrBlank()) {
+		val group = HasMetadata.getGroup(clazz)
+		if (!group.isNullOrBlank()) {
+			getApiVersion(group, version)
 		} else {
-			apiVersion
+			version
 		}
 	} else {
 		clazz.simpleName

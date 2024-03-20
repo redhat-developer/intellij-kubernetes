@@ -86,7 +86,7 @@ open class NamespacedCustomResourceOperator(
 			getOperation()
 				?.inNamespace(inNamespace)
 				?.resource(toReplace)
-				?.createOrReplace()
+				?.patch()
 		}
 	}
 
