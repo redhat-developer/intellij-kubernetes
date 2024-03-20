@@ -87,7 +87,7 @@ abstract class NonNamespacedResourceOperator<R : HasMetadata, C : Client>(
         return runWithoutServerSetProperties(toReplace) {
             client.adapt(KubernetesClient::class.java)
                 .resource(toReplace)
-                .replace()
+                .patch()
         }
     }
 

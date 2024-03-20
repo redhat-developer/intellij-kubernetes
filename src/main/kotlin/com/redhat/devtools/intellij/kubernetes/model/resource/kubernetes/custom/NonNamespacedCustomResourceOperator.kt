@@ -72,7 +72,10 @@ class NonNamespacedCustomResourceOperator(
         return runWithoutServerSetProperties(toReplace) {
             getOperation()
                 ?.resource(resource)
-                ?.createOrReplace()
+                /**
+                 * See: https://github.com/fabric8io/kubernetes-client/blob/main/doc/FAQ.md#alternatives-to-createOrReplace-and-replace
+                 */
+                ?.patch()
         }
     }
 

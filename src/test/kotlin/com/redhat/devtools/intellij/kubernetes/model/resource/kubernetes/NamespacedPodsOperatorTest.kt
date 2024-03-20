@@ -381,7 +381,7 @@ class NamespacedPodsOperatorTest {
         verify(client.get().adapt(KubernetesClient::class.java)
             .resource(toReplace)
             .inNamespace(toReplace.metadata.namespace))
-            .replace()
+            .patch()
     }
 
     @Test
@@ -424,7 +424,7 @@ class NamespacedPodsOperatorTest {
         verify(client.get().adapt(KubernetesClient::class.java)
             .resource(toReplace)
             .inNamespace(toReplace.metadata.namespace))
-            .replace()
+            .patch()
     }
 
     @Test
@@ -436,7 +436,7 @@ class NamespacedPodsOperatorTest {
         whenever(client.get().adapt(KubernetesClient::class.java)
             .resource(toReplace)
             .inNamespace(toReplace.metadata.namespace)
-            .replace())
+            .patch())
             .thenReturn(POD3)
         // when
         val newPod = operator.replace(toReplace)
