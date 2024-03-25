@@ -32,7 +32,7 @@ class ClientAdapterTest {
     private val trustManager: X509TrustManager = mock {
         on { acceptedIssuers } doReturn arrayOf(certificate)
     }
-    private val trustManagerProvider: (toIntegrate: Array<out X509ExtendedTrustManager>) -> X509TrustManager = mock() {
+    private val trustManagerProvider: (toIntegrate: List<X509ExtendedTrustManager>) -> X509TrustManager = mock {
         on { invoke(any()) } doReturn trustManager
     }
 
