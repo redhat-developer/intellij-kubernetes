@@ -11,7 +11,7 @@
 package com.redhat.devtools.intellij.kubernetes.model.client
 
 import com.redhat.devtools.intellij.common.kubernetes.ClusterHelper
-import com.redhat.devtools.intellij.kubernetes.model.client.ssl.IDEATrustManager
+import com.redhat.devtools.intellij.common.ssl.IDEATrustManager
 import io.fabric8.kubernetes.client.Client
 import io.fabric8.kubernetes.client.Config
 import io.fabric8.kubernetes.client.KubernetesClient
@@ -59,7 +59,7 @@ abstract class ClientAdapter<C : KubernetesClient>(private val fabric8Client: C)
         fun create(
             namespace: String? = null,
             context: String? = null,
-            trustManagerProvider: ((toIntegrate: Array<out X509ExtendedTrustManager>) -> X509TrustManager)
+            trustManagerProvider: ((toIntegrate: List<X509ExtendedTrustManager>) -> X509TrustManager)
             = IDEATrustManager()::configure
         ): ClientAdapter<out KubernetesClient> {
             val config = Config.autoConfigure(context)
@@ -69,7 +69,7 @@ abstract class ClientAdapter<C : KubernetesClient>(private val fabric8Client: C)
         fun create(
             namespace: String? = null,
             config: Config,
-            externalTrustManagerProvider: (toIntegrate: Array<out X509ExtendedTrustManager>) -> X509TrustManager
+            externalTrustManagerProvider: (toIntegrate: List<X509ExtendedTrustManager>) -> X509TrustManager
             = IDEATrustManager()::configure
         ): ClientAdapter<out KubernetesClient> {
             setNamespace(namespace, config)
@@ -90,11 +90,10 @@ abstract class ClientAdapter<C : KubernetesClient>(private val fabric8Client: C)
         private fun setSslContext(
             builder: HttpClient.Builder,
             config: Config,
-            externalTrustManagerProvider: (toIntegrate: Array<out X509ExtendedTrustManager>) -> X509TrustManager
+            externalTrustManagerProvider: (toIntegrate: List<X509ExtendedTrustManager>) -> X509TrustManager
         ) {
             val clientTrustManagers = SSLUtils.trustManagers(config)
                 .filterIsInstance<X509ExtendedTrustManager>()
-                .toTypedArray()
             val externalTrustManager = externalTrustManagerProvider.invoke(clientTrustManagers)
             builder.sslContext(SSLUtils.keyManagers(config), arrayOf(externalTrustManager))
         }
