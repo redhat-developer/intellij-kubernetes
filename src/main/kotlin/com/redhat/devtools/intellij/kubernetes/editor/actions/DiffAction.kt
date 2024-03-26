@@ -28,8 +28,8 @@ class DiffAction : AnAction() {
         const val ID = "com.redhat.devtools.intellij.kubernetes.editor.actions.DiffAction"
     }
 
-    override fun actionPerformed(e: AnActionEvent) {
-        val project = e.project ?: return
+    override fun actionPerformed(event: AnActionEvent) {
+        val project = event.project ?: return
         val fileEditor = getSelectedFileEditor(project) ?: return
         val telemetry = TelemetryService.instance.action(TelemetryService.NAME_PREFIX_EDITOR + "diff")
         com.redhat.devtools.intellij.kubernetes.actions.run(
