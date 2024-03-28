@@ -111,8 +111,8 @@ open class ResourceWatch<T>(
             logger<ResourceWatch<*>>().debug("Closing watch for $type resources.")
             watch.close()
             true
-        } catch (e: KubernetesClientException) {
-            logger<ResourceWatch<*>>().warn("Failed to close watch for $type resources.", e)
+        } catch (e: Exception) {
+            logger<ResourceWatch<*>>().warn("Error when closing watch for $type resources.", e)
             false
         }
     }
