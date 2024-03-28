@@ -127,7 +127,7 @@ open class EditorResource(
                 Error("Unsupported kind ${resource.kind} in version ${resource.apiVersion}")
 
             !isAuthorized() ->
-                Error("Authentication with cluster failed. Verify username and password, refresh token, etc.")
+                Error("Unauthorized. Verify username and password, refresh token, etc.")
 
             !hasName(resource)
                     && !hasGenerateName(resource) ->
