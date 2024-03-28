@@ -28,8 +28,10 @@ import com.redhat.devtools.intellij.kubernetes.model.context.IContext
 import com.redhat.devtools.intellij.kubernetes.model.resource.ResourceKind
 import com.redhat.devtools.intellij.kubernetes.model.util.hasDeletionTimestamp
 import com.redhat.devtools.intellij.kubernetes.model.util.isSameResource
+import com.redhat.devtools.intellij.kubernetes.model.util.isUnauthorized
 import com.redhat.devtools.intellij.kubernetes.model.util.isWillBeDeleted
 import io.fabric8.kubernetes.api.model.HasMetadata
+import io.fabric8.kubernetes.client.KubernetesClientException
 import javax.swing.Icon
 
 /**
@@ -248,7 +250,17 @@ open class TreeStructure(
         project
     ) {
         override fun getLabel(element: java.lang.Exception?): String {
-            return "Error: ${getMessage(element)}"
+            return if (isUnauthorized(element)) {
+                "Unauthorized. Verify username and password, refresh token, etc."
+            } else {
+                "Error: ${getMessage(element)}"
+            }
+        }
+
+        private fun isUnauthorized(e: Exception?): Boolean {
+            val cause = e?.cause
+            return cause is KubernetesClientException
+                    && cause.isUnauthorized()
         }
 
         private fun getMessage(e: Exception?): String {
