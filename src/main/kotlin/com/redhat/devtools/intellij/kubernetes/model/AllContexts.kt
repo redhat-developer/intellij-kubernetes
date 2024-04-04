@@ -167,8 +167,8 @@ open class AllContexts(
 		synchronized(this) {
 			this.current?.close()
 			all.clear() // latter access will cause reload
-			modelChange.fireAllContextsChanged()
 		}
+		modelChange.fireAllContextsChanged()
 	}
 
 	private fun findActive(all: List<IContext>): IActiveContext<out HasMetadata, out KubernetesClient>? {
