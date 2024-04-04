@@ -26,7 +26,7 @@ class UseNamespaceAction : UseResourceAction<Namespace>(Namespace::class.java) {
         val model = getResourceModel() ?: return
         val telemetry = TelemetryService.instance
             .action(NAME_PREFIX_NAMESPACE + "switch")
-        run("Switching namespace $namespace...", true,
+        run("Switching to namespace $name...", true,
             Progressive {
                 try {
                     model.setCurrentNamespace(name)
