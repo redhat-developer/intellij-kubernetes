@@ -22,7 +22,6 @@ import com.redhat.devtools.intellij.kubernetes.model.context.IActiveContext
 import com.redhat.devtools.intellij.kubernetes.model.context.IContext
 import com.redhat.devtools.intellij.kubernetes.model.resource.ResourceKind
 import com.redhat.devtools.intellij.kubernetes.model.util.ResettableLazyProperty
-import com.redhat.devtools.intellij.kubernetes.model.util.ResourceException
 import com.redhat.devtools.intellij.kubernetes.telemetry.TelemetryService
 import com.redhat.devtools.intellij.kubernetes.telemetry.TelemetryService.NAME_PREFIX_CONTEXT
 import com.redhat.devtools.intellij.kubernetes.telemetry.TelemetryService.PROP_IS_OPENSHIFT
@@ -31,9 +30,11 @@ import com.redhat.devtools.intellij.kubernetes.telemetry.TelemetryService.PROP_O
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.client.Config
 import io.fabric8.kubernetes.client.KubernetesClient
-import io.fabric8.kubernetes.client.KubernetesClientException
 import java.nio.file.Paths
 import java.util.concurrent.CompletionException
+import java.util.concurrent.locks.ReentrantReadWriteLock
+import kotlin.concurrent.read
+import kotlin.concurrent.write
 
 interface IAllContexts {
 	/**
@@ -89,25 +90,29 @@ open class AllContexts(
 		watchKubeConfig()
 	}
 
+	private val lock = ReentrantReadWriteLock()
+
 	private val client = ResettableLazyProperty {
-		clientFactory.invoke(null,null)
+		lock.write {
+			clientFactory.invoke(null, null)
+		}
 	}
 
 	override val current: IActiveContext<out HasMetadata, out KubernetesClient>?
 		get() {
-			synchronized(this) {
-				return findActive(all)
-			}
+			return findActive(all)
 		}
 
-	override val all: MutableList<IContext> = mutableListOf()
+	private val _all: MutableList<IContext> = mutableListOf()
+
+	override val all: List<IContext>
 		get() {
-			synchronized(this) {
-				if (field.isEmpty()) {
+			lock.write {
+				if (_all.isEmpty()) {
 					val all = createContexts(client.get(), client.get()?.config)
-					field.addAll(all)
+						_all.addAll(all)
 				}
-				return field
+				return _all
 			}
 		}
 
@@ -137,36 +142,32 @@ open class AllContexts(
 		newClient: ClientAdapter<out KubernetesClient>,
 		toWatch: Collection<ResourceKind<out HasMetadata>>?,
 	) : IActiveContext<out HasMetadata, out KubernetesClient>? {
-		try {
-			synchronized(this) {
+		lock.write {
+			try {
 				replaceClient(newClient, this.client.get())
 				newClient.config.save().join()
 				current?.close()
-				all.clear() // causes reload of all contexts when accessed afterwards
+				clearAllContexts() // causes reload of all contexts when accessed afterwards
 				val newCurrent = current // gets new current from all
 				if (toWatch != null) {
 					newCurrent?.watchAll(toWatch)
 				}
 				return newCurrent
+			} catch (e: CompletionException) {
+				val cause = e.cause ?: throw e
+				throw cause
 			}
-		} catch (e: CompletionException) {
-			val cause = e.cause ?: throw e
-			throw cause
 		}
 	}
 
-	private fun throwIfNotAccessible(namespace: String, client: KubernetesClient) {
-		try {
-			client.namespaces()?.withName(namespace)?.isReady
-		} catch(e: KubernetesClientException) {
-			throw ResourceException("Namespace $namespace is not accessible", e)
-		}
+	private fun clearAllContexts() {
+		_all.clear()
 	}
 
 	override fun refresh() {
-		synchronized(this) {
+		lock.write {
 			this.current?.close()
-			all.clear() // latter access will cause reload
+			clearAllContexts() // latter access will cause reload
 		}
 		modelChange.fireAllContextsChanged()
 	}
@@ -187,14 +188,16 @@ open class AllContexts(
 		) {
 			return emptyList()
 		}
-		return config.allContexts
-			.map {
-				if (config.isCurrent(it)) {
-					createActiveContext(client) ?: Context(it)
-				} else {
-					Context(it)
+		lock.read {
+			return config.allContexts
+				.map {
+					if (config.isCurrent(it)) {
+						createActiveContext(client) ?: Context(it)
+					} else {
+						Context(it)
+					}
 				}
-			}
+		}
 	}
 
 	private fun replaceClient(new: ClientAdapter<out KubernetesClient>, old: ClientAdapter<out KubernetesClient>?)
@@ -249,7 +252,7 @@ open class AllContexts(
 	}
 
 	protected open fun onKubeConfigChanged(fileConfig: io.fabric8.kubernetes.api.model.Config?) {
-		synchronized(this) {
+		lock.read {
 			fileConfig ?: return
 			val client = client.get() ?: return
 			val clientConfig = client.config.configuration
@@ -258,8 +261,8 @@ open class AllContexts(
 			}
 			this.client.reset() // create new client when accessed
 			client.close()
-			refresh()
 		}
+		refresh()
 	}
 
 	/** for testing purposes */
