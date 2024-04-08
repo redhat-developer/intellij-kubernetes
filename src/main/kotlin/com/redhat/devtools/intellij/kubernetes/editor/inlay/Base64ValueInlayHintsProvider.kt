@@ -63,7 +63,7 @@ internal class Base64ValueInlayHintsProvider : InlayHintsProvider<NoSettings> {
 			}
 			val content = getContent(element) ?: return true
 			val factory = Base64Presentations.create(content, info, sink, editor) ?: return true
-			factory.create() ?: return true
+			factory.create()
 			return false
 		}
 	}
