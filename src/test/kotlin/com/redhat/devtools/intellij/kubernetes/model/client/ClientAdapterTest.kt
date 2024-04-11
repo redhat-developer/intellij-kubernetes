@@ -14,17 +14,25 @@ import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.verify
+import com.nhaarman.mockitokotlin2.whenever
 import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.config
 import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.namedContext
+import io.fabric8.kubernetes.client.Config
+import io.fabric8.kubernetes.client.KubernetesClient
+import io.fabric8.kubernetes.client.KubernetesClientBuilder
 import io.fabric8.kubernetes.client.NamespacedKubernetesClient
+import io.fabric8.kubernetes.client.http.HttpClient
 import io.fabric8.kubernetes.client.impl.AppsAPIGroupClient
+import io.fabric8.openshift.client.NamespacedOpenShiftClient
 import java.security.cert.X509Certificate
 import javax.net.ssl.X509ExtendedTrustManager
 import javax.net.ssl.X509TrustManager
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test
+import java.util.function.Consumer
 
 class ClientAdapterTest {
+
 
     private val certificate: X509Certificate = mock {
         on { subjectX500Principal } doReturn mock()
@@ -114,8 +122,9 @@ class ClientAdapterTest {
         val ctx1 = namedContext("Aldeeran", "Aldera", "Republic", "Organa" )
         val ctx2 = namedContext("Death Start", "Navy Garrison", "Empire", "Darh Vader" )
         val config = config(ctx1, listOf(ctx1, ctx2))
+        val clientBuilder = createClientBuilder(false)
         // when
-        ClientAdapter.Factory.create(namespace,  config, trustManagerProvider)
+        ClientAdapter.Factory.create(namespace,  config, clientBuilder, trustManagerProvider)
         // then
         verify(config).namespace = namespace
         verify(config.currentContext.context).namespace = namespace
@@ -124,11 +133,58 @@ class ClientAdapterTest {
     @Test
     fun `#create should call trust manager provider`() {
         // given
-        val ctx1 = namedContext("Aldeeran", "Aldera", "Republic", "Organa" )
-        val config = config(ctx1, listOf(ctx1))
+        val config = mock<Config>()
+        val clientBuilder = createClientBuilder(false)
         // when
-        ClientAdapter.Factory.create("namespace",  config, trustManagerProvider)
+        ClientAdapter.Factory.create("namespace", config, clientBuilder, trustManagerProvider)
         // then
         verify(trustManagerProvider).invoke(any())
+    }
+
+    @Test
+    fun `#create should return KubeClientAdapter if cluster is NOT OpenShift`() {
+        // given
+        val config = mock<Config>()
+        val clientBuilder = createClientBuilder(false)
+        // when
+        val adapter = ClientAdapter.Factory.create("namespace", config, clientBuilder, trustManagerProvider)
+        // then
+        assertThat(adapter).isInstanceOf(KubeClientAdapter::class.java)
+    }
+
+    @Test
+    fun `#create should return OSClientAdapter if cluster is OpenShift`() {
+        // given
+        val config = mock<Config>()
+        val clientBuilder = createClientBuilder(true)
+        // when
+        val adapter = ClientAdapter.Factory.create("namespace", config, clientBuilder, trustManagerProvider)
+        // then
+        assertThat(adapter).isInstanceOf(OSClientAdapter::class.java)
+    }
+
+    @Suppress("SameParameterValue", "UNCHECKED_CAST")
+    private fun createClientBuilder(isOpenShiftCluster: Boolean): KubernetesClientBuilder {
+        val osClient = mock<NamespacedOpenShiftClient>()
+
+        val k8client = mock<KubernetesClient> {
+            on { adapt(any<Class<NamespacedOpenShiftClient>>()) } doReturn osClient
+            on { hasApiGroup(any(), any()) } doReturn isOpenShiftCluster
+        }
+
+        val httpClientBuilder = mock<HttpClient.Builder>()
+
+        val builder =  mock<KubernetesClientBuilder> {
+            on { withConfig(any<Config>())} doReturn mock
+            on { build() } doReturn k8client
+        }
+        /* invoke consumer given to method */
+        whenever(builder.withHttpClientBuilderConsumer(any())).thenAnswer {
+            val consumer = it.arguments[0] as Consumer<HttpClient.Builder>
+            consumer.accept(httpClientBuilder)
+            builder
+        }
+        return builder
+
     }
 }

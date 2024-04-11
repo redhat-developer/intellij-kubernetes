@@ -59,28 +59,30 @@ abstract class ClientAdapter<C : KubernetesClient>(private val fabric8Client: C)
         fun create(
             namespace: String? = null,
             context: String? = null,
+            clientBuilder: KubernetesClientBuilder = KubernetesClientBuilder(),
             trustManagerProvider: ((toIntegrate: List<X509ExtendedTrustManager>) -> X509TrustManager)
             = IDEATrustManager()::configure
         ): ClientAdapter<out KubernetesClient> {
             val config = Config.autoConfigure(context)
-            return create(namespace, config, trustManagerProvider)
+            return create(namespace, config, clientBuilder, trustManagerProvider)
         }
 
         fun create(
             namespace: String? = null,
             config: Config,
+            clientBuilder: KubernetesClientBuilder,
             externalTrustManagerProvider: (toIntegrate: List<X509ExtendedTrustManager>) -> X509TrustManager
             = IDEATrustManager()::configure
         ): ClientAdapter<out KubernetesClient> {
             setNamespace(namespace, config)
-            val kubeClient = KubernetesClientBuilder()
+            val kubeClient = clientBuilder
                 .withConfig(config)
                 .withHttpClientBuilderConsumer { builder ->
                     setSslContext(builder, config, externalTrustManagerProvider)
                 }
                 .build()
-            val osClient = kubeClient.adapt(NamespacedOpenShiftClient::class.java)
-            return if (ClusterHelper.isOpenShift(osClient)) {
+            return if (ClusterHelper.isOpenShift(kubeClient)) {
+                val osClient = kubeClient.adapt(NamespacedOpenShiftClient::class.java)
                 OSClientAdapter(osClient, kubeClient)
             } else {
                 KubeClientAdapter(kubeClient)
