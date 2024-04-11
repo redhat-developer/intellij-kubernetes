@@ -1,25 +1,8 @@
 buildscript {
 
     ext.ideaVersion = ideaVersion
-    /*
-     * for more complex conversion ideaVersion -> sinceIdeaBuild
-     * see https://github.com/rhdunn/xquery-intellij-plugin/blob/master/build.gradle#L1-L47
-     */
-    def versionMatcher = ideaVersion =~ /IC-20(\d\d)\.([1-3])(\.\d+)?$/
-    if (versionMatcher.matches()) {
-        ext.ideaNumericVersion = "${versionMatcher.group(1)}${versionMatcher.group(2)}".toInteger()
-    }
-
-    if (ext.ideaNumericVersion.toInteger() >= 223) {
-        ext.kotlinVersion = kotlinVersionIdea221
-        ext.java_version = "17"
-    } else if (ext.ideaNumericVersion.toInteger() >= 221) {
-        ext.kotlinVersion = kotlinVersionIdea221
-        ext.java_version = "11"
-    } else {
-        ext.kotlinVersion = kotlinVersionIdea211
-        ext.java_version = "11"
-    }
+    ext.kotlinVersion = kotlinVersion
+    ext.java_version = "17"
 }
 
 plugins {
