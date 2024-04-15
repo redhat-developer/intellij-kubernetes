@@ -16,14 +16,17 @@ import com.intellij.openapi.ui.ValidationInfo
 import com.intellij.ui.TextFieldWithAutoCompletion
 import com.intellij.ui.TextFieldWithAutoCompletionListProvider
 import com.intellij.ui.components.JBLabel
-import com.intellij.util.ui.JBUI
+import com.redhat.devtools.intellij.kubernetes.registerEscapeShortcut
+import com.redhat.devtools.intellij.kubernetes.setBold
+import com.redhat.devtools.intellij.kubernetes.setRootPaneBorders
+import com.redhat.devtools.intellij.kubernetes.setGlassPaneResizable
+import com.redhat.devtools.intellij.kubernetes.setMovable
 import io.fabric8.kubernetes.api.model.HasMetadata
-import java.awt.BorderLayout
+import net.miginfocom.swing.MigLayout
 import java.awt.Point
-import javax.swing.Box
-import javax.swing.BoxLayout
 import javax.swing.JComponent
 import javax.swing.JPanel
+import javax.swing.RootPaneContainer
 import javax.swing.SwingConstants
 
 class ResourceNameDialog<NAMESPACE: HasMetadata>(
@@ -34,9 +37,8 @@ class ResourceNameDialog<NAMESPACE: HasMetadata>(
     private val location: Point?
     ) : DialogWrapper(project, false) {
 
-        companion object {
-            private const val HEIGHT = 40
-            private const val WIDTH = 300
+        private val title = JBLabel("Set current $kind").apply {
+            setBold(this)
         }
 
         private val nameTextField = TextFieldWithAutoCompletion(
@@ -55,24 +57,31 @@ class ResourceNameDialog<NAMESPACE: HasMetadata>(
         }
 
         override fun createCenterPanel(): JComponent {
-            return JPanel(BorderLayout()).apply {
+            return JPanel(
+                MigLayout("ins 4, gap 4, fillx, filly, hidemode 3")
+            ).apply {
+                add(title, "gapbottom 10, span 2, wrap")
                 val label = JBLabel("Current $kind:", SwingConstants.LEFT)
-                label.border = JBUI.Borders.empty(0, 2, 2, 0)
-                add(label, BorderLayout.PAGE_START)
-                add(nameTextField, BorderLayout.CENTER)
+                add(label)
+                add(nameTextField, "growx, pushx, w min:200, wrap")
             }
         }
 
         override fun init() {
-            title = "Set Current $kind"
-            setResizable(false)
-            setOKButtonText("Set")
+            super.init()
+            setUndecorated(true)
+            val dialogWindow = peer.window
+            val rootPane = (dialogWindow as RootPaneContainer).rootPane
+            registerEscapeShortcut(rootPane, ::closeImmediately, myDisposable)
+            setRootPaneBorders(rootPane)
+            setGlassPaneResizable(peer.rootPane, disposable)
+            setMovable(getRootPane(), title)
+            isResizable = false
             isModal = false
-            setSize(WIDTH, HEIGHT)
             if (location != null) {
                 setLocation(location.x, location.y)
             }
-            super.init()
+            setOKButtonText("Set")
         }
 
         override fun getPreferredFocusedComponent(): JComponent {
@@ -86,7 +95,7 @@ class ResourceNameDialog<NAMESPACE: HasMetadata>(
 
         override fun doValidate(): ValidationInfo? {
             return if (nameTextField.text.isEmpty()) {
-                ValidationInfo("Name musn't be empty", nameTextField)
+                ValidationInfo("Name mustn't be empty", nameTextField)
             } else {
                 null
             }
@@ -96,4 +105,10 @@ class ResourceNameDialog<NAMESPACE: HasMetadata>(
             super.doOKAction()
             onOk.invoke(nameTextField.text)
         }
-    }
+
+        private fun closeImmediately() {
+            if (isVisible) {
+                doCancelAction()
+            }
+        }
+}
