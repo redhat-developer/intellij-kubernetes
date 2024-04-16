@@ -11,16 +11,17 @@
 @file:Suppress("UnstableApiUsage")
 package com.redhat.devtools.intellij.kubernetes.editor.inlay
 
+import PresentationFactoryBuilder
 import com.intellij.codeInsight.hints.InlayHintsSink
 import com.intellij.codeInsight.hints.presentation.InlayPresentation
-import com.intellij.codeInsight.hints.presentation.PresentationFactory
 import com.intellij.openapi.command.WriteCommandAction
 import com.intellij.openapi.editor.Editor
-import com.intellij.openapi.editor.impl.EditorImpl
 import com.intellij.openapi.project.Project
 import com.intellij.psi.PsiElement
 import com.redhat.devtools.intellij.common.validation.KubernetesResourceInfo
 import com.redhat.devtools.intellij.kubernetes.balloon.StringInputBalloon
+import com.redhat.devtools.intellij.kubernetes.editor.inlay.Base64Presentations.InlayPresentationsFactory
+import com.redhat.devtools.intellij.kubernetes.editor.inlay.Base64Presentations.create
 import com.redhat.devtools.intellij.kubernetes.editor.util.getBinaryData
 import com.redhat.devtools.intellij.kubernetes.editor.util.getData
 import com.redhat.devtools.intellij.kubernetes.editor.util.isKubernetesResource
@@ -94,7 +95,7 @@ object Base64Presentations {
 		}
 
 		private fun create(text: String, onClick: (event: MouseEvent) -> Unit, editor: Editor): InlayPresentation? {
-			val factory = PresentationFactory(editor as EditorImpl)
+			val factory = PresentationFactoryBuilder.build(editor) ?: return null
 			val trimmed = trimWithEllipsis(text, INLAY_HINT_MAX_WIDTH) ?: return null
 			val textPresentation = factory.smallText(trimmed)
 			val hoverPresentation = factory.referenceOnHover(textPresentation) { event, _ ->
@@ -129,7 +130,7 @@ object Base64Presentations {
 		}
 
 		private fun create(bytes: ByteArray, editor: Editor): InlayPresentation? {
-			val factory = PresentationFactory(editor as EditorImpl)
+			val factory = PresentationFactoryBuilder.build(editor) ?: return null
 			val hex = toHexString(bytes) ?: return null
 			val trimmed = trimWithEllipsis(hex, INLAY_HINT_MAX_WIDTH) ?: return null
 			return factory.roundWithBackground(factory.smallText(trimmed))

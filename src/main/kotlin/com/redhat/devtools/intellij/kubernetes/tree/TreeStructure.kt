@@ -45,7 +45,7 @@ open class TreeStructure(
         private val project: Project,
         private val model: IResourceModel,
         private val extensionPoint: ExtensionPointName<ITreeStructureContributionFactory> =
-                ExtensionPointName.create("com.redhat.devtools.intellij.kubernetes.structureContribution"))
+                ExtensionPointName("com.redhat.devtools.intellij.kubernetes.structureContribution"))
     : AbstractTreeStructure(), MultiParentTreeStructure {
 
     private val contributions by lazy {

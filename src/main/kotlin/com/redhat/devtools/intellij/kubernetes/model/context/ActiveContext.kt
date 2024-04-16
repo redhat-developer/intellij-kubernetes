@@ -75,7 +75,7 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
     protected abstract val namespaceKind : ResourceKind<N>
 
     private val extensionName: ExtensionPointName<IResourceOperatorFactory<HasMetadata, KubernetesClient, IResourceOperator<HasMetadata>>> =
-            ExtensionPointName.create("com.redhat.devtools.intellij.kubernetes.resourceOperators")
+            ExtensionPointName("com.redhat.devtools.intellij.kubernetes.resourceOperators")
 
     protected open val nonNamespacedOperators: MutableMap<ResourceKind<out HasMetadata>, INonNamespacedResourceOperator<*, *>> by lazy {
         getAllResourceOperators(INonNamespacedResourceOperator::class.java)
