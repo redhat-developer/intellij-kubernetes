@@ -130,7 +130,7 @@ object ClientMocks {
     ) {
         val inNamespaceOp: Resource<HasMetadata> = mock {
             on { delete() } doReturn statusDetails
-            on { replace() } doReturn resource
+            on { patch() } doReturn resource
             on { create() } doReturn resource
             on { get() } doReturn resource
         }
@@ -138,7 +138,7 @@ object ClientMocks {
         val resourceOperation: NamespaceableResource<HasMetadata> = mock {
             on { inNamespace(any()) } doReturn inNamespaceOp
             on { delete() } doReturn statusDetails
-            on { replace() } doReturn resource
+            on { patch() } doReturn resource
         }
 
         doReturn(resourceOperation)

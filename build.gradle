@@ -1,5 +1,4 @@
 buildscript {
-
     ext.ideaVersion = ideaVersion
     ext.kotlinVersion = kotlinVersion
     ext.java_version = "17"
@@ -42,17 +41,17 @@ dependencies {
             "io.fabric8:kubernetes-model-common:${kubernetesClientVersion}",
             "io.fabric8:openshift-client:${kubernetesClientVersion}",
             "io.fabric8:kubernetes-httpclient-okhttp:${kubernetesClientVersion}",
+            "com.fasterxml.jackson.core:jackson-core:2.17.0", /* IC-2022.3 ships 2.16.0 */
             "org.apache.commons:commons-lang3:3.12.0"
     )
     testImplementation(
             "org.assertj:assertj-core:3.22.0",
             "org.mockito:mockito-inline:4.5.1",
             "com.nhaarman.mockitokotlin2:mockito-kotlin:2.2.0",
-            "org.jetbrains.kotlin:kotlin-test-junit:${kotlinVersion}",
-            "org.yaml:snakeyaml:1.33" /* IC-2023.2 provides incompatible 2.0 */
+            "org.jetbrains.kotlin:kotlin-test-junit:${kotlinVersion}"
     )
     integrationTestImplementation(
-            "com.redhat.devtools.intellij:intellij-common:1.1.0",
+            "com.redhat.devtools.intellij:intellij-common:${intellijCommonVersion}",
             "com.redhat.devtools.intellij:intellij-common-ui-test-library:0.2.0",
             "org.junit.jupiter:junit-jupiter-engine:5.8.2",
             "org.junit.jupiter:junit-jupiter-api:5.8.2",

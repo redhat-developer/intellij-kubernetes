@@ -113,7 +113,8 @@ open class ResourceWatch<T>(
             true
         } catch (e: Exception) {
             logger<ResourceWatch<*>>().warn("Error when closing watch for $type resources.", e)
-            false
+            // do as if close() worked so that watch gets removed
+            true
         }
     }
 
