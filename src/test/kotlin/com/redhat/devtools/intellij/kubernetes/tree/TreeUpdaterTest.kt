@@ -242,7 +242,7 @@ class TreeUpdaterTest {
         // when
         updater.modified(resourceModel)
         // then
-        verify(treeModel).invalidate()
+        verify(treeModel).invalidateAsync()
     }
 
     @Test

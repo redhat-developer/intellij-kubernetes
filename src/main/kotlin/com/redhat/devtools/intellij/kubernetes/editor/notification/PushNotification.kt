@@ -14,7 +14,6 @@ import com.intellij.openapi.fileEditor.FileEditor
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Key
 import com.intellij.ui.EditorNotificationPanel
-import com.intellij.util.containers.isNullOrEmpty
 import com.redhat.devtools.intellij.kubernetes.editor.Different
 import com.redhat.devtools.intellij.kubernetes.editor.EditorResource
 import com.redhat.devtools.intellij.kubernetes.editor.hideNotification
@@ -67,10 +66,10 @@ class PushNotification(private val editor: FileEditor, private val project: Proj
 
     private fun createText(toCreate: Collection<EditorResource>?, toUpdate: Collection<EditorResource>?): String {
         return StringBuilder().apply {
-            if (false == toCreate?.isNullOrEmpty()) {
+            if (false == toCreate?.isEmpty()) {
                 append("Push to create ${toKindAndNames(toCreate.map { editorResource -> editorResource.getResource() })}")
             }
-            if (false == toUpdate?.isNullOrEmpty()) {
+            if (false == toUpdate?.isEmpty()) {
                 if (isNotEmpty()) {
                     append(", ")
                 } else {

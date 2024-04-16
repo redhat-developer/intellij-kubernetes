@@ -129,7 +129,7 @@ class TreeUpdater(
     }
 
     private fun invalidateRoot() {
-        treeModel.invalidate()
+        treeModel.invalidateAsync()
     }
 
     private fun getPotentialParentNodes(element: Any): Collection<TreeNode> {

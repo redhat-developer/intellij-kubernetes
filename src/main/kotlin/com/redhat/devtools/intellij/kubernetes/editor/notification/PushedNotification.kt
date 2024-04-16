@@ -14,7 +14,6 @@ import com.intellij.openapi.fileEditor.FileEditor
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Key
 import com.intellij.ui.EditorNotificationPanel
-import com.intellij.util.containers.isNullOrEmpty
 import com.redhat.devtools.intellij.kubernetes.editor.EditorResource
 import com.redhat.devtools.intellij.kubernetes.editor.FILTER_PUSHED
 import com.redhat.devtools.intellij.kubernetes.editor.Pushed
@@ -62,16 +61,16 @@ class PushedNotification(private val editor: FileEditor, private val project: Pr
 
     private fun createText(created: List<EditorResource>?, updated: List<EditorResource>?): String {
         return StringBuilder().apply {
-            if (!created.isNullOrEmpty()) {
+            if (false == created?.isEmpty()) {
                 append("Created ${toKindAndNames(created?.map { editorResource -> editorResource.getResource() })} ")
             }
-            if (!updated.isNullOrEmpty()) {
+            if (false == updated?.isEmpty()) {
                 if (isNotEmpty()) {
                     append(", updated")
                 } else {
                     append("Updated")
                 }
-                append(" ${toKindAndNames(updated?.map { editorResource -> editorResource.getResource() })}")
+                append(" ${toKindAndNames(updated.map { editorResource -> editorResource.getResource() })}")
             }
             append(" on cluster.")
         }
