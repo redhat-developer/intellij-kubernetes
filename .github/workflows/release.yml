@@ -31,23 +31,22 @@ jobs:
 
       # Validate Wrapper before running build
       - name: validate Gradle Wrapper
-        uses: gradle/wrapper-validation-action@56b90f209b02bf6d1deae490e9ef18b21a389cd4 #v1.1.0
+        uses: gradle/actions/wrapper-validation@6cec5d49d4d6d4bb982fbed7047db31ea6d38f11 #v3.3.0
 
       # Set up Java environment for the next steps
       - name: Setup Java
-        uses: actions/setup-java@v3
+        uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: 17
 
       # Setup Gradle
       - name: Setup Gradle
-        uses: gradle/gradle-build-action@v2
+        uses: gradle/actions/setup-gradle@6cec5d49d4d6d4bb982fbed7047db31ea6d38f11 #v3.3.0
         with:
           gradle-home-cache-cleanup: true
 
       - name: Set Release Version
-        id: release_version
         shell: bash
         run: |
           CURRENT_VERSION=$(grep "projectVersion=" gradle.properties | cut -d'=' -f2)
@@ -80,18 +79,21 @@ jobs:
 
       # Set next SNAPSHOT version
       - name: Increment Plugin Version
+        shell: bash
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           CURRENT_VERSION=$(grep "projectVersion=" gradle.properties | cut -d'=' -f2)
           IFS="-" read -ra VERSION_PARTS <<< "$CURRENT_VERSION"
           IFS="." read -ra VERSION_NUM <<< "${VERSION_PARTS[0]}"
-          ((VERSION_NUM[2]++))
+          ((VERSION_NUM[2]+=1))
           NEW_VERSION="${VERSION_NUM[0]}.${VERSION_NUM[1]}.${VERSION_NUM[2]}-SNAPSHOT"
           awk -v new_version="$NEW_VERSION" '/projectVersion=/{sub(/=.*/, "=" new_version)}1' gradle.properties > tmpfile && mv tmpfile gradle.properties
           echo "Set $NEW_VERSION in gradle.properties"
+          git checkout -b $NEW_VERSION
           git commit -sam "chore(skip-release): set version to $NEW_VERSION"
-          git push origin main
+          git push -u origin $NEW_VERSION
+          gh pr create -B main -H $NEW_VERSION --title "chore(skip-release): set version to $NEW_VERSION" --body 'Created by Github action'
 
       - name: Simple conventional changelog
         uses: redhat-developer/simple-conventional-changelog@0a6db1ac3910c2cf66f2e1a530951dba1ece8540 #0.0.12
@@ -117,3 +119,4 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: gh release upload ${PLUGIN_VERSION} ./build/distributions/*
+
