@@ -140,7 +140,11 @@ open class ClusterResource protected constructor(
                     "Unsupported resource kind ${resource.kind} in version ${resource.apiVersion}."
                 )
             }
-            val updated = context.replace(resource)
+            val updated = if (exists()) {
+                context.replace(resource)
+            } else {
+                context.create(resource)
+            }
             set(updated)
             return updated
         } catch (e: KubernetesClientException) {

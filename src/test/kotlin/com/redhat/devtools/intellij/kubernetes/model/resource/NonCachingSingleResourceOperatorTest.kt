@@ -18,6 +18,7 @@ import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.never
 import com.nhaarman.mockitokotlin2.spy
+import com.nhaarman.mockitokotlin2.times
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.whenever
 import com.redhat.devtools.intellij.kubernetes.model.client.KubeClientAdapter
@@ -28,6 +29,8 @@ import io.fabric8.kubernetes.api.model.APIResource
 import io.fabric8.kubernetes.api.model.GenericKubernetesResource
 import io.fabric8.kubernetes.api.model.GenericKubernetesResourceList
 import io.fabric8.kubernetes.api.model.HasMetadata
+import io.fabric8.kubernetes.api.model.ManagedFieldsEntry
+import io.fabric8.kubernetes.api.model.ObjectMeta
 import io.fabric8.kubernetes.api.model.ObjectMetaBuilder
 import io.fabric8.kubernetes.api.model.PodBuilder
 import io.fabric8.kubernetes.client.KubernetesClientException
@@ -186,6 +189,84 @@ class NonCachingSingleResourceOperatorTest {
     }
 
     @Test
+    fun `#create should call #patch(SERVER_SIDE_APPLY) if resource has a name and NO managed fields`() {
+        // given
+        val metadata = ObjectMetaBuilder().build().apply {
+            managedFields = null
+        }
+        val hasName = PodBuilder(namespacedCoreResource)
+            .withMetadata(metadata)
+            .build()
+        hasName.metadata.name = "yoda"
+        hasName.metadata.generateName = null
+        val apiResource = namespacedApiResource(namespacedCoreResource)
+        val operator = NonCachingSingleResourceOperator(clientAdapter, createAPIResources(apiResource))
+        // when
+        operator.create(hasName)
+        // then
+        verify(resourceOp)
+            .patch(argThat(ArgumentMatcher<PatchContext> { context ->
+                context.patchType == PatchType.SERVER_SIDE_APPLY
+            }))
+    }
+
+    @Test
+    fun `#create should call #create if resource has no name`() {
+        // given
+        val hasNoName = PodBuilder(namespacedCoreResource)
+            .withNewMetadata()
+                .withManagedFields(ManagedFieldsEntry())
+            .endMetadata()
+            .build()
+        val apiResource = namespacedApiResource(namespacedCoreResource)
+        val operator = NonCachingSingleResourceOperator(clientAdapter, createAPIResources(apiResource))
+        // when
+        operator.create(hasNoName)
+        // then
+        verify(resourceOp)
+            .create()
+    }
+
+    @Test
+    fun `#create should remove resourceVersion and uid before calling #create`() {
+        // given
+        val metadata = mock<ObjectMeta>()
+        val genericResource = mock<GenericKubernetesResource> {
+            on { getMetadata() } doReturn metadata
+        }
+        val hasNoName = PodBuilder(namespacedCoreResource)
+            .withMetadata(metadata)
+            .build()
+        val apiResource = namespacedApiResource(namespacedCoreResource)
+        val operator = NonCachingSingleResourceOperator(clientAdapter, createAPIResources(apiResource))
+            { resource -> genericResource }
+        // when
+        operator.create(hasNoName)
+        // then
+        verify(resourceOp).create() // make sure #create was called as this only applies when #create is called
+        verify(metadata, times(2)).setResourceVersion(null) //
+        verify(metadata, times(2)).setUid(null)
+    }
+
+    @Test
+    fun `#create should call #create if resource has a name but managed fields`() {
+        // given
+        val hasNameAndManagedFields = PodBuilder(namespacedCoreResource)
+            .withNewMetadata()
+                .withManagedFields(ManagedFieldsEntry())
+                .withName("obiwan")
+            .endMetadata()
+            .build()
+        val apiResource = namespacedApiResource(namespacedCoreResource)
+        val operator = NonCachingSingleResourceOperator(clientAdapter, createAPIResources(apiResource))
+        // when
+        operator.create(hasNameAndManagedFields)
+        // then
+        verify(resourceOp)
+            .create()
+    }
+
+    @Test
     fun `#replace should call #inNamespace for namespaced resource`() {
         // given
         val apiResource = namespacedApiResource(namespacedCoreResource)
@@ -210,11 +291,40 @@ class NonCachingSingleResourceOperatorTest {
     }
 
     @Test
-    fun `#replace should call #patch() if resource has a name`() {
+    fun `#replace should call #patch(STRATEGIC_MERGE) if resource has a name and managed fields`() {
         // given
-        val hasName = PodBuilder(namespacedCoreResource).build()
-        hasName.metadata.name = "yoda"
-        hasName.metadata.generateName = null
+        val metadata = ObjectMetaBuilder()
+            .withManagedFields(ManagedFieldsEntry())
+            .build().apply {
+                name = "yoda"
+                generateName = null
+            }
+        val hasName = PodBuilder(namespacedCoreResource)
+            .withMetadata(metadata)
+            .build()
+        val apiResource = namespacedApiResource(namespacedCoreResource)
+        val operator = NonCachingSingleResourceOperator(clientAdapter, createAPIResources(apiResource))
+        // when
+        operator.replace(hasName)
+        // then
+        verify(resourceOp)
+            .patch(argThat(ArgumentMatcher<PatchContext> { context ->
+                context.patchType == PatchType.STRATEGIC_MERGE
+            }))
+    }
+
+    @Test
+    fun `#replace should call #patch(SERVER_SIDE_APPLY) if resource has a name and NO managed fields`() {
+        // given
+        val metadata = ObjectMetaBuilder()
+            .build().apply {
+                name = "yoda"
+                generateName = null
+                managedFields = null
+            }
+        val hasName = PodBuilder(namespacedCoreResource)
+            .withMetadata(metadata)
+            .build()
         val apiResource = namespacedApiResource(namespacedCoreResource)
         val operator = NonCachingSingleResourceOperator(clientAdapter, createAPIResources(apiResource))
         // when
@@ -229,9 +339,10 @@ class NonCachingSingleResourceOperatorTest {
     @Test
     fun `#replace should call #create() if resource has NO name but has generateName`() {
         // given
-        val hasGeneratedName = PodBuilder(namespacedCoreResource).build()
-        hasGeneratedName.metadata.name = null
-        hasGeneratedName.metadata.generateName = "storm trooper clone"
+        val hasGeneratedName = PodBuilder(namespacedCoreResource).build().apply {
+            metadata.name = null
+            metadata.generateName = "storm trooper clone"
+        }
         val operator = NonCachingSingleResourceOperator(
             clientAdapter,
             createAPIResources(namespacedApiResource(hasGeneratedName))
@@ -246,9 +357,10 @@ class NonCachingSingleResourceOperatorTest {
     @Test(expected = ResourceException::class)
     fun `#replace should throw if resource has NO name NOR generateName`() {
         // given
-        val generatedName = PodBuilder(namespacedCoreResource).build()
-        generatedName.metadata.name = null
-        generatedName.metadata.generateName = null
+        val generatedName = PodBuilder(namespacedCoreResource).build().apply {
+            metadata.name = null
+            metadata.generateName = null
+        }
         val apiResource = namespacedApiResource(namespacedCustomResource)
         val operator = NonCachingSingleResourceOperator(clientAdapter, createAPIResources(apiResource))
         // when
@@ -306,8 +418,10 @@ class NonCachingSingleResourceOperatorTest {
     @Test
     fun `#watch should return NULL if resource has NO name`() {
         // given
-        val unnamed = PodBuilder(namespacedCoreResource).build()
-        unnamed.metadata.name = null
+        val unnamed = PodBuilder(namespacedCoreResource).build().apply {
+            metadata.name = null
+        }
+
         val apiResource = namespacedApiResource(unnamed)
         val operator = NonCachingSingleResourceOperator(clientAdapter, createAPIResources(apiResource))
         // when

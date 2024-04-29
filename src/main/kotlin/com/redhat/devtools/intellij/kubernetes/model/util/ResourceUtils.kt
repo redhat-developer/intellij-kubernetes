@@ -172,6 +172,10 @@ fun hasDeletionTimestamp(resource: HasMetadata?): Boolean {
 	return null != resource?.metadata?.deletionTimestamp
 }
 
+fun hasManagedFields(resource: HasMetadata?): Boolean {
+	return true == resource?.metadata?.managedFields?.isNotEmpty()
+}
+
 fun setWillBeDeleted(resource: HasMetadata) {
 	setDeletionTimestamp(MARKER_WILL_BE_DELETED, resource)
 }

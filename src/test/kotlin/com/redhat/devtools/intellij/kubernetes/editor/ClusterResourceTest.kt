@@ -125,10 +125,21 @@ class ClusterResourceTest {
     }
 
     @Test
-    fun `#push should call operator#replace`() {
+    fun `#push should call operator#create if resource does NOT exist`() {
         // given
         whenever(context.get(any()))
-            .doReturn(null)
+            .thenReturn(null)
+        // when
+        cluster.push(endorResourceOnCluster)
+        // then
+        verify(context).create(endorResourceOnCluster)
+    }
+
+    @Test
+    fun `#push should call operator#replace if resource exists`() {
+        // given
+        whenever(context.get(any()))
+            .thenReturn(endorResourceOnCluster)
         // when
         cluster.push(endorResourceOnCluster)
         // then

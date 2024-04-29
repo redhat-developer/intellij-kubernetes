@@ -266,6 +266,10 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
         return singleResourceOperator.get(resource)
     }
 
+    override fun create(resource: HasMetadata): HasMetadata? {
+        return singleResourceOperator.create(resource)
+    }
+
     override fun replace(resource: HasMetadata): HasMetadata? {
         return singleResourceOperator.replace(resource)
     }
