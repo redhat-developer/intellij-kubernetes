@@ -142,11 +142,20 @@ interface IActiveContext<N: HasMetadata, C: KubernetesClient>: IContext {
     fun get(resource: HasMetadata): HasMetadata?
 
     /**
-     * Replaces the given resource on the cluster if it exists. Creates a new one if it doesn't.
+     * Creates the given resource on the cluster if it doesn't exist. Throws if it exists already.
+     *
+     * @param resource that shall be created on the cluster
+     *
+     * @return the resource that was created
+     */
+    fun create(resource: HasMetadata): HasMetadata?
+
+    /**
+     * Replaces the given resource on the cluster if it exists. Throws if it doesn't.
      *
      * @param resource that shall be replaced on the cluster
      *
-     * @return the resource that was created
+     * @return the resource that was replaced
      */
     fun replace(resource: HasMetadata): HasMetadata?
 

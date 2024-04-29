@@ -12,6 +12,7 @@ package com.redhat.devtools.intellij.kubernetes.model.util
 
 import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.resource
 import io.fabric8.kubernetes.api.model.HasMetadata
+import io.fabric8.kubernetes.api.model.ManagedFieldsEntry
 import io.fabric8.kubernetes.api.model.ObjectMetaBuilder
 import io.fabric8.kubernetes.api.model.Pod
 import io.fabric8.kubernetes.api.model.PodBuilder
@@ -525,4 +526,48 @@ class ResourceUtilsTest {
 		assertThat(resource2.metadata.resourceVersion).isEqualTo("21")
 		assertThat(resource2.metadata.uid).isEqualTo("obiwan")
 	}
+
+	@Test
+	fun `#hasManagedField should return true if resource has managed fields `() {
+		// given
+		val meta = ObjectMetaBuilder()
+			.withManagedFields(ManagedFieldsEntry())
+			.build()
+		val neo = PodBuilder()
+			.withMetadata(meta)
+			.build()
+		// when
+		val hasManagedFields = hasManagedFields(neo)
+		// then
+		assertThat(hasManagedFields).isTrue()
+	}
+
+	@Test
+	fun `#hasManagedField should return false if resource has empty list of managed fields `() {
+		// given
+		val meta = ObjectMetaBuilder()
+			.build()
+		meta.managedFields = emptyList()
+		val neo = PodBuilder()
+			.withMetadata(meta)
+			.build()
+		// when
+		val hasManagedFields = hasManagedFields(neo)
+		// then
+		assertThat(hasManagedFields).isFalse()
+	}
+
+	@Test
+	fun `#hasManagedField should return false if resource has no managed fields `() {
+		// given
+		val meta = ObjectMetaBuilder().build()
+		val neo = PodBuilder()
+			.withMetadata(meta)
+			.build()
+		// when
+		val hasManagedFields = hasManagedFields(neo)
+		// then
+		assertThat(hasManagedFields).isFalse()
+	}
+
 }
