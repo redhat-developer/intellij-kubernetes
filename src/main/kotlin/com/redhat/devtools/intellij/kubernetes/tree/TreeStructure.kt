@@ -30,6 +30,7 @@ import com.redhat.devtools.intellij.kubernetes.model.util.hasDeletionTimestamp
 import com.redhat.devtools.intellij.kubernetes.model.util.isSameResource
 import com.redhat.devtools.intellij.kubernetes.model.util.isUnauthorized
 import com.redhat.devtools.intellij.kubernetes.model.util.isWillBeDeleted
+import com.redhat.devtools.intellij.kubernetes.model.util.unknownHostMessage
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.client.KubernetesClientException
 import javax.swing.Icon
@@ -264,6 +265,10 @@ open class TreeStructure(
         }
 
         private fun getMessage(e: Exception?): String {
+            val unknownHostMessage = unknownHostMessage(e)
+            if (unknownHostMessage != null) {
+                return unknownHostMessage
+            }
             val causeMessage = e?.cause?.message
             return if (causeMessage == null) {
                 getMessageOrDefault(e)
