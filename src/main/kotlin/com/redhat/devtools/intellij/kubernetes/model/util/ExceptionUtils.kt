@@ -24,6 +24,7 @@ fun toTitle(e: Throwable?): String {
 
 fun toMessage(e: Throwable?): String {
     return noCurrentContextMessage(e)
+        ?: unknownHostMessage(e)
         ?: recursiveGetMessage(e)
         ?: "Unknown Error"
 }
@@ -46,5 +47,35 @@ fun noCurrentContextMessage(e: Throwable?): String? {
         "No valid current context in kube config"
     } else {
         null
+    }
+}
+
+fun unknownHostMessage(e: Throwable?): String? {
+    val unknownHostException = recursiveGetThrowable(e) {
+        throwable -> throwable is UnknownHostException
+    }
+    return if (unknownHostException is UnknownHostException) {
+        "Unreachable cluster at ${getHost(unknownHostException)}."
+    } else {
+        null
+    }
+}
+
+private fun getHost(e: UnknownHostException): String? {
+    val portions = e.message?.split(':') ?: return e.message
+    return if (1 < portions.size) {
+        portions[1]
+    } else {
+        e.message
+    }
+}
+
+private fun recursiveGetThrowable(e: Throwable?, predicate: (e: Throwable?) -> Boolean): Throwable? {
+    return if (e == null
+        || e == e.cause
+        || predicate.invoke(e)) {
+        e
+    } else {
+        recursiveGetThrowable(e.cause, predicate)
     }
 }
