@@ -11,22 +11,24 @@
 package com.redhat.devtools.intellij.kubernetes.model.util
 
 import io.fabric8.kubernetes.client.Config.DEFAULT_MASTER_URL
+import io.fabric8.kubernetes.client.KubernetesClientException
 import java.net.UnknownHostException
-
-private const val DEFAULT_KUBECLIENT_ERRORMESSAGE = "An error has occurred"
 
 fun toTitle(e: Throwable?): String {
     return noCurrentContextMessage(e)
-        ?: e?.message
-        ?: e?.cause?.message
+        ?: unknownHostMessage(e)
+        ?: unauthorizedMessage(e)
+        ?: extractMessage(e?.message)
+        ?: extractMessage(e?.cause?.message)
         ?: "Error"
 }
 
 fun toMessage(e: Throwable?): String {
     return noCurrentContextMessage(e)
         ?: unknownHostMessage(e)
-        ?: recursiveGetMessage(e)
-        ?: "Unknown Error"
+        ?: unauthorizedMessage(e)
+        ?: extractMessage(recursiveGetMessage(e))
+        ?: "Unknown Error."
 }
 
 private fun recursiveGetMessage(e: Throwable?): String? {
@@ -35,10 +37,38 @@ private fun recursiveGetMessage(e: Throwable?): String? {
     }
     val message = e.message
     if (message == null
-        || message.startsWith(DEFAULT_KUBECLIENT_ERRORMESSAGE)) {
+        || isAnErrorHasOccurred(message)
+        || isOperation(message)
+    ) {
         return recursiveGetMessage(e.cause)
     }
     return message
+}
+
+private fun isOperation(message: String): Boolean {
+    /**
+     * ex. minikube: KubernetesClientException:
+     * "Operation: [list]  for kind: [Service]  with name: [null]  in namespace: [default]  failed."
+     */
+    return message.startsWith("Operation: ")
+            && message.endsWith("failed.")
+}
+
+private fun isAnErrorHasOccurred(message: String) = message.startsWith("An error has occurred")
+
+private fun extractMessage(message: String?): String? {
+    return if (message == null) {
+        null
+    } else if (message.contains("Message: ")) {
+        /**
+         * ex. OpenShift: KubernetesClientException:
+         * "Failure executing: GET at: https://api.sandbox-m3.1530.p1.openshiftapps.com:6443/apis/project.openshift.io/v1/projects.
+         * Message: Unauthorized! Token may have expired! Please log-in again. Unauthorized."
+         */
+        message.substringAfter("Message: ", message)
+    } else {
+        message
+    }
 }
 
 fun noCurrentContextMessage(e: Throwable?): String? {
@@ -50,23 +80,42 @@ fun noCurrentContextMessage(e: Throwable?): String? {
     }
 }
 
-fun unknownHostMessage(e: Throwable?): String? {
-    val unknownHostException = recursiveGetThrowable(e) {
-        throwable -> throwable is UnknownHostException
+private fun unknownHostMessage(e: Throwable?): String? {
+    val unknownHostException = recursiveGetThrowable(e) { throwable ->
+        throwable is UnknownHostException
     }
     return if (unknownHostException is UnknownHostException) {
-        "Unreachable cluster at ${getHost(unknownHostException)}."
+        val host = getHost(unknownHostException)
+        "Unreachable cluster${
+            if (host != null) {
+                " at$host."
+            } else {
+                "."
+            }
+        }"
     } else {
         null
     }
 }
 
 private fun getHost(e: UnknownHostException): String? {
-    val portions = e.message?.split(':') ?: return e.message
+    val portions = e.message?.split(':') ?: return null
     return if (1 < portions.size) {
         portions[1]
     } else {
-        e.message
+        null
+    }
+}
+
+private fun unauthorizedMessage(e: Throwable?): String? {
+    val unauthorizedException = recursiveGetThrowable(e) { throwable ->
+        throwable is KubernetesClientException
+                && throwable.isUnauthorized()
+    }
+    return if (unauthorizedException != null) {
+        "Unauthorized. Verify username and password, refresh token, etc."
+    } else {
+        null
     }
 }
 
