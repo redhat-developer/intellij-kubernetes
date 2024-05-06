@@ -28,11 +28,9 @@ import com.redhat.devtools.intellij.kubernetes.model.context.IContext
 import com.redhat.devtools.intellij.kubernetes.model.resource.ResourceKind
 import com.redhat.devtools.intellij.kubernetes.model.util.hasDeletionTimestamp
 import com.redhat.devtools.intellij.kubernetes.model.util.isSameResource
-import com.redhat.devtools.intellij.kubernetes.model.util.isUnauthorized
 import com.redhat.devtools.intellij.kubernetes.model.util.isWillBeDeleted
-import com.redhat.devtools.intellij.kubernetes.model.util.unknownHostMessage
+import com.redhat.devtools.intellij.kubernetes.model.util.toMessage
 import io.fabric8.kubernetes.api.model.HasMetadata
-import io.fabric8.kubernetes.client.KubernetesClientException
 import javax.swing.Icon
 
 /**
@@ -251,49 +249,12 @@ open class TreeStructure(
         project
     ) {
         override fun getLabel(element: java.lang.Exception?): String {
-            return if (isUnauthorized(element)) {
-                "Unauthorized. Verify username and password, refresh token, etc."
-            } else {
-                "Error: ${getMessage(element)}"
-            }
-        }
-
-        private fun isUnauthorized(e: Exception?): Boolean {
-            val cause = e?.cause
-            return cause is KubernetesClientException
-                    && cause.isUnauthorized()
+            return getMessage(element)
         }
 
         private fun getMessage(e: Exception?): String {
-            val unknownHostMessage = unknownHostMessage(e)
-            if (unknownHostMessage != null) {
-                return unknownHostMessage
-            }
-            val causeMessage = e?.cause?.message
-            return if (causeMessage == null) {
-                getMessageOrDefault(e)
-            } else if (causeMessage.contains("Operation: ")) {
-                /**
-                 * ex. minikube: KubernetesClientException:
-                 * "Operation: [list]  for kind: [Service]  with name: [null]  in namespace: [default]  failed."
-                 */
-                return e.cause?.cause?.message
-                    ?: getMessageOrDefault(e)
-            } else {
-                /**
-                 * ex. OpenShift: KubernetesClientException:
-                 * "Failure executing: GET at: https://api.sandbox-m3.1530.p1.openshiftapps.com:6443/apis/project.openshift.io/v1/projects.
-                 * Message: Unauthorized! Token may have expired! Please log-in again. Unauthorized."
-                 */
-                causeMessage.substringAfter("Message: ", causeMessage)
-            }
+            return toMessage(e)
         }
-
-        private fun getMessageOrDefault(e: Exception?): String {
-            return e?.message
-                ?: "unspecified"
-        }
-
 
         override fun getIcon(element: java.lang.Exception): Icon {
             return AllIcons.General.BalloonError
