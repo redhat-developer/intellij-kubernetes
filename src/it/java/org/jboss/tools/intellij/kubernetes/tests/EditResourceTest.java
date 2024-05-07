@@ -17,8 +17,10 @@ import com.intellij.remoterobot.utils.Keyboard;
 import org.jboss.tools.intellij.kubernetes.fixtures.mainIdeWindow.EditorsSplittersFixture;
 import org.jboss.tools.intellij.kubernetes.fixtures.menus.ActionToolbarMenu;
 
+import java.awt.event.KeyEvent;
 import java.util.List;
 
+import static com.intellij.remoterobot.search.locators.Locators.byXpath;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -45,7 +47,7 @@ public class EditResourceTest extends AbstractKubernetesTest{
         RemoteText placeForNewLabel = remote_text.get(labelsId+2); // +1 because we need the next one, +1 because between every 2 real elements is space
         placeForNewLabel.click();
 
-        String text = "    some_label: \"some_label";
+        String text = "    yoda_label: \"yoda_text";
         Keyboard my_keyboard = new Keyboard(robot);
 
         my_keyboard.enter(); // create empty line
@@ -62,10 +64,11 @@ public class EditResourceTest extends AbstractKubernetesTest{
 
         selectedResource.doubleClick();
         ComponentFixture textFixtureNew = editorSplitter.getEditorTextFixture();
+        scrollToVisible("yoda_label", robot);
         List<RemoteText> remoteTextNew = textFixtureNew.findAllText();
         boolean labelExist = false;
         for (RemoteText actual_remote_text : remoteTextNew){
-            if (actual_remote_text.getText().contains("some_label")){
+            if (actual_remote_text.getText().contains("yoda_text")){
                 labelExist = true;
                 break;
             }
@@ -75,5 +78,12 @@ public class EditResourceTest extends AbstractKubernetesTest{
         hideClusterContent(kubernetesViewTree);
 
         assertTrue(labelExist);
+    }
+
+    private static void scrollToVisible(String text, RemoteRobot robot) {
+        Keyboard myKeyboard = new Keyboard(robot);
+        myKeyboard.hotKey(KeyEvent.VK_CONTROL, KeyEvent.VK_F);
+        robot.find(ComponentFixture.class, byXpath("//div[@class='SearchTextArea']")).click();
+        myKeyboard.enterText(text);
     }
 }
