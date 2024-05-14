@@ -13,6 +13,7 @@ package org.jboss.tools.intellij.kubernetes.tests;
 import com.intellij.remoterobot.RemoteRobot;
 import com.intellij.remoterobot.fixtures.ComponentFixture;
 import com.intellij.remoterobot.fixtures.dataExtractor.RemoteText;
+import com.intellij.remoterobot.utils.Keyboard;
 import com.intellij.remoterobot.utils.WaitForConditionTimeoutException;
 import com.redhat.devtools.intellij.commonuitest.fixtures.dialogs.errors.IdeFatalErrorsDialog;
 import org.assertj.swing.core.MouseButton;
@@ -20,9 +21,11 @@ import org.jboss.tools.intellij.kubernetes.fixtures.mainIdeWindow.IdeStatusBarFi
 
 import java.awt.*;
 import java.awt.datatransfer.Clipboard;
+import java.awt.event.KeyEvent;
 import java.time.Duration;
 import java.util.List;
 
+import static com.intellij.remoterobot.search.locators.Locators.byXpath;
 import static com.intellij.remoterobot.utils.RepeatUtilsKt.waitFor;
 
 /**
@@ -153,5 +156,23 @@ public abstract class AbstractKubernetesTest {
         Clipboard systemClipboard = defaultToolkit.getSystemClipboard();
 
         return systemClipboard;
+    }
+
+    public static void scrollToVisible(String text, RemoteRobot robot) {
+        Keyboard myKeyboard = new Keyboard(robot);
+        myKeyboard.hotKey(KeyEvent.VK_CONTROL, KeyEvent.VK_F);
+        robot.find(ComponentFixture.class, byXpath("//div[@class='SearchTextArea']")).click();
+
+        clearSearchField(robot);
+
+        myKeyboard.enterText(text);
+    }
+
+    private static void clearSearchField(RemoteRobot robot) {
+        try {
+            robot.find(ComponentFixture.class, byXpath("//div[@myaction='null (null)']")).click();
+        } catch (WaitForConditionTimeoutException e) {
+            e.printStackTrace();
+        }
     }
 }
