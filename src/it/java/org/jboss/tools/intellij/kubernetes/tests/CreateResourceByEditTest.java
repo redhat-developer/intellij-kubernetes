@@ -20,12 +20,13 @@ import org.jboss.tools.intellij.kubernetes.fixtures.mainIdeWindow.EditorsSplitte
 import org.jboss.tools.intellij.kubernetes.fixtures.menus.ActionToolbarMenu;
 import org.jboss.tools.intellij.kubernetes.fixtures.menus.RightClickMenu;
 
-import java.awt.event.KeyEvent;
 import java.time.Duration;
 import java.util.List;
 
 import static com.intellij.remoterobot.search.locators.Locators.byXpath;
 import static com.intellij.remoterobot.utils.RepeatUtilsKt.waitFor;
+
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * @author olkornii@redhat.com
@@ -70,21 +71,22 @@ public class CreateResourceByEditTest extends AbstractKubernetesTest{
     }
 
     private static RemoteText findResourceNamePosition(RemoteRobot robot, EditorsSplittersFixture editorSplitter, Keyboard myKeyboard){
-        myKeyboard.hotKey(KeyEvent.VK_CONTROL, KeyEvent.VK_F);
-        robot.find(ComponentFixture.class, byXpath("//div[@class='SearchTextArea']")).click();
-        myKeyboard.enterText(" name:");
-
+        scrollToVisible(" name:", robot);
 
         ComponentFixture textFixture = editorSplitter.getEditorTextFixture();
         List<RemoteText> remoteText = textFixture.findAllText();
 
         int nameId = 0;
+        boolean nameFound = false;
         for (RemoteText actual_remote_text : remoteText){
             if ("name".equals(actual_remote_text.getText())){
+                nameFound = true;
                 break;
             }
             nameId++;
         }
+
+        assertTrue(nameFound, "Resource name not found.");
 
         RemoteText namePlace = remoteText.get(nameId+3); // +1 because we need the next one, +1 because between every 2 real elements is space, +1 because here is the ":"
 
