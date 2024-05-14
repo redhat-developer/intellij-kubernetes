@@ -30,7 +30,7 @@ public class RightClickMenu extends CommonContainerFixture {
     }
 
     public void select(String selectedItem){
-        find(RightClickMenu.class, byXpath("//div[@accessiblename='" + selectedItem + "' and @class='ActionMenuItem']")).click();
+        find(RightClickMenu.class, byXpath("//div[@text='" + selectedItem + "']")).click();
     }
 }
 
