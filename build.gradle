@@ -83,6 +83,7 @@ configurations {
 }
 
 test {
+    systemProperties["com.redhat.devtools.intellij.telemetry.mode"] = "disabled"
     afterSuite { desc, result ->
         if (!desc.parent)
             println("${result.resultType} " +
@@ -119,7 +120,7 @@ publishPlugin {
 
 runIdeForUiTests {
     systemProperty "robot-server.port", System.getProperty("robot-server.port")
-    systemProperties["com.redhat.devtools.intellij.telemetry.mode"] = "debug"
+    systemProperties["com.redhat.devtools.intellij.telemetry.mode"] = "disabled"
 }
 
 task generateSchemas {
