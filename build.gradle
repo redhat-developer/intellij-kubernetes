@@ -97,7 +97,9 @@ test {
 intellij {
     version = ideaVersion //for a full list of Jetbrains IDEA releases please see https://www.jetbrains.com/intellij-repository/releases
     pluginName = "Kubernetes by Red Hat"
-    plugins = ["yaml", "com.redhat.devtools.intellij.telemetry:${telemetryPluginVersion}" ]
+    // use '<git repo clone>/build/idea-sandbox/plugins/Telemetry by Red Hat' if working from source
+//    plugins = ["yaml", "com.redhat.devtools.intellij.telemetry:${telemetryPluginVersion}" ]
+    plugins = ["yaml", "/Users/adietish/Documents/jboss-workspaces/intellij-redhat-telemetry/build/idea-sandbox/plugins/Telemetry by Red Hat" ]
     updateSinceUntilBuild = false
 }
 
