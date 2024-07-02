@@ -1,4 +1,5 @@
 name: Release Plugin
+run-name: Release ${{ inputs.release_version }}
 
 #Only one job at a time
 concurrency: release
@@ -14,12 +15,15 @@ on:
           - 'true'
           - 'false'
         default: 'false'
+      release_version:
+        description: 'Release version'
+        required: true
+        type: string
 
 jobs:
   # Prepare and publish the plugin to JetBrains Marketplace repository
   release:
-    if: ${{ inputs.publishToMarketPlace == 'true' }}
-    name: Publish to Marketplace
+    name: Publish new release
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -42,21 +46,25 @@ jobs:
 
       # Setup Gradle
       - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@6cec5d49d4d6d4bb982fbed7047db31ea6d38f11 #v3.3.0
+        uses: gradle/actions/setup-gradle@dbbdc275be76ac10734476cc723d82dfe7ec6eda #v3.4.2
         with:
+          add-job-summary: 'on-failure'
+          add-job-summary-as-pr-comment: 'on-failure'
+          validate-wrappers: true
           gradle-home-cache-cleanup: true
 
       - name: Set Release Version
         shell: bash
         run: |
           CURRENT_VERSION=$(grep "projectVersion=" gradle.properties | cut -d'=' -f2)
-          NEW_VERSION=${CURRENT_VERSION%-SNAPSHOT}
+          NEW_VERSION=${{ inputs.release_version }}.${{ github.run_number }}
           awk -v current="$CURRENT_VERSION" -v new="$NEW_VERSION" 'BEGIN {FS=OFS="="} $1 == "projectVersion" { $2 = new }1' gradle.properties > tmpfile && mv tmpfile gradle.properties
           echo "Release version: $NEW_VERSION"
           echo "PLUGIN_VERSION=${NEW_VERSION}" >> $GITHUB_ENV
 
       # Publish the plugin to JetBrains Marketplace
       - name: Publish Plugin to JetBrains Marketplace
+        if: ${{ inputs.publishToMarketPlace == 'true' }}
         env:
           PUBLISH_TOKEN: ${{ secrets.JETBRAINS_MARKETPLACE_TOKEN }}
         run: |
@@ -72,10 +80,10 @@ jobs:
           if git diff --quiet; then
             echo "No changes to commit."
           else
-            git commit -sam "chore(skip-release): set version to $PLUGIN_VERSION"
+            git commit -sam "chore(skip-release): set version to ${{ inputs.release_version }}"
           fi
-          git tag $PLUGIN_VERSION
-          git push origin $PLUGIN_VERSION
+          git tag ${{ inputs.release_version }}
+          git push origin ${{ inputs.release_version }}
 
       # Set next SNAPSHOT version
       - name: Increment Plugin Version
@@ -100,7 +108,7 @@ jobs:
         id: changelog
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          current-tag: ${{env.PLUGIN_VERSION}}
+          current-tag: ${{ inputs.release_version }}
           types-mapping: 'feat:Features,fix:Bug Fixes,docs:Documentation,refactor:Refactoring,build:Builds,chore:Other'
 
       # Create a new Github release
@@ -108,15 +116,16 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release create ${PLUGIN_VERSION} \
-            --title "${PLUGIN_VERSION}" \
+          gh release create ${{ inputs.release_version }} \
+            --title "${{ inputs.release_version }}" \
             --notes "$(cat << 'EOM'
           ${{ steps.changelog.outputs.changelog }}
           EOM
           )"
 
       - name: Upload Release Asset
+        if: ${{ inputs.publishToMarketPlace == 'true' }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh release upload ${PLUGIN_VERSION} ./build/distributions/*
+        run: gh release upload ${{ inputs.release_version }} ./build/distributions/*
 
