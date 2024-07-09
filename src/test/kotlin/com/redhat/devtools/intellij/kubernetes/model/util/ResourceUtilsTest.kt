@@ -558,7 +558,7 @@ class ResourceUtilsTest {
 	}
 
 	@Test
-	fun `#hasManagedField should return false if resource has no managed fields `() {
+	fun `#hasManagedField should return false if resource has no managed fields`() {
 		// given
 		val meta = ObjectMetaBuilder().build()
 		val neo = PodBuilder()
@@ -568,6 +568,33 @@ class ResourceUtilsTest {
 		val hasManagedFields = hasManagedFields(neo)
 		// then
 		assertThat(hasManagedFields).isFalse()
+	}
+
+	@Test
+	fun `#toBooleanOrNull should return null if string is null`() {
+		// given
+		// when
+		val boolean = null.toBooleanOrNull()
+		// then
+		assertThat(boolean).isNull()
+	}
+
+	@Test
+	fun `#toBooleanOrNull should return true if string is 'TRUE'`() {
+		// given
+		// when
+		val boolean = "TRUE".toBooleanOrNull()
+		// then
+		assertThat(boolean).isTrue()
+	}
+
+	@Test
+	fun `#toBooleanOrNull should return false if string is 'BOGUS'`() {
+		// given
+		// when
+		val boolean = "BOGUS".toBooleanOrNull()
+		// then
+		assertThat(boolean).isFalse()
 	}
 
 }

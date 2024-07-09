@@ -109,8 +109,12 @@ open class AllContexts(
 		get() {
 			lock.write {
 				if (_all.isEmpty()) {
-					val all = createContexts(client.get(), client.get()?.config)
+					try {
+						val all = createContexts(client.get(), client.get()?.config)
 						_all.addAll(all)
+					} catch (e: Exception) {
+						//
+					}
 				}
 				return _all
 			}

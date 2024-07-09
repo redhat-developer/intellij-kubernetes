@@ -103,6 +103,10 @@ open class ResourceFile protected constructor(
                     && virtualFile.path.startsWith(TEMP_FOLDER.toString())
         }
 
+        fun isResourceFile(virtualFile: VirtualFile?): Boolean {
+            return isTemporary(virtualFile)
+        }
+
         private fun isYamlOrJson(file: VirtualFile): Boolean {
             if (true == file.extension?.isBlank()) {
                 return false
