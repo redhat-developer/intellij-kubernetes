@@ -21,6 +21,8 @@ object Icons {
     val consoles = loadIcon("icons/consoles.svg")
     @JvmField
     val terminal = loadIcon("icons/terminal.svg")
+    @JvmField
+    val describe = loadIcon("icons/lupe.svg")
 
     private fun loadIcon(path: String): Icon {
         return IconLoader.getIcon(path, Icons::class.java)

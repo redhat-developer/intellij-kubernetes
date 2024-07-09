@@ -36,11 +36,13 @@ fun podStatus(phase: String, reason: String): PodStatus {
 fun podStatus(
 		initContainerStatuses: List<ContainerStatus> = emptyList(),
 		containerStatuses: List<ContainerStatus> = emptyList(),
-		conditions: List<PodCondition> = emptyList()): PodStatus {
+		conditions: List<PodCondition> = emptyList(),
+		phase: String = ""): PodStatus {
 	return mock {
 		on(mock.initContainerStatuses) doReturn initContainerStatuses
 		on(mock.containerStatuses) doReturn containerStatuses
 		on(mock.conditions) doReturn conditions
+		on(mock.phase) doReturn phase
 	}
 }
 
@@ -51,8 +53,9 @@ fun condition(type: String? = null, status: String? = null): PodCondition {
 	}
 }
 
-fun containerStatus(ready: Boolean = false, state: ContainerState? = null): ContainerStatus {
+fun containerStatus(name: String, ready: Boolean = false, state: ContainerState? = null): ContainerStatus {
 	return mock {
+		on(mock.name) doReturn name
 		on(mock.ready) doReturn ready
 		on(mock.state) doReturn state
 	}
@@ -93,8 +96,9 @@ class PodMockBuilder(private val pod: Pod) {
 		status(podStatus(
 				initContainerStatuses = listOf(
 						containerStatus(
-								state = containerState(
-										containerStateTerminated(42))))))
+							pod.metadata.name,
+							state = containerState(
+								containerStateTerminated(42))))))
 		return this
 	}
 
@@ -104,7 +108,7 @@ class PodMockBuilder(private val pod: Pod) {
 		return this
 	}
 
-	fun deletion(timestamp: String): PodMockBuilder {
+	fun deletionTimestamp(timestamp: String): PodMockBuilder {
 		whenever(pod.metadata.deletionTimestamp)
 				.thenReturn(timestamp)
 		return this

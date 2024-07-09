@@ -20,6 +20,7 @@ import io.fabric8.kubernetes.api.Pluralize
 import io.fabric8.kubernetes.api.model.APIResource
 import io.fabric8.kubernetes.api.model.Container
 import io.fabric8.kubernetes.api.model.Context
+import io.fabric8.kubernetes.api.model.Event
 import io.fabric8.kubernetes.api.model.GenericKubernetesResource
 import io.fabric8.kubernetes.api.model.GenericKubernetesResourceList
 import io.fabric8.kubernetes.api.model.HasMetadata
@@ -27,6 +28,7 @@ import io.fabric8.kubernetes.api.model.NamedContext
 import io.fabric8.kubernetes.api.model.Namespace
 import io.fabric8.kubernetes.api.model.NamespaceList
 import io.fabric8.kubernetes.api.model.ObjectMeta
+import io.fabric8.kubernetes.api.model.ObjectReference
 import io.fabric8.kubernetes.api.model.Pod
 import io.fabric8.kubernetes.api.model.PodList
 import io.fabric8.kubernetes.api.model.PodSpec
@@ -460,4 +462,30 @@ object ClientMocks {
             .map { mock<StatusDetails>() }
             .toList()
     }
+
+    fun objectReference(involved: HasMetadata): ObjectReference {
+        return mock<ObjectReference>().apply {
+            doReturn(involved.apiVersion)
+                .whenever(this).apiVersion
+            doReturn(involved.kind)
+                .whenever(this).kind
+            doReturn(involved.metadata.name)
+                .whenever(this).name
+            doReturn(involved.metadata.namespace)
+                .whenever(this).namespace
+            doReturn(involved.metadata.uid)
+                .whenever(this).uid
+            doReturn(involved.metadata.resourceVersion)
+                .whenever(this).resourceVersion
+        }
+    }
+
+    fun event(name: String, involved: HasMetadata): Event {
+        val resource = resource<Event>(name)
+        doReturn(objectReference(involved))
+            .whenever(resource).involvedObject
+        return resource
+    }
+
+
 }

@@ -227,7 +227,7 @@
                             serviceImplementation="com.redhat.devtools.intellij.kubernetes.model.ResourceModel"/>
         <nonProjectFileWritingAccessExtension implementation="com.redhat.devtools.intellij.common.editor.AllowNonProjectEditing" />
         <postStartupActivity implementation="com.redhat.devtools.intellij.kubernetes.KubernetesPluginInitializer" />
-        <editorTabTitleProvider implementation="com.redhat.devtools.intellij.kubernetes.editor.ResourceEditorTabTitleProvider"/>
+        <editorTabTitleProvider implementation="com.redhat.devtools.intellij.kubernetes.editor.KubernetesEditorsTabTitleProvider"/>
         <codeInsight.inlayProvider language="yaml"
                                    implementationClass="com.redhat.devtools.intellij.kubernetes.editor.inlay.Base64ValueInlayHintsProvider"
                                    id="MarkdownTableInlayProvider"/>
@@ -293,6 +293,10 @@
                     id="com.redhat.devtools.intellij.kubernetes.actions.OpenDashboardAction"
                     text="Open Dashboard"
                     icon="AllIcons.Nodes.EmptyNode"/>
+            <action class="com.redhat.devtools.intellij.kubernetes.actions.DescribeResourceAction"
+                    id="com.redhat.devtools.intellij.kubernetes.actions.DescribeResourceAction"
+                    text="Describe"
+                    icon="Icons.describe"/>
         </group>
 
         <group id="Kubernetes.Editor.Toolbar" class="com.intellij.openapi.actionSystem.DefaultActionGroup">

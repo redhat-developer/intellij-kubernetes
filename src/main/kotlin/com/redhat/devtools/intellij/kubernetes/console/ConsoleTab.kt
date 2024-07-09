@@ -65,7 +65,7 @@ abstract class ConsoleTab<T : ConsoleView, W : Any?>(
         var i = 0
         do {
             val container = model.getElementAt(i).container
-            if (isRunning(getStatus(container, pod.status))) {
+            if (isRunning(container.getStatus(pod.status))) {
                 return i
             }
         } while (++i < model.size)

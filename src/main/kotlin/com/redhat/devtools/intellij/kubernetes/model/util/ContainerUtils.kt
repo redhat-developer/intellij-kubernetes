@@ -34,9 +34,12 @@ fun getFirstContainer(resource: HasMetadata): Container? {
 
 }
 
-fun getStatus(container: Container, podStatus: PodStatus): ContainerStatus? {
-	return getStatus(container, podStatus.containerStatuses)
-		?: getStatus(container, podStatus.initContainerStatuses)
+fun Container.getStatus(podStatus: PodStatus?): ContainerStatus? {
+	if (podStatus == null) {
+		return null
+	}
+	return getStatus(this, podStatus.containerStatuses)
+		?: getStatus(this, podStatus.initContainerStatuses)
 }
 
 private fun getStatus(container: Container, containerStatus: List<ContainerStatus>): ContainerStatus? {

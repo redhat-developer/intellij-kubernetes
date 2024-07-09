@@ -20,6 +20,8 @@ import java.util.stream.Collectors
 
 const val MARKER_WILL_BE_DELETED = "willBeDeleted"
 const val API_GROUP_VERSION_DELIMITER = '/'
+const val TOLERATION_OPERATOR_EXISTS = "Exists"
+const val TOLERATION_OPERATOR_EQUAL = "Equal"
 
 /**
  * Returns `true` if the given resource has the same
@@ -416,4 +418,17 @@ fun toKindAndName(resource: HasMetadata) =
 
 fun <R: HasMetadata> hasLabel(value: String, label: String, resource: R): Boolean {
 	return value == resource.metadata?.labels?.get(label)
+}
+
+/**
+ * Returns `null` if the given value is `null`. Returns the boolean value for it otherwise.
+ * A string that does not represent a boolean value returns `false`.
+ *
+ * @return the boolean value for this string or null
+ */
+fun String?.toBooleanOrNull(): Boolean? {
+	if (this == null) {
+		return null
+	}
+	return this.toBoolean()
 }

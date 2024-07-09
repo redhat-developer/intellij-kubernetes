@@ -10,6 +10,8 @@
  ******************************************************************************/
 package com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes
 
+import com.jgoodies.common.base.Objects
+import io.fabric8.kubernetes.api.model.Event
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.Pod
 import io.fabric8.kubernetes.api.model.ReplicationController
@@ -99,4 +101,21 @@ abstract class ResourceForPod<R: HasMetadata>(private val pod: Pod) : Predicate<
 	}
 
 	abstract fun getSelectorLabels(resource: R): Map<String, String>
+}
+
+class EventForResource(val resource: HasMetadata): Predicate<Event> {
+	override fun test(event: Event): Boolean {
+		val involved = event.involvedObject ?: return false
+		return Objects.equals(resource.kind, involved.kind)
+				&& Objects.equals(resource.metadata?.name, involved.name)
+				&& Objects.equals(resource.metadata?.namespace, involved.namespace)
+				&& Objects.equals(resource.apiVersion, involved.apiVersion)
+				&& Objects.equals(resource.metadata?.resourceVersion, involved.resourceVersion)
+	}
+}
+
+class EventForResourceKind(val resource: HasMetadata): Predicate<Event> {
+	override fun test(event: Event): Boolean {
+		return resource.kind == event.involvedObject.kind
+	}
 }
