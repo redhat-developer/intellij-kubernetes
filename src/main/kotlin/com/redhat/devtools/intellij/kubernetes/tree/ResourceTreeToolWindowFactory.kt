@@ -17,6 +17,7 @@ import com.intellij.openapi.project.DumbAware
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.wm.ToolWindow
 import com.intellij.openapi.wm.ToolWindowFactory
+import com.intellij.ui.PopupHandler
 import com.intellij.ui.ScrollPaneFactory
 import com.intellij.ui.content.Content
 import com.intellij.ui.tree.AsyncTreeModel
@@ -51,7 +52,7 @@ class ResourceTreeToolWindowFactory: ToolWindowFactory, DumbAware {
         toolWindow.contentManager.addContent(content)
 
         val tree = createTree(content, project)
-        PopupHandlerAdapter.install(tree, "com.redhat.devtools.intellij.kubernetes.tree", ActionPlaces.TOOLWINDOW_POPUP)
+        PopupHandler.installPopupMenu(tree, "com.redhat.devtools.intellij.kubernetes.tree", ActionPlaces.TOOLWINDOW_POPUP)
         panel.setViewportView(tree)
     }
 
