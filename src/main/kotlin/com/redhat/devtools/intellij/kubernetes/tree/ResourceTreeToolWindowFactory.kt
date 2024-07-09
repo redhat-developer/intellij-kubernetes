@@ -62,8 +62,8 @@ class ResourceTreeToolWindowFactory: ToolWindowFactory, DumbAware {
         val treeModel = StructureTreeModel<AbstractTreeStructure>(
             structure,
             null,
-            Invoker.forBackgroundPoolWithoutReadAction(project),
-            project
+            Invoker.forBackgroundPoolWithoutReadAction(content),
+            content
         )
         val tree = Tree(AsyncTreeModel(treeModel, content))
         tree.isRootVisible = false
