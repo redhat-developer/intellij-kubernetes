@@ -112,11 +112,13 @@ open class ClusterResource protected constructor(
             context.get(initialResource)
         } catch (e: RuntimeException) {
             val message =
-                if (e is KubernetesClientException
-                    && e.isUnsupported()
-                ) {
-                    // api discovery error
-                    e.status.message
+                if (e is KubernetesClientException) {
+                    when {
+                        // api discovery error
+                        e.isUnsupported() -> e.status.message
+                        e.isUnauthorized() -> "Unauthorized. Verify username and password, refresh token, etc."
+                        else -> e.message
+                    }
                 } else {
                     "Could not retrieve ${initialResource.kind} ${initialResource.metadata?.name ?: ""}" +
                             " in version ${initialResource.apiVersion} from server"

@@ -98,7 +98,7 @@ class ClusterResourceTest {
     fun `#pull(true) should throw exception that happens when operator#get throws`() {
         // given
         whenever(context.get(any()))
-            .doThrow(KubernetesClientException("forbidden", 401, null))
+            .doThrow(KubernetesClientException("forbidden", 401, StatusBuilder().withMessage("Unauthorized").build()))
         // when
         cluster.pull(true)
     }
