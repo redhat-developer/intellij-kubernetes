@@ -24,7 +24,6 @@ import com.intellij.ui.tree.AsyncTreeModel
 import com.intellij.ui.tree.StructureTreeModel
 import com.intellij.ui.treeStructure.Tree
 import com.intellij.util.concurrency.Invoker
-import com.redhat.devtools.intellij.common.compat.PopupHandlerAdapter
 import com.redhat.devtools.intellij.common.utils.IDEAContentFactory
 import com.redhat.devtools.intellij.kubernetes.actions.getElement
 import com.redhat.devtools.intellij.kubernetes.editor.ResourceEditorFactory
