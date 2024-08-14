@@ -10,13 +10,14 @@
  ******************************************************************************/
 package com.redhat.devtools.intellij.kubernetes.model.client
 
+import com.intellij.openapi.diagnostic.logger
 import com.redhat.devtools.intellij.common.utils.ConfigHelper
 import com.redhat.devtools.intellij.kubernetes.CompletableFutureUtils.PLATFORM_EXECUTOR
-import io.fabric8.kubernetes.api.model.Context
 import io.fabric8.kubernetes.api.model.NamedContext
 import io.fabric8.kubernetes.client.Client
 import io.fabric8.kubernetes.client.Config
 import io.fabric8.kubernetes.client.internal.KubeConfigUtils
+import java.io.File
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.Executor
 
@@ -24,14 +25,15 @@ import java.util.concurrent.Executor
  * An adapter to access [io.fabric8.kubernetes.client.Config].
  * It also saves the kube config [KubeConfigUtils] when it changes the client config.
  */
-open class ClientConfig(private val client: Client, private val executor: Executor = PLATFORM_EXECUTOR) {
+open class ClientConfig(
+	private val client: Client,
+	private val executor: Executor = PLATFORM_EXECUTOR,
+	private val persistence: (io.fabric8.kubernetes.api.model.Config?, String?) -> Unit = KubeConfigUtils::persistKubeConfigIntoFile
+) {
 
-	open var currentContext: NamedContext?
+	open val currentContext: NamedContext?
 		get() {
 			return configuration.currentContext
-		}
-		set(context) {
-			configuration.currentContext = context
 		}
 
 	open val allContexts: List<NamedContext>
@@ -43,73 +45,62 @@ open class ClientConfig(private val client: Client, private val executor: Execut
 		client.configuration
 	}
 
-	protected open val kubeConfig: KubeConfigAdapter by lazy {
-		KubeConfigAdapter()
-	}
+	val files: List<File>
+		get() {
+			return configuration.files
+		}
 
 	fun save(): CompletableFuture<Boolean> {
 		return CompletableFuture.supplyAsync(
 			{
-				if (!kubeConfig.exists()) {
-					return@supplyAsync false
-				}
-				val fromFile = kubeConfig.load() ?: return@supplyAsync false
-				if (setCurrentContext(
-						currentContext,
-						KubeConfigUtils.getCurrentContext(fromFile),
-						fromFile
-					).or( // no short-circuit
-						setCurrentNamespace(
-							currentContext?.context,
-							KubeConfigUtils.getCurrentContext(fromFile)?.context
-						)
-					)
+				val toSave = mutableMapOf<File, io.fabric8.kubernetes.api.model.Config>()
+				val withCurrentContext = configuration.fileWithCurrentContext
+				if (withCurrentContext != null
+					&& setCurrentContext(withCurrentContext.config)
 				) {
-					kubeConfig.save(fromFile)
-					return@supplyAsync true
-				} else {
-					return@supplyAsync false
+					toSave[withCurrentContext.file] = withCurrentContext.config
 				}
+				val withCurrentNamespace = configuration.getFileWithContext(currentContext?.name)
+				if (withCurrentNamespace != null
+					&& setCurrentNamespace(withCurrentNamespace.config)
+				) {
+					toSave[withCurrentNamespace.file] = withCurrentNamespace.config
+				}
+				toSave.forEach {
+					save(it.value, it.key)
+				}
+				toSave.isNotEmpty()
 			},
 			executor
 		)
 	}
 
-	private fun setCurrentContext(
-		currentContext: NamedContext?,
-		kubeConfigCurrentContext: NamedContext?,
-		kubeConfig: io.fabric8.kubernetes.api.model.Config
-	): Boolean {
-		return if (currentContext != null
-			&& !ConfigHelper.areEqual(currentContext, kubeConfigCurrentContext)
-		) {
-			kubeConfig.currentContext = currentContext.name
+	private fun save(kubeConfig: io.fabric8.kubernetes.api.model.Config?, file: File?) {
+		if (kubeConfig != null
+			&& file?.absolutePath != null) {
+			logger<ClientConfig>().debug("Saving ${file.absolutePath}.")
+			persistence.invoke(kubeConfig, file.absolutePath)
+		}
+	}
+
+	private fun setCurrentNamespace(kubeConfig: io.fabric8.kubernetes.api.model.Config?): Boolean {
+		val currentNamespace = currentContext?.context?.namespace ?: return false
+		val context = KubeConfigUtils.getContext(kubeConfig, currentContext?.name)
+		return if (context?.context != null
+			&& context.context.namespace != currentNamespace) {
+			context.context.namespace = currentNamespace
 			true
 		} else {
 			false
 		}
 	}
 
-	/**
-	 * Sets the namespace in the given source [Context] to the given target [Context].
-	 * Does nothing if the target config has no current context
-	 * or if the source config has no current context
-	 * or if setting it would not change it.
-	 *
-	 * @param source Context whose namespace should be copied
-	 * @param target Context whose namespace should be overriden
-	 * @return
-	 */
-	private fun setCurrentNamespace(
-		source: Context?,
-		target: Context?
-	): Boolean {
-		val sourceNamespace = source?.namespace ?: return false
-		val targetNamespace = target?.namespace
-		return if (target != null
-			&& sourceNamespace != targetNamespace
-		) {
-			target.namespace = source.namespace
+	private fun setCurrentContext(kubeConfig: io.fabric8.kubernetes.api.model.Config?): Boolean {
+		val currentContext = currentContext?.name ?: return false
+		return if (
+			kubeConfig != null
+			&& currentContext != kubeConfig.currentContext) {
+			kubeConfig.currentContext = currentContext
 			true
 		} else {
 			false
@@ -118,5 +109,9 @@ open class ClientConfig(private val client: Client, private val executor: Execut
 
 	fun isCurrent(context: NamedContext): Boolean {
 		return context == currentContext
+	}
+
+	fun isEqual(config: io.fabric8.kubernetes.api.model.Config): Boolean {
+		return ConfigHelper.areEqual(config, configuration)
 	}
 }
