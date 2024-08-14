@@ -242,7 +242,7 @@ open class AllContexts(
 	}
 
 	protected open fun watchKubeConfig() {
-		val path = Paths.get(Config.getKubeconfigFilename())
+		val filename = Config.getKubeconfigFilename() ?: return
 		/**
 		 * [ConfigWatcher] cannot add/remove listeners nor can it get closed (and stop the [java.nio.file.WatchService]).
 		 * We therefore have to create a single instance in here rather than using it in a shielded/private way within
@@ -251,7 +251,7 @@ open class AllContexts(
 		 * The latter gets closed/recreated whenever the context changes in
 		 * [com.redhat.devtools.intellij.kubernetes.model.client.KubeConfigAdapter].
 		 */
-		val watcher = ConfigWatcher(path) { _, config: io.fabric8.kubernetes.api.model.Config? -> onKubeConfigChanged(config) }
+		val watcher = ConfigWatcher(Paths.get(filename)) { _, config: io.fabric8.kubernetes.api.model.Config? -> onKubeConfigChanged(config) }
 		runAsync(watcher::run)
 	}
 
