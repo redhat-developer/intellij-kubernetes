@@ -12,7 +12,6 @@ package com.redhat.devtools.intellij.kubernetes.model
 
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.diagnostic.logger
-import com.redhat.devtools.intellij.common.utils.ConfigHelper
 import com.redhat.devtools.intellij.common.utils.ConfigWatcher
 import com.redhat.devtools.intellij.common.utils.ExecHelper
 import com.redhat.devtools.intellij.kubernetes.model.client.ClientAdapter
@@ -249,7 +248,7 @@ open class AllContexts(
 		 * [com.redhat.devtools.intellij.kubernetes.model.client.ClientConfig].
 		 * Closing/Recreating [ConfigWatcher] is needed when used within [com.redhat.devtools.intellij.kubernetes.model.client.ClientConfig].
 		 * The latter gets closed/recreated whenever the context changes in
-		 * [com.redhat.devtools.intellij.kubernetes.model.client.KubeConfigAdapter].
+		 * [com.redhat.devtools.intellij.kubernetes.model.client.KubeConfigPersistence].
 		 */
 		val watcher = ConfigWatcher(Paths.get(filename)) { _, config: io.fabric8.kubernetes.api.model.Config? -> onKubeConfigChanged(config) }
 		runAsync(watcher::run)
@@ -259,8 +258,7 @@ open class AllContexts(
 		lock.read {
 			fileConfig ?: return
 			val client = client.get() ?: return
-			val clientConfig = client.config.configuration
-			if (ConfigHelper.areEqual(fileConfig, clientConfig)) {
+			if (client.config.isEqual(fileConfig)) {
 				return
 			}
 			this.client.reset() // create new client when accessed

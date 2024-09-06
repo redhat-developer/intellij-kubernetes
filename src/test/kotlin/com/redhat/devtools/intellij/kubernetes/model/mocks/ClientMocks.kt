@@ -43,6 +43,7 @@ import io.fabric8.kubernetes.api.model.batch.v1.Job
 import io.fabric8.kubernetes.api.model.batch.v1.JobSpec
 import io.fabric8.kubernetes.client.Client
 import io.fabric8.kubernetes.client.Config
+import io.fabric8.kubernetes.client.KubeConfigFile
 import io.fabric8.kubernetes.client.KubernetesClient
 import io.fabric8.kubernetes.client.NamespacedKubernetesClient
 import io.fabric8.kubernetes.client.V1ApiextensionAPIGroupDSL
@@ -60,6 +61,7 @@ import io.fabric8.kubernetes.client.dsl.PodResource
 import io.fabric8.kubernetes.client.dsl.Resource
 import io.fabric8.kubernetes.client.dsl.internal.HasMetadataOperation
 import io.fabric8.kubernetes.client.extension.ExtensibleResource
+import java.io.File
 import java.net.URL
 
 
@@ -234,7 +236,7 @@ object ClientMocks {
             .whenever(op).inContainer(name)
     }
 
-    fun namedContext(name: String, namespace: String, cluster: String, user: String): NamedContext {
+    fun namedContext(name: String, namespace: String, cluster: String? = null, user: String? = null): NamedContext {
         val context: Context = context(namespace, cluster, user)
         return namedContext(name, context)
     }
@@ -246,7 +248,7 @@ object ClientMocks {
         }
     }
 
-    private fun context(namespace: String, cluster: String, user: String): Context {
+    fun context(namespace: String, cluster: String? = null, user: String? = null): Context {
         return mock {
             on { this.namespace } doReturn namespace
             on { this.cluster } doReturn cluster
@@ -258,7 +260,9 @@ object ClientMocks {
         currentContext: NamedContext?,
         contexts: List<NamedContext>,
         masterUrl: String = "https://localhost",
-        apiVersion: String = "v1"
+        apiVersion: String = "v1",
+        withCurrentConfig: KubeConfigFile? = null,
+        withContext: KubeConfigFile? = null
     ): Config {
         return mock {
             on { this.currentContext } doReturn currentContext
@@ -266,6 +270,8 @@ object ClientMocks {
             on { this.masterUrl } doReturn masterUrl
             on { this.apiVersion } doReturn apiVersion
             on { this.requestConfig } doReturn mock()
+            on { this.fileWithCurrentContext } doReturn withCurrentConfig
+            on { this.getFileWithContext(any()) } doReturn withContext
         }
     }
 
@@ -487,5 +493,11 @@ object ClientMocks {
         return resource
     }
 
+    fun kubeConfigFile(file: File, config: io.fabric8.kubernetes.api.model.Config): KubeConfigFile {
+        return mock {
+            on { this.file } doReturn file
+            on { this.config } doReturn config
+        }
+    }
 
 }

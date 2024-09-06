@@ -1789,13 +1789,30 @@ public class Config {
   }
 
   public KubeConfigFile getFileWithAuthInfo(String name) {
-    if (Utils.isNullOrEmpty(name)
-      || Utils.isNullOrEmpty(getFiles())) {
+    if (Utils.isNullOrEmpty(name)) {
+      return null;
+    }
+    return getFirstKubeConfigFileMatching(config -> KubeConfigUtils.hasAuthInfoNamed(config, name));
+  }
+
+  public KubeConfigFile getFileWithContext(String name) {
+    if (Utils.isNullOrEmpty(name)) {
+      return null;
+    }
+    return getFirstKubeConfigFileMatching(config -> KubeConfigUtils.getContext(config, name) != null);
+  }
+
+  public KubeConfigFile getFileWithCurrentContext() {
+    return getFirstKubeConfigFileMatching(config -> Utils.isNotNullOrEmpty(config.getCurrentContext()));
+  }
+
+  private KubeConfigFile getFirstKubeConfigFileMatching(Predicate<io.fabric8.kubernetes.api.model.Config> predicate) {
+    if (Utils.isNullOrEmpty(kubeConfigFiles)) {
       return null;
     }
     return kubeConfigFiles.stream()
       .filter(KubeConfigFile::isReadable)
-      .filter(entry -> KubeConfigUtils.hasAuthInfoNamed(entry.getConfig(), name))
+      .filter(entry -> predicate.test(entry.getConfig()))
       .findFirst()
       .orElse(null);
   }
