@@ -45,6 +45,11 @@ open class ClientConfig(
 		client.configuration
 	}
 
+	val files: List<File>
+		get() {
+			return configuration.files
+		}
+
 	fun save(): CompletableFuture<Boolean> {
 		return CompletableFuture.supplyAsync(
 			{

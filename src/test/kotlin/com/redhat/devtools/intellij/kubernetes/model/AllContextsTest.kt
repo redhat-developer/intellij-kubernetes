@@ -464,7 +464,7 @@ class AllContextsTest {
 			runnable.invoke() // run directly, not in IDEA pooled threads
 		}
 
-		override fun watchKubeConfig() {
+		override fun watchKubeConfig(client: ClientAdapter<out KubernetesClient>) {
 			// don't watch filesystem (override super method)
 			watchStarted = true
 		}
