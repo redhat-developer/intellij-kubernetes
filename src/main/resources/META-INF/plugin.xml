@@ -204,7 +204,7 @@
     <depends>com.intellij.modules.lang</depends>
     <depends>org.jetbrains.plugins.yaml</depends>
     <depends optional="true" config-file="plugin-json.xml">com.intellij.modules.json</depends>
-    <depends optional="true">org.jetbrains.plugins.terminal</depends>
+    <depends>org.jetbrains.plugins.terminal</depends>
     <depends>com.redhat.devtools.intellij.telemetry</depends>
 
     <extensions defaultExtensionNs="com.intellij">
