@@ -19,6 +19,7 @@ import com.intellij.openapi.project.ProjectManagerListener
 import com.intellij.openapi.util.Key
 import com.intellij.openapi.vfs.VirtualFile
 import com.redhat.devtools.intellij.kubernetes.editor.notification.ErrorNotification
+import com.redhat.devtools.intellij.kubernetes.editor.util.getExistingResourceEditor
 import com.redhat.devtools.intellij.kubernetes.editor.util.getKubernetesResourceInfo
 import com.redhat.devtools.intellij.kubernetes.editor.util.hasKubernetesResource
 import com.redhat.devtools.intellij.kubernetes.model.IResourceModel
@@ -26,7 +27,6 @@ import com.redhat.devtools.intellij.kubernetes.model.util.ResourceException
 import com.redhat.devtools.intellij.kubernetes.telemetry.TelemetryService
 import com.redhat.devtools.intellij.telemetry.core.service.TelemetryMessageBuilder
 import io.fabric8.kubernetes.api.model.HasMetadata
-
 
 open class ResourceEditorFactory protected constructor(
     /* for mocking purposes */
@@ -88,7 +88,7 @@ open class ResourceEditorFactory protected constructor(
     private fun getExisting(resource: HasMetadata, project: Project): ResourceEditor? {
         return getFileEditorManager.invoke(project).allEditors
             .mapNotNull { editor ->
-                getExisting(editor) }
+                getExistingResourceEditor(editor) }
             .firstOrNull { resourceEditor ->
                 // get editor for a temporary file thus only editors for temporary files are candidates
                 isTemporary.invoke(resourceEditor.editor.file)
@@ -108,7 +108,7 @@ open class ResourceEditorFactory protected constructor(
             return null
         }
 
-        return getExisting(editor) ?: create(editor, project)
+        return getExistingResourceEditor(editor) ?: create(editor, project)
     }
 
     private fun create(editor: FileEditor, project: Project): ResourceEditor? {

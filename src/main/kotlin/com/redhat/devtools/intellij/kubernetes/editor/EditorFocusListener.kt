@@ -17,6 +17,7 @@ import com.intellij.openapi.fileEditor.FileEditorManagerListener
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.VirtualFile
 import com.redhat.devtools.intellij.kubernetes.editor.notification.ErrorNotification
+import com.redhat.devtools.intellij.kubernetes.editor.util.getExistingResourceEditor
 
 class EditorFocusListener(private val project: Project) : FileEditorManagerListener, FileEditorManagerListener.Before {
 
@@ -28,7 +29,7 @@ class EditorFocusListener(private val project: Project) : FileEditorManagerListe
     override fun fileClosed(source: FileEditorManager, file: VirtualFile) {
         // editor cannot be found via manager once file was closed
         // deleting file before file was closed (#beforeFileClosed) causes recursion #fileClosed
-        getExisting(file)?.close()
+        getExistingResourceEditor(file)?.close()
     }
 
     private fun selectionGained(editor: FileEditor?, project: Project) {
@@ -49,7 +50,7 @@ class EditorFocusListener(private val project: Project) : FileEditorManagerListe
             return
         }
         try {
-            getExisting(editor)?.stopWatch()
+            getExistingResourceEditor(editor)?.stopWatch()
         } catch (e: RuntimeException) {
             showErrorNotification(e, editor, project)
         }

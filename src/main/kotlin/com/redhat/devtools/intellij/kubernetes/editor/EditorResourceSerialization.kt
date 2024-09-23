@@ -78,14 +78,13 @@ object EditorResourceSerialization {
     }
 
     private fun serialize(resource: HasMetadata, fileType: FileType): String? {
-        val serializer = when(fileType) {
+        return when(fileType) {
             YAMLFileType.YML ->
-                Serialization.yamlMapper().writerWithDefaultPrettyPrinter()
+                Serialization.asYaml(resource).trim()
             JsonFileType.INSTANCE ->
-                Serialization.jsonMapper().writerWithDefaultPrettyPrinter()
+                Serialization.asYaml(resource).trim()
             else -> null
         }
-        return serializer?.writeValueAsString(resource)?.trim()
     }
 
     private fun isSupported(fileType: FileType?): Boolean {
