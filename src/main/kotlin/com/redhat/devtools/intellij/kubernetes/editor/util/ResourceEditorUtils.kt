@@ -17,6 +17,7 @@ import com.intellij.json.psi.JsonProperty
 import com.intellij.json.psi.JsonValue
 import com.intellij.openapi.application.ReadAction
 import com.intellij.openapi.editor.Document
+import com.intellij.openapi.fileEditor.FileEditor
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.text.Strings
 import com.intellij.openapi.vfs.VirtualFile
@@ -26,6 +27,7 @@ import com.intellij.psi.PsiFile
 import com.intellij.psi.PsiManager
 import com.intellij.refactoring.suggested.startOffset
 import com.redhat.devtools.intellij.common.validation.KubernetesResourceInfo
+import com.redhat.devtools.intellij.kubernetes.editor.ResourceEditor
 import org.jetbrains.yaml.YAMLElementGenerator
 import org.jetbrains.yaml.YAMLUtil
 import org.jetbrains.yaml.psi.YAMLFile
@@ -349,3 +351,35 @@ private fun getResourceVersion(metadata: JsonProperty): JsonProperty? {
         ?.filterIsInstance<JsonProperty>()
         ?.find { it.name == KEY_RESOURCE_VERSION }
 }
+
+/**
+ * Returns a [ResourceEditor] for the given [FileEditor] if it exists. Returns `null` otherwise.
+ * The editor exists if it is contained in the user data for the given editor or its file.
+ *
+ * @param editor for which an existing [ResourceEditor] is returned.
+ * @return [ResourceEditor] that exists.
+ *
+ * @see [FileEditor.getUserData]
+ * @see [VirtualFile.getUserData]
+ */
+fun getExistingResourceEditor(editor: FileEditor?): ResourceEditor? {
+    if (editor == null) {
+        return null
+    }
+    return editor.getUserData(ResourceEditor.KEY_RESOURCE_EDITOR)
+        ?: getExistingResourceEditor(editor.file)
+}
+
+/**
+ * Returns a [ResourceEditor] for the given [VirtualFile] if it exists. Returns `null` otherwise.
+ * The editor exists if it is contained in the user data for the given file.
+ *
+ * @param file for which an existing [VirtualFile] is returned.
+ * @return [ResourceEditor] that exists.
+ *
+ * @see [VirtualFile.getUserData]
+ */
+fun getExistingResourceEditor(file: VirtualFile?): ResourceEditor? {
+    return file?.getUserData(ResourceEditor.KEY_RESOURCE_EDITOR)
+}
+
