@@ -23,14 +23,10 @@ import com.intellij.openapi.util.Disposer
 import com.intellij.openapi.util.Key
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.PsiDocumentManager
+import com.intellij.util.messages.MessageBusConnection
 import com.redhat.devtools.intellij.common.utils.MetadataClutter
 import com.redhat.devtools.intellij.common.validation.KubernetesResourceInfo
-import com.redhat.devtools.intellij.kubernetes.editor.notification.DeletedNotification
-import com.redhat.devtools.intellij.kubernetes.editor.notification.ErrorNotification
-import com.redhat.devtools.intellij.kubernetes.editor.notification.PullNotification
-import com.redhat.devtools.intellij.kubernetes.editor.notification.PulledNotification
-import com.redhat.devtools.intellij.kubernetes.editor.notification.PushNotification
-import com.redhat.devtools.intellij.kubernetes.editor.notification.PushedNotification
+import com.redhat.devtools.intellij.kubernetes.editor.notification.Notifications
 import com.redhat.devtools.intellij.kubernetes.editor.util.getDocument
 import com.redhat.devtools.intellij.kubernetes.editor.util.isKubernetesResource
 import com.redhat.devtools.intellij.kubernetes.model.IResourceModel
@@ -39,6 +35,9 @@ import com.redhat.devtools.intellij.kubernetes.model.context.IActiveContext
 import com.redhat.devtools.intellij.kubernetes.model.util.ResourceException
 import com.redhat.devtools.intellij.kubernetes.model.util.toMessage
 import com.redhat.devtools.intellij.kubernetes.model.util.toTitle
+import com.redhat.devtools.intellij.kubernetes.settings.Settings
+import com.redhat.devtools.intellij.kubernetes.settings.Settings.Companion.PROP_EDITOR_SYNC_ENABLED
+import com.redhat.devtools.intellij.kubernetes.settings.SettingsChangeListener
 import io.fabric8.kubernetes.api.model.HasMetadata
 import java.util.concurrent.CompletableFuture
 
@@ -57,18 +56,7 @@ open class ResourceEditor(
     // for mocking purposes
     private val createResourceFileForVirtual: (file: VirtualFile?) -> ResourceFile? =
         ResourceFile.Factory::create,
-    // for mocking purposes
-    private val pushNotification: PushNotification = PushNotification(editor, project),
-    // for mocking purposes
-    private val pushedNotification: PushedNotification = PushedNotification(editor, project),
-    // for mocking purposes
-    private val pullNotification: PullNotification = PullNotification(editor, project),
-    // for mocking purposes
-    private val pulledNotification: PulledNotification = PulledNotification(editor, project),
-    // for mocking purposes
-    private val deletedNotification: DeletedNotification = DeletedNotification(editor, project),
-    // for mocking purposes
-    private val errorNotification: ErrorNotification = ErrorNotification(editor, project),
+    private val notifications: Notifications = Notifications(editor, project),
     // for mocking purposes
     private val getDocument: (FileEditor) -> Document? = ::getDocument,
     // for mocking purposes
@@ -81,14 +69,19 @@ open class ResourceEditor(
     // for mocking purposes
     private val diff: ResourceDiff = ResourceDiff(project),
     // for mocking purposes
-    protected val editorResources: EditorResources = EditorResources(resourceModel)
+    protected val editorResources: EditorResources = EditorResources(resourceModel),
+    private val settings: Settings = Settings.getInstance(),
+    private val connection: MessageBusConnection = ApplicationManager.getApplication().messageBus.connect()
 ) : Disposable {
 
     init {
         Disposer.register(editor, this)
         editorResources.resourceChangedListener = onResourceChanged()
         resourceModel.addListener(onNamespaceOrContextChanged())
-        runAsync { enableEditingNonProjectFile() }
+        runAsync {
+            enableEditingNonProjectFile()
+            connection.subscribe(SettingsChangeListener.CHANGED, onSettingsChanged())
+        }
     }
 
     companion object {
@@ -113,19 +106,11 @@ open class ResourceEditor(
                     resourceModel.getCurrentNamespace()
                 )
                 val editorResources = editorResources.setResources(resources)
-
-                if (editorResources.size == 1) {
-                    // show notification for 1 resource
-                    val editorResource = editorResources.firstOrNull() ?: return@runAsync
-                    showNotification(editorResource)
-                } else if (editorResources.size > 1) {
-                    // show notification for multiple resources
-                    showNotification(editorResources)
-                }
+                showNotifications(editorResources)
             } catch (e: Exception) {
                 runInUI {
-                    hideNotifications()
-                    errorNotification.show(
+                    notifications.hideAll()
+                    notifications.showError(
                         toTitle(e),
                         toMessage(e.cause)
                     )
@@ -134,106 +119,24 @@ open class ResourceEditor(
         }
     }
 
-    open protected fun updateDeleted(deleted: HasMetadata?) {
+    private fun showNotifications(editorResources: Collection<EditorResource>) {
+        val syncEnabled = Settings.getInstance().isEditorSyncEnabled()
+        if (editorResources.size == 1) {
+            // show notification for 1 resource
+            val editorResource = editorResources.firstOrNull() ?: return
+            notifications.show(editorResource, syncEnabled)
+        } else if (editorResources.size > 1) {
+            // show notification for multiple resources
+            notifications.show(editorResources, syncEnabled)
+        }
+    }
+
+    protected open fun updateDeleted(deleted: HasMetadata?) {
         if (deleted == null) {
             return
         }
         editorResources.setDeleted(deleted)
         update()
-    }
-
-    private fun showNotification(editorResource: EditorResource) {
-        val state = editorResource.getState()
-        val resource = editorResource.getResource()
-        when (state) {
-            is Error ->
-                showErrorNotification(state.title, state.message)
-            is Pushed ->
-                showPushedNotification(listOf(editorResource))
-            is DeletedOnCluster ->
-                showDeletedNotification(resource)
-/**
- * avoid too many notifications, don't notify outdated
-            is Outdated ->
-                showPullNotification(resource)
- */
-            is Modified ->
-                showPushNotification(true, listOf(editorResource))
-
-            else ->
-                runInUI {
-                    hideNotifications()
-                }
-        }
-    }
-
-    private fun showNotification(editorResources: Collection<EditorResource>) {
-        val toPush = editorResources.filter(FILTER_TO_PUSH)
-        if (toPush.isNotEmpty()) {
-            showPushNotification(false, toPush)
-            return
-        }
-        val inError = editorResources.filter(FILTER_ERROR)
-        if (inError.isNotEmpty()) {
-            showErrorNotification(inError)
-        } else {
-            runInUI {
-                hideNotifications()
-            }
-        }
-    }
-
-    private fun showErrorNotification(title: String, message: String?) {
-        runInUI {
-            hideNotifications()
-            errorNotification.show(title, message)
-        }
-    }
-
-    private fun showErrorNotification(editorResources: Collection<EditorResource>) {
-        val inError = editorResources.filter(FILTER_ERROR)
-        val toDisplay = inError.firstOrNull()?.getState() as? Error ?: return
-        showErrorNotification(toDisplay.title, toDisplay.message)
-    }
-
-    private fun showPushNotification(showPull: Boolean, editorResources: Collection<EditorResource>) {
-        runInUI {
-            // hide & show in the same UI thread runnable avoid flickering
-            hideNotifications()
-            pushNotification.show(showPull, editorResources)
-        }
-    }
-
-    private fun showPushedNotification(editorResources: Collection<EditorResource>) {
-        runInUI {
-            // hide & show in the same UI thread runnable avoid flickering
-            hideNotifications()
-            pushedNotification.show(editorResources)
-        }
-    }
-
-    private fun showPullNotification(resource: HasMetadata) {
-        runInUI {
-            hideNotifications()
-            pullNotification.show(resource)
-        }
-    }
-
-    private fun showDeletedNotification(resource: HasMetadata) {
-        runInUI {
-            // hide & show in the same UI thread runnable avoid flickering
-            hideNotifications()
-            deletedNotification.show(resource)
-        }
-    }
-
-    private fun hideNotifications() {
-        errorNotification.hide()
-        pullNotification.hide()
-        deletedNotification.hide()
-        pushNotification.hide()
-        pushedNotification.hide()
-        pulledNotification.hide()
     }
 
     /**
@@ -248,7 +151,7 @@ open class ResourceEditor(
         }
         runInUI {
             // hide before running pull. Pull may take quite some time on remote cluster
-            hideNotifications()
+            notifications.hideAll()
         }
         val resource = resources.firstOrNull() ?: return
 
@@ -293,7 +196,7 @@ open class ResourceEditor(
     fun push(all: Boolean) {
         runInUI {
             // hide before running push. Push may take quite some time on remote cluster
-            hideNotifications()
+            notifications.hideAll()
         }
         runAsync {
             if (all) {
@@ -355,7 +258,9 @@ open class ResourceEditor(
     }
 
     fun startWatch(): ResourceEditor {
-        editorResources.watchAll()
+        if (settings.isEditorSyncEnabled()) {
+            editorResources.watchAll()
+        }
         return this
     }
 
@@ -370,7 +275,7 @@ open class ResourceEditor(
         }
         runInUI {
             replaceDocument(resources)
-            hideNotifications()
+            notifications.hideAll()
         }
     }
 
@@ -404,11 +309,15 @@ open class ResourceEditor(
             }
 
             override fun removed(removed: Any) {
-                updateDeleted(removed as? HasMetadata)
+                if (settings.isEditorSyncEnabled()) {
+                    updateDeleted(removed as? HasMetadata)
+                }
             }
 
             override fun modified(modified: Any) {
-                update()
+                if (settings.isEditorSyncEnabled()) {
+                    update()
+                }
             }
         }
     }
@@ -427,6 +336,27 @@ open class ResourceEditor(
                 // current namespace in same context has changed, recreate cluster resource
                 editorResources.disposeAll()
                 update()
+            }
+        }
+    }
+
+    protected open fun onSettingsChanged(): SettingsChangeListener {
+        return object : SettingsChangeListener {
+            override fun changed(property: String, value: String?) {
+                if (value == null) {
+                    return
+                }
+
+                if (PROP_EDITOR_SYNC_ENABLED == property) {
+                    val enabled = value.toBoolean()
+                    if (enabled) {
+                        editorResources.watchAll()
+                        update()
+                    } else {
+                        editorResources.stopWatchAll()
+                        notifications.hideSyncNotifications()
+                    }
+                }
             }
         }
     }
@@ -496,5 +426,6 @@ open class ResourceEditor(
     override fun dispose() {
         resourceModel.removeListener(onNamespaceContextChanged)
         editorResources.dispose()
+        connection.dispose()
     }
 }
