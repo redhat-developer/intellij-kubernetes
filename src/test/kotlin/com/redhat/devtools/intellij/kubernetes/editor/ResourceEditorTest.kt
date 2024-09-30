@@ -19,6 +19,7 @@ import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.PsiDocumentManager
 import com.intellij.psi.PsiFile
 import com.intellij.psi.util.PsiUtilCore
+import com.intellij.util.messages.MessageBusConnection
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.anyOrNull
 import com.nhaarman.mockitokotlin2.argWhere
@@ -34,17 +35,13 @@ import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.whenever
 import com.redhat.devtools.intellij.common.validation.KubernetesResourceInfo
 import com.redhat.devtools.intellij.common.validation.KubernetesTypeInfo
-import com.redhat.devtools.intellij.kubernetes.editor.notification.DeletedNotification
-import com.redhat.devtools.intellij.kubernetes.editor.notification.ErrorNotification
-import com.redhat.devtools.intellij.kubernetes.editor.notification.PullNotification
-import com.redhat.devtools.intellij.kubernetes.editor.notification.PulledNotification
-import com.redhat.devtools.intellij.kubernetes.editor.notification.PushNotification
-import com.redhat.devtools.intellij.kubernetes.editor.notification.PushedNotification
+import com.redhat.devtools.intellij.kubernetes.editor.notification.Notifications
 import com.redhat.devtools.intellij.kubernetes.model.IResourceModel
 import com.redhat.devtools.intellij.kubernetes.model.context.IActiveContext
 import com.redhat.devtools.intellij.kubernetes.model.mocks.Mocks.kubernetesResourceInfo
 import com.redhat.devtools.intellij.kubernetes.model.mocks.Mocks.kubernetesTypeInfo
 import com.redhat.devtools.intellij.kubernetes.model.util.ResourceException
+import com.redhat.devtools.intellij.kubernetes.settings.Settings
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.PodBuilder
 import io.fabric8.kubernetes.client.KubernetesClient
@@ -126,12 +123,7 @@ class ResourceEditorTest {
                 EditorResourceSerialization.serialize(resources, YAMLFileType.YML)
             }.whenever(this).invoke(any(), any())
         }
-    private val pushNotification: PushNotification = mock()
-    private val pushedNotification: PushedNotification = mock()
-    private val pullNotification: PullNotification = mock()
-    private val pulledNotification: PulledNotification = mock()
-    private val deletedNotification: DeletedNotification = mock()
-    private val errorNotification: ErrorNotification = mock()
+    private val notifications: Notifications = mock()
     private val document: Document = mock<Document>()
     private val getDocument: (FileEditor) -> Document? = { document }
     // using a mock of PsiFile made tests fail with a NoClassDefFoundError on github
@@ -146,7 +138,10 @@ class ResourceEditorTest {
         kubernetesResourceInfo
     }
     private val diff: ResourceDiff = mock()
-
+    private val settings: Settings = mock {
+        on { isEditorSyncEnabled() } doReturn true
+    }
+    private val connection: MessageBusConnection = mock()
     private val editor =
         TestableResourceEditor(
             fileEditor,
@@ -155,17 +150,14 @@ class ResourceEditorTest {
             createResources,
             serialize,
             createResourceFileForVirtual,
-            pushNotification,
-            pushedNotification,
-            pullNotification,
-            pulledNotification,
-            deletedNotification,
-            errorNotification,
+            notifications,
             getDocument,
             getPsiDocumentManager,
             getKubernetesResourceInfo,
             diff,
-            editorResources
+            editorResources,
+            settings,
+            connection
         )
 
     @Before
@@ -177,7 +169,7 @@ class ResourceEditorTest {
     }
 
     @Test
-    fun `#constructor should add listener to resourceModel when created`() {
+    fun `#constructor should add listener to resourceModel`() {
         // given
         // when
         // then
@@ -211,25 +203,12 @@ class ResourceEditorTest {
     }
 
     @Test
-    fun `#update should hide all notifications when resource on cluster is in error`() {
+    fun `#dispose should dispose notifications`() {
         // given
-        givenResources(mapOf(GARGAMEL to Error("disturbance in the force")))
         // when
-        editor.update()
+        editor.dispose()
         // then
-        verifyHideAllNotifications()
-    }
-
-    @Test
-    fun `#update should show error notification when resource on cluster is in error`() {
-        // given
-        val title = "disturbance in the force"
-        val message = "need to meditate more"
-        givenResources(mapOf(GARGAMEL to Error(title, message)))
-        // when
-        editor.update()
-        // then
-        verify(errorNotification).show(title, message)
+        verify(connection).dispose()
     }
 
     @Test
@@ -240,103 +219,8 @@ class ResourceEditorTest {
         // when
         editor.update()
         // then
-        verify(errorNotification).show(any(), argWhere<String> { it.contains("client error") })
-        verifyHideAllNotifications()
-    }
-
-    @Test
-    fun `#update should hide all notifications when resource on cluster is deleted`() {
-        // given
-        givenResources(mapOf(GARGAMEL to DeletedOnCluster()))
-        // when
-        editor.update()
-        // then
-        verifyHideAllNotifications()
-    }
-
-    @Test
-    fun `#update should show deleted notification when resource on cluster is deleted`() {
-        // given
-        givenResources(mapOf(GARGAMEL to DeletedOnCluster()))
-        // when
-        editor.update()
-        // then
-        verify(deletedNotification).show(GARGAMEL)
-    }
-
-    @Test
-    fun `#update should show push notification when there are several deleted resources`() {
-        // given
-        givenResources(mapOf(
-            GARGAMEL to Identical(),
-            GARGAMEL_WITH_LABEL to DeletedOnCluster(),
-            GARGAMEL_V2 to DeletedOnCluster()))
-        // when
-        editor.update()
-        // then
-        verify(pushNotification).show(eq(false), argWhere<Collection<EditorResource>> { editorResources ->
-            editorResources.size == 2
-                    && editorResources.map { it.getResource() }
-                .containsAll(listOf(GARGAMEL_WITH_LABEL, GARGAMEL_V2))
-        })
-    }
-
-    @Test
-    fun `#update should show push notifications when resource is modified`() {
-        // given
-        givenResources(mapOf(GARGAMEL to Modified(true, true)))
-        // when
-        editor.update()
-        // then
-        verify(pushNotification).show(eq(true), argWhere { resources ->
-            resources.size == 1
-                    && resources.first().getResource() == GARGAMEL
-        })
-    }
-
-    @Test
-    fun `#update should show push notification when there are several resources and one is modified`() {
-        // given
-        givenResources(mapOf(
-            GARGAMEL to Identical(),
-            GARGAMEL_WITH_LABEL to Modified(true, false)))
-        // when
-        editor.update()
-        // then
-        verify(pushNotification).show(any(), argWhere<List<EditorResource>> { editorResources ->
-            editorResources.size == 1
-                    && editorResources.first().getResource() == GARGAMEL_WITH_LABEL
-        })
-    }
-
-    @Test
-    fun `#update should hide all notifications when resource on cluster is  modified`() {
-        // given
-        givenResources(mapOf(GARGAMEL to Modified(true, true)))
-        // when
-        editor.update()
-        // then
-        verifyHideAllNotifications()
-    }
-
-    @Test
-    fun `#update should hide all notifications when resource is outdated`() {
-        // given
-        givenResources(mapOf(GARGAMEL to Outdated()))
-        // when
-        editor.update()
-        // then
-        verifyHideAllNotifications()
-    }
-
-    @Test
-    fun `#update should hide all notifications when editor resource is identical`() {
-        // given
-        givenResources(mapOf(GARGAMEL to Identical()))
-        // when
-        editor.update()
-        // then
-        verifyHideAllNotifications()
+        verify(notifications).showError(any(), argWhere<String> { it.contains("client error") })
+        verify(notifications).hideAll()
     }
 
     @Test
@@ -470,7 +354,7 @@ class ResourceEditorTest {
         // when
         editor.pull()
         // then
-        verifyHideAllNotifications()
+        verify(notifications).hideAll()
     }
 
     @Test
@@ -481,7 +365,7 @@ class ResourceEditorTest {
         editor.push(true)
         // then
         // hides 1) before pushing, 2) after pushing by calling #update
-        verifyHideAllNotifications(2)
+        verify(notifications, times(2)).hideAll()
     }
 
     @Test
@@ -555,6 +439,17 @@ class ResourceEditorTest {
         editor.startWatch()
         // then
         verify(editorResources).watchAll()
+    }
+
+    @Test
+    fun `#startWatch should NOT start watching all editor resources if editorSync is NOT Enabled`() {
+        // given
+        whenever(settings.isEditorSyncEnabled())
+            .thenReturn(false)
+        // when
+        editor.startWatch()
+        // then
+        verify(editorResources, never()).watchAll()
     }
 
     @Test
@@ -650,7 +545,7 @@ class ResourceEditorTest {
         // when
         editor.removeClutter()
         // then
-        verifyHideAllNotifications()
+        verify(notifications).hideAll()
     }
     @Test
     fun `#isEditing should return true if there is an EditorResource with the given resource`() {
@@ -712,15 +607,6 @@ class ResourceEditorTest {
         verify(fileEditor).putUserData(ResourceEditor.KEY_RESOURCE_EDITOR, null)
     }
 
-    private fun verifyHideAllNotifications(times: Int = 1) {
-        verify(errorNotification, times(times)).hide()
-        verify(pullNotification, times(times)).hide()
-        verify(pulledNotification, times(times)).hide()
-        verify(deletedNotification, times(times)).hide()
-        verify(pushNotification, times(times)).hide()
-        verify(pushedNotification, times(times)).hide()
-    }
-
     private fun givenResources(editorResourceByResource: Map<HasMetadata, EditorResourceState>) {
         val resources = editorResourceByResource.keys.toList()
         doReturn(resources)
@@ -746,17 +632,14 @@ class ResourceEditorTest {
         createResources: (string: String?, fileType: FileType?, currentNamespace: String?) -> List<HasMetadata>,
         serialize: (resources: Collection<HasMetadata>, fileType: FileType?) -> String?,
         resourceFileForVirtual: (file: VirtualFile?) -> ResourceFile?,
-        pushNotification: PushNotification,
-        pushedNotification: PushedNotification,
-        pullNotification: PullNotification,
-        pulledNotification: PulledNotification,
-        deletedNotification: DeletedNotification,
-        errorNotification: ErrorNotification,
+        notifications: Notifications,
         documentProvider: (FileEditor) -> Document?,
         psiDocumentManagerProvider: (Project) -> PsiDocumentManager,
         getKubernetesResourceInfo: (VirtualFile?, Project) -> KubernetesResourceInfo,
         diff: ResourceDiff,
-        editorResources: EditorResources
+        editorResources: EditorResources,
+        settings: Settings,
+        connection: MessageBusConnection
     ) : ResourceEditor(
         editor,
         resourceModel,
@@ -764,17 +647,14 @@ class ResourceEditorTest {
         createResources,
         serialize,
         resourceFileForVirtual,
-        pushNotification,
-        pushedNotification,
-        pullNotification,
-        pulledNotification,
-        deletedNotification,
-        errorNotification,
+        notifications,
         documentProvider,
         psiDocumentManagerProvider,
         getKubernetesResourceInfo,
         diff,
-        editorResources
+        editorResources,
+        settings,
+        connection
     ) {
 
         public override fun updateDeleted(deleted: HasMetadata?) {

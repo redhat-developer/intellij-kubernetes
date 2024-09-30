@@ -33,7 +33,10 @@ open class EditorResource(
     private val resourceModel: IResourceModel,
     private val resourceChangedListener: IResourceModelListener?,
     // for mocking purposes
-    private val clusterResourceFactory: (resource: HasMetadata, context: IActiveContext<out HasMetadata, out KubernetesClient>?) -> ClusterResource? =
+    private val clusterResourceFactory: (
+        resource: HasMetadata,
+        context: IActiveContext<out HasMetadata, out KubernetesClient>?
+    ) -> ClusterResource? =
         ClusterResource.Factory::create
 ) {
     var disposed: Boolean = false
