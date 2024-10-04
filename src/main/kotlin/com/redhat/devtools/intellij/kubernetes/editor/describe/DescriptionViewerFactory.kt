@@ -21,8 +21,6 @@ import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.testFramework.LightVirtualFile
 import com.redhat.devtools.intellij.kubernetes.editor.describe.describer.PodDescriber
 import com.redhat.devtools.intellij.kubernetes.model.util.isSameResource
-import com.redhat.devtools.intellij.kubernetes.telemetry.TelemetryService
-import com.redhat.devtools.intellij.telemetry.core.service.TelemetryMessageBuilder
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.Pod
 import org.jetbrains.yaml.YAMLFileType
@@ -121,24 +119,5 @@ open class DescriptionViewerFactory protected constructor() {
                 false
             }
         }
-    }
-
-    /** for testing purposes */
-    protected open fun runAsync(runnable: () -> Unit) {
-        ApplicationManager.getApplication().executeOnPooledThread(runnable)
-    }
-
-    /** for testing purposes */
-    protected open fun runInUI(runnable: () -> Unit) {
-        if (ApplicationManager.getApplication().isDispatchThread) {
-            runnable.invoke()
-        } else {
-            ApplicationManager.getApplication().invokeLater(runnable)
-        }
-    }
-
-    /* for testing purposes */
-    protected open fun getTelemetryMessageBuilder(): TelemetryMessageBuilder {
-      return TelemetryService.instance;
     }
 }
