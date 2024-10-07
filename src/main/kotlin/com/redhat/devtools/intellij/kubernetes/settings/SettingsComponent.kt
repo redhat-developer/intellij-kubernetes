@@ -40,7 +40,7 @@ class SettingsComponent(editorSyncEnabled: Boolean):  BoundConfigurable("Editor"
         return editorSyncEnabled.get()
     }
 
-    override fun getId(): @NonNls String {
+    override fun getId(): String {
         return "kubernetes.editor"
     }
 }

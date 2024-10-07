@@ -16,7 +16,7 @@ import com.intellij.remoterobot.fixtures.dataExtractor.RemoteText;
 import com.intellij.remoterobot.utils.Keyboard;
 import com.intellij.remoterobot.utils.WaitForConditionTimeoutException;
 import org.assertj.swing.core.MouseButton;
-import org.jboss.tools.intellij.kubernetes.fixtures.mainIdeWindow.EditorsSplittersFixture;
+import org.jboss.tools.intellij.kubernetes.fixtures.mainidewindow.EditorsSplittersFixture;
 import org.jboss.tools.intellij.kubernetes.fixtures.menus.ActionToolbarMenu;
 import org.jboss.tools.intellij.kubernetes.fixtures.menus.RightClickMenu;
 
@@ -42,20 +42,19 @@ public class CreateResourceByEditTest extends AbstractKubernetesTest{
 
         EditorsSplittersFixture editorSplitter = robot.find(EditorsSplittersFixture.class);
         Keyboard myKeyboard = new Keyboard(robot);
-        String newEditorTitle = newResourceName;
 
         String text = "\"" + newResourceName;
 
-        RemoteText namePlace = findResourceNamePosition(robot, editorSplitter, myKeyboard);
+        RemoteText namePlace = findResourceNamePosition(robot, editorSplitter);
         namePlace.doubleClick();
         myKeyboard.enterText(text); // replace with new name
 
         ActionToolbarMenu toolbarMenu = robot.find(ActionToolbarMenu.class);
-        toolbarMenu.PushToCluster();
+        toolbarMenu.pushToCluster();
 
         waitFor(Duration.ofSeconds(15), Duration.ofSeconds(1), "New resource was not been created.", () -> isResourceCreated(kubernetesViewTree, newResourceName, true)); // wait 15 seconds for Nodes load
 
-        editorSplitter.closeEditor(newEditorTitle); // close editor
+        editorSplitter.closeEditor(); // close editor
         hideClusterContent(kubernetesViewTree);
     }
 
@@ -70,7 +69,7 @@ public class CreateResourceByEditTest extends AbstractKubernetesTest{
         hideClusterContent(kubernetesViewTree);
     }
 
-    private static RemoteText findResourceNamePosition(RemoteRobot robot, EditorsSplittersFixture editorSplitter, Keyboard myKeyboard){
+    private static RemoteText findResourceNamePosition(RemoteRobot robot, EditorsSplittersFixture editorSplitter){
         scrollToVisible(" name:", robot);
 
         ComponentFixture textFixture = editorSplitter.getEditorTextFixture();
@@ -88,9 +87,7 @@ public class CreateResourceByEditTest extends AbstractKubernetesTest{
 
         assertTrue(nameFound, "Resource name not found.");
 
-        RemoteText namePlace = remoteText.get(nameId+3); // +1 because we need the next one, +1 because between every 2 real elements is space, +1 because here is the ":"
-
-        return namePlace;
+        return remoteText.get(nameId+3); // +1 because we need the next one, +1 because between every 2 real elements is space, +1 because here is the ":"
     }
 
     private static boolean acceptDeleteDialog(RemoteRobot robot){

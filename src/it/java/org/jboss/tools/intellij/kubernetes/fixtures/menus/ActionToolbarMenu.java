@@ -23,24 +23,20 @@ import static com.intellij.remoterobot.search.locators.Locators.byXpath;
 /**
  * @author olkornii@redhat.com
  */
-@DefaultXpath(by = "ActionToolbar type", xpath = "//div[@myactiongroup=' (null)']")
+@DefaultXpath(by = "ActionToolbar type", xpath = "//div[contains(@myvisibleactions, 'Push')]")
 @FixtureName(name = "Action Toolbar Impl")
 public class ActionToolbarMenu extends CommonContainerFixture {
     public ActionToolbarMenu(@NotNull RemoteRobot remoteRobot, @NotNull RemoteComponent remoteComponent) {
         super(remoteRobot, remoteComponent);
     }
 
-    public void PushToCluster(){
+    public void pushToCluster(){
         find(ComponentFixture.class, byXpath("//div[@myicon='upload.svg']")).click();
         try {
-            Thread.sleep(5000); // sleep for 3 seconds, cluster need some time to create pods
+            Thread.sleep(5000); // sleep for 5 seconds, cluster need some time to create pods
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
-    }
-
-    public void LoadFromCluster(){
-        find(ComponentFixture.class, byXpath("//div[@myicon='download.svg']")).click();
     }
 }
 

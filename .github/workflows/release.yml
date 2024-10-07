@@ -111,7 +111,7 @@ jobs:
           current-tag: ${{ inputs.release_version }}
           types-mapping: 'feat:Features,fix:Bug Fixes,docs:Documentation,refactor:Refactoring,build:Builds,chore:Other'
 
-      # Create a new Github release
+      # Create a new GitHub release
       - name: Create Github Release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -128,4 +128,3 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: gh release upload ${{ inputs.release_version }} ./build/distributions/*
-
