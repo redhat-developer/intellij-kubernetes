@@ -1,12 +1,12 @@
 buildscript {
-    ext.ideaVersion = ideaVersion
-    ext.kotlinVersion = kotlinVersion
+    ext.ideaVersion = "IC-2023.1"
+    ext.kotlinVersion = "1.9.25"
     ext.java_version = "17"
 }
 
 plugins {
-    id "org.jetbrains.intellij" version "${intellijPluginVersion}"
-    id "org.jetbrains.kotlin.jvm" version "${kotlinJvmPluginVersion}"
+    id "org.jetbrains.intellij" version "1.16.1"
+    id "org.jetbrains.kotlin.jvm" version "1.8.0"
     id "idea"
 }
 
@@ -35,12 +35,12 @@ tasks.withType(Test) {
 
 dependencies {
     implementation(
-            "com.redhat.devtools.intellij:intellij-common:${intellijCommonVersion}",
-            "io.fabric8:kubernetes-client:${kubernetesClientVersion}",
-            "io.fabric8:kubernetes-model:${kubernetesClientVersion}",
-            "io.fabric8:kubernetes-model-common:${kubernetesClientVersion}",
-            "io.fabric8:openshift-client:${kubernetesClientVersion}",
-            "io.fabric8:kubernetes-httpclient-okhttp:${kubernetesClientVersion}",
+            "com.redhat.devtools.intellij:intellij-common:1.9.6",
+            "io.fabric8:kubernetes-client:6.12.0",
+            "io.fabric8:kubernetes-model:6.12.0",
+            "io.fabric8:kubernetes-model-common:6.12.0",
+            "io.fabric8:openshift-client:6.12.0",
+            "io.fabric8:kubernetes-httpclient-okhttp:6.12.0",
             "com.fasterxml.jackson.core:jackson-core:2.17.0", /* IC-2022.3 ships 2.16.0 */
             "org.apache.commons:commons-lang3:3.12.0"
     )
@@ -51,7 +51,7 @@ dependencies {
             "org.jetbrains.kotlin:kotlin-test-junit:${kotlinVersion}"
     )
     integrationTestImplementation(
-            "com.redhat.devtools.intellij:intellij-common:${intellijCommonVersion}",
+            "com.redhat.devtools.intellij:intellij-common:1.9.6",
             "com.redhat.devtools.intellij:intellij-common-ui-test-library:0.3.0",
             "org.junit.jupiter:junit-jupiter-engine:5.8.2",
             "org.junit.jupiter:junit-jupiter-api:5.8.2",
@@ -97,25 +97,7 @@ test {
 intellij {
     version = ideaVersion //for a full list of Jetbrains IDEA releases please see https://www.jetbrains.com/intellij-repository/releases
     pluginName = "Kubernetes by Red Hat"
-    plugins = ["yaml", "com.redhat.devtools.intellij.telemetry:${telemetryPluginVersion}" ]
     updateSinceUntilBuild = false
-}
-
-runIde {
-    systemProperties["com.redhat.devtools.intellij.telemetry.mode"] = "debug"
-}
-
-patchPluginXml {
-    sinceBuild = "${sinceIdeaBuild}"
-}
-
-runPluginVerifier {
-    ideVersions = [ideaVersion]
-}
-
-publishPlugin {
-    token = jetBrainsToken
-    channels = [jetBrainsChannel]
 }
 
 runIdeForUiTests {
@@ -197,16 +179,3 @@ private def colorize(String color, String message) {
     return new String((char) 27) + "[${colors[color]}m${message}" + new String((char) 27) + "[0m"
 }
 
-repositories {
-    mavenLocal()
-    mavenCentral()
-    maven {
-        url "https://repository.jboss.org"
-    }
-    maven {
-        url "https://packages.jetbrains.team/maven/p/ij/intellij-dependencies"
-    }
-}
-
-group "com.redhat.devtools.intellij"
-version projectVersion
