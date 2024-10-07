@@ -157,7 +157,7 @@ UI Testing
 ==========
 You can perform UI testing by running the following command:
 ```sh
-./gradlew clean runIdeForUiTests -PideaVersion=IC-2020.2 & ./gradlew integrationTest
+./gradlew integrationTest
 ```
 
 License

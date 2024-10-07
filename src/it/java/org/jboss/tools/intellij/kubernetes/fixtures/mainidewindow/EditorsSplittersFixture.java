@@ -8,7 +8,7 @@
  * Contributors:
  * Red Hat, Inc. - initial API and implementation
  ******************************************************************************/
-package org.jboss.tools.intellij.kubernetes.fixtures.mainIdeWindow;
+package org.jboss.tools.intellij.kubernetes.fixtures.mainidewindow;
 
 import com.intellij.remoterobot.RemoteRobot;
 import com.intellij.remoterobot.data.RemoteComponent;
@@ -18,20 +18,25 @@ import com.intellij.remoterobot.fixtures.DefaultXpath;
 import com.intellij.remoterobot.fixtures.FixtureName;
 import org.jetbrains.annotations.NotNull;
 
-import static com.intellij.remoterobot.search.locators.Locators.byXpath;
+import java.time.Duration;
 
+import static com.intellij.remoterobot.search.locators.Locators.byXpath;
 
 /**
  * @author olkornii@redhat.com
  */
-@DefaultXpath(by = "SingleHeightLabel type", xpath = "//div[@class='SingleHeightLabel']")
-@FixtureName(name = "Single Height Label")
-public class SingleHeighLabelFixture extends CommonContainerFixture {
-    public SingleHeighLabelFixture(@NotNull RemoteRobot remoteRobot, @NotNull RemoteComponent remoteComponent) {
+@DefaultXpath(by = "EditorsSplitters type", xpath = "//div[@class='EditorsSplitters']")
+@FixtureName(name = "Editors Splitters")
+public class EditorsSplittersFixture extends CommonContainerFixture {
+    public EditorsSplittersFixture(@NotNull RemoteRobot remoteRobot, @NotNull RemoteComponent remoteComponent) {
         super(remoteRobot, remoteComponent);
     }
 
-    public void close(){
-        find(ComponentFixture.class, byXpath("//div[@accessiblename='Close. Alt-Click to Close Others (Ctrl+F4)' and @class='InplaceButton']")).click();
+    public ComponentFixture getEditorTextFixture(){
+        return find(ComponentFixture.class, byXpath("//div[@class='EditorComponentImpl']"), Duration.ofSeconds(5));
+    }
+
+    public void closeEditor(){
+        find(ActionPanelLabelFixture.class, Duration.ofSeconds(5)).close();
     }
 }

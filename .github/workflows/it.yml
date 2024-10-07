@@ -34,13 +34,9 @@ jobs:
         make run-local
     - name: Run integration tests
       run: |
-        dir=~/.java/.userPrefs/jetbrains/_\!\(\!\!cg\"p\!\(\}\!\}@\"j\!\(k\!\|w\"w\!\'8\!b\!\"p\!\':\!e@=\=
-        mkdir -p "$dir"
-        cp .github/workflows/prefs.xml $dir
-        mkdir -p ~/.local/share/JetBrains/consentOptions
-        cp .github/workflows/accepted ~/.local/share/JetBrains/consentOptions
         export DISPLAY=:99.0
         Xvfb -ac :99 -screen 0 1920x1080x16 &
+        sleep 10
         ./gradlew integrationTest --info
     - uses: actions/upload-artifact@v4
       with:

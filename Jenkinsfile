@@ -2,7 +2,7 @@
 
 node('rhel7'){
 	def recipientList = 'jbosstools-builds@lists.jboss.org'
-	def javaHome = tool 'openjdk-11'
+	def javaHome = tool 'openjdk-17'
 	env.JAVA_HOME = "${javaHome}"
 
 	try {
