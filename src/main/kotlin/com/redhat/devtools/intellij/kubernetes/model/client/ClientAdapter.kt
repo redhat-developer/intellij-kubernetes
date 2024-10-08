@@ -33,7 +33,7 @@ open class OSClientAdapter(client: OpenShiftClient, private val kubeClient: Kube
 
     override val config by lazy {
         // openshift client configuration does not have kube config entries
-        ClientConfig(kubeClient)
+        ClientConfig(kubeClient.configuration)
     }
 
     override fun isOpenShift(): Boolean {
@@ -56,44 +56,37 @@ open class KubeClientAdapter(client: KubernetesClient) :
 abstract class ClientAdapter<C : KubernetesClient>(private val fabric8Client: C) {
 
     companion object Factory {
+
         fun create(
             namespace: String? = null,
             context: String? = null,
-            clientBuilder: KubernetesClientBuilder = KubernetesClientBuilder(),
-            trustManagerProvider: ((toIntegrate: List<X509ExtendedTrustManager>) -> X509TrustManager)
-            = IDEATrustManager()::configure
+            clientBuilder: KubernetesClientBuilder? = null,
+            externalTrustManagerProvider: ((toIntegrate: List<X509ExtendedTrustManager>) -> X509TrustManager)? = null
         ): ClientAdapter<out KubernetesClient> {
-            val config = Config.autoConfigure(context)
-            return create(namespace, config, clientBuilder, trustManagerProvider)
+            return create(namespace, Config.autoConfigure(context), clientBuilder, externalTrustManagerProvider)
         }
 
         fun create(
             namespace: String? = null,
-            config: Config,
-            clientBuilder: KubernetesClientBuilder,
-            externalTrustManagerProvider: (toIntegrate: List<X509ExtendedTrustManager>) -> X509TrustManager
-            = IDEATrustManager()::configure
+            config: Config? = null,
+            builder: KubernetesClientBuilder? = null,
+            trustManagerProvider: ((toIntegrate: List<X509ExtendedTrustManager>) ->  X509TrustManager)? = null
         ): ClientAdapter<out KubernetesClient> {
-            setNamespace(namespace, config)
+            val clientConfig = config ?: Config.autoConfigure(null)
+            setNamespace(namespace, clientConfig)
+            val clientBuilder = builder ?: KubernetesClientBuilder()
+            val externalTrustManagerProvider = trustManagerProvider ?: IDEATrustManager()::configure
             val kubeClient = clientBuilder
                 .withConfig(config)
-                .withHttpClientBuilderConsumer { builder ->
-                    setSslContext(builder, config, externalTrustManagerProvider)
+                .withHttpClientBuilderConsumer { clientBuilder ->
+                    setSslContext(clientBuilder, clientConfig, externalTrustManagerProvider)
                 }
                 .build()
-            return if (isOpenShift(kubeClient)) {
+            return if (ClusterHelper.isOpenShift(kubeClient)) {
                 val osClient = kubeClient.adapt(NamespacedOpenShiftClient::class.java)
                 OSClientAdapter(osClient, kubeClient)
             } else {
                 KubeClientAdapter(kubeClient)
-            }
-        }
-
-        private fun isOpenShift(client: KubernetesClient): Boolean {
-            return try {
-                ClusterHelper.isOpenShift(client)
-            } catch (e: Exception) {
-                false;
             }
         }
 
@@ -111,7 +104,7 @@ abstract class ClientAdapter<C : KubernetesClient>(private val fabric8Client: C)
         private fun setNamespace(namespace: String?, config: Config) {
             if (namespace != null) {
                 config.namespace = namespace
-                config.currentContext?.context?.namespace = namespace
+                //config.currentContext?.context?.namespace = namespace
             }
         }
     }
@@ -124,7 +117,7 @@ abstract class ClientAdapter<C : KubernetesClient>(private val fabric8Client: C)
     private val clients = ConcurrentHashMap<Class<out Client>, Client>()
 
     open val config by lazy {
-        ClientConfig(fabric8Client)
+        ClientConfig(fabric8Client.configuration)
     }
 
     abstract fun isOpenShift(): Boolean
