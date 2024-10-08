@@ -12,111 +12,122 @@ package com.redhat.devtools.intellij.kubernetes.model.client
 
 import com.redhat.devtools.intellij.common.utils.ConfigHelper
 import com.redhat.devtools.intellij.kubernetes.CompletableFutureUtils.PLATFORM_EXECUTOR
-import io.fabric8.kubernetes.api.model.Context
+import com.redhat.devtools.intellij.kubernetes.model.util.ConfigUtils
 import io.fabric8.kubernetes.api.model.NamedContext
-import io.fabric8.kubernetes.client.Client
 import io.fabric8.kubernetes.client.Config
-import io.fabric8.kubernetes.client.internal.KubeConfigUtils
+import java.io.File
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.Executor
 
 /**
- * An adapter to access [io.fabric8.kubernetes.client.Config].
- * It also saves the kube config [KubeConfigUtils] when it changes the client config.
+ * An adapter for [io.fabric8.kubernetes.client.Config].
+ * It can save it's values to kube config files that were used when the client config was created.
+ *
+ * @param config the (client) config that's adapted
+ * @param createKubeConfigAdapter a factory that creates [KubeConfigAdapter]s. Defaults to instantiating such a class
+ * @param getFileWithCurrentContextName a lambda that returns the file with the `current-context` property. Defaults to [ConfigUtils.getFileWithCurrentContext]
+ * @param getFileWithCurrentContext a lambda that returns the file with the [NamedContext] whose name is set in `current-context`
+ * @param executor the thread pool to execute ex. saving files. Defaults to [PLATFORM_EXECUTOR]
+ *
+ * @see ConfigUtils.getFileWithCurrentContext
+ * @see io.fabric8.kubernetes.client.Config.getFile
  */
-open class ClientConfig(private val client: Client, private val executor: Executor = PLATFORM_EXECUTOR) {
+open class ClientConfig(
+	private val config: Config,
+	private val createKubeConfigAdapter: (file: File, config: io.fabric8.kubernetes.api.model.Config?) -> KubeConfigAdapter
+		= { file, kubeConfig -> KubeConfigAdapter(file, kubeConfig) },
+	private val getFileWithCurrentContextName: () -> Pair<File, io.fabric8.kubernetes.api.model.Config>?
+		= { ConfigUtils.getFileWithCurrentContext() },
+	private val getFileWithCurrentContext: (config: Config) -> File?
+		= { config -> config.file },
+	private val executor: Executor = PLATFORM_EXECUTOR)
+{
 
 	open var currentContext: NamedContext?
 		get() {
-			return configuration.currentContext
+			return config.currentContext
 		}
 		set(context) {
-			configuration.currentContext = context
+			config.currentContext = context
 		}
 
 	open val allContexts: List<NamedContext>
 		get() {
-			return configuration.contexts ?: emptyList()
+			return config.contexts ?: emptyList()
 		}
 
-	open val configuration: Config by lazy {
-		client.configuration
+	/**
+	 * Returns `true` if the given config is equal in
+	 *   * current context
+	 *   * (existing) contexts
+	 *   * current cluster
+	 *   * current auth info
+	 *
+	 * @param config the [Config] to compare the adapted config in this class to.
+	 * @return true if the given config is equal to the one that this class adapts
+	 */
+	fun isEqualConfig(config: Config): Boolean {
+		return ConfigHelper.areEqualCurrentContext(config, this.config)
+				&& ConfigHelper.areEqualContexts(config, this.config)
+				&& ConfigHelper.areEqualCluster(config, this.config)
+				&& ConfigHelper.areEqualAuthInfo(config, this.config)
 	}
 
-	protected open val kubeConfig: KubeConfigAdapter by lazy {
-		KubeConfigAdapter()
-	}
-
+	/**
+	 * Saves the values in the config (that this class is adapting) to the files involved.
+	 * No file(s) are saved if neither `current-context` nor `namespace` in the current context were changed.
+	 *
+	 * @return a [CompletableFuture] true if values were saved to file(s). False if no files were saved.
+	 */
 	fun save(): CompletableFuture<Boolean> {
 		return CompletableFuture.supplyAsync(
 			{
-				if (!kubeConfig.exists()) {
-					return@supplyAsync false
+				val modified = HashSet<KubeConfigAdapter>()
+
+				setCurrentContext(modified)
+				setCurrentNamespace(modified)
+
+				modified.forEach { kubeConfig ->
+					kubeConfig.save()
 				}
-				val fromFile = kubeConfig.load() ?: return@supplyAsync false
-				return@supplyAsync if (setCurrentContext(
-						currentContext,
-						KubeConfigUtils.getCurrentContext(fromFile),
-						fromFile
-					).or( // no short-circuit
-						setCurrentNamespace(
-							currentContext?.context,
-							KubeConfigUtils.getCurrentContext(fromFile)?.context
-						)
-					)
-				) {
-					kubeConfig.save(fromFile)
-					true
-				} else {
-					false
-				}
+				modified.isNotEmpty() // return true if files were saved
 			},
 			executor
 		)
 	}
 
-	private fun setCurrentContext(
-		currentContext: NamedContext?,
-		kubeConfigCurrentContext: NamedContext?,
-		kubeConfig: io.fabric8.kubernetes.api.model.Config
-	): Boolean {
-		return if (currentContext != null
-			&& !ConfigHelper.areEqual(currentContext, kubeConfigCurrentContext)
-		) {
-			kubeConfig.currentContext = currentContext.name
-			true
-		} else {
-			false
+	private fun setCurrentContext(modified: HashSet<KubeConfigAdapter>) {
+		val fileWithCurrentContext = getFileWithCurrentContextName.invoke()
+		if (fileWithCurrentContext != null) {
+			val kubeConfig = createKubeConfigAdapter(fileWithCurrentContext.first, fileWithCurrentContext.second)
+			if (kubeConfig.setCurrentContext(config.currentContext?.name)) {
+				modified.add(kubeConfig)
+			}
+		}
+	}
+
+	private fun setCurrentNamespace(modified: HashSet<KubeConfigAdapter>) {
+		val fileWithCurrentNamespace = getFileWithCurrentContext.invoke(config) ?: return
+		val kubeConfig = createKubeConfigAdapter(fileWithCurrentNamespace, null)
+		if (kubeConfig.setCurrentNamespace(config.currentContext?.name, config.namespace)) {
+			modified.add(kubeConfig)
 		}
 	}
 
 	/**
-	 * Sets the namespace in the given source [Context] to the given target [Context].
-	 * Does nothing if the target config has no current context
-	 * or if the source config has no current context
-	 * or if setting it would not change it.
+	 * Returns `true` if the given context is equal to the current context in the [Config] that this class is adapting.
+	 * Returns `false` otherwise.
+	 * Both [NamedContext]s are compared in
+	 * <ul>
+	 * 	<li>name</li>
+	 * 	<li>cluster</li>
+	 * 	<li>user</li>
+	 * 	<li>current namespace</li>
+	 * </ul>
 	 *
-	 * @param source Context whose namespace should be copied
-	 * @param target Context whose namespace should be overriden
-	 * @return
+	 * @param context the context to compare to the one in the config that this class adapts.
 	 */
-	private fun setCurrentNamespace(
-		source: Context?,
-		target: Context?
-	): Boolean {
-		val sourceNamespace = source?.namespace ?: return false
-		val targetNamespace = target?.namespace
-		return if (target != null
-			&& sourceNamespace != targetNamespace
-		) {
-			target.namespace = source.namespace
-			true
-		} else {
-			false
-		}
-	}
-
 	fun isCurrent(context: NamedContext): Boolean {
-		return context == currentContext
+		return ConfigHelper.areEqualContext(context, currentContext)
 	}
 }

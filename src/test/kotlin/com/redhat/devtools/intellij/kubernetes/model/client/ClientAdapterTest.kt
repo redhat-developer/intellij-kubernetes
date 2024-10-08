@@ -44,6 +44,8 @@ class ClientAdapterTest {
         on { invoke(any()) } doReturn trustManager
     }
 
+    private val createConfig: (context: String?) -> Config = { _ -> mock() }
+
     @Test
     fun `#isOpenShift should return true if has OpenShiftClient`() {
         // given
@@ -120,11 +122,11 @@ class ClientAdapterTest {
         // given
         val namespace = "Crevasse City"
         val ctx1 = namedContext("Aldeeran", "Aldera", "Republic", "Organa" )
-        val ctx2 = namedContext("Death Start", "Navy Garrison", "Empire", "Darh Vader" )
-        val config = config(ctx1, listOf(ctx1, ctx2))
+        val config = config(ctx1, listOf(ctx1, ctx1))
+        val createConfig = { _: String? -> config }
         val clientBuilder = createClientBuilder(false)
         // when
-        ClientAdapter.Factory.create(namespace,  config, clientBuilder, trustManagerProvider)
+        ClientAdapter.Factory.create(namespace,  ctx1.name, clientBuilder, createConfig, trustManagerProvider)
         // then
         verify(config).namespace = namespace
         verify(config.currentContext.context).namespace = namespace
@@ -133,10 +135,9 @@ class ClientAdapterTest {
     @Test
     fun `#create should call trust manager provider`() {
         // given
-        val config = mock<Config>()
         val clientBuilder = createClientBuilder(false)
         // when
-        ClientAdapter.Factory.create("namespace", config, clientBuilder, trustManagerProvider)
+        ClientAdapter.Factory.create("namespace", "context", clientBuilder, createConfig, trustManagerProvider)
         // then
         verify(trustManagerProvider).invoke(any())
     }
@@ -144,10 +145,9 @@ class ClientAdapterTest {
     @Test
     fun `#create should return KubeClientAdapter if cluster is NOT OpenShift`() {
         // given
-        val config = mock<Config>()
         val clientBuilder = createClientBuilder(false)
         // when
-        val adapter = ClientAdapter.Factory.create("namespace", config, clientBuilder, trustManagerProvider)
+        val adapter = ClientAdapter.Factory.create("namespace", "context", clientBuilder, createConfig, trustManagerProvider)
         // then
         assertThat(adapter).isInstanceOf(KubeClientAdapter::class.java)
     }
@@ -155,21 +155,23 @@ class ClientAdapterTest {
     @Test
     fun `#create should return OSClientAdapter if cluster is OpenShift`() {
         // given
-        val config = mock<Config>()
         val clientBuilder = createClientBuilder(true)
         // when
-        val adapter = ClientAdapter.Factory.create("namespace", config, clientBuilder, trustManagerProvider)
+        val adapter = ClientAdapter.Factory.create("namespace", "context", clientBuilder, createConfig, trustManagerProvider)
         // then
         assertThat(adapter).isInstanceOf(OSClientAdapter::class.java)
     }
 
     @Suppress("SameParameterValue", "UNCHECKED_CAST")
     private fun createClientBuilder(isOpenShiftCluster: Boolean): KubernetesClientBuilder {
+
+        val config = mock<Config>()
         val osClient = mock<NamespacedOpenShiftClient>()
 
         val k8client = mock<KubernetesClient> {
             on { adapt(any<Class<NamespacedOpenShiftClient>>()) } doReturn osClient
             on { hasApiGroup(any(), any()) } doReturn isOpenShiftCluster
+            on { configuration } doReturn config
         }
 
         val httpClientBuilder = mock<HttpClient.Builder>()

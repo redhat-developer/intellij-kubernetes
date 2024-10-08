@@ -67,7 +67,7 @@ dependencies {
 
     // for unit tests
     testImplementation(libs.assertj.core)
-    testImplementation(libs.mockito.inline)
+    testImplementation(libs.mockito)
     testImplementation(libs.mockito.kotlin)
     testImplementation(libs.kotlin.test.junit)
 
