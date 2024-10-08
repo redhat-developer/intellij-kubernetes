@@ -35,14 +35,12 @@ import com.redhat.devtools.intellij.kubernetes.model.mocks.Mocks.clientConfig
 import com.redhat.devtools.intellij.kubernetes.model.mocks.Mocks.clientFactory
 import com.redhat.devtools.intellij.kubernetes.model.mocks.Mocks.context
 import com.redhat.devtools.intellij.kubernetes.model.resource.ResourceKind
-import io.fabric8.kubernetes.api.model.Config
-import io.fabric8.kubernetes.api.model.ConfigBuilder
 import io.fabric8.kubernetes.api.model.HasMetadata
-import io.fabric8.kubernetes.api.model.NamedAuthInfoBuilder
 import io.fabric8.kubernetes.api.model.Namespace
 import io.fabric8.kubernetes.api.model.NamespaceList
 import io.fabric8.kubernetes.api.model.Pod
 import io.fabric8.kubernetes.api.model.apps.Deployment
+import io.fabric8.kubernetes.client.Config
 import io.fabric8.kubernetes.client.KubernetesClient
 import io.fabric8.kubernetes.client.KubernetesClientException
 import io.fabric8.kubernetes.client.dsl.NonNamespaceOperation
@@ -75,7 +73,7 @@ class AllContextsTest {
 		on { oauthToken } doReturn token
 	}
 	private val client = client(true)
-	private val clientConfig = clientConfig(currentContext, contexts, configuration)
+	private val clientConfig = clientConfig(currentContext, contexts)
 	private val clientAdapter = clientAdapter(clientConfig, client)
 	private val clientFactory = clientFactory(clientAdapter)
 
@@ -336,7 +334,7 @@ class AllContextsTest {
 	@Test
 	fun `#setCurrentNamespace(namespace) should return null if current context is null`() {
 		// given
-		val clientConfig = clientConfig(null, contexts, configuration)
+		val clientConfig = clientConfig(null, contexts)
 		val client = client(true)
 		val clientAdapter = clientAdapter(clientConfig, client)
 		val clientFactory = clientFactory(clientAdapter)
@@ -395,102 +393,49 @@ class AllContextsTest {
 	@Test
 	fun `#onKubeConfigChanged() should NOT fire if existing config and given config are equal`() {
 		// given
-		val kubeConfig = ConfigBuilder()
-			.withCurrentContext(clientConfig.currentContext?.name)
-			.withContexts(clientConfig.allContexts)
-			.withUsers(NamedAuthInfoBuilder()
-				.withName(currentContext.context.user)
-				.withNewUser()
-					.withToken(clientConfig.configuration.oauthToken)
-				.endUser()
-				.build())
-			.build()
+		val updated = mock<Config>()
+		doReturn(true)
+			.whenever(clientConfig).isEqualConfig(any())
 		// when
-		allContexts.onKubeConfigChanged(kubeConfig)
+		allContexts.onKubeConfigChanged(updated)
 		// then
 		verify(modelChange, never()).fireAllContextsChanged()
 	}
 
 	@Test
-	fun `#onKubeConfigChanged() should fire if given config has different current context`() {
+	fun `#onKubeConfigChanged() should fire if existing config and given config are not equal`() {
 		// given
-		assertThat(namedContext1).isNotEqualTo(currentContext)
-		val kubeConfig = ConfigBuilder()
-			.withCurrentContext(namedContext1.name)
-			.withContexts(clientConfig.allContexts)
-			.withUsers(NamedAuthInfoBuilder()
-				.withName(currentContext.context.user)
-					.withNewUser()
-				.withToken(clientConfig.configuration.oauthToken)
-				.endUser()
-				.build())
-			.build()
+		val updated = mock<Config>()
+		doReturn(false)
+			.whenever(clientConfig).isEqualConfig(any())
 		// when
-		allContexts.onKubeConfigChanged(kubeConfig)
+		allContexts.onKubeConfigChanged(updated)
 		// then
 		verify(modelChange).fireAllContextsChanged()
 	}
 
 	@Test
-	fun `#onKubeConfigChanged() should fire if given config has different contexts`() {
+	fun `#onKubeConfigChanged() should close current context if existing config and given config are not equal`() {
 		// given
-		val contexts = listOf(mock(), *clientConfig.allContexts.toTypedArray())
-		val kubeConfig = ConfigBuilder()
-			.withCurrentContext(clientConfig.currentContext?.name)
-			.withContexts(contexts)
-			.withUsers(NamedAuthInfoBuilder()
-				.withName(currentContext.context.user)
-					.withNewUser()
-				.withToken(clientConfig.configuration.oauthToken)
-				.endUser()
-				.build())
-			.build()
+		val updated = mock<Config>()
+		doReturn(false)
+			.whenever(clientConfig).isEqualConfig(any())
 		// when
-		allContexts.onKubeConfigChanged(kubeConfig)
-		// then
-		verify(modelChange).fireAllContextsChanged()
-	}
-
-	@Test
-	fun `#onKubeConfigChanged() should close client if given config has different current context`() {
-		// given
-		assertThat(namedContext1).isNotEqualTo(currentContext)
-		val kubeConfig = ConfigBuilder()
-			.withCurrentContext(namedContext1.name)
-			.withContexts(clientConfig.allContexts)
-			.withUsers(NamedAuthInfoBuilder()
-				.withName(currentContext.context.user)
-				.withNewUser()
-					.withToken(clientConfig.configuration.oauthToken)
-				.endUser()
-				.build())
-			.build()
-		allContexts.current
-		// when
-		allContexts.onKubeConfigChanged(kubeConfig)
-		// then
-		verify(clientAdapter).close()
-	}
-
-	@Test
-	fun `#onKubeConfigChanged() should close current context if given config has different current context`() {
-		// given
-		assertThat(namedContext1).isNotEqualTo(currentContext)
-		val kubeConfig = ConfigBuilder()
-			.withCurrentContext(namedContext1.name)
-			.withContexts(clientConfig.allContexts)
-			.withUsers(NamedAuthInfoBuilder()
-				.withName(currentContext.context.user)
-				.withNewUser()
-				.withToken(clientConfig.configuration.oauthToken)
-				.endUser()
-				.build())
-			.build()
-		allContexts.current
-		// when
-		allContexts.onKubeConfigChanged(kubeConfig)
+		allContexts.onKubeConfigChanged(updated)
 		// then
 		verify(activeContext).close()
+	}
+
+	@Test
+	fun `#onKubeConfigChanged() should get all contexts (again) if existing config and given config are not equal`() {
+		// given
+		val updated = mock<Config>()
+		doReturn(false)
+			.whenever(clientConfig).isEqualConfig(any())
+		// when
+		allContexts.onKubeConfigChanged(updated)
+		// then
+		verify(clientConfig).allContexts
 	}
 
 	/**
@@ -530,6 +475,10 @@ class AllContextsTest {
 
 		var watchStarted = false
 
+		public override fun onKubeConfigChanged(updated: io.fabric8.kubernetes.client.Config?) {
+			super.onKubeConfigChanged(updated)
+		}
+
 		override fun reportTelemetry(context: IActiveContext<out HasMetadata, out KubernetesClient>) {
 			// prevent telemetry reporting
 		}
@@ -538,15 +487,9 @@ class AllContextsTest {
 			runnable.invoke() // run directly, not in IDEA pooled threads
 		}
 
-		override fun watchKubeConfig() {
+		override fun watchKubeConfigs() {
 			// don't watch filesystem (override super method)
 			watchStarted = true
 		}
-
-		/** override with public method so that it can be tested**/
-		public override fun onKubeConfigChanged(fileConfig: Config?) {
-			super.onKubeConfigChanged(fileConfig)
-		}
-
 	}
 }

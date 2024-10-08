@@ -24,11 +24,7 @@ import com.redhat.devtools.intellij.kubernetes.model.client.ClientAdapter
 import com.redhat.devtools.intellij.kubernetes.model.client.ClientConfig
 import com.redhat.devtools.intellij.kubernetes.model.context.IActiveContext
 import com.redhat.devtools.intellij.kubernetes.model.context.IContext
-import com.redhat.devtools.intellij.kubernetes.model.resource.INamespacedResourceOperator
-import com.redhat.devtools.intellij.kubernetes.model.resource.INonNamespacedResourceOperator
-import com.redhat.devtools.intellij.kubernetes.model.resource.IWatchableExec
-import com.redhat.devtools.intellij.kubernetes.model.resource.IWatchableLog
-import com.redhat.devtools.intellij.kubernetes.model.resource.ResourceKind
+import com.redhat.devtools.intellij.kubernetes.model.resource.*
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.NamedContext
 import io.fabric8.kubernetes.api.model.Namespace
@@ -38,8 +34,8 @@ import io.fabric8.kubernetes.client.Watch
 import io.fabric8.kubernetes.client.Watcher
 import io.fabric8.kubernetes.client.dsl.ExecWatch
 import io.fabric8.kubernetes.client.dsl.LogWatch
-import java.util.concurrent.CompletableFuture
 import org.mockito.Mockito
+import java.util.concurrent.CompletableFuture
 
 object Mocks {
 
@@ -206,11 +202,7 @@ object Mocks {
         }
     }
 
-    fun clientConfig(
-        currentContext: NamedContext?,
-        allContexts: List<NamedContext>,
-        configuration: io.fabric8.kubernetes.client.Config = mock()
-    ): ClientConfig {
+    fun clientConfig(currentContext: NamedContext?, allContexts: List<NamedContext>): ClientConfig {
         val saveFuture: CompletableFuture<Boolean> = mock()
         return mock {
             on { this.currentContext } doReturn currentContext
@@ -218,9 +210,7 @@ object Mocks {
                 invocation.getArgument<NamedContext>(0) == mock.currentContext
             }
             on { this.allContexts } doReturn allContexts
-            on { this.configuration } doReturn configuration
             on { this.save() } doReturn saveFuture
         }
     }
-
 }

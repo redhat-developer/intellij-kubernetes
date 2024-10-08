@@ -12,7 +12,6 @@ package com.redhat.devtools.intellij.kubernetes.model
 
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.diagnostic.logger
-import com.redhat.devtools.intellij.common.utils.ConfigHelper
 import com.redhat.devtools.intellij.common.utils.ConfigWatcher
 import com.redhat.devtools.intellij.common.utils.ExecHelper
 import com.redhat.devtools.intellij.kubernetes.model.client.ClientAdapter
@@ -30,7 +29,6 @@ import com.redhat.devtools.intellij.kubernetes.telemetry.TelemetryService.PROP_O
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.client.Config
 import io.fabric8.kubernetes.client.KubernetesClient
-import java.nio.file.Paths
 import java.util.concurrent.CompletionException
 import java.util.concurrent.locks.ReentrantReadWriteLock
 import kotlin.concurrent.read
@@ -83,11 +81,13 @@ open class AllContexts(
 		namespace: String?,
 		context: String?
 	) -> ClientAdapter<out KubernetesClient>
-	= { namespace, context -> ClientAdapter.Factory.create(namespace, context) }
+	= { namespace, config ->
+		ClientAdapter.Factory.create(namespace, config)
+	}
 ) : IAllContexts {
 
 	init {
-		watchKubeConfig()
+		watchKubeConfigs()
 	}
 
 	private val lock = ReentrantReadWriteLock()
@@ -148,7 +148,8 @@ open class AllContexts(
 	) : IActiveContext<out HasMetadata, out KubernetesClient>? {
 		lock.write {
 			try {
-				replaceClient(newClient, this.client.get())
+				client.get()?.close()
+				client.set(newClient)
 				newClient.config.save().join()
 				current?.close()
 				clearAllContexts() // causes reload of all contexts when accessed afterwards
@@ -204,13 +205,6 @@ open class AllContexts(
 		}
 	}
 
-	private fun replaceClient(new: ClientAdapter<out KubernetesClient>, old: ClientAdapter<out KubernetesClient>?)
-			: ClientAdapter<out KubernetesClient> {
-		old?.close()
-		this.client.set(new)
-		return new
-	}
-
 	private fun createActiveContext(client: ClientAdapter<out KubernetesClient>?)
 			: IActiveContext<out HasMetadata, out KubernetesClient>? {
 		if (client == null) {
@@ -241,8 +235,7 @@ open class AllContexts(
 		}
 	}
 
-	protected open fun watchKubeConfig() {
-		val path = Paths.get(Config.getKubeconfigFilename())
+	protected open fun watchKubeConfigs() {
 		/**
 		 * [ConfigWatcher] cannot add/remove listeners nor can it get closed (and stop the [java.nio.file.WatchService]).
 		 * We therefore have to create a single instance in here rather than using it in a shielded/private way within
@@ -251,16 +244,16 @@ open class AllContexts(
 		 * The latter gets closed/recreated whenever the context changes in
 		 * [com.redhat.devtools.intellij.kubernetes.model.client.KubeConfigAdapter].
 		 */
-		val watcher = ConfigWatcher(path) { _, config: io.fabric8.kubernetes.api.model.Config? -> onKubeConfigChanged(config) }
+		val watcher = ConfigWatcher { config: Config? -> onKubeConfigChanged(config) }
 		runAsync(watcher::run)
 	}
 
-	protected open fun onKubeConfigChanged(fileConfig: io.fabric8.kubernetes.api.model.Config?) {
+	protected open fun onKubeConfigChanged(updated: Config?) {
 		lock.read {
-			fileConfig ?: return
+			updated ?: return
 			val client = client.get() ?: return
-			val clientConfig = client.config.configuration
-			if (ConfigHelper.areEqual(fileConfig, clientConfig)) {
+			val existing = client.config
+			if (existing.isEqualConfig(updated)) {
 				return
 			}
 			this.client.reset() // create new client when accessed
