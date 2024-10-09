@@ -32,7 +32,7 @@ internal class SettingsConfigurable: SearchableConfigurable {
 
     override fun createComponent(): JComponent? {
         this.component = SettingsComponent(isEditorSyncEnabled())
-        return this.component.createComponent()
+        return this.component.createPanel()
     }
 
     override fun isModified(): Boolean {
