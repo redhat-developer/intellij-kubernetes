@@ -227,7 +227,6 @@ class ResourceEditorTest {
     fun `#updateDeleted(removed) should set editorResource to deleted`() {
         // given
         givenResources(mapOf(GARGAMEL to Identical()))
-        val removed = GARGAMEL
         // when
         editor.updateDeleted(GARGAMEL)
         // then

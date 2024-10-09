@@ -66,7 +66,7 @@ fun setBold(label: JLabel) {
 
 fun registerEscapeShortcut(rootPane: JRootPane, closeFunction: () -> Unit, disposable: Disposable) {
 	val escape = ActionManager.getInstance().getAction("EditorEscape")
-	DumbAwareAction.create { e: AnActionEvent? -> closeFunction.invoke() }
+	DumbAwareAction.create { _: AnActionEvent? -> closeFunction.invoke() }
 		.registerCustomShortcutSet(
 			escape?.shortcutSet ?: CommonShortcuts.ESCAPE,
 			rootPane,

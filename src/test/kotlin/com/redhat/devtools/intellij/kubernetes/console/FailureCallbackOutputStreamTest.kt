@@ -105,7 +105,7 @@ class FailureCallbackOutputStreamTest {
     private fun write(message: String, out: FailureCallbackOutputStream) {
         message
             .toCharArray()
-            .map { it.toInt() }
+            .map { it.code }
             .forEach { out.write(it) }
     }
 }

@@ -40,7 +40,7 @@ class APIResources(private val client: ClientAdapter<out KubernetesClient>) {
     }
 
     private fun getByKind(kind: String, resources: List<APIResource>): APIResource? {
-        val plural = Pluralize.toPlural(kind).toLowerCase()
+        val plural = Pluralize.toPlural(kind).lowercase()
         return resources.firstOrNull {
             plural == it.name
         }

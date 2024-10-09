@@ -158,7 +158,6 @@ object ClientMocks {
 
         val resourceListInNamespaceOp: ListVisitFromServerGetDeleteRecreateWaitApplicable<HasMetadata> = mock {
             on { delete() } doReturn statusDetails
-            on { replace() } doReturn resourceList
             on { create() } doReturn resourceList
             on { get() } doReturn resourceList
             on { withGracePeriod(any()) } doReturn extensibleResource
@@ -168,7 +167,6 @@ object ClientMocks {
         val resourceListOperation: NamespaceListVisitFromServerGetDeleteRecreateWaitApplicable<HasMetadata> = mock {
             on { inNamespace(any()) } doReturn resourceListInNamespaceOp
             on { delete() } doReturn statusDetails
-            on { replace() } doReturn resourceList
             on { withGracePeriod(any()) } doReturn extensibleResource
         }
 
@@ -402,8 +400,8 @@ object ClientMocks {
 
     private fun apiResource(resource: HasMetadata, namespaced: Boolean): APIResource {
         return apiResource(
-            Pluralize.toPlural(resource.kind).toLowerCase(),
-            resource.kind.toLowerCase(),
+            Pluralize.toPlural(resource.kind).lowercase(),
+            resource.kind.lowercase(),
             namespaced,
             resource.kind
         )

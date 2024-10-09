@@ -42,12 +42,12 @@ class DiffAction : AnAction() {
                         TelemetryService.sendTelemetry(editor.getResources(), telemetry)
                     }
                     .exceptionally { completionException ->
-                        val e = completionException.cause as? Exception
+                        val ex = completionException.cause as? Exception
                             ?: completionException as? Exception
                             ?: return@exceptionally
-                        logger<ResourceEditor>().warn("Could not open diff", e)
-                        telemetry.error(e).send()
-                        notify(e)
+                        logger<ResourceEditor>().warn("Could not open diff", ex)
+                        telemetry.error(ex).send()
+                        notify(ex)
                     }
             })
     }

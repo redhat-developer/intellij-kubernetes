@@ -62,7 +62,7 @@ class PushedNotification(private val editor: FileEditor, private val project: Pr
     private fun createText(created: List<EditorResource>?, updated: List<EditorResource>?): String {
         return StringBuilder().apply {
             if (false == created?.isEmpty()) {
-                append("Created ${toKindAndNames(created?.map { editorResource -> editorResource.getResource() })} ")
+                append("Created ${toKindAndNames(created.map { editorResource -> editorResource.getResource() })} ")
             }
             if (false == updated?.isEmpty()) {
                 if (isNotEmpty()) {
