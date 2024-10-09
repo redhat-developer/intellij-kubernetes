@@ -218,10 +218,10 @@ open class TreeStructure(
             return this.element?.kind == element
         }
 
-        override fun setElement(newElement: Any): Boolean {
-            return if (newElement is ResourceKind<*>) {
-                val current = element ?: return false
-                super.setElement(Folder(current, newElement))
+        override fun setElement(element: Any): Boolean {
+            return if (element is ResourceKind<*>) {
+                val current = this.element ?: return false
+                super.setElement(Folder(current, element))
             } else {
                 false
             }

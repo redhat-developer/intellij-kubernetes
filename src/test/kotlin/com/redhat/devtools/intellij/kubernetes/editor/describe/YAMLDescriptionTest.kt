@@ -35,7 +35,7 @@ class YAMLDescriptionTest {
 	fun `toText should return title and integer value`() {
 		// given
 		val description = YAMLDescription()
-		description.addIfExists("jedi", 42 as Int)
+		description.addIfExists("jedi", 42 as Int?)
 		// when
 		val text = description.toText()
 		// then

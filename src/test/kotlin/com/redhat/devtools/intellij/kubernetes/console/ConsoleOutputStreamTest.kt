@@ -77,6 +77,6 @@ class ConsoleOutputStreamTest {
     }
 
     private fun printToTerminal(string: String) {
-        string.forEach { out.write(it.toInt()) }
+        string.forEach { out.write(it.code) }
     }
 }

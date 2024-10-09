@@ -130,7 +130,7 @@ class EditorResourcesTest {
         val allResources = listOf(POD2, POD3)
         resources.setResources(allResources)
         // when
-        val retrievedResources = resources.getAllResourcesOnCluster()
+        resources.getAllResourcesOnCluster()
         // then
         verify(getEditorResourceMock(POD2)).getResourceOnCluster()
         verify(getEditorResourceMock(POD3)).getResourceOnCluster()

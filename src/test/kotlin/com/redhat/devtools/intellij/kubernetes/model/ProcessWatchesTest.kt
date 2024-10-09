@@ -80,6 +80,8 @@ class ProcessWatchesTest {
         mock {
             on { invoke(anyOrNull(), anyOrNull()) } doReturn client
         }
+
+    @Suppress("UNCHECKED_CAST")
     private val operators = mapOf(
         /* tests require BuildOperator NOT to be supported */
         jobsWatchingOperator.kind to
@@ -110,6 +112,7 @@ class ProcessWatchesTest {
     @Test
     fun `#watchLog should call #watchLog on the first operator that supports given kind and watching the log`() {
         // given
+        @Suppress("UNCHECKED_CAST")
         val expected = podsWatchingOperator as IWatchableLog<Pod>
         val out: OutputStream = mock()
         // when
@@ -178,6 +181,7 @@ class ProcessWatchesTest {
     @Test
     fun `#watchExec should call #watchExec on the first operator that supports given kind and watching exec`() {
         // given
+        @Suppress("UNCHECKED_CAST")
         val expected = podsWatchingOperator as IWatchableExec<Pod>
         // when
         watches.watchExec(container1, pod, mock())

@@ -239,7 +239,7 @@ class NonCachingSingleResourceOperatorTest {
             .build()
         val apiResource = namespacedApiResource(namespacedCoreResource)
         val operator = NonCachingSingleResourceOperator(clientAdapter, createAPIResources(apiResource))
-            { resource -> genericResource }
+            { _ -> genericResource }
         // when
         operator.create(hasNoName)
         // then
