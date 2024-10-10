@@ -17,6 +17,17 @@ sourceSets {
         compileClasspath += sourceSets.main.output + configurations.runtimeClasspath
         runtimeClasspath += output + compileClasspath
     }
+    main {
+        java.srcDirs("src/main/java")
+        kotlin.srcDirs("src/main/kotlin")
+    }
+    test {
+        java.srcDirs("src/test/java")
+        kotlin.srcDirs("src/test/kotlin")
+        // #779: unit tests need to see kubernetes-client classes in src/main/java
+        compileClasspath += sourceSets.main.output + configurations.runtimeClasspath
+        runtimeClasspath += output + compileClasspath
+    }
 }
 
 task integrationTest(type: Test) {
