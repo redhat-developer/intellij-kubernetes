@@ -10,6 +10,7 @@
  ******************************************************************************/
 package com.redhat.devtools.intellij.kubernetes.editor.notification
 
+import com.intellij.icons.AllIcons
 import com.intellij.openapi.fileEditor.FileEditor
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Key
@@ -17,6 +18,7 @@ import com.intellij.ui.EditorNotificationPanel
 import com.redhat.devtools.intellij.kubernetes.editor.hideNotification
 import com.redhat.devtools.intellij.kubernetes.editor.showNotification
 import com.redhat.devtools.intellij.kubernetes.model.util.toKindAndName
+import icons.Icons
 import io.fabric8.kubernetes.api.model.HasMetadata
 import javax.swing.JComponent
 
@@ -26,27 +28,26 @@ import javax.swing.JComponent
  */
 class PullNotification(private val editor: FileEditor, private val project: Project) {
 
-    companion object {
+    private companion object {
         val KEY_PANEL = Key<JComponent>(PullNotification::class.java.canonicalName)
     }
 
-    fun show(resource: HasMetadata) {
-        editor.showNotification(KEY_PANEL, { createPanel(resource) }, project)
+    fun show(resource: HasMetadata, closeAction: (() -> Unit)?) {
+        editor.showNotification(KEY_PANEL, { createPanel(resource, closeAction) }, project)
     }
 
     fun hide() {
         editor.hideNotification(KEY_PANEL, project)
     }
 
-    private fun createPanel(resource: HasMetadata): EditorNotificationPanel {
+    private fun createPanel(resource: HasMetadata, closeAction: (() -> Unit)?): EditorNotificationPanel {
         val panel = EditorNotificationPanel()
         panel.text = "${toKindAndName(resource)} changed on cluster. Pull?"
+        panel.icon(Icons.download)
         addPull(panel)
         addPush(true, panel)
         addDiff(panel)
-        addDismiss(panel) {
-            hide()
-        }
+        addHide(panel, closeAction)
         return panel
     }
 }

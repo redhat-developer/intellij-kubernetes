@@ -28,7 +28,7 @@ class Base64PresentationsTest {
 		"skywalker", "light side", kubernetesTypeInfo("ConfigMap", "v1")
 	)
 	private val pod = kubernetesResourceInfo(
-		"anakin", "dark side", kubernetesTypeInfo("Pod", "v1")
+		"anakin", "light side", kubernetesTypeInfo("Pod", "v1")
 	)
 
 	private val dataElement = createYAMLKeyValue("data")

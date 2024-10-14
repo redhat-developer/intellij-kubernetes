@@ -432,3 +432,17 @@ fun String?.toBooleanOrNull(): Boolean? {
 	}
 	return this.toBoolean()
 }
+
+data class HasMetadataIdentifier private constructor(
+	private val kind: String,
+	private val apiVersion: String,
+	private val name: String,
+	private val namespace: String?
+) {
+	constructor(resource: HasMetadata) : this(
+		resource.kind,
+		resource.apiVersion,
+		resource.metadata.name,
+		resource.metadata.namespace
+	)
+}

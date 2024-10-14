@@ -10,6 +10,7 @@
  ******************************************************************************/
 package com.redhat.devtools.intellij.kubernetes.editor.notification
 
+import com.intellij.icons.AllIcons
 import com.intellij.openapi.fileEditor.FileEditor
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Key
@@ -24,19 +25,19 @@ import javax.swing.JComponent
  */
 class PulledNotification(private val editor: FileEditor, private val project: Project) {
 
-    companion object {
+    private companion object {
         private val KEY_PANEL = Key<JComponent>(PulledNotification::class.java.canonicalName)
     }
 
-    fun show(resource: HasMetadata) {
-        editor.showNotification(KEY_PANEL, { createPanel(resource) }, project)
+    fun show(resource: HasMetadata, closeAction: (() -> Unit)?) {
+        editor.showNotification(KEY_PANEL, { createPanel(resource, closeAction) }, project)
     }
 
     fun hide() {
         editor.hideNotification(KEY_PANEL, project)
     }
 
-    private fun createPanel(resource: HasMetadata): EditorNotificationPanel {
+    private fun createPanel(resource: HasMetadata, closeAction: (() -> Unit)?): EditorNotificationPanel {
         val panel = EditorNotificationPanel()
         panel.text =
             "Pulled ${resource.kind} '${resource.metadata.name}' ${
@@ -46,9 +47,8 @@ class PulledNotification(private val editor: FileEditor, private val project: Pr
                     ""
                 }
             }"
-        addDismiss(panel) {
-            hide()
-        }
+        panel.icon(AllIcons.RunConfigurations.ShowPassed)
+        addHide(panel, closeAction)
         return panel
     }
 }

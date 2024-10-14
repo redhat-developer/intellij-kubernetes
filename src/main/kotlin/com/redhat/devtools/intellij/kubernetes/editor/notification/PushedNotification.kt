@@ -10,6 +10,7 @@
  ******************************************************************************/
 package com.redhat.devtools.intellij.kubernetes.editor.notification
 
+import com.intellij.icons.AllIcons
 import com.intellij.openapi.fileEditor.FileEditor
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Key
@@ -27,22 +28,22 @@ import javax.swing.JComponent
  */
 class PushedNotification(private val editor: FileEditor, private val project: Project) {
 
-    companion object {
+    private companion object {
         val KEY_PANEL = Key<JComponent>(PushedNotification::class.java.canonicalName)
     }
 
-    fun show(editorResources: Collection<EditorResource>) {
+    fun show(editorResources: Collection<EditorResource>, closeAction: (() -> Unit)? = null) {
         if (editorResources.isEmpty()) {
             return
         }
-        editor.showNotification(KEY_PANEL, { createPanel(editorResources) }, project)
+        editor.showNotification(KEY_PANEL, { createPanel(editorResources, closeAction) }, project)
     }
 
     fun hide() {
         editor.hideNotification(KEY_PANEL, project)
     }
 
-    private fun createPanel(editorResources: Collection<EditorResource>): EditorNotificationPanel {
+    private fun createPanel(editorResources: Collection<EditorResource>, closeAction: (() -> Unit)?): EditorNotificationPanel {
         val panel = EditorNotificationPanel()
         val createdOrUpdated = editorResources
             .filter(FILTER_PUSHED)
@@ -52,10 +53,8 @@ class PushedNotification(private val editor: FileEditor, private val project: Pr
         val created = createdOrUpdated[false]
         val updated = createdOrUpdated[true]
         panel.text = createText(created, updated)
-        addDismiss(panel) {
-            hide()
-        }
-
+        panel.icon(AllIcons.RunConfigurations.ShowPassed)
+        addHide(panel, closeAction)
         return panel
     }
 
