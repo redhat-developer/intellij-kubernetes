@@ -26,30 +26,33 @@ import javax.swing.JComponent
  */
 class ErrorNotification(private val editor: FileEditor, private val project: Project) {
 
-    companion object {
+    private companion object {
         private val KEY_PANEL = Key<JComponent>(ErrorNotification::class.java.canonicalName)
     }
 
-    fun show(title: String, message: String?) {
-        editor.showNotification(KEY_PANEL, { createPanel(editor, title, message) }, project)
+    fun show(title: String, message: String?, closeAction: (() -> Unit)? = null) {
+        editor.showNotification(KEY_PANEL, { createPanel(editor, title, message, closeAction) }, project)
     }
 
-    fun show(title: String, e: Throwable) {
-        editor.showNotification(KEY_PANEL, { createPanel(editor, title, e.message) }, project)
+    fun show(title: String, e: Throwable, closeAction: (() -> Unit)? = null) {
+        editor.showNotification(KEY_PANEL, { createPanel(editor, title, e.message, closeAction) }, project)
     }
 
     fun hide() {
         editor.hideNotification(KEY_PANEL, project)
     }
 
-    private fun createPanel(editor: FileEditor, title: String, message: String?): EditorNotificationPanel {
+    private fun createPanel(
+        editor: FileEditor,
+        title: String,
+        message: String?,
+        closeAction: (() -> Unit)?
+    ): EditorNotificationPanel {
         val panel = EditorNotificationPanel()
         panel.icon(AllIcons.Ide.FatalError)
         panel.text = title
         addDetailsAction(message, panel, editor)
-        addDismiss(panel) {
-            hide()
-        }
+        addHide(panel, closeAction)
         return panel
     }
 

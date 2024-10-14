@@ -18,8 +18,10 @@ fun addPull(panel: EditorNotificationPanel) {
     panel.createActionLabel("Pull", PullAction.ID)
 }
 
-fun addDismiss(panel: EditorNotificationPanel, consumer: () -> Unit) {
-    panel.createActionLabel("Dismiss", consumer)
+fun addHide(panel: EditorNotificationPanel, closeAction: (() -> Unit)?) {
+    if (closeAction != null) {
+        panel.setCloseAction(closeAction)
+    }
 }
 
 fun addDiff(panel: EditorNotificationPanel) {

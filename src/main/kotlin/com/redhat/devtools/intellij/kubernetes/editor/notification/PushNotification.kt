@@ -10,6 +10,7 @@
  ******************************************************************************/
 package com.redhat.devtools.intellij.kubernetes.editor.notification
 
+import com.intellij.icons.AllIcons
 import com.intellij.openapi.fileEditor.FileEditor
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Key
@@ -19,6 +20,7 @@ import com.redhat.devtools.intellij.kubernetes.editor.EditorResource
 import com.redhat.devtools.intellij.kubernetes.editor.hideNotification
 import com.redhat.devtools.intellij.kubernetes.editor.showNotification
 import com.redhat.devtools.intellij.kubernetes.model.util.toKindAndNames
+import icons.Icons
 import javax.swing.JComponent
 
 /**
@@ -26,11 +28,11 @@ import javax.swing.JComponent
  */
 class PushNotification(private val editor: FileEditor, private val project: Project) {
 
-    companion object {
+    private companion object {
         val KEY_PANEL = Key<JComponent>(PushNotification::class.java.canonicalName)
     }
 
-    fun show(showPull: Boolean, editorResources: Collection<EditorResource>) {
+    fun show(showPull: Boolean, editorResources: Collection<EditorResource>, closeAction: (() -> Unit)? = null) {
         val toCreateOrUpdate = editorResources
             .filter { editorResource ->
                 editorResource.getState() is Different
@@ -44,7 +46,7 @@ class PushNotification(private val editor: FileEditor, private val project: Proj
             && toUpdate.isEmpty()) {
             return
         }
-        editor.showNotification(KEY_PANEL, { createPanel(showPull, toCreate, toUpdate) }, project)
+        editor.showNotification(KEY_PANEL, { createPanel(showPull, toCreate, toUpdate, closeAction) }, project)
     }
 
     fun hide() {
@@ -54,14 +56,16 @@ class PushNotification(private val editor: FileEditor, private val project: Proj
     private fun createPanel(
         showPull: Boolean,
         toCreate: Collection<EditorResource>,
-        toUpdate: Collection<EditorResource>
+        toUpdate: Collection<EditorResource>,
+        closeAction: (() -> Unit)?
     ): EditorNotificationPanel {
         val text = createText(toCreate, toUpdate)
         return createPanel(text,
             toUpdate.isNotEmpty(),
             showPull && toUpdate.any {
                 editorResource -> editorResource.isOutdatedVersion()
-            })
+            },
+            closeAction)
     }
 
     private fun createText(toCreate: Collection<EditorResource>?, toUpdate: Collection<EditorResource>?): String {
@@ -82,8 +86,9 @@ class PushNotification(private val editor: FileEditor, private val project: Proj
         .toString()
     }
 
-    private fun createPanel(text: String, existsOnCluster: Boolean, isOutdated: Boolean): EditorNotificationPanel {
+    private fun createPanel(text: String, existsOnCluster: Boolean, isOutdated: Boolean, closeAction: (() -> Unit)?): EditorNotificationPanel {
         val panel = EditorNotificationPanel()
+        panel.icon(Icons.upload)
         panel.text = text
         addPush(false, panel)
         if (isOutdated) {
@@ -92,10 +97,7 @@ class PushNotification(private val editor: FileEditor, private val project: Proj
         if (existsOnCluster) {
             addDiff(panel)
         }
-        addDismiss(panel) {
-            hide()
-        }
-
+        addHide(panel, closeAction)
         return panel
     }
 }
