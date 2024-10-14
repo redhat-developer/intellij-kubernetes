@@ -127,7 +127,8 @@ open class ResourceEditorFactory protected constructor(
             editor.file?.putUserData(ResourceEditor.KEY_RESOURCE_EDITOR, resourceEditor)
             resourceEditor
         } catch (e: ResourceException) {
-            ErrorNotification(editor, project).show(e.message ?: "", e.cause?.message)
+            val notification = ErrorNotification(editor, project)
+            notification.show(e.message ?: "", e.cause?.message, { notification.hide() })
             runAsync { telemetry.error(e).send() }
             null
         }
