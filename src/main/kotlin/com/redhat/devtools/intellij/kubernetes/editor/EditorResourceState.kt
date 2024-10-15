@@ -11,6 +11,8 @@
  ******************************************************************************/
 package com.redhat.devtools.intellij.kubernetes.editor
 
+import java.util.Objects
+
 val FILTER_ALL = { _: EditorResource -> true }
 val FILTER_TO_PUSH = { editorResource: EditorResource ->
     val state = editorResource.getState()
@@ -29,37 +31,81 @@ abstract class EditorResourceState
 
 class Error(val title: String, val message: String? = null): EditorResourceState() {
     constructor(title: String, e: Throwable) : this(title, e.message)
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) {
+            return true
+        }
+        return other is Error
+                && title == other.title
+                && message == other.message
+    }
+
+    override fun hashCode(): Int {
+        return Objects.hash(
+            title,
+            message
+        )
+    }
+
+    override fun toString(): String {
+        return super.toString()
+    }
 }
 
 open class Identical: EditorResourceState()
 
 abstract class Different(val exists: Boolean, val isOutdatedVersion: Boolean): EditorResourceState() {
     abstract fun isPush(): Boolean
+    override fun equals(other: Any?): Boolean {
+        if (this === other) {
+            return true
+        }
+        return other is Different
+                && other.exists == exists
+                && other.isOutdatedVersion == isOutdatedVersion
+                && other.isPush() == isPush()
+    }
+
+    override fun hashCode(): Int {
+        return Objects.hash(
+            exists,
+            isOutdatedVersion,
+            isPush()
+        )
+    }
 }
 
 open class Modified(exists: Boolean, isOutdatedVersion: Boolean): Different(exists, isOutdatedVersion) {
     override fun isPush() = true
 }
 
-class DeletedOnCluster: Modified(false, false) {
+class DeletedOnCluster(): Modified(false, false) {
     override fun isPush() = true
-
 }
 
 class Outdated: Different(true, true) {
     override fun isPush() = false
-
 }
 
 abstract class Pushed: Identical() {
     abstract val updated: Boolean
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) {
+            return true
+        }
+        return other is Pushed
+                && other.updated == updated
+    }
+
+    override fun hashCode(): Int {
+        return Objects.hashCode(updated)
+    }
 }
 
-class Created: Pushed() {
-    override val updated = false
-}
-class Updated: Pushed() {
-    override val updated = true
-}
+class Created(override val updated: Boolean = false) : Pushed()
+
+class Updated(override val updated: Boolean = true): Pushed()
 
 class Pulled: EditorResourceState()

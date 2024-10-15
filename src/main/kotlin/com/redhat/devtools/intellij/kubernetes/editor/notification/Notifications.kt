@@ -13,13 +13,18 @@ package com.redhat.devtools.intellij.kubernetes.editor.notification
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.fileEditor.FileEditor
 import com.intellij.openapi.project.Project
+import com.jetbrains.jsonSchema.impl.nestedCompletions.letIf
 import com.redhat.devtools.intellij.kubernetes.editor.DeletedOnCluster
 import com.redhat.devtools.intellij.kubernetes.editor.EditorResource
+import com.redhat.devtools.intellij.kubernetes.editor.EditorResourceState
 import com.redhat.devtools.intellij.kubernetes.editor.Error
 import com.redhat.devtools.intellij.kubernetes.editor.FILTER_ERROR
+import com.redhat.devtools.intellij.kubernetes.editor.FILTER_PUSHED
 import com.redhat.devtools.intellij.kubernetes.editor.FILTER_TO_PUSH
 import com.redhat.devtools.intellij.kubernetes.editor.Modified
+import com.redhat.devtools.intellij.kubernetes.editor.Pulled
 import com.redhat.devtools.intellij.kubernetes.editor.Pushed
+import com.redhat.devtools.intellij.kubernetes.model.util.HasMetadataIdentifier
 import io.fabric8.kubernetes.api.model.HasMetadata
 
 open class Notifications(
@@ -39,6 +44,8 @@ open class Notifications(
     private val errorNotification: ErrorNotification = ErrorNotification(editor, project),
 ) {
 
+    private val dismissed = mutableMapOf<HasMetadataIdentifier, EditorResourceState>()
+
     fun show(editorResource: EditorResource) {
         show(editorResource, true)
     }
@@ -48,10 +55,13 @@ open class Notifications(
         val resource = editorResource.getResource()
         when  {
             state is Error ->
-                showError(state.title, state.message)
+                showError(state)
 
             state is Pushed ->
                 showPushed(listOf(editorResource))
+
+            state is Pulled ->
+                showPulled(resource)
 
             state is DeletedOnCluster
                     && showSyncNotifications ->
@@ -59,6 +69,7 @@ open class Notifications(
 
             /**
              * avoid too many notifications, don't notify outdated
+             *
                  state is Outdated && showSyncNotification ->
                      showPullNotification(resource)
              */
@@ -77,53 +88,97 @@ open class Notifications(
     }
 
     fun show(editorResources: Collection<EditorResource>, showSyncNotifications: Boolean) {
-        val toPush = editorResources.filter(FILTER_TO_PUSH)
-        if (toPush.isNotEmpty()
-            && showSyncNotifications) {
-            showPush(false, toPush)
+        removeUpdatedDismissed(editorResources)
+        val inError = getNonDismissed(editorResources.filter(FILTER_ERROR))
+        val showError = inError.isNotEmpty();
+        val pushed = getNonDismissed(editorResources.filter(FILTER_PUSHED))
+        val showPushed = pushed.isNotEmpty()
+        val toPush = getNonDismissed(editorResources.filter(FILTER_TO_PUSH))
+        val showToPush = toPush.isNotEmpty() && showSyncNotifications
+        val dismissAction = {
+            dismiss(editorResources)
+            hideAll()
+        }
+
+        if (!showError
+            && !showPushed
+            && !showToPush) {
             return
         }
-        val inError = editorResources.filter(FILTER_ERROR)
-        if (inError.isNotEmpty()) {
-            showError(inError)
-        } else {
+        runInUI {
             hideAll()
+            val error = inError.firstOrNull()?.getState() as? Error
+            if (error != null) {
+                errorNotification.show(
+                    error.title,
+                    error.message,
+                    dismissAction)
+            }
+            if (showPushed) {
+                pushedNotification.show(
+                    pushed,
+                    // close action only if there was no error notification
+                    dismissAction.letIf(showError) { null }
+                )
+            }
+            if (showToPush) {
+                pushNotification.show(
+                    false,
+                    toPush,
+                    // close action only if there was no error nor pushed notification
+                    dismissAction.letIf(showError || showPushed) { null })
+            }
+        }
+    }
+
+    fun showError(error: Error) {
+        runInUI {
+            hideAll()
+            errorNotification.show(error.title, error.message) {
+                errorNotification.hide()
+            }
         }
     }
 
     fun showError(title: String, message: String?) {
-        runInUI {
-            hideAll()
-            errorNotification.show(title, message)
-        }
+        showError(Error(title, message))
     }
 
-    private fun showError(editorResources: Collection<EditorResource>) {
+    private fun getError(editorResources: Collection<EditorResource>) {
         val inError = editorResources.filter(FILTER_ERROR)
         val toDisplay = inError.firstOrNull()?.getState() as? Error ?: return
-        showError(toDisplay.title, toDisplay.message)
+        showError(toDisplay)
     }
 
     private fun showPush(showPull: Boolean, editorResources: Collection<EditorResource>) {
         runInUI {
             // hide & show in the same UI thread runnable avoid flickering
             hideAll()
-            pushNotification.show(showPull, editorResources)
+            pushNotification.show(showPull, editorResources, {
+                dismiss(editorResources)
+                hideAll()
+            })
         }
     }
 
     private fun showPushed(editorResources: Collection<EditorResource>) {
         runInUI {
             // hide & show in the same UI thread runnable avoid flickering
-            hideAll()
-            pushedNotification.show(editorResources)
+            pushedNotification.show(editorResources, { pushedNotification.hide() })
         }
     }
 
     private fun showPull(resource: HasMetadata) {
         runInUI {
             hideAll()
-            pullNotification.show(resource)
+            pullNotification.show(resource, { pullNotification.hide() })
+        }
+    }
+
+    private fun showPulled(resource: HasMetadata) {
+        runInUI {
+            hideAll()
+            pulledNotification.show(resource, { pulledNotification.hide() })
         }
     }
 
@@ -131,7 +186,36 @@ open class Notifications(
         runInUI {
             // hide & show in the same UI thread runnable avoid flickering
             hideAll()
-            deletedNotification.show(resource)
+            deletedNotification.show(resource, { deletedNotification.hide() })
+        }
+    }
+
+    private fun dismiss(resources: Collection<EditorResource>) {
+        resources.forEach { resource ->
+            dismissed.put(HasMetadataIdentifier(resource.getResource()), resource.getState())
+        }
+    }
+
+    private fun isDismissedButUpdated(editorResource: EditorResource): Boolean {
+        val dismissed = dismissed[HasMetadataIdentifier(editorResource.getResource())] ?: return false
+        return editorResource.getState() != dismissed
+    }
+
+    private fun isDismissed(editorResource: EditorResource): Boolean {
+        return dismissed[HasMetadataIdentifier(editorResource.getResource())] != null
+    }
+
+    private fun getNonDismissed(editorResources: Collection<EditorResource>): Collection<EditorResource> {
+        return editorResources.filter { editorResource ->
+            !isDismissed(editorResource)
+        }
+    }
+
+    private fun removeUpdatedDismissed(editorResources: Collection<EditorResource>) {
+        editorResources.forEach { editorResource ->
+            if (isDismissedButUpdated(editorResource)) {
+                dismissed.remove(HasMetadataIdentifier(editorResource.getResource()))
+            }
         }
     }
 
