@@ -17,7 +17,7 @@ import com.intellij.remoterobot.utils.Keyboard;
 import com.intellij.remoterobot.utils.WaitForConditionTimeoutException;
 import com.redhat.devtools.intellij.commonuitest.fixtures.dialogs.errors.IdeFatalErrorsDialog;
 import org.assertj.swing.core.MouseButton;
-import org.jboss.tools.intellij.kubernetes.fixtures.mainIdeWindow.IdeStatusBarFixture;
+import org.jboss.tools.intellij.kubernetes.fixtures.mainidewindow.IdeStatusBarFixture;
 
 import java.awt.*;
 import java.awt.datatransfer.Clipboard;
@@ -138,24 +138,21 @@ public abstract class AbstractKubernetesTest {
         return true;
     }
 
-    public static boolean clearErrors(RemoteRobot robot){
+    public static void clearErrors(RemoteRobot robot){
         IdeStatusBarFixture statusBar = robot.find(IdeStatusBarFixture.class);
         try {
             statusBar.ideErrorsIcon().click();
         } catch (WaitForConditionTimeoutException e) {
-            return true;
+            e.printStackTrace();
         }
         IdeFatalErrorsDialog ideErrorsDialog = robot.find(IdeFatalErrorsDialog.class);
         ideErrorsDialog.clearAll();
-        return true;
     }
 
     public static Clipboard getSystemClipboard()
     {
         Toolkit defaultToolkit = Toolkit.getDefaultToolkit();
-        Clipboard systemClipboard = defaultToolkit.getSystemClipboard();
-
-        return systemClipboard;
+        return defaultToolkit.getSystemClipboard();
     }
 
     public static void scrollToVisible(String text, RemoteRobot robot) {
