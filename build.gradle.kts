@@ -110,14 +110,6 @@ tasks {
 
     test {
         systemProperty("com.redhat.devtools.intellij.telemetry.mode", "disabled")
-        /*afterSuite(KotlinClosure2({ desc: TestDescriptor, result: TestResult ->
-        if (desc.parent != null)
-            println("${result.resultType} " +
-                    "(${result.testCount} tests, " +
-                    "${result.successfulTestCount} successes, " +
-                    "${result.failedTestCount} failures, " +
-                    "${result.skippedTestCount} skipped)")
-        }))*/
     }
 
     printProductsReleases {
