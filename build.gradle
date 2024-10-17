@@ -2,6 +2,13 @@ buildscript {
     ext.ideaVersion = ideaVersion
     ext.kotlinVersion = kotlinVersion
     ext.java_version = "17"
+
+    // Should be in buildSrc ideally
+    //dependencies {
+    //    classpath(gradleApi()) {
+    //        because("Creates a dependency on the API of the current version of Gradle, so that we can create Gradle plugins.")
+    //    }
+    //}
 }
 
 plugins {
@@ -33,7 +40,34 @@ tasks.withType(Test) {
     environment 'GRADLE_RELEASE_REPOSITORY','https://services.gradle.org/distributions'
 }
 
+// Should be in buildSrc ideally
+//@CacheableRule
+//abstract class ComposedJarRule implements ComponentMetadataRule {
+//    @Inject abstract ObjectFactory getObjects()
+//
+//    void execute(ComponentMetadataContext context) {
+//        context.details.withVariant("intellijPlatformComposedJar") {
+//            attributes {
+//                attribute(LibraryElements.LIBRARY_ELEMENTS_ATTRIBUTE, objects.named(LibraryElements, LibraryElements.JAR))
+//            }
+//        }
+//    }
+//}
+
 dependencies {
+    //components {
+    //    withModule("com.redhat.devtools.intellij:intellij-common", ComposedJarRule)
+    //}
+    components {
+        withModule("com.redhat.devtools.intellij:intellij-common") {
+            withVariant("intellijPlatformComposedJar") {
+                attributes {
+                    attribute(LibraryElements.LIBRARY_ELEMENTS_ATTRIBUTE, objects.named(LibraryElements, LibraryElements.JAR))
+                }
+            }
+        }
+    }
+
     implementation(
             "com.redhat.devtools.intellij:intellij-common:${intellijCommonVersion}",
             "io.fabric8:kubernetes-client:${kubernetesClientVersion}",
