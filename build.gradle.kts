@@ -71,6 +71,16 @@ dependencies {
     testImplementation(libs.mockito.kotlin)
     testImplementation(libs.kotlin.test.junit)
 
+    components {
+        withModule("com.redhat.devtools.intellij:intellij-common") {
+            withVariant("intellijPlatformComposedJar") {
+                attributes {
+                    attribute(LibraryElements.LIBRARY_ELEMENTS_ATTRIBUTE, objects.named(LibraryElements.JAR))
+                }
+            }
+        }
+    }
+
 }
 
 intellijPlatform {
