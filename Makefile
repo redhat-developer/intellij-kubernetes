@@ -1,6 +1,6 @@
-###########################################
-#  Intellij-kubernets run build minikube  #
-###########################################
+############################################
+#  Intellij-kubernetes run build minikube  #
+############################################
 
 MOD_FLAGS := $(shell (go version | grep -q -E "1\.1[1-9]") && echo -mod=vendor)
 CMDS  := $(shell go list $(MOD_FLAGS) ./cmd/...)

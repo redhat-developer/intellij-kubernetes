@@ -8,13 +8,12 @@
  * Contributors:
  * Red Hat, Inc. - initial API and implementation
  ******************************************************************************/
-package org.jboss.tools.intellij.kubernetes.fixtures.mainIdeWindow;
+package org.jboss.tools.intellij.kubernetes.fixtures.mainidewindow;
 
 import com.intellij.remoterobot.RemoteRobot;
 import com.intellij.remoterobot.data.RemoteComponent;
 import com.intellij.remoterobot.fixtures.CommonContainerFixture;
 import com.intellij.remoterobot.fixtures.ComponentFixture;
-import com.intellij.remoterobot.fixtures.ContainerFixture;
 import com.intellij.remoterobot.fixtures.DefaultXpath;
 import com.intellij.remoterobot.fixtures.FixtureName;
 import org.jetbrains.annotations.NotNull;
@@ -33,15 +32,11 @@ public class IdeStatusBarFixture extends CommonContainerFixture {
         super(remoteRobot, remoteComponent);
     }
 
-    public ComponentFixture inlineProgressPanel() {
-        return find(ContainerFixture.class, byXpath("//div[@class='InlineProgressPanel']"));
-    }
-
     public ComponentFixture ideErrorsIcon() {
         return find(ComponentFixture.class, byXpath("//div[@class='IdeErrorsIcon']"));
     }
 
-    public ComponentFixture withIconAndArrows(String accessiblename){
-        return find(ComponentFixture.class, byXpath("//div[@accessiblename='" + accessiblename + "' and @class='WithIconAndArrows']"));
+    public void withIconAndArrows(String accessibleName){
+        find(ComponentFixture.class, byXpath("//div[@accessiblename='" + accessibleName + "' and @class='WithIconAndArrows']"));
     }
 }
