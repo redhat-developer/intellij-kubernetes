@@ -59,6 +59,16 @@ dependencies {
             "org.junit.platform:junit-platform-launcher:1.9.3",
             "com.google.code.gson:gson:2.8.9"
     )
+
+    components {
+        withModule("com.redhat.devtools.intellij:intellij-common") {
+            withVariant("intellijPlatformComposedJar") {
+                attributes {
+                    attribute(LibraryElements.LIBRARY_ELEMENTS_ATTRIBUTE, objects.named(LibraryElements, LibraryElements.JAR))
+                }
+            }
+        }
+    }
 }
 
 java {
