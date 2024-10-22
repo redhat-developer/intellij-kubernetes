@@ -227,6 +227,10 @@ repositories {
     maven {
         url "https://packages.jetbrains.team/maven/p/ij/intellij-dependencies"
     }
+    maven {
+        url "https://oss.sonatype.org/content/repositories/snapshots/"
+    }
+
 }
 
 group "com.redhat.devtools.intellij"
