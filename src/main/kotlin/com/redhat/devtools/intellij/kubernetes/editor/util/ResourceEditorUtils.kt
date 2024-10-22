@@ -25,7 +25,6 @@ import com.intellij.psi.PsiDocumentManager
 import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiFile
 import com.intellij.psi.PsiManager
-import com.intellij.refactoring.suggested.startOffset
 import com.redhat.devtools.intellij.common.validation.KubernetesResourceInfo
 import com.redhat.devtools.intellij.kubernetes.editor.ResourceEditor
 import org.jetbrains.yaml.YAMLElementGenerator
@@ -321,8 +320,8 @@ fun getValue(element: PsiElement): String? {
  */
 fun getStartOffset(element: PsiElement): Int? {
     return when (element) {
-        is YAMLKeyValue -> element.value?.startOffset
-        is JsonProperty -> element.value?.startOffset
+        is YAMLKeyValue -> element.value?.textRange?.startOffset
+        is JsonProperty -> element.value?.textRange?.startOffset
         else -> null
     }
 }
