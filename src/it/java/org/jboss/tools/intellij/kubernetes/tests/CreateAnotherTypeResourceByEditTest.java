@@ -16,8 +16,8 @@ import com.intellij.remoterobot.fixtures.dataExtractor.RemoteText;
 import com.intellij.remoterobot.utils.Keyboard;
 import org.assertj.swing.core.MouseButton;
 import org.jboss.tools.intellij.kubernetes.fixtures.dialogs.IdeFatalErrorsDialogFixture;
-import org.jboss.tools.intellij.kubernetes.fixtures.mainIdeWindow.EditorsSplittersFixture;
-import org.jboss.tools.intellij.kubernetes.fixtures.mainIdeWindow.IdeStatusBarFixture;
+import org.jboss.tools.intellij.kubernetes.fixtures.mainidewindow.EditorsSplittersFixture;
+import org.jboss.tools.intellij.kubernetes.fixtures.mainidewindow.IdeStatusBarFixture;
 import org.jboss.tools.intellij.kubernetes.fixtures.menus.ActionToolbarMenu;
 import org.jboss.tools.intellij.kubernetes.fixtures.menus.RightClickMenu;
 
@@ -51,11 +51,11 @@ public class CreateAnotherTypeResourceByEditTest extends AbstractKubernetesTest{
         clearErrors(robot);
 
         ActionToolbarMenu toolbarMenu = robot.find(ActionToolbarMenu.class);
-        toolbarMenu.PushToCluster();
+        toolbarMenu.pushToCluster();
 
         checkErrors(robot);
 
-        editorSplitter.closeEditor(newResourceName); // close editor
+        editorSplitter.closeEditor(); // close editor
         hideClusterContent(kubernetesViewTree);
         openResourceContentList(new String[] {"Workloads", "Pods"}, kubernetesViewTree);
         waitFor(Duration.ofSeconds(15), Duration.ofSeconds(1), "New resource was not been created.", () -> isResourceCreated(kubernetesViewTree, newResourceName, false));
@@ -107,15 +107,15 @@ public class CreateAnotherTypeResourceByEditTest extends AbstractKubernetesTest{
     }
 
     private static void checkErrors(RemoteRobot robot){
-        String errorMessage = "";
+        StringBuilder errorMessage = new StringBuilder();
         boolean isErrorAfterPush = isError(robot);
         if (isErrorAfterPush){
             robot.find(IdeStatusBarFixture.class).ideErrorsIcon().click();
             IdeFatalErrorsDialogFixture ideErrorsDialog = robot.find(IdeFatalErrorsDialogFixture.class);
             for (RemoteText remoteText: ideErrorsDialog.exceptionDescriptionJTextArea().findAllText()){
-                errorMessage = errorMessage + remoteText.getText();
+                errorMessage.append(remoteText.getText());
             }
         }
-        assertFalse(isErrorAfterPush, errorMessage);
+        assertFalse(isErrorAfterPush, errorMessage.toString());
     }
 }

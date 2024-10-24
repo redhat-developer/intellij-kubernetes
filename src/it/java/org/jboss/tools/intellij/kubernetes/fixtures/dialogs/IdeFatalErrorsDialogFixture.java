@@ -19,7 +19,6 @@ import com.intellij.remoterobot.fixtures.FixtureName;
 import org.jetbrains.annotations.NotNull;
 
 import static com.intellij.remoterobot.search.locators.Locators.byXpath;
-import static com.redhat.devtools.intellij.commonuitest.utils.constants.ButtonLabels.CLEAR_ALL_LABEL;
 
 /**
  * IDE Fatal Errors dialog fixture
@@ -31,13 +30,6 @@ import static com.redhat.devtools.intellij.commonuitest.utils.constants.ButtonLa
 public class IdeFatalErrorsDialogFixture extends CommonContainerFixture {
     public IdeFatalErrorsDialogFixture(@NotNull RemoteRobot remoteRobot, @NotNull RemoteComponent remoteComponent) {
         super(remoteRobot, remoteComponent);
-    }
-
-    /**
-     * Click on the 'Clear all' button
-     */
-    public void clearAll() {
-        button(CLEAR_ALL_LABEL).click();
     }
 
     public ComponentFixture exceptionDescriptionJTextArea() {

@@ -10,6 +10,7 @@
  ******************************************************************************/
 package com.redhat.devtools.intellij.kubernetes.model.mocks
 
+import io.fabric8.kubernetes.client.Config
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.anyOrNull
 import com.nhaarman.mockitokotlin2.doAnswer
@@ -209,7 +210,7 @@ object Mocks {
     fun clientConfig(
         currentContext: NamedContext?,
         allContexts: List<NamedContext>,
-        configuration: io.fabric8.kubernetes.client.Config = mock()
+        configuration: Config = mock()
     ): ClientConfig {
         val saveFuture: CompletableFuture<Boolean> = mock()
         return mock {

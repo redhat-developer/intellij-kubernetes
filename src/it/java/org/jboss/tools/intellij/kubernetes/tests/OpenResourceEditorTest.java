@@ -15,8 +15,8 @@ import com.intellij.remoterobot.fixtures.ComponentFixture;
 import com.intellij.remoterobot.fixtures.dataExtractor.RemoteText;
 import com.intellij.remoterobot.utils.WaitForConditionTimeoutException;
 import org.assertj.swing.core.MouseButton;
-import org.jboss.tools.intellij.kubernetes.fixtures.mainIdeWindow.EditorsSplittersFixture;
-import org.jboss.tools.intellij.kubernetes.fixtures.mainIdeWindow.IdeStatusBarFixture;
+import org.jboss.tools.intellij.kubernetes.fixtures.mainidewindow.EditorsSplittersFixture;
+import org.jboss.tools.intellij.kubernetes.fixtures.mainidewindow.IdeStatusBarFixture;
 import org.jboss.tools.intellij.kubernetes.fixtures.menus.RightClickMenu;
 
 import java.time.Duration;
@@ -36,11 +36,10 @@ public class OpenResourceEditorTest extends AbstractKubernetesTest{
         rightClickMenu.select("Edit..."); // open the yml editor
 
         EditorsSplittersFixture editorSplitter = robot.find(EditorsSplittersFixture.class);
-        String editorTitle = selectedResource.getText();
         waitFor(Duration.ofSeconds(15), Duration.ofSeconds(1), "Editor is not available.", () -> isEditorOpened(robot)); // wait 15 seconds for editor
         waitFor(Duration.ofSeconds(15), Duration.ofSeconds(1), "Resource schema is wrong.", () -> isSchemaSet(robot, "v1#Node")); // wait 15 seconds for set right schema
 
-        editorSplitter.closeEditor(editorTitle); // close editor
+        editorSplitter.closeEditor(); // close editor
         hideClusterContent(kubernetesViewTree);
     }
 
