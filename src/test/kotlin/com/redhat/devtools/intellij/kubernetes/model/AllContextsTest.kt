@@ -35,7 +35,6 @@ import com.redhat.devtools.intellij.kubernetes.model.mocks.Mocks.clientConfig
 import com.redhat.devtools.intellij.kubernetes.model.mocks.Mocks.clientFactory
 import com.redhat.devtools.intellij.kubernetes.model.mocks.Mocks.context
 import com.redhat.devtools.intellij.kubernetes.model.resource.ResourceKind
-import com.redhat.devtools.intellij.kubernetes.model.util.ResourceException
 import io.fabric8.kubernetes.api.model.Config
 import io.fabric8.kubernetes.api.model.ConfigBuilder
 import io.fabric8.kubernetes.api.model.HasMetadata

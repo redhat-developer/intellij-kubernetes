@@ -54,7 +54,7 @@ open class ClientConfig(private val client: Client, private val executor: Execut
 					return@supplyAsync false
 				}
 				val fromFile = kubeConfig.load() ?: return@supplyAsync false
-				if (setCurrentContext(
+				return@supplyAsync if (setCurrentContext(
 						currentContext,
 						KubeConfigUtils.getCurrentContext(fromFile),
 						fromFile
@@ -66,9 +66,9 @@ open class ClientConfig(private val client: Client, private val executor: Execut
 					)
 				) {
 					kubeConfig.save(fromFile)
-					return@supplyAsync true
+					true
 				} else {
-					return@supplyAsync false
+					false
 				}
 			},
 			executor
