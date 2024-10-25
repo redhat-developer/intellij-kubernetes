@@ -10,7 +10,6 @@
  ******************************************************************************/
 package com.redhat.devtools.intellij.kubernetes.model.context
 
-import com.intellij.openapi.diagnostic.logger
 import com.redhat.devtools.intellij.common.kubernetes.ClusterInfo
 import com.redhat.devtools.intellij.kubernetes.model.IResourceModelObservable
 import com.redhat.devtools.intellij.kubernetes.model.client.ClientAdapter
@@ -35,14 +34,12 @@ interface IActiveContext<N: HasMetadata, C: KubernetesClient>: IContext {
         ): IActiveContext<out HasMetadata, out KubernetesClient>? {
             val currentContext = client.config.currentContext ?: return null
             return if (client.isOpenShift()) {
-                logger<Factory>().warn("Current context ${currentContext.name} is OpenShift")
                 OpenShiftContext(
                     currentContext,
                     observable,
                     client as OSClientAdapter
                 )
             } else {
-                logger<Factory>().warn("Current context ${currentContext.name} is Kubernetes")
                 KubernetesContext(
                     currentContext,
                     observable,

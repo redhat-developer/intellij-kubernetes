@@ -12,6 +12,7 @@ package com.redhat.devtools.intellij.kubernetes.model
 
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.diagnostic.logger
+import com.redhat.devtools.intellij.common.utils.ConfigHelper
 import com.redhat.devtools.intellij.common.utils.ConfigWatcher
 import com.redhat.devtools.intellij.common.utils.ExecHelper
 import com.redhat.devtools.intellij.kubernetes.model.client.ClientAdapter
@@ -26,9 +27,10 @@ import com.redhat.devtools.intellij.kubernetes.telemetry.TelemetryService.NAME_P
 import com.redhat.devtools.intellij.kubernetes.telemetry.TelemetryService.PROP_IS_OPENSHIFT
 import com.redhat.devtools.intellij.kubernetes.telemetry.TelemetryService.PROP_KUBERNETES_VERSION
 import com.redhat.devtools.intellij.kubernetes.telemetry.TelemetryService.PROP_OPENSHIFT_VERSION
-import io.fabric8.kubernetes.api.model.Config
 import io.fabric8.kubernetes.api.model.HasMetadata
+import io.fabric8.kubernetes.client.Config
 import io.fabric8.kubernetes.client.KubernetesClient
+import java.nio.file.Paths
 import java.util.concurrent.CompletionException
 import java.util.concurrent.locks.ReentrantReadWriteLock
 import kotlin.concurrent.read
@@ -84,14 +86,16 @@ open class AllContexts(
 	= { namespace, context -> ClientAdapter.Factory.create(namespace, context) }
 ) : IAllContexts {
 
+	init {
+		watchKubeConfig()
+	}
+
 	private val lock = ReentrantReadWriteLock()
 
-	protected open val client = ResettableLazyProperty {
-		val client = lock.write {
+	private val client = ResettableLazyProperty {
+		lock.write {
 			clientFactory.invoke(null, null)
 		}
-		watchKubeConfig(client)
-		client
 	}
 
 	override val current: IActiveContext<out HasMetadata, out KubernetesClient>?
@@ -106,11 +110,10 @@ open class AllContexts(
 			lock.write {
 				if (_all.isEmpty()) {
 					try {
-						val client = client.get()
-						val all = createContexts(client, client?.config)
+						val all = createContexts(client.get(), client.get()?.config)
 						_all.addAll(all)
 					} catch (e: Exception) {
-						logger<AllContexts>().warn("Could not load all contexts.", e)
+						//
 					}
 				}
 				return _all
@@ -193,10 +196,8 @@ open class AllContexts(
 			return config.allContexts
 				.map {
 					if (config.isCurrent(it)) {
-						logger<AllContexts>().debug("Adding active context ${it.name}")
 						createActiveContext(client) ?: Context(it)
 					} else {
-						logger<AllContexts>().debug("Adding inactive context ${it.name}")
 						Context(it)
 					}
 				}
@@ -240,28 +241,26 @@ open class AllContexts(
 		}
 	}
 
-	protected open fun watchKubeConfig(client: ClientAdapter<out KubernetesClient>) {
-		val files = client.config.files
-		val paths = files.map { file -> file.toPath() }
+	protected open fun watchKubeConfig() {
+		val path = Paths.get(Config.getKubeconfigFilename())
 		/**
 		 * [ConfigWatcher] cannot add/remove listeners nor can it get closed (and stop the [java.nio.file.WatchService]).
 		 * We therefore have to create a single instance in here rather than using it in a shielded/private way within
 		 * [com.redhat.devtools.intellij.kubernetes.model.client.ClientConfig].
 		 * Closing/Recreating [ConfigWatcher] is needed when used within [com.redhat.devtools.intellij.kubernetes.model.client.ClientConfig].
 		 * The latter gets closed/recreated whenever the context changes in
-		 * [com.redhat.devtools.intellij.kubernetes.model.client.KubeConfigPersistence].
+		 * [com.redhat.devtools.intellij.kubernetes.model.client.KubeConfigAdapter].
 		 */
-		val watcher = ConfigWatcher(paths) { _, config: Config? ->
-			onKubeConfigChanged(config)
-		}
+		val watcher = ConfigWatcher(path) { _, config: io.fabric8.kubernetes.api.model.Config? -> onKubeConfigChanged(config) }
 		runAsync(watcher::run)
 	}
 
-	protected open fun onKubeConfigChanged(fileConfig: Config?) {
+	protected open fun onKubeConfigChanged(fileConfig: io.fabric8.kubernetes.api.model.Config?) {
 		lock.read {
 			fileConfig ?: return
 			val client = client.get() ?: return
-			if (client.config.isEqual(fileConfig)) {
+			val clientConfig = client.config.configuration
+			if (ConfigHelper.areEqual(fileConfig, clientConfig)) {
 				return
 			}
 			this.client.reset() // create new client when accessed
