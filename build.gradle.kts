@@ -110,11 +110,20 @@ intellijPlatform {
 }
 
 tasks {
+    fun supportsEnhancedClassRedefinition(): Boolean {
+        val platformVersion = findProperty("platformVersion").toString().toFloatOrNull()
+        return platformVersion != null
+                && platformVersion >= 2024.1
+    }
+
     wrapper {
         gradleVersion = providers.gradleProperty("gradleVersion").get()
     }
 
     runIde {
+        if (supportsEnhancedClassRedefinition()) {
+            jvmArgs("-XX:+AllowEnhancedClassRedefinition", "-XX:HotswapAgent=fatjar")
+        }
         systemProperty("com.redhat.devtools.intellij.telemetry.mode", "debug")
     }
 
