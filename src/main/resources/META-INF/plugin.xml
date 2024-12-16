@@ -225,7 +225,7 @@
         <codeInsight.inlayProvider language="yaml"
                                    implementationClass="com.redhat.devtools.intellij.kubernetes.editor.inlay.Base64ValueInlayHintsProvider"
                                    id="MarkdownTableInlayProvider"/>
-        <applicationConfigurable id="tools.settings.redhat.kubernetes"
+        <projectConfigurable id="tools.settings.redhat.kubernetes"
                              parentId="tools"
                              displayName="Red Hat Kubernetes"
                              instance="com.redhat.devtools.intellij.kubernetes.settings.SettingsConfigurable" />

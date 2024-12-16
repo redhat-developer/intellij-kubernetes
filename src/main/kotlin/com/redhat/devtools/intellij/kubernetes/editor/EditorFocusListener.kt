@@ -61,9 +61,12 @@ class EditorFocusListener(private val project: Project) : FileEditorManagerListe
         editor: FileEditor,
         project: Project
     ) {
-        ErrorNotification(editor, project).show(
+        val notification = ErrorNotification(editor, project)
+        notification.show(
             e.message ?: "Undefined error",
-            e)
+            e,
+            { notification.hide() }
+        )
     }
 
 }
