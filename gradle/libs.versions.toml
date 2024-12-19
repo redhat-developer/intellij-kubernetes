@@ -1,6 +1,6 @@
 [versions]
 # libraries
-kubernetes-client = "6.12.0"
+kubernetes-client = "7.0.0"
 devtools-common = "1.9.7-SNAPSHOT"
 jackson-core = "2.17.0"
 commons-lang3 = "3.12.0"
@@ -19,7 +19,7 @@ kotlinJvm = "2.0.20"
 [libraries]
 openshift-client = { group = "io.fabric8", name = "openshift-client", version.ref = "kubernetes-client" }
 kubernetes-client = { group = "io.fabric8", name = "kubernetes-client", version.ref = "kubernetes-client" }
-kubernetes-model = { group = "io.fabric8", name = "kubernetes-model", version.ref = "kubernetes-client" }
+kubernetes-model = { group = "io.fabric8", name = "kubernetes-model-core", version.ref = "kubernetes-client" }
 kubernetes-model-common = { group = "io.fabric8", name = "kubernetes-model-common", version.ref = "kubernetes-client" }
 kubernetes-httpclient-okhttp = { group = "io.fabric8", name = "kubernetes-httpclient-okhttp", version.ref = "kubernetes-client" }
 devtools-common = { group = "com.redhat.devtools.intellij", name = "intellij-common", version.ref = "devtools-common" }

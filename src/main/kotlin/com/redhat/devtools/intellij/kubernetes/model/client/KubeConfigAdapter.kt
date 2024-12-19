@@ -10,7 +10,11 @@
  ******************************************************************************/
 package com.redhat.devtools.intellij.kubernetes.model.client
 
+import com.intellij.openapi.util.io.FileUtil
+import com.redhat.devtools.intellij.kubernetes.model.util.ConfigUtils
 import io.fabric8.kubernetes.api.model.Config
+import io.fabric8.kubernetes.api.model.Context
+import io.fabric8.kubernetes.api.model.NamedContext
 import io.fabric8.kubernetes.client.internal.KubeConfigUtils
 import java.io.File
 
@@ -19,24 +23,91 @@ import java.io.File
  * (but may be configured to be at a different location). This class respects this by relying on the
  * {@link io.fabric8.kubernetes.client.Config} for the location instead of using a hard coded path.
  */
-class KubeConfigAdapter {
+class KubeConfigAdapter(private val file: File, private var _config: Config? = null) {
 
-    private val file: File by lazy {
-        File(io.fabric8.kubernetes.client.Config.getKubeconfigFilename())
-    }
+    private val config: Config?
+        get() {
+            if (_config != null) {
+                return _config
+            } else {
+                _config = load()
+                return _config
+            }
+        }
 
-    fun exists(): Boolean {
-        return file.exists()
-    }
+    private var modified: Boolean = false
 
-    fun load(): Config? {
+    private fun load(): Config? {
         if (!exists()) {
             return null
         }
         return KubeConfigUtils.parseConfig(file)
     }
 
-    fun save(config: Config) {
-        KubeConfigUtils.persistKubeConfigIntoFile(config, file.absolutePath)
+    private fun exists(): Boolean {
+        return file.exists()
+    }
+
+    fun save() {
+        val config = this.config ?: return
+        KubeConfigUtils.persistKubeConfigIntoFile(config, file)
+    }
+
+    fun setCurrentContext(newCurrentContext: String?): Boolean {
+        val oldCurrentContext = config?.currentContext
+        return if (newCurrentContext != oldCurrentContext) {
+            _config?.currentContext = newCurrentContext
+            this.modified = _config != null
+            return modified
+        } else {
+            false
+        }
+    }
+
+    /**
+     * Sets the namespace in the given source [Context] to the given target [Context].
+     * Does nothing if the target config has no current context
+     * or if the source config has no current context
+     * or if setting it would not change it.
+     *
+     * @param source Context whose namespace should be copied
+     * @param target Context whose namespace should be overriden
+     * @return
+     */
+    private fun setCurrentNamespace(
+        source: Context?
+    ): Boolean {
+        val sourceNamespace = source?.namespace ?: return false
+        val target = getCurrentContext(config?.currentContext) ?: return false
+        return if (sourceNamespace != target.namespace) {
+            target.namespace = source.namespace
+            true
+        } else {
+            false
+        }
+    }
+
+    private fun getCurrentContext(currentContext: String?): Context? {
+        if (currentContext == null) {
+            return null
+        }
+        val config = this.config ?: return null
+        return config.contexts
+            .filter { namedContext ->
+                currentContext == namedContext.name
+            }.firstNotNullOfOrNull { namedContext ->
+                namedContext.context
+            }
+    }
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other !is KubeConfigAdapter) return false
+
+        return FileUtil.filesEqual(file, other.file)
+    }
+
+    override fun hashCode(): Int {
+        return FileUtil.fileHashCode(file)
     }
 }
