@@ -538,7 +538,7 @@ class AllContextsTest {
 			runnable.invoke() // run directly, not in IDEA pooled threads
 		}
 
-		override fun watchKubeConfig() {
+		override fun watchKubeConfigs() {
 			// don't watch filesystem (override super method)
 			watchStarted = true
 		}
