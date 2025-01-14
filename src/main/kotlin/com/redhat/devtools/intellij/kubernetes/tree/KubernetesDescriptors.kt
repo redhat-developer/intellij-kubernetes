@@ -50,7 +50,13 @@ import javax.swing.Icon
 
 object KubernetesDescriptors {
 
-	fun createDescriptor(element: Any, childrenKind: ResourceKind<out HasMetadata>?, parent: NodeDescriptor<*>?, model: IResourceModel, project: Project): NodeDescriptor<*>? {
+	fun createDescriptor(
+		element: Any,
+		childrenKind: ResourceKind<out HasMetadata>?,
+		parent: NodeDescriptor<*>?,
+		model: IResourceModel,
+		project: Project
+	): NodeDescriptor<*>? {
 		return when {
 			element is DescriptorFactory<*> ->
 				element.create(parent, model, project)

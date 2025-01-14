@@ -10,13 +10,25 @@
  ******************************************************************************/
 package com.redhat.devtools.intellij.kubernetes.model.context
 
+import com.redhat.devtools.intellij.kubernetes.model.util.toMessage
 import io.fabric8.kubernetes.api.model.NamedContext
 
 interface IContext {
-	val context: NamedContext
 	val active: Boolean
+	val name: String?
+	val namespace: String?
 }
 
-open class Context(override val context: NamedContext): IContext {
+open class Context(private val context: NamedContext): IContext {
 	override val active: Boolean = false
+	override val name: String?
+		get() = context.name
+	override val namespace: String?
+		get() = context.context?.namespace
+}
+
+class KubeConfigError(error: Exception? = null): IContext {
+	override val active: Boolean = false
+	override val name: String = "Configuration error: ${toMessage(error)}"
+	override val namespace: String? = null
 }

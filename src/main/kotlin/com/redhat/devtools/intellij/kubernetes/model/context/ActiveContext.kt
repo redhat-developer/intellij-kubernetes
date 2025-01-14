@@ -487,7 +487,7 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
     }
 
     override fun close() {
-        logger<ActiveContext<*, *>>().debug("Closing context ${context.name}.")
+        logger<ActiveContext<*, *>>().debug("Closing context $name.")
         watch.close()
         dashboard.close()
     }

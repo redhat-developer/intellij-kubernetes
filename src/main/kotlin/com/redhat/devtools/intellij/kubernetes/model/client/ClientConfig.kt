@@ -66,7 +66,10 @@ open class ClientConfig(
 	 * @param config the [Config] to compare the adapted config in this class to.
 	 * @return true if the given config is equal to the one that this class adapts
 	 */
-	fun isEqualConfig(config: Config): Boolean {
+	fun isEqualConfig(config: Config?): Boolean {
+		if (config == null) {
+			return false
+		}
 		return ConfigHelper.areEqualCurrentContext(config, this.config)
 				&& ConfigHelper.areEqualContexts(config, this.config)
 				&& ConfigHelper.areEqualCluster(config, this.config)

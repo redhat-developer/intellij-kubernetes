@@ -65,10 +65,6 @@ interface IActiveContext<N: HasMetadata, C: KubernetesClient>: IContext {
         }
     }
 
-    val name: String?
-        get() {
-            return context.name
-        }
     /**
      * The master url for this context. This is the url of the cluster for this context.
      */

@@ -70,12 +70,13 @@ object Mocks {
         }
     }
 
-    fun context(namedContext: NamedContext)
-            : IContext {
-        return mock {
-            Mockito.doReturn(namedContext)
-                .`when`(mock).context
-        }
+    fun context(namedContext: NamedContext): IContext {
+        val context = mock<IContext>()
+        doReturn(namedContext.name)
+            .whenever(context).name
+        doReturn(namedContext.context.namespace)
+            .whenever(context).namespace
+        return context
     }
 
     fun activeContext(currentNamespace: Namespace, context: NamedContext)
@@ -83,8 +84,10 @@ object Mocks {
         val mock = mock<IActiveContext<HasMetadata, KubernetesClient>>()
         doReturn(currentNamespace.metadata.name)
             .whenever(mock).getCurrentNamespace()
-        doReturn(context)
-            .whenever(mock).context
+        doReturn(context.name)
+            .whenever(mock).name
+        doReturn(context.context.namespace)
+            .whenever(mock).namespace
         doReturn(true)
             .whenever(mock).active
         return mock

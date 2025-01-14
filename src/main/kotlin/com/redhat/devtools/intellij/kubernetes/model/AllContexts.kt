@@ -21,6 +21,8 @@ import com.redhat.devtools.intellij.kubernetes.model.context.IActiveContext
 import com.redhat.devtools.intellij.kubernetes.model.context.IContext
 import com.redhat.devtools.intellij.kubernetes.model.resource.ResourceKind
 import com.redhat.devtools.intellij.kubernetes.model.util.ResettableLazyProperty
+import com.redhat.devtools.intellij.kubernetes.model.util.ResourceException
+import com.redhat.devtools.intellij.kubernetes.model.util.toMessage
 import com.redhat.devtools.intellij.kubernetes.telemetry.TelemetryService
 import com.redhat.devtools.intellij.kubernetes.telemetry.TelemetryService.NAME_PREFIX_CONTEXT
 import com.redhat.devtools.intellij.kubernetes.telemetry.TelemetryService.PROP_IS_OPENSHIFT
@@ -110,10 +112,13 @@ open class AllContexts(
 			lock.write {
 				if (_all.isEmpty()) {
 					try {
-						val all = createContexts(client.get(), client.get()?.config)
-						_all.addAll(all)
+						val client = client.get()
+						if (client != null) {
+							val all = createContexts(client, client.config)
+							_all.addAll(all)
+						}
 					} catch (e: Exception) {
-						//
+						throw ResourceException("Config error: ${toMessage(e)}", e)
 					}
 				}
 				return _all
@@ -124,7 +129,7 @@ open class AllContexts(
 		if (current == context) {
 			return current
 		}
-		val newClient = clientFactory.invoke(context.context.context.namespace, context.context.name)
+		val newClient = clientFactory.invoke(context.namespace, context.name)
 		val new = setCurrentContext(newClient, emptyList())
 		if (new != null) {
 			modelChange.fireAllContextsChanged()
@@ -134,7 +139,7 @@ open class AllContexts(
 
 	override fun setCurrentNamespace(namespace: String): IActiveContext<out HasMetadata, out KubernetesClient>? {
 		val old = this.current ?: return null
-		val newClient = clientFactory.invoke(namespace, old.context.name)
+		val newClient = clientFactory.invoke(namespace, old.name)
 		val new = setCurrentContext(newClient, old.getWatched())
 		if (new != null) {
 			modelChange.fireCurrentNamespaceChanged(new, old)
@@ -173,6 +178,7 @@ open class AllContexts(
 		lock.write {
 			this.current?.close()
 			clearAllContexts() // latter access will cause reload
+			client.reset()
 		}
 		modelChange.fireAllContextsChanged()
 	}
@@ -244,20 +250,21 @@ open class AllContexts(
 		 * The latter gets closed/recreated whenever the context changes in
 		 * [com.redhat.devtools.intellij.kubernetes.model.client.KubeConfigAdapter].
 		 */
-		val watcher = ConfigWatcher { config: Config? -> onKubeConfigChanged(config) }
+		val watcher = ConfigWatcher { config: Config?, error: Exception? -> onKubeConfigChanged(config, error) }
 		runAsync(watcher::run)
 	}
 
-	protected open fun onKubeConfigChanged(updated: Config?) {
+	protected open fun onKubeConfigChanged(updated: Config?, error: Exception?) {
 		lock.read {
-			updated ?: return
-			val client = client.get() ?: return
-			val existing = client.config
-			if (existing.isEqualConfig(updated)) {
-				return
+			if (error == null) {
+				val client = client.get() ?: return
+				val existing = client.config
+				if (existing.isEqualConfig(updated)) {
+					return
+				}
+				this.client.reset() // create new client when accessed
+				client.close()
 			}
-			this.client.reset() // create new client when accessed
-			client.close()
 		}
 		refresh()
 	}

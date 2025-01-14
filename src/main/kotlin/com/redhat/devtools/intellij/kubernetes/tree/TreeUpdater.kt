@@ -123,7 +123,7 @@ class TreeUpdater(
         }
     }
 
-    private fun isRootNode(element: Any?): Boolean {
+    private fun isRootElement(element: Any?): Boolean {
         val descriptor = (treeModel.root as? DefaultMutableTreeNode)?.userObject as? NodeDescriptor<*>
         return element == descriptor?.element
     }
@@ -150,7 +150,7 @@ class TreeUpdater(
     private fun findNodes(element: Any?): Collection<TreeNode> {
         return if (element == null) {
             emptyList()
-        } else if (isRootNode(element)) {
+        } else if (isRootElement(element)) {
             listOf(treeModel.root)
         } else {
             findNodes({ node: TreeNode -> hasElement(element, node) }, treeModel.root)

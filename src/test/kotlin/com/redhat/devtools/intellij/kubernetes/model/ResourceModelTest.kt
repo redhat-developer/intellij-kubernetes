@@ -39,23 +39,21 @@ import java.util.function.Predicate
 
 class ResourceModelTest {
 
-    private val modelChange: IResourceModelObservable = mock()
-    private val namespace: Namespace = resource("papa smurf", null, "papaUid", "v1")
-    private val activeContext: IActiveContext<HasMetadata, KubernetesClient> = activeContext(namespace, mock())
-
     private val namedContext1 =
-            namedContext("ctx1", "namespace1", "cluster1", "user1")
+        namedContext("ctx1", "namespace1", "cluster1", "user1")
     private val namedContext2 =
-            namedContext("ctx2", "namespace2", "cluster2", "user2")
+        namedContext("ctx2", "namespace2", "cluster2", "user2")
     private val namedContext3 =
-            namedContext("ctx3", "namespace3", "cluster3", "user3")
+        namedContext("ctx3", "namespace3", "cluster3", "user3")
 
+    private val namespace: Namespace = resource("papa smurf", null, "papaUid", "v1")
+    private val activeContext: IActiveContext<HasMetadata, KubernetesClient> = activeContext(namespace, namedContext2)
+    private val modelChange: IResourceModelObservable = mock()
     private val allContexts = createContexts(activeContext, listOf(
             context(namedContext1),
             activeContext,
             context(namedContext3)
     ))
-
     private val model: ResourceModel = object : ResourceModel() {
         override val modelChange: IResourceModelObservable = this@ResourceModelTest.modelChange
         override val allContexts: IAllContexts = this@ResourceModelTest.allContexts
