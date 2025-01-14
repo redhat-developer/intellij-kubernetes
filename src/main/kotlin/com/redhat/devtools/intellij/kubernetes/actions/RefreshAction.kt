@@ -22,18 +22,39 @@ import javax.swing.tree.TreePath
 
 class RefreshAction : StructureTreeAction(IActiveContext::class.java) {
 
-	override fun actionPerformed(event: AnActionEvent?, path: TreePath?, selectedNode: Any?) {
-		val descriptor = selectedNode?.getDescriptor() ?: return
-		run("Refreshing $selectedNode...", true,
-			Progressive {
-				val telemetry = TelemetryService.instance.action("refresh resource")
-				try {
-					descriptor.invalidate()
-					sendTelemetry(getResourceKind(descriptor.element), telemetry)
-				} catch (e: Exception) {
-					logger<RefreshAction>().warn("Could not refresh $descriptor resources.", e)
-					telemetry.error(e).send()
-				}
-			})
-	}
+    override fun actionPerformed(event: AnActionEvent?, path: TreePath?, selectedNode: Any?) {
+        val descriptor = selectedNode?.getDescriptor()
+        run(
+            "Refreshing $selectedNode...", true,
+            Progressive {
+                val telemetry = TelemetryService.instance.action(
+                    "refresh ${
+                        if (descriptor != null) {
+                            "resource"
+                        } else {
+                            "all contexts"
+                        }
+                    } "
+                )
+                try {
+                    if (descriptor != null) {
+                        descriptor.invalidate()
+                        sendTelemetry(getResourceKind(descriptor.element), telemetry)
+                    } else {
+                        getResourceModel()?.invalidate();
+                        telemetry.send()
+                    }
+                } catch (e: Exception) {
+                    logger<RefreshAction>().warn(
+                        "Could not refresh ${
+                            if (descriptor != null) {
+                                "$descriptor resources"
+                            } else {
+                                "all contexts."
+                            }
+                        }", e
+                    )
+                }
+            })
+    }
 }
