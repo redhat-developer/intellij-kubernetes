@@ -51,7 +51,11 @@ abstract class AbstractTreeStructureContribution(override val model: IResourceMo
     abstract fun descriptorFactory(): (Any, ResourceKind<out HasMetadata>?, NodeDescriptor<*>?, IResourceModel, Project) -> NodeDescriptor<*>?
 
     protected fun getRootElement(): Any? {
-        return model.getCurrentContext()
+        return try {
+            model.getCurrentContext()
+        } catch (e: Exception) {
+            null
+        }
     }
 
     fun <T> element(initializer: ElementNode<T>.() -> Unit): ElementNode<T> {

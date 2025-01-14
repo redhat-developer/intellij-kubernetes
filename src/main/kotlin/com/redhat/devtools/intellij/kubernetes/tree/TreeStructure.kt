@@ -60,17 +60,25 @@ open class TreeStructure(
 
     override fun getChildElements(element: Any): Array<Any> {
         return when (element) {
-            rootElement -> model.getAllContexts().toTypedArray()
+            rootElement -> getAllContexts()
             else -> getValidContributions()
-                    .flatMap { getChildElements(element, it) }
-                    .toTypedArray()
+                .flatMap { getChildElements(element, it) }
+                .toTypedArray()
+        }
+    }
+
+    private fun getAllContexts(): Array<Any> {
+        return try {
+            model.getAllContexts().toTypedArray()
+        } catch (e: Exception) {
+            arrayOf(e)
         }
     }
 
     private fun getChildElements(element: Any, contribution: ITreeStructureContribution): Collection<Any> {
         return try {
             contribution.getChildElements(element)
-        } catch (e: java.lang.Exception) {
+        } catch (e: Exception) {
             logger<TreeStructure>().warn(e)
             listOf(e)
         }
@@ -101,24 +109,30 @@ open class TreeStructure(
     }
 
     override fun createDescriptor(element: Any, parent: NodeDescriptor<*>?): NodeDescriptor<*> {
-        val descriptor: NodeDescriptor<*>? =
-                getValidContributions()
-                        .map { it.createDescriptor(element, parent, project) }
-                        .find { it != null }
-        if (descriptor != null) {
-            return descriptor
-        }
-        return when (element) {
-            is IContext -> ContextDescriptor(element, parent, model, project)
-            is Exception -> ErrorDescriptor(element, parent, model, project)
-            is Folder -> FolderDescriptor(element, parent, model, project)
-            else -> Descriptor(element, null, parent, model, project)
+        return try {
+            val descriptor: NodeDescriptor<*>? = getValidContributions()
+                    .map { it.createDescriptor(element, parent, project) }
+                    .find { it != null }
+            descriptor ?: when (element) {
+                is IContext -> ContextDescriptor(element, parent, model, project)
+                is Exception -> ErrorDescriptor(element, parent, model, project)
+                is Folder -> FolderDescriptor(element, parent, model, project)
+                else -> Descriptor(element, null, parent, model, project)
+            }
+        } catch (e: Exception) {
+            ErrorDescriptor(e, parent, model, project)
         }
     }
 
     private fun getValidContributions(): Collection<ITreeStructureContribution> {
         return contributions
-                .filter { it.canContribute() }
+            .filter {
+                try {
+                    it.canContribute()
+                } catch (e: Exception) {
+                    false
+                }
+            }
     }
 
     private fun getTreeStructureExtensions(model: IResourceModel): List<ITreeStructureContribution> {
@@ -167,11 +181,7 @@ open class TreeStructure(
         project
     ) {
         override fun getLabel(element: C?): String {
-            return if (element?.context?.name == null) {
-                "<unknown context>"
-            } else {
-                element.context.name
-            }
+            return element?.name ?: "<unknown context>"
         }
 
         override fun getIcon(element: C): Icon? {
@@ -237,26 +247,22 @@ open class TreeStructure(
     }
 
     private class ErrorDescriptor(
-        exception: java.lang.Exception,
+        exception: Exception,
         parent: NodeDescriptor<*>?,
         model: IResourceModel,
         project: Project
-    ) : Descriptor<java.lang.Exception>(
+    ) : Descriptor<Exception>(
         exception,
         null,
         parent,
         model,
         project
     ) {
-        override fun getLabel(element: java.lang.Exception?): String {
-            return getMessage(element)
+        override fun getLabel(element: Exception?): String {
+            return toMessage(element)
         }
 
-        private fun getMessage(e: Exception?): String {
-            return toMessage(e)
-        }
-
-        override fun getIcon(element: java.lang.Exception): Icon {
+        override fun getIcon(element: Exception): Icon {
             return AllIcons.General.BalloonError
         }
     }

@@ -36,4 +36,8 @@ open class ResettableLazyProperty<T>(private val initializer: () -> T?) {
     fun reset() {
         this.initialized = false
     }
+
+    fun isReset(): Boolean {
+        return !initialized
+    }
 }
