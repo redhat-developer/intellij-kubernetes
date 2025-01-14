@@ -50,6 +50,7 @@ interface IResourceModel {
     fun watch(definition: CustomResourceDefinition)
     fun stopWatch(kind: ResourceKind<out HasMetadata>)
     fun stopWatch(definition: CustomResourceDefinition)
+    fun invalidate()
     fun invalidate(element: Any?)
     fun delete(resources: List<HasMetadata>, force: Boolean)
     fun canWatchLog(resource: HasMetadata): Boolean
@@ -171,7 +172,7 @@ open class ResourceModel : IResourceModel {
         modelChange.removeListener(listener)
     }
 
-    private fun invalidate() {
+    override fun invalidate() {
         logger<ResourceModel>().debug("Invalidating all contexts.")
         allContexts.refresh()
     }
