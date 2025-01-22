@@ -15,6 +15,11 @@ import io.fabric8.kubernetes.api.model.HasMetadata
 
 abstract class UseResourceAction<N: HasMetadata>(filter: Class<N>) : StructureTreeAction(false, filter) {
 
+	override fun isVisible(selected: Array<out Any>?): Boolean {
+		return !selected.isNullOrEmpty()
+				&& super.isVisible(selected)
+	}
+
 	override fun isVisible(selected: Any?): Boolean {
 		if (!super.isVisible(selected)) {
 			return false
