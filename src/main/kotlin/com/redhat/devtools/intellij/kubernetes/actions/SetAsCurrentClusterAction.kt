@@ -19,7 +19,7 @@ import com.redhat.devtools.intellij.kubernetes.telemetry.TelemetryService
 import com.redhat.devtools.intellij.kubernetes.telemetry.TelemetryService.NAME_PREFIX_CONTEXT
 import javax.swing.tree.TreePath
 
-class SetAsCurrentClusterAction: StructureTreeAction(IContext::class.java) {
+class SetAsCurrentClusterAction: StructureTreeAction(false, IContext::class.java) {
 
     override fun actionPerformed(event: AnActionEvent?, path: TreePath?, selectedNode: Any?) {
         val context: IContext = selectedNode?.getElement() ?: return
@@ -44,7 +44,7 @@ class SetAsCurrentClusterAction: StructureTreeAction(IContext::class.java) {
     }
 
     override fun isVisible(selected: Array<out Any>?): Boolean {
-        return selected?.size == 1
-                && isVisible(selected[0])
+        return !selected.isNullOrEmpty()
+                && super.isVisible(selected)
     }
 }

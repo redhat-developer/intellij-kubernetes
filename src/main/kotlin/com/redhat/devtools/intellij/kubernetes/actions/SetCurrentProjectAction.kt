@@ -79,6 +79,11 @@ class SetCurrentProjectAction : StructureTreeAction(false) {
         }
     }
 
+    override fun isVisible(selected: Array<out Any>?): Boolean {
+        return !selected.isNullOrEmpty()
+                && super.isVisible(selected)
+    }
+
     override fun isVisible(selected: Any?): Boolean {
         return selected?.getElement<ProjectsFolder>() != null
     }
