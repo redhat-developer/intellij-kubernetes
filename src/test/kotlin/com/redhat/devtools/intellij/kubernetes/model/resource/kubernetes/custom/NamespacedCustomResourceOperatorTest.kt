@@ -20,7 +20,7 @@ import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.NAMESPACE
 import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.NAMESPACE2
 import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.NAMESPACE3
 import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.client
-import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.customResource
+import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.genericKubernetesResource
 import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.namespacedCustomResourceOperation
 import com.redhat.devtools.intellij.kubernetes.model.resource.ResourceKind
 import io.fabric8.kubernetes.api.model.GenericKubernetesResource
@@ -59,7 +59,7 @@ class NamespacedCustomResourceOperatorTest {
         .build()
     private val context: CustomResourceDefinitionContext = CustomResourceDefinitionContextFactory.create(definition)
     private val kind = ResourceKind.create(spec)!!
-    private val customResource = customResource("Ezra", "Endor", definition)
+    private val customResource = genericKubernetesResource("Ezra", "Endor", definition)
     private val resources = listOf(customResource)
     private val op = namespacedCustomResourceOperation(resources, mock())
     private val client = client(currentNamespace, arrayOf(NAMESPACE1, NAMESPACE2, NAMESPACE3)).apply {
@@ -109,7 +109,7 @@ class NamespacedCustomResourceOperatorTest {
     @Test
     fun `#replace() is using operator namespace if resource has no namespace`() {
         // given
-        val noNamespace = customResource("Ezra", null, definition)
+        val noNamespace = genericKubernetesResource("Ezra", null, definition)
         assertThat(noNamespace.metadata.namespace).isNull()
         assertThat(operator.namespace).isNotNull()
         val namespaceUsed = ArgumentCaptor.forClass(String::class.java)
@@ -135,7 +135,7 @@ class NamespacedCustomResourceOperatorTest {
     @Test
     fun `#create() is using operator namespace if resource has no namespace`() {
         // given
-        val noNamespace = customResource("Yoda", null, definition)
+        val noNamespace = genericKubernetesResource("Yoda", null, definition)
         assertThat(noNamespace.metadata.namespace).isNull()
         assertThat(operator.namespace).isNotNull()
         val namespaceUsed = ArgumentCaptor.forClass(String::class.java)
@@ -161,7 +161,7 @@ class NamespacedCustomResourceOperatorTest {
     @Test
     fun `#delete() is using operator namespace if resource has no namespace`() {
         // given
-        val noNamespace = customResource("Luke Skywalker", null, definition)
+        val noNamespace = genericKubernetesResource("Luke Skywalker", null, definition)
         assertThat(noNamespace.metadata.namespace).isNull()
         assertThat(operator.namespace).isNotNull()
         val namespaceUsed = ArgumentCaptor.forClass(String::class.java)
@@ -197,7 +197,7 @@ class NamespacedCustomResourceOperatorTest {
     @Test
     fun `#watch(namespace) is using operator namespace if resource has no namespace`() {
         // given
-        val noNamespace = customResource("Luke Skywalker", null, definition)
+        val noNamespace = genericKubernetesResource("Luke Skywalker", null, definition)
         assertThat(noNamespace.metadata.namespace).isNull()
         assertThat(operator.namespace).isNotNull()
         val namespaceUsed = ArgumentCaptor.forClass(String::class.java)
