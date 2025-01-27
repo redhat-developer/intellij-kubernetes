@@ -11,7 +11,6 @@
 package com.redhat.devtools.intellij.kubernetes.editor
 
 import com.intellij.json.JsonFileType
-import com.intellij.openapi.editor.Document
 import com.intellij.openapi.fileTypes.FileType
 import com.redhat.devtools.intellij.kubernetes.model.util.ResourceException
 import com.redhat.devtools.intellij.kubernetes.model.util.createResource
@@ -26,10 +25,20 @@ object EditorResourceSerialization {
     private const val RESOURCE_SEPARATOR_JSON = ",\n"
 
     /**
-     * Returns a [HasMetadata] for a given [Document] instance.
+     * Returns a list of [HasMetadata] for a given yaml or json string.
+     * Several resources are only supported for yaml file type. Trying to deserialize ex. json that would result
+     * in several resources throws a [ResourceException].
      *
-     * @param jsonYaml serialized resources
-     * @return [HasMetadata] for the given editor and clients
+     * @param jsonYaml string representing kubernetes resources
+     * @param fileType yaml- or json file type (no other types are supported)
+     * @param currentNamespace the namespace to set to the resulting resources if they have none
+     * @return list of [HasMetadata] for the given yaml or json string
+     * @throws ResourceException if several resources are to be deserialized to a non-yaml filetype
+     *
+     * @see isSupported
+     * @see RESOURCE_SEPARATOR_YAML
+     * @see YAMLFileType.YML
+     * @see JsonFileType.INSTANCE
      */
     fun deserialize(jsonYaml: String?, fileType: FileType?, currentNamespace: String?): List<HasMetadata> {
         return if (jsonYaml == null
@@ -64,17 +73,19 @@ object EditorResourceSerialization {
         return resource
     }
 
-    fun serialize(resources: Collection<HasMetadata>, fileType: FileType?): String? {
+    fun serialize(resources: List<HasMetadata>, fileType: FileType?): String? {
         if (fileType == null) {
             return null
         }
-        if (resources.size >=2 && fileType != YAMLFileType.YML) {
+        if (resources.size >= 2
+            && fileType != YAMLFileType.YML) {
             throw UnsupportedOperationException(
                 "${fileType.name} is not supported for multi-resource documents. Only ${YAMLFileType.YML.name} is.")
         }
         return resources
             .mapNotNull { resource -> serialize(resource, fileType) }
-            .joinToString(RESOURCE_SEPARATOR_YAML)
+            .joinToString("\n")
+
     }
 
     private fun serialize(resource: HasMetadata, fileType: FileType): String? {
@@ -82,7 +93,7 @@ object EditorResourceSerialization {
             YAMLFileType.YML ->
                 Serialization.asYaml(resource).trim()
             JsonFileType.INSTANCE ->
-                Serialization.asYaml(resource).trim()
+                Serialization.asJson(resource).trim()
             else -> null
         }
     }

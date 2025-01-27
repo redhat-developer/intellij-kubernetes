@@ -25,7 +25,7 @@ import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.POD1
 import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.POD2
 import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.POD3
 import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.client
-import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.customResource
+import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.genericKubernetesResource
 import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.customResourceDefinition
 import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.namedContext
 import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.resource
@@ -113,11 +113,11 @@ class KubernetesContextTest {
 			crdKind,
 			listOf(namespacedDefinition, clusterwideDefinition))
 
-	private val namespacedCustomResource1 = customResource(
+	private val namespacedCustomResource1 = genericKubernetesResource(
 		"genericCustomResource1",
 		"namespace1",
 		namespacedDefinition)
-	private val namespacedCustomResource2 = customResource(
+	private val namespacedCustomResource2 = genericKubernetesResource(
 		"genericCustomResource2",
 		"namespace1",
 		namespacedDefinition)

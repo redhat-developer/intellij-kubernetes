@@ -51,7 +51,7 @@ open class ResourceEditor(
     // for mocking purposes
     private val createResources: (string: String?, fileType: FileType?, currentNamespace: String?) -> List<HasMetadata> =
         EditorResourceSerialization::deserialize,
-    private val serialize: (resources: Collection<HasMetadata>, fileType: FileType?) -> String? =
+    private val serialize: (resources: List<HasMetadata>, fileType: FileType?) -> String? =
         EditorResourceSerialization::serialize,
     // for mocking purposes
     private val createResourceFileForVirtual: (file: VirtualFile?) -> ResourceFile? =
@@ -165,7 +165,7 @@ open class ResourceEditor(
         }
     }
 
-    private fun replaceDocument(resources: Collection<HasMetadata>): Boolean {
+    private fun replaceDocument(resources: List<HasMetadata>): Boolean {
         val manager = getPsiDocumentManager.invoke(project)
         val document = getDocument.invoke(editor) ?: return false
         val jsonYaml = serialize.invoke(resources, getFileType(document, manager)) ?: return false
@@ -269,17 +269,20 @@ open class ResourceEditor(
     }
 
     fun removeClutter() {
-        val resources = editorResources.getAllResources().map { resource ->
+        val resources = createResources(
+            getDocument(editor),
+            editor.file.fileType) // don't insert namespace if not present (no namespace param)
+        val cleaned = resources.map { resource ->
             MetadataClutter.remove(resource.metadata)
             resource
         }
         runInUI {
-            replaceDocument(resources)
+            replaceDocument(cleaned)
             notifications.hideAll()
         }
     }
 
-    private fun createResources(document: Document?, fileType: FileType?, namespace: String?): List<HasMetadata> {
+    private fun createResources(document: Document?, fileType: FileType?, namespace: String? = null): List<HasMetadata> {
         return createResources.invoke(
             document?.text,
             fileType,

@@ -338,7 +338,7 @@ object ClientMocks {
         }
     }
 
-    fun customResource(
+    fun genericKubernetesResource(
         name: String,
         namespace: String?,
         definition: CustomResourceDefinition,

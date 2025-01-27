@@ -116,10 +116,10 @@ class ResourceEditorTest {
     private val createResources: (string: String?, fileType: FileType?, currentNamespace: String?) -> List<HasMetadata> =
         mock<(string: String?, fileType: FileType?, currentNamespace: String?) -> List<HasMetadata>>()
     private val editorResources: EditorResources = mock()
-    private val serialize: (resources: Collection<HasMetadata>, fileType: FileType?) -> String? =
-        mock<(resources: Collection<HasMetadata>, fileType: FileType?) -> String?>().apply {
+    private val serialize: (resources: List<HasMetadata>, fileType: FileType?) -> String? =
+        mock<(resources: List<HasMetadata>, fileType: FileType?) -> String?>().apply {
             doAnswer { invocation ->
-                val resources = invocation.getArgument<Collection<HasMetadata>>(0)
+                val resources = invocation.getArgument<List<HasMetadata>>(0)
                 EditorResourceSerialization.serialize(resources, YAMLFileType.YML)
             }.whenever(this).invoke(any(), any())
         }
@@ -546,6 +546,7 @@ class ResourceEditorTest {
         // then
         verify(notifications).hideAll()
     }
+
     @Test
     fun `#isEditing should return true if there is an EditorResource with the given resource`() {
         // given
@@ -629,7 +630,7 @@ class ResourceEditorTest {
         resourceModel: IResourceModel,
         project: Project,
         createResources: (string: String?, fileType: FileType?, currentNamespace: String?) -> List<HasMetadata>,
-        serialize: (resources: Collection<HasMetadata>, fileType: FileType?) -> String?,
+        serialize: (resources: List<HasMetadata>, fileType: FileType?) -> String?,
         resourceFileForVirtual: (file: VirtualFile?) -> ResourceFile?,
         notifications: Notifications,
         documentProvider: (FileEditor) -> Document?,
