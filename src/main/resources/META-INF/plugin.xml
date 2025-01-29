@@ -10,6 +10,15 @@
     </description>
     <change-notes>
         <![CDATA[
+        <h3>1.5.0</h3>
+        <ul>
+            <li><a href="https://github.com/redhat-developer/intellij-kubernetes/issues/763">Allow to disable editor notifications</a></li>
+            <li><a href="https://github.com/redhat-developer/intellij-kubernetes/issues/779">Support multiple config files listed in KUBECONFIG env var</a></li>
+            <li><a href="https://github.com/redhat-developer/intellij-kubernetes/issues/710">Display notifications in editors that have multiple resources</a></li>
+            <li><a href="https://github.com/redhat-developer/intellij-kubernetes/issues/809">Allow to refresh all contexts</a></li>
+            <li><a href="https://github.com/redhat-developer/intellij-kubernetes/issues/809">Fix: Display an error if the kubeconfig is invalid</a></li>
+            <li><a href="https://github.com/redhat-developer/intellij-kubernetes/issues/812">Fix: Dont show context menu actions applicable to selected items if there are none</a></li>
+        </ul>
         <h3>1.4.0</h3>
         <ul>
             <li><a href="https://github.com/redhat-developer/intellij-kubernetes/issues/553">Describe in the context menu to a pod listed in the resource tree</a></li>
@@ -220,6 +229,7 @@
         <applicationService serviceInterface="com.redhat.devtools.intellij.kubernetes.model.IResourceModel"
                             serviceImplementation="com.redhat.devtools.intellij.kubernetes.model.ResourceModel"/>
         <nonProjectFileWritingAccessExtension implementation="com.redhat.devtools.intellij.common.editor.AllowNonProjectEditing" />
+        <!-- requires pluginSinceBuild=232 see https://github.com/redhat-developer/intellij-kubernetes/issues/706 -->
         <postStartupActivity implementation="com.redhat.devtools.intellij.kubernetes.KubernetesPluginInitializer" />
         <editorTabTitleProvider implementation="com.redhat.devtools.intellij.kubernetes.editor.KubernetesEditorsTabTitleProvider"/>
         <codeInsight.inlayProvider language="yaml"
