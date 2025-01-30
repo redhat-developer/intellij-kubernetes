@@ -80,7 +80,10 @@ dependencies {
             }
         }
     }
+}
 
+configurations.all {
+    exclude(group = "org.slf4j", module = "slf4j-api")
 }
 
 intellijPlatform {
@@ -136,10 +139,6 @@ tasks {
         types = listOf(IntelliJPlatformType.IntellijIdeaCommunity)
         untilBuild = provider { null }
     }
-}
-
-configurations.all {
-    exclude(group = "org.slf4j", module = "slf4j-api")
 }
 
 sourceSets {
