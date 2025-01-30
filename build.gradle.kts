@@ -86,10 +86,6 @@ configurations.all {
     exclude(group = "org.slf4j", module = "slf4j-api")
 }
 
-configurations.all {
-    exclude(group = "org.slf4j", module = "slf4j-api")
-}
-
 intellijPlatform {
     buildSearchableOptions = false
 
