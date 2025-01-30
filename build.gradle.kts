@@ -100,7 +100,7 @@ intellijPlatform {
 
     pluginVerification {
         ides {
-            ide(IntelliJPlatformType.IntellijIdeaUltimate, ideaVersion)
+            recommended()
         }
         freeArgs = listOf(
             "-mute",
