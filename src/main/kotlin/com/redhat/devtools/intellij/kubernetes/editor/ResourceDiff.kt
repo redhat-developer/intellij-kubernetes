@@ -52,7 +52,7 @@ open class ResourceDiff(private val project: Project) {
         }
     }
 
-    private fun createDiffRequestChain(file: VirtualFile, toCompare: String): MutableDiffRequestChain? {
+    private fun createDiffRequestChain(file: VirtualFile, toCompare: String): MutableDiffRequestChain {
         val contentFactory = DiffContentFactory.getInstance()
         val left = contentFactory.create(project, file)
         val right = contentFactory.create(project, toCompare, file.fileType)
