@@ -12,9 +12,6 @@ on:
 jobs:
   validate:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        IJ: [2023.1, 2023.2, 2023.3, 2024.1, 2024.2, 2024.3]
 
     steps:
     - uses: actions/checkout@v4
@@ -27,9 +24,12 @@ jobs:
     - name: Grant execute permission for gradlew
       run: chmod +x gradlew
     - name: Build with Gradle
-      run: ./gradlew build -PplatformVersion=${{ matrix.IJ }}
+      run: ./gradlew build
     - name: Validate with Gradle
-      run: ./gradlew verifyPlugin -PplatformVersion=${{ matrix.IJ }}
+      run: |
+        ./gradlew verifyPlugin
+        REPORTS=$(cat ${{ github.workspace }}/build/reports/pluginVerifier/*/report.md | sed 's/^#/##/')
+        echo "$REPORTS" >> $GITHUB_STEP_SUMMARY
     - name: Upload report
       uses: actions/upload-artifact@v4
       if: always()
