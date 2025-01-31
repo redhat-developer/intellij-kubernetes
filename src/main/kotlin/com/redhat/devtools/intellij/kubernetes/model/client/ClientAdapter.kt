@@ -64,6 +64,7 @@ abstract class ClientAdapter<C : KubernetesClient>(private val fabric8Client: C)
             createConfig: (context: String?) -> Config = { context -> Config.autoConfigure(context) },
             externalTrustManagerProvider: ((toIntegrate: List<X509ExtendedTrustManager>) -> X509TrustManager)? = null
         ): ClientAdapter<out KubernetesClient> {
+            KubeConfigEnvVar.copyToSystemProperties()
             val config = createConfig.invoke(context)
             setNamespace(namespace, config)
             val builder = clientBuilder ?: KubernetesClientBuilder()
