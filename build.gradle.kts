@@ -52,7 +52,9 @@ dependencies {
         //plugins.set(listOf(file("/path/to/plugin/")))
 
         pluginVerifier()
+
         instrumentationTools()
+
         testFramework(TestFrameworkType.Platform)
     }
 
