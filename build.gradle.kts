@@ -2,8 +2,7 @@ import org.jetbrains.intellij.platform.gradle.IntelliJPlatformType
 import org.jetbrains.intellij.platform.gradle.TestFrameworkType
 import org.jetbrains.intellij.platform.gradle.models.ProductRelease
 import org.jetbrains.intellij.platform.gradle.tasks.VerifyPluginTask.FailureLevel.*
-import org.jetbrains.intellij.platform.gradle.tasks.VerifyPluginTask.VerificationReportsFormats.HTML
-import org.jetbrains.intellij.platform.gradle.tasks.VerifyPluginTask.VerificationReportsFormats.MARKDOWN
+import org.jetbrains.intellij.platform.gradle.tasks.VerifyPluginTask.VerificationReportsFormats.*
 
 plugins {
     alias(libs.plugins.gradleIntelliJPlugin) // Gradle IntelliJ Plugin
@@ -53,8 +52,6 @@ dependencies {
         //plugins.set(listOf(file("/path/to/plugin/")))
 
         pluginVerifier()
-
-        instrumentationTools()
 
         testFramework(TestFrameworkType.Platform)
     }
@@ -106,7 +103,7 @@ intellijPlatform {
 
     pluginVerification {
         failureLevel = listOf(INVALID_PLUGIN, COMPATIBILITY_PROBLEMS, MISSING_DEPENDENCIES)
-        verificationReportsFormats = listOf(MARKDOWN, HTML)
+        verificationReportsFormats = listOf(MARKDOWN, PLAIN)
         ides {
             recommended()
         }
