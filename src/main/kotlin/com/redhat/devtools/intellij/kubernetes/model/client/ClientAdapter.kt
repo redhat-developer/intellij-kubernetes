@@ -12,6 +12,7 @@ package com.redhat.devtools.intellij.kubernetes.model.client
 
 import com.redhat.devtools.intellij.common.kubernetes.ClusterHelper
 import com.redhat.devtools.intellij.common.ssl.IDEATrustManager
+import com.redhat.devtools.intellij.common.utils.KubeConfigEnvValue
 import io.fabric8.kubernetes.client.Client
 import io.fabric8.kubernetes.client.Config
 import io.fabric8.kubernetes.client.KubernetesClient
@@ -64,7 +65,7 @@ abstract class ClientAdapter<C : KubernetesClient>(private val fabric8Client: C)
             createConfig: (context: String?) -> Config = { context -> Config.autoConfigure(context) },
             externalTrustManagerProvider: ((toIntegrate: List<X509ExtendedTrustManager>) -> X509TrustManager)? = null
         ): ClientAdapter<out KubernetesClient> {
-            KubeConfigEnvVar.copyToSystemProperties()
+            KubeConfigEnvValue.copyToSystem()
             val config = createConfig.invoke(context)
             setNamespace(namespace, config)
             val builder = clientBuilder ?: KubernetesClientBuilder()
