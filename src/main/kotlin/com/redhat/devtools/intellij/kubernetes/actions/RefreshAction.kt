@@ -17,6 +17,7 @@ import com.redhat.devtools.intellij.common.actions.StructureTreeAction
 import com.redhat.devtools.intellij.kubernetes.model.context.IActiveContext
 import com.redhat.devtools.intellij.kubernetes.telemetry.TelemetryService
 import com.redhat.devtools.intellij.kubernetes.telemetry.TelemetryService.sendTelemetry
+import com.redhat.devtools.intellij.kubernetes.tree.TreeStructure
 import com.redhat.devtools.intellij.kubernetes.tree.util.getResourceKind
 import javax.swing.tree.TreePath
 
@@ -25,7 +26,7 @@ class RefreshAction : StructureTreeAction(IActiveContext::class.java) {
     override fun actionPerformed(event: AnActionEvent?, path: TreePath?, selectedNode: Any?) {
         val descriptor = selectedNode?.getDescriptor()
         run(
-            "Refreshing $selectedNode...", true,
+            "Refreshing ${refreshedResourceLabel(descriptor)}...", true,
             Progressive {
                 val telemetry = TelemetryService.instance.action(
                     "refresh ${
@@ -34,7 +35,7 @@ class RefreshAction : StructureTreeAction(IActiveContext::class.java) {
                         } else {
                             "all contexts"
                         }
-                    } "
+                    }"
                 )
                 try {
                     if (descriptor != null) {
@@ -46,15 +47,13 @@ class RefreshAction : StructureTreeAction(IActiveContext::class.java) {
                     }
                 } catch (e: Exception) {
                     logger<RefreshAction>().warn(
-                        "Could not refresh ${
-                            if (descriptor != null) {
-                                "$descriptor resources"
-                            } else {
-                                "all contexts."
-                            }
-                        }", e
+                        "Could not refresh ${refreshedResourceLabel(descriptor)}", e
                     )
                 }
             })
+    }
+
+    private fun refreshedResourceLabel(descriptor: TreeStructure.Descriptor<*>?): String {
+        return descriptor?.toString() ?: "all contexts"
     }
 }
