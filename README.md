@@ -8,7 +8,8 @@
 ## Overview
 
 JetBrains IDEA plugin that allows to browse, create, modify and delete resources on Kubernetes or OpenShift clusters.
-The plugin provides functionalities and user experiences that are very close to the [Kubernetes extension for Visual Studio Code](https://marketplace.visualstudio.com/items?itemName=ms-kubernetes-tools.vscode-kubernetes-tools).
+The main advantages are the speed of all operations and a resource tree that's automatically synced with the cluster. 
+The user experiences and the functionalities are very close to the [Kubernetes extension for Visual Studio Code](https://marketplace.visualstudio.com/items?itemName=ms-kubernetes-tools.vscode-kubernetes-tools).
 
 It is available for install from the [JetBrains Marketplace](https://plugins.jetbrains.com/plugin/15921-kubernetes-by-red-hat).
 
@@ -28,6 +29,9 @@ It is available for install from the [JetBrains Marketplace](https://plugins.jet
  - Open the Dashboard for the connected cluster (works on any Hybrid cloud cluster)
  - Support [init containers](https://kubernetes.io/docs/concepts/workloads/pods/init-containers/) for logs and terminals.
  - Scale the replicated pods for deployments, deployment configs, replica/stateful sets or replication controllers
+ - Describe pods similar to `kubectl describe` but formatting it as yaml for easy collapsing etc.
+ - Listing several config files in the KUBECONFIG env variable
+
 
 ## Features
 
@@ -133,6 +137,19 @@ All the containers for your Kubernetes resources are listed down in the Terminal
 Init containers, which run before the application containers, are listed down and can be selected to open in the terminal shell.
 
 ![logs](images/terminal.png)
+
+#### Describe Pods
+You may get detailed insights into a pod directly within the IDE, similar to the `kubectl describe pod` command. 
+It retrieves and displays essential metadata, status information, events, and container details in an easy-to-read format.
+
+![describe](images/describe-pod.png)
+
+### Supports KUBECONFIG env variable
+The Kubernetes Plugin by Red Hat for IntelliJ IDEA provides seamless support for the `KUBECONFIG` [environment variable](https://kubernetes.io/docs/concepts/configuration/organize-cluster-access-kubeconfig/#the-kubeconfig-environment-variable) that's used by the `kubectl` and `oc` command lines.
+This variable specifies one or more kubeconfig files that define available Kubernetes contexts.
+The plugin automatically detects and lists these contexts within the IDE.
+
+By leveraging KUBECONFIG, the plugin ensures that users have access to the same cluster configurations as they would in their terminal.
 
 ## Data and Telemetry
 This `Kubernetes by Red Hat` plugin collects anonymous [usage data](https://github.com/redhat-developer/intellij-kubernetes/blob/main/USAGE_DATA.md) and sends it to Red Hat servers to help improve our products and services.
