@@ -117,8 +117,8 @@ open class ResourceEditorFactory protected constructor(
         ) {
             return null
         }
-        val telemetry = getTelemetryMessageBuilder().action(TelemetryService.NAME_PREFIX_EDITOR + "open")
-      return try {
+        val telemetry = createTelemetry(editor.file)
+        return try {
             runAsync { TelemetryService.sendTelemetry(getKubernetesResourceInfo(editor.file, project), telemetry) }
             val resourceEditor = createResourceEditor.invoke(editor, project)
             resourceEditor.createToolbar()
@@ -132,6 +132,19 @@ open class ResourceEditorFactory protected constructor(
             runAsync { telemetry.error(e).send() }
             null
         }
+    }
+
+    private fun createTelemetry(file: VirtualFile): TelemetryMessageBuilder.ActionMessage {
+        val isLocalFile = ResourceFile.isResourceFile(file)
+        return getTelemetryMessageBuilder().action(
+            "${TelemetryService.NAME_PREFIX_EDITOR} open ${
+                if (isLocalFile) {
+                    "cluster file"
+                } else {
+                    "local file"
+                }
+            } "
+        )
     }
 
     private fun onProjectClosed(resourceEditor: ResourceEditor): ProjectManagerListener {

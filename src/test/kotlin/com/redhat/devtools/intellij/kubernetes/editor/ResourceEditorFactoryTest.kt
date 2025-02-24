@@ -71,6 +71,7 @@ class ResourceEditorFactoryTest {
     private val resource = createResource<HasMetadata>(deployment)
     private val virtualFile: VirtualFile = mock {
         on { isInLocalFileSystem } doReturn true
+        on { path } doReturn "skywalker"
     }
 
     private val fileEditor: FileEditor = mock<FileEditor>().apply {
