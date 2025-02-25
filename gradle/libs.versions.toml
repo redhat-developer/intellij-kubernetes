@@ -7,13 +7,13 @@ commons-lang3 = "3.12.0"
 assertj-core = "3.22.0"
 mockito = "5.12.0"
 mockito-kotlin = "2.2.0"
-devtools-common-ui-test = "0.4.2"
-junit-platform = "1.10.3"
-junit-jupiter = "5.10.3"
+devtools-common-ui-test = "0.4.3"
+junit-platform = "1.11.3"
+junit-jupiter = "5.11.3"
 gson = "2.8.9"
 
 # plugins
-gradleIntelliJPlugin = "2.1.0"
+gradleIntelliJPlugin = "2.2.1"
 kotlinJvm = "2.0.20"
 
 [libraries]
