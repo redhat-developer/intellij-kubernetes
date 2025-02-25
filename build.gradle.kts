@@ -53,8 +53,6 @@ dependencies {
 
         pluginVerifier()
 
-        instrumentationTools()
-
         testFramework(TestFrameworkType.Platform)
     }
 

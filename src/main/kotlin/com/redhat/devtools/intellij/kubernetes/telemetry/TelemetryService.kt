@@ -10,6 +10,9 @@
  ******************************************************************************/
 package com.redhat.devtools.intellij.kubernetes.telemetry
 
+import com.intellij.ide.plugins.PluginManager
+import com.intellij.openapi.application.ApplicationManager
+import com.intellij.openapi.extensions.DefaultPluginDescriptor
 import com.redhat.devtools.intellij.common.validation.KubernetesResourceInfo
 import com.redhat.devtools.intellij.common.validation.KubernetesTypeInfo
 import com.redhat.devtools.intellij.kubernetes.model.resource.ResourceKind
@@ -29,7 +32,15 @@ object TelemetryService {
     const val PROP_OPENSHIFT_VERSION = "openshift_version"
 
     val instance: TelemetryMessageBuilder by lazy {
-        TelemetryMessageBuilder(TelemetryService::class.java.classLoader)
+        return@lazy if (!ApplicationManager.getApplication().isUnitTestMode) {
+            TelemetryMessageBuilder(
+                PluginManager.getPluginByClass(this.javaClass)
+            )
+        } else {
+            TelemetryMessageBuilder(
+                DefaultPluginDescriptor("")
+            )
+        }
     }
 
     fun sendTelemetry(resources: Collection<HasMetadata>, telemetry: TelemetryMessageBuilder.ActionMessage) {
