@@ -27,7 +27,7 @@ class DescriptionViewerTabTitleProvider: EditorTabTitleProvider {
 			return null
 		}
 
-		val resource = DescriptionViewerFactory.getResource(file)
+		val resource = DescriptionViewerDispatcher.getResource(file)
 		return getTitleFor(resource)
 	}
 
@@ -43,6 +43,6 @@ class DescriptionViewerTabTitleProvider: EditorTabTitleProvider {
 	}
 
 	private fun isDescribeFile(file: VirtualFile): Boolean {
-		return DescriptionViewerFactory.isDescriptionFile(file)
+		return DescriptionViewerDispatcher.isDescriptionFile(file)
 	}
 }
