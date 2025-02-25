@@ -43,7 +43,17 @@ dependencies {
         intellijIdeaCommunity(ideaVersion)
 
         // Bundled Plugin Dependencies. Uses `platformBundledPlugins` property from the gradle.properties file for bundled IntelliJ Platform plugins.
-        bundledPlugins(providers.gradleProperty("platformBundledPlugins").map { it.split(',') })
+        // starting from 2024.3, all json related code is know on its own plugin
+        val platformBundledPlugins =  ArrayList<String>()
+        platformBundledPlugins.addAll(providers.gradleProperty("platformBundledPlugins").map { it.split(',').map(String::trim).filter(String::isNotEmpty) }.get())
+        /*
+         * platformVersion check for JSON breaking changes since 2024.3
+         */
+        if (ideaVersion.startsWith("2024.3") || ideaVersion.startsWith("25")) {
+            platformBundledPlugins.add("com.intellij.modules.json")
+        }
+        println("use bundled Plugins: $platformBundledPlugins")
+        bundledPlugins(platformBundledPlugins)
 
         // Plugin Dependencies. Uses `platformPlugins` property from the gradle.properties file for plugin from JetBrains Marketplace.
         plugins(providers.gradleProperty("platformPlugins").map { it.split(',') })
