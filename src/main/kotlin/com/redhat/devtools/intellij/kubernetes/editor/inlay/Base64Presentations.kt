@@ -11,9 +11,9 @@
 @file:Suppress("UnstableApiUsage")
 package com.redhat.devtools.intellij.kubernetes.editor.inlay
 
-import PresentationFactoryBuilder
 import com.intellij.codeInsight.hints.InlayHintsSink
 import com.intellij.codeInsight.hints.presentation.InlayPresentation
+import com.intellij.codeInsight.hints.presentation.PresentationFactory
 import com.intellij.openapi.command.WriteCommandAction
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.project.Project
@@ -95,7 +95,7 @@ object Base64Presentations {
 		}
 
 		private fun create(text: String, onClick: (event: MouseEvent) -> Unit, editor: Editor): InlayPresentation? {
-			val factory = PresentationFactoryBuilder.build(editor) ?: return null
+			val factory = PresentationFactory(editor)
 			val trimmed = trimWithEllipsis(text, INLAY_HINT_MAX_WIDTH) ?: return null
 			val textPresentation = factory.smallText(trimmed)
 			val hoverPresentation = factory.referenceOnHover(textPresentation) { event, _ ->
@@ -130,7 +130,7 @@ object Base64Presentations {
 		}
 
 		private fun create(bytes: ByteArray, editor: Editor): InlayPresentation? {
-			val factory = PresentationFactoryBuilder.build(editor) ?: return null
+			val factory = PresentationFactory(editor)
 			val hex = toHexString(bytes) ?: return null
 			val trimmed = trimWithEllipsis(hex, INLAY_HINT_MAX_WIDTH) ?: return null
 			return factory.roundWithBackground(factory.smallText(trimmed))
