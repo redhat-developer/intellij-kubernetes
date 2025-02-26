@@ -5,6 +5,7 @@ import org.jetbrains.intellij.platform.gradle.tasks.VerifyPluginTask.FailureLeve
 import org.jetbrains.intellij.platform.gradle.tasks.VerifyPluginTask.VerificationReportsFormats.*
 
 plugins {
+    java // Java support
     alias(libs.plugins.gradleIntelliJPlugin) // Gradle IntelliJ Plugin
     alias(libs.plugins.kotlinJvm)
     id("idea")
@@ -92,8 +93,10 @@ dependencies {
     }
 }
 
-configurations.all {
-    exclude(group = "org.slf4j", module = "slf4j-api")
+configurations {
+    runtimeClasspath {
+        exclude(group = "org.slf4j", module = "slf4j-api")
+    }
 }
 
 intellijPlatform {
@@ -156,13 +159,12 @@ tasks {
 sourceSets {
     create("it") {
         description = "integrationTest"
+        java.srcDir("src/it/java")
+        resources.srcDir("src/it/resources")
         compileClasspath += sourceSets.main.get().compileClasspath + sourceSets.test.get().compileClasspath
-        runtimeClasspath += output + compileClasspath
+        runtimeClasspath += output + compileClasspath + sourceSets.test.get().runtimeClasspath + sourceSets.test.get().runtimeClasspath
     }
 }
-
-configurations["itRuntimeOnly"].extendsFrom(configurations.testRuntimeOnly.get())
-configurations["itImplementation"].extendsFrom(configurations.testImplementation.get())
 
 val integrationTest by intellijPlatformTesting.testIde.registering {
     task {
@@ -174,10 +176,6 @@ val integrationTest by intellijPlatformTesting.testIde.registering {
         classpath = sourceSets["it"].runtimeClasspath
         jvmArgs("-Djava.awt.headless=true")
         shouldRunAfter(tasks["test"])
-    }
-
-    plugins {
-        robotServerPlugin()
     }
 
     dependencies {
