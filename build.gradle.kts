@@ -162,7 +162,7 @@ sourceSets {
         java.srcDir("src/it/java")
         resources.srcDir("src/it/resources")
         compileClasspath += sourceSets.main.get().compileClasspath + sourceSets.test.get().compileClasspath
-        runtimeClasspath += output + compileClasspath + sourceSets.test.get().runtimeClasspath + sourceSets.test.get().runtimeClasspath
+        runtimeClasspath += output + compileClasspath + sourceSets.test.get().runtimeClasspath
     }
 }
 
