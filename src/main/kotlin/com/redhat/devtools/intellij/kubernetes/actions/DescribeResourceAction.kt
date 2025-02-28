@@ -14,7 +14,7 @@ import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.progress.Progressive
 import com.redhat.devtools.intellij.common.actions.StructureTreeAction
-import com.redhat.devtools.intellij.kubernetes.editor.describe.DescriptionViewerFactory
+import com.redhat.devtools.intellij.kubernetes.editor.describe.DescriptionViewerDispatcher
 import com.redhat.devtools.intellij.kubernetes.model.Notification
 import com.redhat.devtools.intellij.kubernetes.model.util.toMessage
 import com.redhat.devtools.intellij.kubernetes.telemetry.TelemetryService
@@ -38,7 +38,7 @@ class DescribeResourceAction: StructureTreeAction() {
                 val telemetry = TelemetryService.instance.action("describe resource")
                     .property(PROP_RESOURCE_KIND, toDescribe.kind)
                 try {
-                    DescriptionViewerFactory.instance.openEditor(toDescribe, project)
+                    DescriptionViewerDispatcher.instance.openEditor(toDescribe, project)
                     telemetry.success().send()
                 } catch (e: RuntimeException) {
                     logger<DescribeResourceAction>().warn("Error opening editor ${toDescribe.metadata.name}", e)

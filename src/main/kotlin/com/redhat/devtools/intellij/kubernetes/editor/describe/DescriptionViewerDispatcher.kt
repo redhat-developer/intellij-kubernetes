@@ -10,7 +10,6 @@
  ******************************************************************************/
 package com.redhat.devtools.intellij.kubernetes.editor.describe
 
-import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.WriteAction
 import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.fileEditor.FileEditor
@@ -19,19 +18,21 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Key
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.testFramework.LightVirtualFile
+import com.redhat.devtools.intellij.kubernetes.CompletableFutureUtils.UI_EXECUTOR
 import com.redhat.devtools.intellij.kubernetes.editor.describe.describer.PodDescriber
 import com.redhat.devtools.intellij.kubernetes.model.util.isSameResource
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.Pod
 import org.jetbrains.yaml.YAMLFileType
+import java.util.concurrent.CompletableFuture
 
 
-open class DescriptionViewerFactory protected constructor() {
+open class DescriptionViewerDispatcher protected constructor() {
 
     companion object {
         const val PREFIX_FILE_NAME = "Description-"
 
-        val instance = DescriptionViewerFactory()
+        val instance = DescriptionViewerDispatcher()
 
         private val KEY_RESOURCE = Key<HasMetadata>(HasMetadata::class.java.name)
 
@@ -51,15 +52,22 @@ open class DescriptionViewerFactory protected constructor() {
 
     fun openEditor(resource: HasMetadata, project: Project) {
         val description = describe(resource) ?: return
-        val editor = getOpenedEditor(resource, project)
-        if (editor != null) {
-            putUserData(resource, editor.file)
-            replaceDocument(editor, description)
-        } else {
-            val file = createYamlFile(description)
-            putUserData(resource, file)
-            openNewEditor(file, project)
-        }
+        val manager = FileEditorManager.getInstance(project) ?: return
+
+        CompletableFuture.supplyAsync(
+            {
+                val editor = getOpenedEditor(resource, manager)
+                if (editor != null) {
+                    putUserData(resource, editor.file)
+                    replaceDocument(editor, description)
+                } else {
+                    val file = createYamlFile(description)
+                    putUserData(resource, file)
+                    openNewEditor(file, manager)
+                }
+            },
+            UI_EXECUTOR
+        )
     }
 
     private fun putUserData(resource: HasMetadata, file: VirtualFile) {
@@ -95,17 +103,16 @@ open class DescriptionViewerFactory protected constructor() {
         return file
     }
 
-    private fun openNewEditor(file: VirtualFile, project: Project) {
-        FileEditorManager.getInstance(project).openFile(file, true)
+    private fun openNewEditor(file: VirtualFile, manager: FileEditorManager) {
+        manager.openFile(file, true)
     }
 
-    private fun getOpenedEditor(resource: HasMetadata, project: Project): FileEditor? {
-        val manager = FileEditorManager.getInstance(project)
-        val file = getOpenedEditorFile(manager, resource) ?: return null
+    private fun getOpenedEditor(resource: HasMetadata, manager: FileEditorManager): FileEditor? {
+        val file = getOpenedEditorFile(resource, manager) ?: return null
         return manager.openFile(file, true).firstOrNull()
     }
 
-    private fun getOpenedEditorFile(manager: FileEditorManager, resource: HasMetadata): VirtualFile? {
+    private fun getOpenedEditorFile(resource: HasMetadata, manager: FileEditorManager): VirtualFile? {
         return manager.openFiles.find { file ->
             try {
                 val fileResource = getResource(file)
