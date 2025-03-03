@@ -16,24 +16,25 @@ import com.intellij.json.psi.JsonFile
 import com.intellij.json.psi.JsonProperty
 import com.intellij.json.psi.JsonValue
 import com.intellij.openapi.application.ReadAction
-import com.intellij.openapi.editor.Document
 import com.intellij.openapi.fileEditor.FileEditor
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.text.Strings
 import com.intellij.openapi.vfs.VirtualFile
-import com.intellij.psi.PsiDocumentManager
 import com.intellij.psi.PsiElement
-import com.intellij.psi.PsiFile
 import com.intellij.psi.PsiManager
+import com.intellij.psi.PsiNamedElement
 import com.redhat.devtools.intellij.common.validation.KubernetesResourceInfo
+import com.redhat.devtools.intellij.common.validation.KubernetesTypeInfo
 import com.redhat.devtools.intellij.kubernetes.editor.ResourceEditor
 import org.jetbrains.yaml.YAMLElementGenerator
-import org.jetbrains.yaml.YAMLUtil
-import org.jetbrains.yaml.psi.YAMLFile
+import org.jetbrains.yaml.psi.YAMLDocument
 import org.jetbrains.yaml.psi.YAMLKeyValue
+import org.jetbrains.yaml.psi.YAMLMapping
 import org.jetbrains.yaml.psi.YAMLPsiElement
+import org.jetbrains.yaml.psi.YAMLSequence
 import org.jetbrains.yaml.psi.YAMLValue
-import java.util.Base64
+import java.util.*
+
 
 private const val KEY_METADATA = "metadata"
 private const val KEY_DATA = "data"
@@ -67,9 +68,9 @@ fun isKubernetesResource(resourceInfo: KubernetesResourceInfo?): Boolean {
             && resourceInfo?.typeInfo?.kind?.isNotBlank() ?: false
 }
 
-fun isKubernetesResource(kind: String, resourceInfo: KubernetesResourceInfo?): Boolean {
-    return resourceInfo?.typeInfo?.apiGroup?.isNotBlank() ?: false
-            && kind == resourceInfo?.typeInfo?.kind
+fun isKubernetesResource(kind: String, info: KubernetesTypeInfo?): Boolean {
+    return info?.apiGroup?.isNotBlank() != null
+            && kind == info.kind
 }
 
 /**
@@ -93,89 +94,21 @@ fun getKubernetesResourceInfo(file: VirtualFile?, project: Project): KubernetesR
     }
 }
 
-/**
- * Sets or creates the given [resourceVersion] in the given document for the given [PsiDocumentManager] and [Project].
- * The document is **not** committed to allow further modifications before a commit to happen.
- * Does nothing if the resource version or the document is `null`.
- *
- * @param resourceVersion the resource version to set/create
- * @param document the document to set the resource version to
- * @param manager the [PsiDocumentManager] to use for the operation
- * @param project the [Project] to use
- */
-fun setResourceVersion(resourceVersion: String?, document: Document?, manager: PsiDocumentManager, project: Project) {
-    if (resourceVersion == null
-        || document == null) {
-        return
-    }
-    val metadata = getMetadata(document, manager) ?: return
-    createOrUpdateResourceVersion(resourceVersion, metadata, project)
-}
+fun getChildren(document: YAMLDocument): List<YAMLPsiElement> {
+    val topLevelValue: YAMLValue = document.topLevelValue ?: return emptyList()
 
-private fun createOrUpdateResourceVersion(resourceVersion: String, metadata: PsiElement, project: Project) {
-    when (metadata) {
-        is YAMLKeyValue -> createOrUpdateResourceVersion(resourceVersion, metadata, project)
-        is JsonProperty -> createOrUpdateResourceVersion(resourceVersion, metadata, project)
+    return when (topLevelValue) {
+        is YAMLMapping ->
+            topLevelValue.keyValues.toList()
+        is YAMLSequence ->
+            topLevelValue.items
+        else ->
+            emptyList()
     }
 }
 
-private fun createOrUpdateResourceVersion(resourceVersion: String, metadata: JsonProperty, project: Project) {
-    val metadataObject = metadata.value ?: return
-    val generator = JsonElementGenerator(project)
-    val version = generator.createProperty(KEY_RESOURCE_VERSION, "\"$resourceVersion\"")
-    val existingVersion = getResourceVersion(metadata)
-    if (existingVersion != null) {
-        metadataObject.addAfter(version, existingVersion)
-        existingVersion.delete()
-    } else {
-        metadataObject.addBefore(generator.createComma(), metadataObject.lastChild)
-        metadataObject.addBefore(version, metadataObject.lastChild)
-    }
-}
-
-private fun createOrUpdateResourceVersion(resourceVersion: String, metadata: YAMLKeyValue, project: Project) {
-    val metadataObject = metadata.value ?: return
-    val existingVersion = getResourceVersion(metadata)
-    val generator = YAMLElementGenerator.getInstance(project)
-    val version = generator.createYamlKeyValue(KEY_RESOURCE_VERSION, "\"$resourceVersion\"")
-    if (existingVersion != null) {
-        existingVersion.setValue(version.value!!)
-    } else {
-        metadataObject.add(generator.createEol())
-        metadataObject.add(generator.createIndent(YAMLUtil.getIndentToThisElement(metadataObject)))
-        metadataObject.add(version)
-    }
-}
-
-fun getContent(element: PsiElement): PsiElement? {
-    if (element !is PsiFile) {
-        return null
-    }
-    return getContent(element)
-}
-
-private fun getContent(file: PsiFile): PsiElement? {
-    return when (file) {
-        is YAMLFile -> {
-            if (file.documents == null
-                || file.documents.isEmpty()) {
-                return null
-            }
-            file.documents[0].topLevelValue
-        }
-        is JsonFile ->
-            file.topLevelValue
-        else -> null
-    }
-}
-
-fun getMetadata(document: Document?, psi: PsiDocumentManager): PsiElement? {
-    if (document == null) {
-        return null
-    }
-    val file = psi.getPsiFile(document) ?: return null
-    val content = getContent(file) ?: return null
-    return getMetadata(content)
+fun getChildren(file: JsonFile): List<JsonElement> {
+    return file.allTopLevelValues
 }
 
 /**
@@ -185,16 +118,20 @@ fun getMetadata(document: Document?, psi: PsiDocumentManager): PsiElement? {
  * @param element the PsiElement whose "metadata" child should be found.
  * @return the PsiElement named "metadata"
  */
-private fun getMetadata(content: PsiElement): PsiElement? {
-    return when (content) {
+private fun getMetadata(parent: PsiElement): PsiElement? {
+    return getElement(KEY_METADATA, parent)
+}
+
+private fun getElement(key: String, parent: PsiElement): PsiElement? {
+    return when (parent) {
         is YAMLValue ->
-            content.children
-            .filterIsInstance<YAMLKeyValue>()
-            .find { it.name == KEY_METADATA }
+            parent.children
+                .filterIsInstance<YAMLKeyValue>()
+                .find { it.name == key }
         is JsonValue ->
-            content.children.toList()
+            parent.children.toList()
                 .filterIsInstance<JsonProperty>()
-                .find { it.name == KEY_METADATA }
+                .find { it.name == key }
         else ->
             null
     }
@@ -208,17 +145,14 @@ private fun getMetadata(content: PsiElement): PsiElement? {
  * @return the PsiElement named "data"
  */
 fun getData(element: PsiElement): PsiElement? {
-    return when (element) {
-        is YAMLPsiElement ->
-            element.children
-                .filterIsInstance<YAMLKeyValue>()
-                .find { it.name == KEY_DATA }
-                ?.value
-        is JsonElement ->
-            element.children.toList()
-                .filterIsInstance<JsonProperty>()
-                .find { it.name == KEY_DATA }
-                ?.value
+    val dataElement = element.children
+        .filterIsInstance<PsiNamedElement>()
+        .find { it.name == KEY_DATA }
+    return when (dataElement) {
+        is YAMLKeyValue ->
+            dataElement.value
+        is JsonProperty ->
+            dataElement.value
         else ->
             null
     }

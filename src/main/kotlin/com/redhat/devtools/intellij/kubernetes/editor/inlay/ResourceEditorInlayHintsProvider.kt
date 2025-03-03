@@ -20,16 +20,18 @@ import com.intellij.codeInsight.hints.InlayHintsProvider
 import com.intellij.codeInsight.hints.InlayHintsSink
 import com.intellij.codeInsight.hints.NoSettings
 import com.intellij.codeInsight.hints.SettingsKey
+import com.intellij.json.psi.JsonFile
 import com.intellij.openapi.editor.Editor
 import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiFile
 import com.intellij.ui.dsl.builder.panel
-import com.redhat.devtools.intellij.common.validation.KubernetesResourceInfo
-import com.redhat.devtools.intellij.kubernetes.editor.util.getContent
+import com.redhat.devtools.intellij.common.validation.KubernetesTypeInfo
+import com.redhat.devtools.intellij.kubernetes.editor.inlay.base64.Base64Presentations
+import org.jetbrains.yaml.psi.YAMLFile
 import javax.swing.JComponent
 
 
-internal class Base64ValueInlayHintsProvider : InlayHintsProvider<NoSettings> {
+internal class ResourceEditorInlayHintsProvider : InlayHintsProvider<NoSettings> {
 
 	override val key: SettingsKey<NoSettings> = SettingsKey("KubernetesResource.hints")
 	override val name: String = "Kubernetes"
@@ -50,21 +52,40 @@ internal class Base64ValueInlayHintsProvider : InlayHintsProvider<NoSettings> {
 	}
 
 	override fun getCollectorFor(file: PsiFile, editor: Editor, settings: NoSettings, sink: InlayHintsSink): InlayHintsCollector? {
-		val info = KubernetesResourceInfo.extractMeta(file) ?: return null
-		return Collector(editor, info)
+		return Collector(editor)
 	}
 
-	private class Collector(editor: Editor, private val info: KubernetesResourceInfo) : FactoryInlayHintsCollector(editor) {
+	private class Collector(editor: Editor) : FactoryInlayHintsCollector(editor) {
 
 		override fun collect(element: PsiElement, editor: Editor, sink: InlayHintsSink): Boolean {
-			if (element !is PsiFile
-				|| !element.isValid) {
+			if (!element.isValid) {
 				return true
 			}
-			val content = getContent(element) ?: return true
-			val factory = Base64Presentations.create(content, info, sink, editor) ?: return true
-			factory.create()
-			return false
+			return when(element) {
+				is YAMLFile -> {
+					create(element, sink, editor)
+					false
+				}
+				is JsonFile -> {
+					create(element, sink, editor)
+					false
+				}
+				else -> true
+			}
 		}
+
+		private fun create(file: YAMLFile, sink: InlayHintsSink, editor: Editor) {
+			file.documents.forEach { document ->
+				val info = KubernetesTypeInfo.extractMeta(document) ?: return
+				val element = document.topLevelValue ?: return
+				Base64Presentations.create(element, info, sink, editor)?.create()
+			}
+		}
+
+		private fun create(file: JsonFile, sink: InlayHintsSink, editor: Editor) {
+			val info = KubernetesTypeInfo.extractMeta(file) ?: return
+			Base64Presentations.create(file, info, sink, editor)?.create()
+		}
+
 	}
 }

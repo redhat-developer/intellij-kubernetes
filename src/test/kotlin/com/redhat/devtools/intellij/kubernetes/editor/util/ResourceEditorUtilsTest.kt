@@ -68,12 +68,9 @@ class ResourceEditorUtilsTest {
 	@Test
 	fun `#isKubernetesResource should return true if info has the given kind`() {
 		// given
-		val kubernetesTypeInfo: KubernetesTypeInfo =
-			kubernetesTypeInfo("jedi", "v1")
-		val kubernetesResourceInfo: KubernetesResourceInfo =
-			kubernetesResourceInfo("yoda", "light side", kubernetesTypeInfo)
+		val kubernetesTypeInfo: KubernetesTypeInfo = kubernetesTypeInfo("jedi", "v1")
 		// when
-		val isKubernetesResource = isKubernetesResource("jedi", kubernetesResourceInfo)
+		val isKubernetesResource = isKubernetesResource("jedi", kubernetesTypeInfo)
 		// then
 		assertThat(isKubernetesResource).isTrue()
 	}
@@ -81,46 +78,11 @@ class ResourceEditorUtilsTest {
 	@Test
 	fun `#isKubernetesResource should return false if info doesnt have the given kind`() {
 		// given
-		val kubernetesTypeInfo: KubernetesTypeInfo =
-			kubernetesTypeInfo("jedi", "v1")
-		val kubernetesResourceInfo: KubernetesResourceInfo =
-			kubernetesResourceInfo("yoda", "light side", kubernetesTypeInfo)
+		val kubernetesTypeInfo: KubernetesTypeInfo = kubernetesTypeInfo("jedi", "v1")
 		// when
-		val isKubernetesResource = isKubernetesResource("sith", kubernetesResourceInfo)
+		val isKubernetesResource = isKubernetesResource("sith", kubernetesTypeInfo)
 		// then
 		assertThat(isKubernetesResource).isFalse()
-	}
-
-	@Test
-	fun `#getContent should return content in YAMLFile`() {
-		// given
-		val value = createYAMLValue(emptyArray())
-		val document = createYAMLDocument(value)
-		val file = createYAMLFile(listOf(document))
-		// when
-		getContent(file)
-		// then
-		verify(file.documents.get(0)).getTopLevelValue()
-	}
-
-	@Test
-	fun `#getContent should return null if YAMLFile has empty list of documents`() {
-		// given
-		val file = createYAMLFile(emptyList())
-		// when
-		val content = getContent(file)
-		// then
-		assertThat(content).isNull()
-	}
-
-	@Test
-	fun `#getContent should return null if YAMLFile has null documents`() {
-		// given
-		val file = createYAMLFile(null)
-		// when
-		val content = getContent(file)
-		// then
-		assertThat(content).isNull()
 	}
 
 	@Test

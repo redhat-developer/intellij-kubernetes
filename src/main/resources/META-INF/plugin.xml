@@ -233,7 +233,7 @@
         <postStartupActivity implementation="com.redhat.devtools.intellij.kubernetes.KubernetesPluginInitializer" />
         <editorTabTitleProvider implementation="com.redhat.devtools.intellij.kubernetes.editor.KubernetesEditorsTabTitleProvider"/>
         <codeInsight.inlayProvider language="yaml"
-                                   implementationClass="com.redhat.devtools.intellij.kubernetes.editor.inlay.Base64ValueInlayHintsProvider"
+                                   implementationClass="com.redhat.devtools.intellij.kubernetes.editor.inlay.ResourceEditorInlayHintsProvider"
                                    id="MarkdownTableInlayProvider"/>
         <projectConfigurable id="tools.settings.redhat.kubernetes"
                              parentId="tools"
