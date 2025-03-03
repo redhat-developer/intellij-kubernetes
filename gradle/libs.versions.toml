@@ -1,7 +1,7 @@
 [versions]
 # libraries
 kubernetes-client = "7.1.0"
-devtools-common = "1.9.8"
+devtools-common = "1.9.9-SNAPSHOT"
 jackson-core = "2.17.0"
 commons-lang3 = "3.12.0"
 assertj-core = "3.22.0"

@@ -11,6 +11,7 @@
 package com.redhat.devtools.intellij.kubernetes.editor.inlay
 
 import com.nhaarman.mockitokotlin2.mock
+import com.redhat.devtools.intellij.kubernetes.editor.inlay.base64.Base64Presentations
 import com.redhat.devtools.intellij.kubernetes.editor.mocks.createYAMLKeyValue
 import com.redhat.devtools.intellij.kubernetes.editor.mocks.createYAMLValue
 import com.redhat.devtools.intellij.kubernetes.model.mocks.Mocks.kubernetesResourceInfo
@@ -21,15 +22,9 @@ import org.junit.Test
 
 class Base64PresentationsTest {
 
-	private val secret = kubernetesResourceInfo(
-		"yoda", "light side", kubernetesTypeInfo("Secret", "v1")
-	)
-	private val configMap = kubernetesResourceInfo(
-		"skywalker", "light side", kubernetesTypeInfo("ConfigMap", "v1")
-	)
-	private val pod = kubernetesResourceInfo(
-		"anakin", "light side", kubernetesTypeInfo("Pod", "v1")
-	)
+	private val secret = kubernetesTypeInfo("Secret", "v1")
+	private val configMap = kubernetesTypeInfo("ConfigMap", "v1")
+	private val pod = kubernetesTypeInfo("Pod", "v1")
 
 	private val dataElement = createYAMLKeyValue("data")
 	private val binaryDataElement = createYAMLKeyValue("binaryData")

@@ -9,7 +9,7 @@
  * Red Hat, Inc. - initial API and implementation
  ******************************************************************************/
 @file:Suppress("UnstableApiUsage")
-package com.redhat.devtools.intellij.kubernetes.editor.inlay
+package com.redhat.devtools.intellij.kubernetes.editor.inlay.base64
 
 import com.intellij.codeInsight.hints.InlayHintsSink
 import com.intellij.codeInsight.hints.presentation.InlayPresentation
@@ -19,9 +19,10 @@ import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.project.Project
 import com.intellij.psi.PsiElement
 import com.redhat.devtools.intellij.common.validation.KubernetesResourceInfo
+import com.redhat.devtools.intellij.common.validation.KubernetesTypeInfo
 import com.redhat.devtools.intellij.kubernetes.balloon.StringInputBalloon
-import com.redhat.devtools.intellij.kubernetes.editor.inlay.Base64Presentations.InlayPresentationsFactory
-import com.redhat.devtools.intellij.kubernetes.editor.inlay.Base64Presentations.create
+import com.redhat.devtools.intellij.kubernetes.editor.inlay.base64.Base64Presentations.InlayPresentationsFactory
+import com.redhat.devtools.intellij.kubernetes.editor.inlay.base64.Base64Presentations.create
 import com.redhat.devtools.intellij.kubernetes.editor.util.getBinaryData
 import com.redhat.devtools.intellij.kubernetes.editor.util.getData
 import com.redhat.devtools.intellij.kubernetes.editor.util.isKubernetesResource
@@ -40,15 +41,15 @@ object Base64Presentations {
 	private const val SECRET_RESOURCE_KIND = "Secret"
 	private const val CONFIGMAP_RESOURCE_KIND = "ConfigMap"
 
-	fun create(content: PsiElement, info: KubernetesResourceInfo, sink: InlayHintsSink, editor: Editor): InlayPresentationsFactory? {
+	fun create(element: PsiElement, info: KubernetesTypeInfo, sink: InlayHintsSink, editor: Editor): InlayPresentationsFactory? {
 		return when {
 			isKubernetesResource(SECRET_RESOURCE_KIND, info) -> {
-				val data = getData(content) ?: return null
+				val data = getData(element) ?: return null
 				StringPresentationsFactory(data, sink, editor)
 			}
 
 			isKubernetesResource(CONFIGMAP_RESOURCE_KIND, info) -> {
-				val binaryData = getBinaryData(content) ?: return null
+				val binaryData = getBinaryData(element) ?: return null
 				BinaryPresentationsFactory(binaryData, sink, editor)
 			}
 
