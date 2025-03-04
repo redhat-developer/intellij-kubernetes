@@ -18,13 +18,12 @@ import com.intellij.openapi.command.WriteCommandAction
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.project.Project
 import com.intellij.psi.PsiElement
-import com.redhat.devtools.intellij.common.validation.KubernetesResourceInfo
 import com.redhat.devtools.intellij.common.validation.KubernetesTypeInfo
 import com.redhat.devtools.intellij.kubernetes.balloon.StringInputBalloon
 import com.redhat.devtools.intellij.kubernetes.editor.inlay.base64.Base64Presentations.InlayPresentationsFactory
 import com.redhat.devtools.intellij.kubernetes.editor.inlay.base64.Base64Presentations.create
 import com.redhat.devtools.intellij.kubernetes.editor.util.getBinaryData
-import com.redhat.devtools.intellij.kubernetes.editor.util.getData
+import com.redhat.devtools.intellij.kubernetes.editor.util.getDataValue
 import com.redhat.devtools.intellij.kubernetes.editor.util.isKubernetesResource
 import com.redhat.devtools.intellij.kubernetes.model.util.trimWithEllipsis
 import org.jetbrains.concurrency.runAsync
@@ -44,7 +43,7 @@ object Base64Presentations {
 	fun create(element: PsiElement, info: KubernetesTypeInfo, sink: InlayHintsSink, editor: Editor): InlayPresentationsFactory? {
 		return when {
 			isKubernetesResource(SECRET_RESOURCE_KIND, info) -> {
-				val data = getData(element) ?: return null
+				val data = getDataValue(element) ?: return null
 				StringPresentationsFactory(data, sink, editor)
 			}
 
