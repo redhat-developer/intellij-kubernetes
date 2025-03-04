@@ -15,6 +15,7 @@ import com.intellij.json.psi.JsonProperty
 import com.intellij.json.psi.JsonValue
 import com.intellij.openapi.fileTypes.FileType
 import com.intellij.openapi.project.Project
+import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiFile
 import com.intellij.psi.PsiFileFactory
 import com.nhaarman.mockitokotlin2.any
@@ -51,15 +52,29 @@ fun createJsonProperty(
 	name: String = Random.nextInt().toString(),
 	value: String? = null,
 	parent: JsonProperty? = null,
-	project: Project
+	project: Project = mock()
 ): JsonProperty {
 	val valueElement: JsonValue = mock {
 		on { getText() } doReturn value
 	}
 	return mock {
-		on { getValue() } doReturn valueElement
 		on { getName() } doReturn name
 		on { getValue() } doReturn valueElement
+		on { getParent() } doReturn parent
+		on { getProject() } doReturn project
+	}
+}
+
+fun createJsonObject(
+	name: String = Random.nextInt().toString(),
+	properties: List<JsonProperty> = emptyList(),
+	parent: PsiElement? = null,
+	project: Project = mock()
+): JsonObject {
+	return mock {
+		on { getChildren() } doReturn properties.toTypedArray()
+		on { getPropertyList() } doReturn properties
+		on { getName() } doReturn name
 		on { getParent() } doReturn parent
 		on { getProject() } doReturn project
 	}
