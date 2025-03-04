@@ -234,7 +234,10 @@
         <editorTabTitleProvider implementation="com.redhat.devtools.intellij.kubernetes.editor.KubernetesEditorsTabTitleProvider"/>
         <codeInsight.inlayProvider language="yaml"
                                    implementationClass="com.redhat.devtools.intellij.kubernetes.editor.inlay.ResourceEditorInlayHintsProvider"
-                                   id="MarkdownTableInlayProvider"/>
+                                   id="com.redhat.devtools.intellij.kubernetes.editor.yaml.ResourceEditorInlayHintsProvider"/>
+        <codeInsight.inlayProvider language="JSON"
+                                   implementationClass="com.redhat.devtools.intellij.kubernetes.editor.inlay.ResourceEditorInlayHintsProvider"
+                                   id="com.redhat.devtools.intellij.kubernetes.editor.json.ResourceEditorInlayHintsProvider"/>
         <projectConfigurable id="tools.settings.redhat.kubernetes"
                              parentId="tools"
                              displayName="Red Hat Kubernetes"

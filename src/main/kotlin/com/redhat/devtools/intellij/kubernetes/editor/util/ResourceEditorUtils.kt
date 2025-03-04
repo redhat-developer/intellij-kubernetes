@@ -18,6 +18,7 @@ import com.intellij.json.psi.JsonValue
 import com.intellij.openapi.application.ReadAction
 import com.intellij.openapi.fileEditor.FileEditor
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.util.text.StringUtil
 import com.intellij.openapi.util.text.Strings
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.PsiElement
@@ -87,7 +88,7 @@ fun getKubernetesResourceInfo(file: VirtualFile?, project: Project): KubernetesR
     return try {
         ReadAction.compute<KubernetesResourceInfo, RuntimeException> {
             val psiFile = PsiManager.getInstance(project).findFile(file) ?: return@compute null
-            KubernetesResourceInfo.extractMeta(psiFile)
+            KubernetesResourceInfo.create(psiFile)
         }
     } catch (e: RuntimeException) {
         null
@@ -144,7 +145,7 @@ private fun getElement(key: String, parent: PsiElement): PsiElement? {
  * @param element the PsiElement whose "data" child should be found.
  * @return the PsiElement named "data"
  */
-fun getData(element: PsiElement): PsiElement? {
+fun getDataValue(element: PsiElement): PsiElement? {
     val dataElement = element.children
         .filterIsInstance<PsiNamedElement>()
         .find { it.name == KEY_DATA }

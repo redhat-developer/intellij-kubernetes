@@ -37,7 +37,7 @@ class KubernetesSchemaProvider(
 				if (psiFile == null) {
 					false
 				} else {
-					val fileInfo = KubernetesTypeInfo.extractMeta(psiFile)
+					val fileInfo = KubernetesTypeInfo.create(psiFile)
 					info == fileInfo
 				}
 			})

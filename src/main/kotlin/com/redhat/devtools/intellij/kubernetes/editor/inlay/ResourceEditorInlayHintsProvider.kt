@@ -21,6 +21,8 @@ import com.intellij.codeInsight.hints.InlayHintsSink
 import com.intellij.codeInsight.hints.NoSettings
 import com.intellij.codeInsight.hints.SettingsKey
 import com.intellij.json.psi.JsonFile
+import com.intellij.openapi.application.ApplicationManager
+import com.intellij.openapi.application.ReadAction
 import com.intellij.openapi.editor.Editor
 import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiFile
@@ -51,7 +53,7 @@ internal class ResourceEditorInlayHintsProvider : InlayHintsProvider<NoSettings>
 		}
 	}
 
-	override fun getCollectorFor(file: PsiFile, editor: Editor, settings: NoSettings, sink: InlayHintsSink): InlayHintsCollector? {
+	override fun getCollectorFor(file: PsiFile, editor: Editor, settings: NoSettings, sink: InlayHintsSink): InlayHintsCollector {
 		return Collector(editor)
 	}
 
@@ -75,16 +77,21 @@ internal class ResourceEditorInlayHintsProvider : InlayHintsProvider<NoSettings>
 		}
 
 		private fun create(file: YAMLFile, sink: InlayHintsSink, editor: Editor) {
-			file.documents.forEach { document ->
-				val info = KubernetesTypeInfo.extractMeta(document) ?: return
-				val element = document.topLevelValue ?: return
-				Base64Presentations.create(element, info, sink, editor)?.create()
+			return ReadAction.run<Exception> {
+				file.documents.forEach { document ->
+					val info = KubernetesTypeInfo.create(document) ?: return@forEach
+					val element = document.topLevelValue ?: return@forEach
+					Base64Presentations.create(element, info, sink, editor)?.create()
+				}
 			}
 		}
 
 		private fun create(file: JsonFile, sink: InlayHintsSink, editor: Editor) {
-			val info = KubernetesTypeInfo.extractMeta(file) ?: return
-			Base64Presentations.create(file, info, sink, editor)?.create()
+			return ReadAction.run<Exception> {
+				val info = KubernetesTypeInfo.create(file) ?: return@run
+				val element = file.topLevelValue ?: return@run
+				Base64Presentations.create(element, info, sink, editor)?.create()
+			}
 		}
 
 	}
