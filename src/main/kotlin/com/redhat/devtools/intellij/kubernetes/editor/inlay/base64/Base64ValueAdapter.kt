@@ -8,7 +8,7 @@
  * Contributors:
  * Red Hat, Inc. - initial API and implementation
  ******************************************************************************/
-package com.redhat.devtools.intellij.kubernetes.editor.inlay
+package com.redhat.devtools.intellij.kubernetes.editor.inlay.base64
 
 import com.intellij.psi.PsiElement
 import com.redhat.devtools.intellij.kubernetes.editor.util.decodeBase64

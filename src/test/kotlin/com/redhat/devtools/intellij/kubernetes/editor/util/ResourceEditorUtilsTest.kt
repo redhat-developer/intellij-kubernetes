@@ -11,11 +11,10 @@
 package com.redhat.devtools.intellij.kubernetes.editor.util
 
 import com.nhaarman.mockitokotlin2.mock
-import com.nhaarman.mockitokotlin2.verify
 import com.redhat.devtools.intellij.common.validation.KubernetesResourceInfo
 import com.redhat.devtools.intellij.common.validation.KubernetesTypeInfo
-import com.redhat.devtools.intellij.kubernetes.editor.mocks.createYAMLDocument
-import com.redhat.devtools.intellij.kubernetes.editor.mocks.createYAMLFile
+import com.redhat.devtools.intellij.kubernetes.editor.mocks.createJsonObject
+import com.redhat.devtools.intellij.kubernetes.editor.mocks.createJsonProperty
 import com.redhat.devtools.intellij.kubernetes.editor.mocks.createYAMLKeyValue
 import com.redhat.devtools.intellij.kubernetes.editor.mocks.createYAMLValue
 import com.redhat.devtools.intellij.kubernetes.model.mocks.Mocks.kubernetesResourceInfo
@@ -68,12 +67,9 @@ class ResourceEditorUtilsTest {
 	@Test
 	fun `#isKubernetesResource should return true if info has the given kind`() {
 		// given
-		val kubernetesTypeInfo: KubernetesTypeInfo =
-			kubernetesTypeInfo("jedi", "v1")
-		val kubernetesResourceInfo: KubernetesResourceInfo =
-			kubernetesResourceInfo("yoda", "light side", kubernetesTypeInfo)
+		val kubernetesTypeInfo: KubernetesTypeInfo = kubernetesTypeInfo("jedi", "v1")
 		// when
-		val isKubernetesResource = isKubernetesResource("jedi", kubernetesResourceInfo)
+		val isKubernetesResource = isKubernetesResource("jedi", kubernetesTypeInfo)
 		// then
 		assertThat(isKubernetesResource).isTrue()
 	}
@@ -81,68 +77,44 @@ class ResourceEditorUtilsTest {
 	@Test
 	fun `#isKubernetesResource should return false if info doesnt have the given kind`() {
 		// given
-		val kubernetesTypeInfo: KubernetesTypeInfo =
-			kubernetesTypeInfo("jedi", "v1")
-		val kubernetesResourceInfo: KubernetesResourceInfo =
-			kubernetesResourceInfo("yoda", "light side", kubernetesTypeInfo)
+		val kubernetesTypeInfo: KubernetesTypeInfo = kubernetesTypeInfo("jedi", "v1")
 		// when
-		val isKubernetesResource = isKubernetesResource("sith", kubernetesResourceInfo)
+		val isKubernetesResource = isKubernetesResource("sith", kubernetesTypeInfo)
 		// then
 		assertThat(isKubernetesResource).isFalse()
 	}
 
 	@Test
-	fun `#getContent should return content in YAMLFile`() {
-		// given
-		val value = createYAMLValue(emptyArray())
-		val document = createYAMLDocument(value)
-		val file = createYAMLFile(listOf(document))
-		// when
-		getContent(file)
-		// then
-		verify(file.documents.get(0)).getTopLevelValue()
-	}
-
-	@Test
-	fun `#getContent should return null if YAMLFile has empty list of documents`() {
-		// given
-		val file = createYAMLFile(emptyList())
-		// when
-		val content = getContent(file)
-		// then
-		assertThat(content).isNull()
-	}
-
-	@Test
-	fun `#getContent should return null if YAMLFile has null documents`() {
-		// given
-		val file = createYAMLFile(null)
-		// when
-		val content = getContent(file)
-		// then
-		assertThat(content).isNull()
-	}
-
-	@Test
-	fun `#getData should return YAMLKeyValue named data`() {
+	fun `#getDataValue should return YAMLKeyValue named data`() {
 		// given
 		val data = createYAMLKeyValue("data")
 		val parent = createYAMLValue(arrayOf(data))
 		// when
-		val found = getData(parent)
+		val found = getDataValue(parent)
 		// then
 		assertThat(found).isNotNull()
 	}
 
 	@Test
-	fun `#getData should return null if there is no child named data`() {
+	fun `#getDataValue should return null if there is no child named data`() {
 		// given
 		val yoda = createYAMLKeyValue("yoda")
 		val parent = createYAMLValue(arrayOf(yoda))
 		// when
-		val found = getData(parent)
+		val found = getDataValue(parent)
 		// then
 		assertThat(found).isNull()
+	}
+
+	@Test
+	fun `#getDataValue should return JsonProperty named data`() {
+		// given
+		val data = createJsonProperty("data", value = "anakin")
+		val parent = createJsonObject(properties = listOf(data))
+		// when
+		val found = getDataValue(parent)
+		// then
+		assertThat(found?.text).isEqualTo("anakin")
 	}
 
 	@Test
