@@ -16,6 +16,7 @@ import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.eq
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.verify
+import com.redhat.devtools.intellij.kubernetes.editor.inlay.base64.Base64ValueAdapter
 import com.redhat.devtools.intellij.kubernetes.editor.mocks.createJsonProperty
 import com.redhat.devtools.intellij.kubernetes.editor.mocks.createJsonPsiFileFactory
 import com.redhat.devtools.intellij.kubernetes.editor.mocks.createProjectWithServices
