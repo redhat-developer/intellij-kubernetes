@@ -17,10 +17,12 @@ import com.nhaarman.mockitokotlin2.eq
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.verify
 import com.redhat.devtools.intellij.kubernetes.editor.inlay.base64.Base64ValueAdapter
+import com.redhat.devtools.intellij.kubernetes.editor.mocks.createJsonObject
 import com.redhat.devtools.intellij.kubernetes.editor.mocks.createJsonProperty
 import com.redhat.devtools.intellij.kubernetes.editor.mocks.createJsonPsiFileFactory
 import com.redhat.devtools.intellij.kubernetes.editor.mocks.createProjectWithServices
 import com.redhat.devtools.intellij.kubernetes.editor.mocks.createYAMLGenerator
+import com.redhat.devtools.intellij.kubernetes.editor.mocks.createYAMLMapping
 import com.redhat.devtools.intellij.kubernetes.editor.mocks.createYAMLKeyValue
 import org.assertj.core.api.Assertions.assertThat
 import org.jetbrains.yaml.psi.YAMLKeyValue
@@ -37,7 +39,7 @@ class Base64ValueAdapterTest {
 	@Test
 	fun `#get should return value of YAMLKeyValue`() {
 		// given
-		val element = createYAMLKeyValue(value = "yoda", project = project)
+		val element = createYAMLKeyValue("jedi", value = "yoda", project = project)
 		val adapter = Base64ValueAdapter(element)
 		// when
 		val text = adapter.get()
@@ -48,7 +50,7 @@ class Base64ValueAdapterTest {
 	@Test
 	fun `#get should return value with quotes`() {
 		// given
-		val element = createYAMLKeyValue(value = "\"yoda\"", project = project)
+		val element = createYAMLKeyValue(key = "jedi", value = "\"yoda\"", project = project)
 		val adapter = Base64ValueAdapter(element)
 		// when
 		val text = adapter.get()
@@ -59,7 +61,7 @@ class Base64ValueAdapterTest {
 	@Test
 	fun `#get should return value of JsonProperty`() {
 		// given
-		val element = createJsonProperty(value = "yoda", project = project)
+		val element = createJsonProperty("jedi", "yoda", project = project)
 		val adapter = Base64ValueAdapter(element)
 		// when
 		val text = adapter.get()
@@ -81,7 +83,7 @@ class Base64ValueAdapterTest {
 	@Test
 	fun `#getDecoded should return value decoded value`() {
 		// given
-		val element = createYAMLKeyValue(value = toBase64("skywalker"), project = project)
+		val element = createYAMLKeyValue("jedi", value = toBase64("skywalker"), project = project)
 		val adapter = Base64ValueAdapter(element)
 		// when
 		val text = adapter.getDecoded()
@@ -92,7 +94,7 @@ class Base64ValueAdapterTest {
 	@Test
 	fun `#getDecoded should return null if value isn't valid base64`() {
 		// given
-		val element = createYAMLKeyValue(value = toBase64("skywalker") + "bogus", project = project)
+		val element = createYAMLKeyValue("anakin", toBase64("skywalker") + "bogus", project = project)
 		val adapter = Base64ValueAdapter(element)
 		// when
 		val text = adapter.getDecoded()
@@ -103,7 +105,7 @@ class Base64ValueAdapterTest {
 	@Test
 	fun `#getDecoded should return null if value is null`() {
 		// given
-		val element = createYAMLKeyValue(value = null, project = project)
+		val element = createYAMLKeyValue("c-3po", null, project = project)
 		val adapter = Base64ValueAdapter(element)
 		// when
 		val text = adapter.getDecoded()
@@ -114,7 +116,7 @@ class Base64ValueAdapterTest {
 	@Test
 	fun `#getDecoded should return value without quotes`() {
 		// given
-		val element = createYAMLKeyValue(value = "\"" + toBase64("yoda") + "\"", project = project)
+		val element = createYAMLKeyValue("jedi", value = "\"" + toBase64("yoda") + "\"", project = project)
 		val adapter = Base64ValueAdapter(element)
 		// when
 		val text = adapter.getDecoded()
@@ -125,7 +127,7 @@ class Base64ValueAdapterTest {
 	@Test
 	fun `#getDecodedBytes should return decoded bytes`() {
 		// given
-		val element = createYAMLKeyValue(value = toBase64("skywalker"), project = project)
+		val element = createYAMLKeyValue("jedi", value = toBase64("skywalker"), project = project)
 		val adapter = Base64ValueAdapter(element)
 		// when
 		val bytes = adapter.getDecodedBytes()
@@ -136,7 +138,7 @@ class Base64ValueAdapterTest {
 	@Test
 	fun `#getDecodedBytes should return null for null value`() {
 		// given
-		val element = createYAMLKeyValue(value = null, project = project)
+		val element = createYAMLKeyValue("jedi", value = null, project = project)
 		val adapter = Base64ValueAdapter(element)
 		// when
 		val bytes = adapter.getDecodedBytes()
@@ -147,7 +149,7 @@ class Base64ValueAdapterTest {
 	@Test
 	fun `#set should add new YAMKeyValue to parent and delete current element`() {
 		// given
-		val parent = createYAMLKeyValue("group", "jedis", project = project)
+		val parent = createYAMLMapping("group", "jedis")
 		val element = createYAMLKeyValue("jedi", "yoda", parent, project)
 		val adapter = Base64ValueAdapter(element)
 		// when
@@ -160,8 +162,8 @@ class Base64ValueAdapterTest {
 	@Test
 	fun `#set should create new YAMKeyValue with same key and given base64 encoded value`() {
 		// given
-		val parent = createYAMLKeyValue("group", "jedis", project = project)
-		val element = createYAMLKeyValue("jedi", "yoda", parent, project)
+		val parent = createYAMLMapping("group", "jedis")
+		val element = createYAMLKeyValue("jedi", "yoda", parent, project = project)
 		val adapter = Base64ValueAdapter(element)
 		// when
 		adapter.set("obiwan")
@@ -172,7 +174,7 @@ class Base64ValueAdapterTest {
 	@Test
 	fun `#set should create new multiline value if existing value is multiline`() {
 		// given
-		val parent = createYAMLKeyValue("group", "jedis", project = project)
+		val parent = createYAMLMapping("group", "jedis")
 		val element = createYAMLKeyValue("jedi", "|\nyoda", parent, project)
 		val adapter = Base64ValueAdapter(element)
 		// when
@@ -184,8 +186,8 @@ class Base64ValueAdapterTest {
 	@Test
 	fun `#set should create new quoted value if existing value is quoted`() {
 		// given
-		val parent = createYAMLKeyValue("group", "jedis", project = project)
-		val element = createYAMLKeyValue("jedi", "\"yoda\"", parent, project)
+		val parent = createYAMLMapping("group", "jedis")
+		val element = createYAMLKeyValue("jedi", "\"yoda\"", parent, project = project)
 		val adapter = Base64ValueAdapter(element)
 		// when
 		adapter.set("anakin")
@@ -196,7 +198,7 @@ class Base64ValueAdapterTest {
 	@Test
 	fun `#set should wrap new value at given position`() {
 		// given
-		val parent = createYAMLKeyValue("group", "jedis", project = project)
+		val parent = createYAMLMapping("group", "jedis")
 		val element = createYAMLKeyValue("jedi", "yoda", parent, project)
 		val adapter = Base64ValueAdapter(element)
 		// when
@@ -209,10 +211,11 @@ class Base64ValueAdapterTest {
 	@Test
 	fun `#set should add new JsonProperty to parent and delete current element`() {
 		// given
-		val properties: MutableList<JsonProperty> = mutableListOf()
+		val properties = mutableListOf<JsonProperty>()
 		val psiFileFactory = createJsonPsiFileFactory(properties)
 		val project = createProjectWithServices(psiFileFactory = psiFileFactory)
-		val parent = createJsonProperty("group", "jedis", project = project)
+		val parentProperties = listOf<JsonProperty>()
+		val parent = createJsonObject("group", parentProperties, project = project)
 		val property = createJsonProperty("jedi", "yoda", parent, project)
 		properties.add(property)
 		val adapter = Base64ValueAdapter(property)

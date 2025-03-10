@@ -20,8 +20,8 @@ import com.intellij.codeInsight.hints.InlayHintsProvider
 import com.intellij.codeInsight.hints.InlayHintsSink
 import com.intellij.codeInsight.hints.NoSettings
 import com.intellij.codeInsight.hints.SettingsKey
+import com.intellij.codeInsight.hints.presentation.PresentationFactory
 import com.intellij.json.psi.JsonFile
-import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.ReadAction
 import com.intellij.openapi.editor.Editor
 import com.intellij.psi.PsiElement
@@ -29,6 +29,8 @@ import com.intellij.psi.PsiFile
 import com.intellij.ui.dsl.builder.panel
 import com.redhat.devtools.intellij.common.validation.KubernetesTypeInfo
 import com.redhat.devtools.intellij.kubernetes.editor.inlay.base64.Base64Presentations
+import com.redhat.devtools.intellij.kubernetes.editor.inlay.selector.SelectorPresentations
+import com.redhat.devtools.intellij.kubernetes.editor.util.PsiElements
 import org.jetbrains.yaml.psi.YAMLFile
 import javax.swing.JComponent
 
@@ -65,34 +67,44 @@ internal class ResourceEditorInlayHintsProvider : InlayHintsProvider<NoSettings>
 			}
 			return when(element) {
 				is YAMLFile -> {
-					create(element, sink, editor)
+					create(element, sink, editor, factory)
 					false
 				}
 				is JsonFile -> {
-					create(element, sink, editor)
+					create(element, sink, editor, factory)
 					false
 				}
 				else -> true
 			}
 		}
 
-		private fun create(file: YAMLFile, sink: InlayHintsSink, editor: Editor) {
+		private fun create(file: YAMLFile, sink: InlayHintsSink, editor: Editor, factory: PresentationFactory) {
 			return ReadAction.run<Exception> {
-				file.documents.forEach { document ->
-					val info = KubernetesTypeInfo.create(document) ?: return@forEach
-					val element = document.topLevelValue ?: return@forEach
-					Base64Presentations.create(element, info, sink, editor)?.create()
+				file.documents
+					.mapNotNull { document -> document.topLevelValue }
+					.forEach { element ->
+						createPresentations(element, sink, editor, factory)
+					}
+			}
+		}
+
+		private fun create(file: JsonFile, sink: InlayHintsSink, editor: Editor, factory: PresentationFactory) {
+			return ReadAction.run<Exception> {
+				file.allTopLevelValues.forEach { element ->
+					createPresentations(element, sink, editor, factory)
 				}
 			}
 		}
 
-		private fun create(file: JsonFile, sink: InlayHintsSink, editor: Editor) {
-			return ReadAction.run<Exception> {
-				val info = KubernetesTypeInfo.create(file) ?: return@run
-				val element = file.topLevelValue ?: return@run
-				Base64Presentations.create(element, info, sink, editor)?.create()
-			}
-		}
+		private fun createPresentations(element: PsiElement, sink: InlayHintsSink, editor: Editor, factory: PresentationFactory) {
+			val info = KubernetesTypeInfo.create(element) ?: return
+			Base64Presentations.create(element, info, sink, editor, factory)
 
+			val fileType = editor.virtualFile?.fileType ?: return
+			val project = editor.project ?: return
+			val allElements = PsiElements.getAllNoExclusions(fileType, project)
+			SelectorPresentations.createForSelector(element, allElements, sink, editor, factory)
+			SelectorPresentations.createForAllLabels(element, allElements, sink, editor, factory)
+		}
 	}
 }

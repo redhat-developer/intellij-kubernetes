@@ -428,7 +428,7 @@ open class ResourceEditor(
 
     override fun dispose() {
         resourceModel.removeListener(onNamespaceContextChanged)
-        editorResources.dispose()
         connection.dispose()
+        editorResources.dispose()
     }
 }
