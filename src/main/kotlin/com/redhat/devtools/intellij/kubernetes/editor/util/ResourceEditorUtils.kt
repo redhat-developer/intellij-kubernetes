@@ -10,6 +10,7 @@
  ******************************************************************************/
 package com.redhat.devtools.intellij.kubernetes.editor.util
 
+import com.intellij.json.JsonFileType
 import com.intellij.json.psi.JsonElement
 import com.intellij.json.psi.JsonElementGenerator
 import com.intellij.json.psi.JsonFile
@@ -17,6 +18,7 @@ import com.intellij.json.psi.JsonProperty
 import com.intellij.json.psi.JsonValue
 import com.intellij.openapi.application.ReadAction
 import com.intellij.openapi.fileEditor.FileEditor
+import com.intellij.openapi.fileTypes.LanguageFileType
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.text.StringUtil
 import com.intellij.openapi.util.text.Strings
@@ -28,6 +30,7 @@ import com.redhat.devtools.intellij.common.validation.KubernetesResourceInfo
 import com.redhat.devtools.intellij.common.validation.KubernetesTypeInfo
 import com.redhat.devtools.intellij.kubernetes.editor.ResourceEditor
 import org.jetbrains.yaml.YAMLElementGenerator
+import org.jetbrains.yaml.YAMLFileType
 import org.jetbrains.yaml.psi.YAMLDocument
 import org.jetbrains.yaml.psi.YAMLKeyValue
 import org.jetbrains.yaml.psi.YAMLMapping
@@ -274,3 +277,10 @@ fun getExistingResourceEditor(file: VirtualFile?): ResourceEditor? {
     return file?.getUserData(ResourceEditor.KEY_RESOURCE_EDITOR)
 }
 
+fun isYAML(fileType: LanguageFileType?): Boolean {
+    return YAMLFileType.YML == fileType
+}
+
+fun isJSON(fileType: LanguageFileType?): Boolean {
+    return JsonFileType.INSTANCE == fileType
+}
