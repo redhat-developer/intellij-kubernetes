@@ -171,6 +171,6 @@ open class ResourceEditorFactory protected constructor(
 
     /* for testing purposes */
     protected open fun getTelemetryMessageBuilder(): TelemetryMessageBuilder {
-      return TelemetryService.instance;
+      return TelemetryService.instance
     }
 }
