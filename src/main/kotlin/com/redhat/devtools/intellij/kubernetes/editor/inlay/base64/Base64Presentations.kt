@@ -40,16 +40,16 @@ object Base64Presentations {
 	private const val SECRET_RESOURCE_KIND = "Secret"
 	private const val CONFIGMAP_RESOURCE_KIND = "ConfigMap"
 
-	fun create(element: PsiElement, info: KubernetesTypeInfo, sink: InlayHintsSink, editor: Editor): InlayPresentationsFactory? {
+	fun create(element: PsiElement, info: KubernetesTypeInfo, sink: InlayHintsSink, editor: Editor): Collection<InlayPresentation>? {
 		return when {
 			isKubernetesResource(SECRET_RESOURCE_KIND, info) -> {
 				val data = getDataValue(element) ?: return null
-				StringPresentationsFactory(data, sink, editor)
+				StringPresentationsFactory(data, sink, editor).create()
 			}
 
 			isKubernetesResource(CONFIGMAP_RESOURCE_KIND, info) -> {
 				val binaryData = getBinaryData(element) ?: return null
-				BinaryPresentationsFactory(binaryData, sink, editor)
+				BinaryPresentationsFactory(binaryData, sink, editor).create()
 			}
 
 			else -> null
@@ -69,8 +69,7 @@ object Base64Presentations {
 
 		fun create(): Collection<InlayPresentation> {
 			return element.children.mapNotNull { child ->
-				val adapter = Base64ValueAdapter(child)
-				create(adapter)
+				create(Base64ValueAdapter(child))
 			}
 		}
 
