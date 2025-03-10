@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Generator: Adobe Illustrator 16.0.0, SVG Export Plug-In . SVG Version: 6.00 Build 0)  -->
+
+<svg
+   version="1.1"
+   id="Capa_1"
+   x="0px"
+   y="0px"
+   width="36"
+   height="28"
+   viewBox="0 0 36 28"
+   xml:space="preserve"
+   sodipodi:docname="label.svg"
+   inkscape:version="1.4 (e7c3feb1, 2024-10-09)"
+   inkscape:export-filename="selector.svg"
+   inkscape:export-xdpi="71.073486"
+   inkscape:export-ydpi="71.073486"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg"><defs
+   id="defs18"><linearGradient
+     id="linearGradient31"
+     inkscape:swatch="gradient"><stop
+       style="stop-color:#000000;stop-opacity:0;"
+       offset="0.97447795"
+       id="stop31" /><stop
+       style="stop-color:#000000;stop-opacity:0;"
+       offset="1"
+       id="stop32" /></linearGradient><marker
+     style="overflow:visible"
+     id="ArrowWide"
+     refX="0"
+     refY="0"
+     orient="auto-start-reverse"
+     inkscape:stockid="Wide arrow"
+     markerWidth="1.5"
+     markerHeight="1.5"
+     viewBox="0 0 1 1"
+     inkscape:isstock="true"
+     inkscape:collect="always"
+     preserveAspectRatio="xMidYMid"
+     markerUnits="userSpaceOnUse"><path
+       style="fill:none;stroke:context-stroke;stroke-width:1;stroke-linecap:butt"
+       d="M 3,-3 0,0 3,3"
+       transform="rotate(180,0.125,0)"
+       sodipodi:nodetypes="ccc"
+       id="path25" /></marker><inkscape:path-effect
+     effect="fillet_chamfer"
+     id="path-effect21"
+     is_visible="true"
+     lpeversion="1"
+     nodesatellites_param="F,0,0,1,0,35.250054,0,1 @ F,0,0,1,0,0,0,1 @ F,0,0,1,0,0,0,1 @ F,0,0,1,0,52.344225,0,1 @ F,0,0,1,0,0,0,1 @ F,0,0,1,0,0,0,1 @ F,0,0,1,0,0,0,1 @ F,0,0,1,0,0,0,1 | F,0,0,1,0,0,0,1 @ F,0,0,1,0,0,0,1 @ F,0,0,1,0,0,0,1 @ F,0,1,1,0,0,0,1 @ F,0,0,1,0,0,0,1 @ F,0,0,1,0,0,0,1 @ F,0,0,1,0,31.518925,0,1 @ F,0,0,1,0,0,0,1"
+     radius="0"
+     unit="px"
+     method="auto"
+     mode="F"
+     chamfer_steps="1"
+     flexible="false"
+     use_knot_distance="true"
+     apply_no_radius="true"
+     apply_with_radius="true"
+     only_selected="false"
+     hide_knots="false" /></defs><sodipodi:namedview
+   id="namedview18"
+   pagecolor="#ffffff"
+   bordercolor="#000000"
+   borderopacity="0.25"
+   inkscape:showpageshadow="2"
+   inkscape:pageopacity="0.0"
+   inkscape:pagecheckerboard="true"
+   inkscape:deskcolor="#d1d1d1"
+   inkscape:zoom="24.306872"
+   inkscape:cx="13.247282"
+   inkscape:cy="16.435681"
+   inkscape:window-width="1904"
+   inkscape:window-height="1008"
+   inkscape:window-x="82"
+   inkscape:window-y="125"
+   inkscape:window-maximized="0"
+   inkscape:current-layer="g2"
+   showguides="true"><sodipodi:guide
+     position="2.2383698,10.215785"
+     orientation="1,0"
+     id="guide42"
+     inkscape:locked="false" /></sodipodi:namedview>
+<g
+   id="g3"
+   transform="translate(-34.603516,-34.587891)">
+	<g
+   id="g2">
+		<g
+   id="g22"
+   transform="matrix(0.02898709,0,0,0.02851268,33.600461,33.601698)" />
+		
+	<rect
+   style="opacity:0.2;fill:#000000;fill-opacity:0;stroke-width:0.88841"
+   id="rect24"
+   width="2.5661445"
+   height="4.5065265"
+   x="38.945995"
+   y="57.804478" /><rect
+   style="opacity:1;fill:#000000;fill-opacity:0;stroke-width:0.88841;marker-start:url(#ArrowWide)"
+   id="rect25"
+   width="15.06819"
+   height="1.4663951"
+   x="40.913189"
+   y="56.889233" /><path
+   id="path3"
+   style="fill:#326ce5;fill-opacity:1;stroke:none;stroke-width:9.40832;stroke-dasharray:none;stroke-opacity:1"
+   d="M 47.767578 35.802735 L 47.767578 35.810547 L 34.644532 48.904297 L 47.78711 61.308594 C 58.767 61.260694 59.583558 61.298828 70.603516 61.298828 L 70.619141 35.802735 C 59.637574 35.802713 55.390064 35.801235 47.775391 35.802735 L 47.767578 35.802735 z M 50.396485 43.679688 A 4.8545942 4.5666099 0 0 1 55.25586 48.240235 L 55.25586 48.246094 A 4.8545942 4.5666099 0 0 1 50.402344 52.8125 A 4.8545942 4.5666099 0 0 1 45.546875 48.25 A 4.8545942 4.5666099 0 0 1 50.396485 43.679688 z " /></g>
+</g>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</svg>

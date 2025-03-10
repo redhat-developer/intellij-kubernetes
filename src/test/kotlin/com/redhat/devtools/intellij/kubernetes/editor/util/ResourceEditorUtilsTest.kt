@@ -13,10 +13,6 @@ package com.redhat.devtools.intellij.kubernetes.editor.util
 import com.nhaarman.mockitokotlin2.mock
 import com.redhat.devtools.intellij.common.validation.KubernetesResourceInfo
 import com.redhat.devtools.intellij.common.validation.KubernetesTypeInfo
-import com.redhat.devtools.intellij.kubernetes.editor.mocks.createJsonObject
-import com.redhat.devtools.intellij.kubernetes.editor.mocks.createJsonProperty
-import com.redhat.devtools.intellij.kubernetes.editor.mocks.createYAMLKeyValue
-import com.redhat.devtools.intellij.kubernetes.editor.mocks.createYAMLValue
 import com.redhat.devtools.intellij.kubernetes.model.mocks.Mocks.kubernetesResourceInfo
 import com.redhat.devtools.intellij.kubernetes.model.mocks.Mocks.kubernetesTypeInfo
 import org.assertj.core.api.Assertions.assertThat
@@ -82,61 +78,6 @@ class ResourceEditorUtilsTest {
 		val isKubernetesResource = isKubernetesResource("sith", kubernetesTypeInfo)
 		// then
 		assertThat(isKubernetesResource).isFalse()
-	}
-
-	@Test
-	fun `#getDataValue should return YAMLKeyValue named data`() {
-		// given
-		val data = createYAMLKeyValue("data")
-		val parent = createYAMLValue(arrayOf(data))
-		// when
-		val found = getDataValue(parent)
-		// then
-		assertThat(found).isNotNull()
-	}
-
-	@Test
-	fun `#getDataValue should return null if there is no child named data`() {
-		// given
-		val yoda = createYAMLKeyValue("yoda")
-		val parent = createYAMLValue(arrayOf(yoda))
-		// when
-		val found = getDataValue(parent)
-		// then
-		assertThat(found).isNull()
-	}
-
-	@Test
-	fun `#getDataValue should return JsonProperty named data`() {
-		// given
-		val data = createJsonProperty("data", value = "anakin")
-		val parent = createJsonObject(properties = listOf(data))
-		// when
-		val found = getDataValue(parent)
-		// then
-		assertThat(found?.text).isEqualTo("anakin")
-	}
-
-	@Test
-	fun `#getBinaryData should return YAMLKeyValue named binaryData`() {
-		// given
-		val data = createYAMLKeyValue("binaryData")
-		val parent = createYAMLValue(arrayOf(data))
-		// when
-		val found = getBinaryData(parent)
-		// then
-		assertThat(found).isNotNull()
-	}
-
-	@Test
-	fun `#getBinaryData should return null if there is no child named binaryData`() {
-		// given
-		val anakin = createYAMLKeyValue("anakin")
-		val parent = createYAMLValue(arrayOf(anakin))
-		// when
-		val found = getBinaryData(parent)
-		// then
-		assertThat(found).isNull()
 	}
 
 	@Test
