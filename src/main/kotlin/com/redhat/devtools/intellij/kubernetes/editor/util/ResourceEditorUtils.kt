@@ -65,8 +65,8 @@ fun hasKubernetesResource(file: VirtualFile?, project: Project): Boolean {
  * @param resourceInfo the resource info to inspect
  */
 fun isKubernetesResource(resourceInfo: KubernetesResourceInfo?): Boolean {
-    return resourceInfo?.typeInfo?.apiGroup?.isNotBlank() ?: false
-            && resourceInfo?.typeInfo?.kind?.isNotBlank() ?: false
+    return resourceInfo?.apiGroup?.isNotBlank() ?: false
+            && resourceInfo?.kind?.isNotBlank() ?: false
 }
 
 fun isKubernetesResource(kind: String, info: KubernetesTypeInfo?): Boolean {
@@ -92,49 +92,6 @@ fun getKubernetesResourceInfo(file: VirtualFile?, project: Project): KubernetesR
         }
     } catch (e: RuntimeException) {
         null
-    }
-}
-
-fun getChildren(document: YAMLDocument): List<YAMLPsiElement> {
-    val topLevelValue: YAMLValue = document.topLevelValue ?: return emptyList()
-
-    return when (topLevelValue) {
-        is YAMLMapping ->
-            topLevelValue.keyValues.toList()
-        is YAMLSequence ->
-            topLevelValue.items
-        else ->
-            emptyList()
-    }
-}
-
-fun getChildren(file: JsonFile): List<JsonElement> {
-    return file.allTopLevelValues
-}
-
-/**
- * Returns the [PsiElement] named "metadata" within the children of the given [PsiElement].
- * Only [YAMLKeyValue] and [JsonProperty] are supported. Returns `null` otherwise.
- *
- * @param element the PsiElement whose "metadata" child should be found.
- * @return the PsiElement named "metadata"
- */
-private fun getMetadata(parent: PsiElement): PsiElement? {
-    return getElement(KEY_METADATA, parent)
-}
-
-private fun getElement(key: String, parent: PsiElement): PsiElement? {
-    return when (parent) {
-        is YAMLValue ->
-            parent.children
-                .filterIsInstance<YAMLKeyValue>()
-                .find { it.name == key }
-        is JsonValue ->
-            parent.children.toList()
-                .filterIsInstance<JsonProperty>()
-                .find { it.name == key }
-        else ->
-            null
     }
 }
 

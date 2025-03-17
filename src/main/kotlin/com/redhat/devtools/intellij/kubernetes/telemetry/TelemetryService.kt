@@ -56,7 +56,7 @@ object TelemetryService {
     }
 
     fun sendTelemetry(info: KubernetesResourceInfo?, telemetry: TelemetryMessageBuilder.ActionMessage) {
-        telemetry.property(PROP_RESOURCE_KIND, kindOrUnknown(info?.typeInfo)).send()
+        telemetry.property(PROP_RESOURCE_KIND, kindOrUnknown(info?.kind, info?.apiGroup)).send()
     }
 
     fun getKinds(resources: Collection<HasMetadata>): String {
@@ -69,16 +69,13 @@ object TelemetryService {
     }
 
     private fun kindOrUnknown(kind: ResourceKind<*>?): String {
-        return if (kind != null) {
-            "${kind.version}/${kind.kind}"
-        } else {
-            "unknown"
-        }
+        return kindOrUnknown(kind?.kind, kind?.version);
     }
 
-    private fun kindOrUnknown(info: KubernetesTypeInfo?): String {
-        return if (info != null) {
-            "${info.apiGroup}/${info.kind}"
+    private fun kindOrUnknown(kind: String?, apiGroup: String?): String {
+        return if (kind != null
+            && apiGroup != null) {
+            "${kind}/${apiGroup}"
         } else {
             "unknown"
         }
