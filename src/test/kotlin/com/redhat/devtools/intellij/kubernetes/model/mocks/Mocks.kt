@@ -198,11 +198,16 @@ object Mocks {
     }
 
     fun kubernetesResourceInfo(name: String?, namespace: String?, typeInfo: KubernetesTypeInfo): KubernetesResourceInfo {
-        return mock {
-            on { this.name } doReturn name
-            on { this.namespace } doReturn namespace
-            on { this.typeInfo } doReturn typeInfo
-        }
+        val mock = mock<KubernetesResourceInfo>()
+        whenever(mock.name)
+            .thenReturn(name)
+        whenever(mock.namespace)
+            .thenReturn(namespace)
+        whenever(mock.kind)
+            .thenAnswer { typeInfo.kind } // avoid unfinished stubbing error in mockito
+        whenever(mock.apiGroup)
+            .thenAnswer { typeInfo.apiGroup } // avoid unfinished stubbing error in mockito
+        return mock
     }
 
     fun clientConfig(currentContext: NamedContext?, allContexts: List<NamedContext>): ClientConfig {
