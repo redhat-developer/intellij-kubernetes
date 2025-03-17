@@ -238,6 +238,14 @@
         <codeInsight.inlayProvider language="JSON"
                                    implementationClass="com.redhat.devtools.intellij.kubernetes.editor.inlay.ResourceEditorInlayHintsProvider"
                                    id="com.redhat.devtools.intellij.kubernetes.editor.json.ResourceEditorInlayHintsProvider"/>
+        <findUsagesHandlerFactory
+                order="last, before default"
+                implementation="com.redhat.devtools.intellij.kubernetes.usage.ResourceUsagesHandlerFactory"/>
+        <elementDescriptionProvider
+                implementation="com.redhat.devtools.intellij.kubernetes.usage.ResourceDescriptionProvider"/>
+        <customUsageSearcher
+                order="last"
+                implementation="com.redhat.devtools.intellij.kubernetes.usage.ResourceUsageSearcher"/>
         <projectConfigurable id="tools.settings.redhat.kubernetes"
                              parentId="tools"
                              displayName="Red Hat Kubernetes"
