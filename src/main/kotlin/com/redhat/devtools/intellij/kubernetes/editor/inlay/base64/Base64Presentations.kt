@@ -43,12 +43,12 @@ object Base64Presentations {
 	fun create(element: PsiElement, info: KubernetesTypeInfo, sink: InlayHintsSink, editor: Editor): Collection<InlayPresentation>? {
 		return when {
 			isKubernetesResource(SECRET_RESOURCE_KIND, info) -> {
-				val data = getDataValue(element) ?: return null
+				val data = element.getDataValue() ?: return null
 				StringPresentationsFactory(data, sink, editor).create()
 			}
 
 			isKubernetesResource(CONFIGMAP_RESOURCE_KIND, info) -> {
-				val binaryData = getBinaryData(element) ?: return null
+				val binaryData = element.getBinaryData() ?: return null
 				BinaryPresentationsFactory(binaryData, sink, editor).create()
 			}
 
@@ -96,12 +96,15 @@ object Base64Presentations {
 		private fun create(text: String, onClick: (event: MouseEvent) -> Unit, editor: Editor): InlayPresentation? {
 			val factory = PresentationFactory(editor)
 			val trimmed = trimWithEllipsis(text, INLAY_HINT_MAX_WIDTH) ?: return null
-			val textPresentation = factory.smallText(trimmed)
-			val hoverPresentation = factory.referenceOnHover(textPresentation) { event, _ ->
-				onClick.invoke(event)
-			}
-			val tooltipPresentation = factory.withTooltip("Click to change value", hoverPresentation)
-			return factory.roundWithBackground(tooltipPresentation)
+			return factory.roundWithBackground(
+				factory.withTooltip(
+					"Click to change value",
+					factory.referenceOnHover(
+						factory.smallText(trimmed)) { event, _ ->
+							onClick.invoke(event)
+					}
+				)
+			)
 		}
 
 		private fun onValidValue(setter: (value: String, wrapAt: Int) -> Unit, project: Project?)

@@ -10,13 +10,16 @@
  ******************************************************************************/
 package com.redhat.devtools.intellij.kubernetes.editor.inlay
 
+import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.mock
 import com.redhat.devtools.intellij.kubernetes.editor.inlay.base64.Base64Presentations
-import com.redhat.devtools.intellij.kubernetes.editor.mocks.createYAMLKeyValue
-import com.redhat.devtools.intellij.kubernetes.editor.mocks.createYAMLValue
-import com.redhat.devtools.intellij.kubernetes.model.mocks.Mocks.kubernetesResourceInfo
+import com.redhat.devtools.intellij.kubernetes.editor.mocks.createKeyValue
+import com.redhat.devtools.intellij.kubernetes.editor.mocks.createYAMLMapping
 import com.redhat.devtools.intellij.kubernetes.model.mocks.Mocks.kubernetesTypeInfo
 import org.assertj.core.api.Assertions.assertThat
+import org.jetbrains.yaml.psi.YAMLKeyValue
+import org.jetbrains.yaml.psi.YAMLMapping
+import org.junit.Before
 import org.junit.Test
 
 
@@ -26,15 +29,25 @@ class Base64PresentationsTest {
 	private val configMap = kubernetesTypeInfo("ConfigMap", "v1")
 	private val pod = kubernetesTypeInfo("Pod", "v1")
 
-	private val dataElement = createYAMLKeyValue("data")
-	private val binaryDataElement = createYAMLKeyValue("binaryData")
+	private lateinit var yamlElement: YAMLMapping
+
+	@Before
+	fun before() {
+		this.yamlElement = mock<YAMLMapping>()
+	}
 
 	@Test
 	fun `#create should create factory for Secret if has data`() {
 		// given
-		val content = createYAMLValue(arrayOf(dataElement))
+		val dataMapping = createYAMLMapping(
+			listOf(
+				createKeyValue("token-id", "NWVtaXRq"),
+				createKeyValue("token-secret", "a3E0Z2lodnN6emduMXAwcg==")
+			)
+		)
+		val data = createKeyValue("data", dataMapping, yamlElement)
 		// when
-		val factory = Base64Presentations.create(content, secret, mock(), mock())
+		val factory = Base64Presentations.create(yamlElement, secret, mock(), mock())
 		// then
 		assertThat(factory).isNotNull()
 	}
@@ -42,9 +55,8 @@ class Base64PresentationsTest {
 	@Test
 	fun `#create should NOT create factory for Secret if has NO data`() {
 		// given
-		val content = createYAMLValue(emptyArray())
 		// when
-		val factory = Base64Presentations.create(content, secret, mock(), mock())
+		val factory = Base64Presentations.create(yamlElement, secret, mock(), mock())
 		// then
 		assertThat(factory).isNull()
 	}
@@ -52,9 +64,15 @@ class Base64PresentationsTest {
 	@Test
 	fun `#create should create factory for ConfigMap if has binaryData`() {
 		// given
-		val content = createYAMLValue(arrayOf(binaryDataElement))
+		val binaryDataMapping = createYAMLMapping(
+			listOf(
+				createKeyValue("my-binary-file.bin", "U29tZSBiYXNlNjQgZW5jb2RlZCBiaW5hcnkgZGF0YQ"),
+				createKeyValue("another-binary.dat", "VGhpcyBpcyBhbm90aGVyIGV4YW1wbGUgb2YgYmluYXJ5IGRhdGE")
+			)
+		)
+		val binaryData = createKeyValue("binaryData", binaryDataMapping, yamlElement)
 		// when
-		val factory = Base64Presentations.create(content, configMap, mock(), mock())
+		val factory = Base64Presentations.create(yamlElement, configMap, mock(), mock())
 		// then
 		assertThat(factory).isNotNull()
 	}
@@ -62,9 +80,8 @@ class Base64PresentationsTest {
 	@Test
 	fun `#create NOT should create factory for ConfigMap if has NO binaryData`() {
 		// given
-		val content = createYAMLValue(emptyArray())
 		// when
-		val factory = Base64Presentations.create(content, configMap, mock(), mock())
+		val factory = Base64Presentations.create(yamlElement, configMap, mock(), mock())
 		// then
 		assertThat(factory).isNull()
 	}

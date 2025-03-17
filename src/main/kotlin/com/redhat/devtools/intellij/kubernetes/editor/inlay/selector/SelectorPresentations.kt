@@ -1,70 +1,101 @@
+/*******************************************************************************
+ * Copyright (c) 2024 Red Hat, Inc.
+ * Distributed under license by Red Hat, Inc. All rights reserved.
+ * This program is made available under the terms of the
+ * Eclipse Public License v2.0 which accompanies this distribution,
+ * and is available at http://www.eclipse.org/legal/epl-v20.html
+ *
+ * Contributors:
+ * Red Hat, Inc. - initial API and implementation
+ ******************************************************************************/
 package com.redhat.devtools.intellij.kubernetes.editor.inlay.selector
 
 import com.intellij.codeInsight.hints.InlayHintsSink
 import com.intellij.codeInsight.hints.presentation.InlayPresentation
+import com.intellij.codeInsight.hints.presentation.PresentationFactory
+import com.intellij.codeInsight.navigation.actions.GotoDeclarationAction
 import com.intellij.openapi.editor.Editor
 import com.intellij.psi.PsiElement
-import com.intellij.psi.util.PsiTreeUtil
-import com.redhat.devtools.intellij.common.validation.KubernetesTypeInfo
-import com.redhat.devtools.intellij.kubernetes.editor.util.getKind
-import com.redhat.devtools.intellij.kubernetes.editor.util.getMatchExpressions
-import com.redhat.devtools.intellij.kubernetes.editor.util.getMatchLabels
-import com.redhat.devtools.intellij.kubernetes.editor.util.getMetadataName
-import com.redhat.devtools.intellij.kubernetes.editor.util.hasKindAndName
-import com.redhat.devtools.intellij.kubernetes.editor.util.isMatchingExpressions
-import com.redhat.devtools.intellij.kubernetes.editor.util.isMatchingLabels
-import org.jetbrains.yaml.psi.YAMLKeyValue
-import org.jetbrains.yaml.psi.YAMLMapping
+import com.intellij.ui.IconManager
+import com.intellij.ui.awt.RelativePoint
+import com.redhat.devtools.intellij.kubernetes.editor.util.PsiFiles
+import com.redhat.devtools.intellij.kubernetes.editor.util.getAllElements
+import com.redhat.devtools.intellij.kubernetes.editor.util.getSelectorKeyElement
+import java.awt.event.MouseEvent
+
 
 object SelectorPresentations {
 
-    fun create(element: PsiElement, root: PsiElement, info: KubernetesTypeInfo, sink: InlayHintsSink, editor: Editor): Collection<InlayPresentation>? {
-        if (element is YAMLMapping) {
-            findMatchingResources(element, root)
+    private val selectorIcon = IconManager.getInstance().getIcon("icons/selector.svg", javaClass)
+
+    fun create(
+        element: PsiElement,
+        sink: InlayHintsSink,
+        editor: Editor,
+        filter: SelectorFilter = SelectorFilter(element)
+    ): Collection<InlayPresentation> {
+        val project = editor.project ?: return emptyList()
+        val fileType = editor.virtualFile.fileType
+        val matchingElements = PsiFiles
+            .getAll(fileType, project)
+            .flatMap { file -> file.getAllElements() }
+            .filter(filter::isMatching)
+        if (matchingElements.isEmpty()) {
+            return emptyList()
         }
-        return emptyList()
+        val factory = PresentationFactory(editor)
+
+        val offset = element.getSelectorKeyElement()?.textRange?.endOffset
+            ?: return emptyList()
+
+        val presentation = createText(factory, matchingElements, editor, element)
+        sink.addInlineElement(offset, true, presentation, true)
+
+        val iconPresentation = createIcon(factory, editor, element)
+        sink.addInlineElement(offset, true, iconPresentation, true)
+
+        return listOf(presentation, iconPresentation)
     }
 
-    private fun findMatchingResources(selectorResource: YAMLMapping, root: PsiElement): List<MatchingResource> {
-        val matchLabels = selectorResource.getMatchLabels()
-        val matchExpressions = selectorResource.getMatchExpressions()
-        val allResources = PsiTreeUtil.findChildrenOfType(root, YAMLMapping::class.java)
-            .filter { it != selectorResource // dont match yourself
-                it.hasKindAndName() }
-
-        return allResources
-            .filter { resource ->
-                resource.isMatchingLabels(matchLabels)
-                        && resource.isMatchingExpressions(matchExpressions)
-            }
-            .map { resource ->
-                val kind = resource.getKind() ?: return emptyList()
-                val name = resource.getMetadataName() ?: return emptyList()
-                MatchingResource(kind, name, resource)
-            }
+    private fun createText(
+        factory: PresentationFactory,
+        matchingElements: List<PsiElement>,
+        editor: Editor,
+        element: PsiElement
+    ): InlayPresentation {
+        return factory.withTooltip(
+            "Click to see matching resources",
+            factory.referenceOnHover(
+                factory.roundWithBackground(
+                    factory.text(
+                        "${matchingElements.size} matching"
+                    )
+                ), onClick(editor, element)
+            )
+        )
     }
 
-    private data class Resource(
-        val name: String?,
-        val kind: String?,
-        val labels: Map<String, String>,
-        val element: YAMLMapping
-    ) {
-        fun findMatchLabels(): List<Triple<String, String, YAMLKeyValue>> {
-            return element.getMatchLabels()?.keyValues?.map { keyValue ->
-                    Triple(keyValue.keyText, keyValue.valueText, keyValue)
-            }
-            ?: emptyList()
+    private fun createIcon(
+        factory: PresentationFactory,
+        editor: Editor,
+        element: PsiElement
+    ): InlayPresentation {
+        val iconPresentation = factory.referenceOnHover(
+            factory.roundWithBackground(
+                factory.smallScaledIcon(selectorIcon)
+            ),
+            onClick(editor, element)
+        )
+        return iconPresentation
+    }
+
+    private fun onClick(
+        editor: Editor,
+        element: PsiElement
+    ): (event: MouseEvent, point: java.awt.Point) -> Unit {
+        return { event, point ->
+            GotoDeclarationAction.startFindUsages(editor, element.project, element, RelativePoint(event))
         }
     }
-
-    private data class MatchExpression(
-        val key: String,
-        val operator: String,
-        val values: List<String>,
-        val element: YAMLMapping
-    )
-
-    private data class MatchingResource(val kind: String, val name: String, val element: PsiElement)
 
 }

@@ -21,7 +21,6 @@ import com.intellij.codeInsight.hints.InlayHintsSink
 import com.intellij.codeInsight.hints.NoSettings
 import com.intellij.codeInsight.hints.SettingsKey
 import com.intellij.json.psi.JsonFile
-import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.ReadAction
 import com.intellij.openapi.editor.Editor
 import com.intellij.psi.PsiElement
@@ -83,7 +82,7 @@ internal class ResourceEditorInlayHintsProvider : InlayHintsProvider<NoSettings>
 					val info = KubernetesTypeInfo.create(document) ?: return@forEach
 					val element = document.topLevelValue ?: return@forEach
 					Base64Presentations.create(element, info, sink, editor)
-					SelectorPresentations.create(element, file, info, sink, editor)
+					SelectorPresentations.create(element, sink, editor)
 				}
 			}
 		}
