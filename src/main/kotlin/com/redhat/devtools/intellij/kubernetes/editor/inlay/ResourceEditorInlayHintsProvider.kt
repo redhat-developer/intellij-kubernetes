@@ -21,7 +21,6 @@ import com.intellij.codeInsight.hints.InlayHintsSink
 import com.intellij.codeInsight.hints.NoSettings
 import com.intellij.codeInsight.hints.SettingsKey
 import com.intellij.json.psi.JsonFile
-import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.ReadAction
 import com.intellij.openapi.editor.Editor
 import com.intellij.psi.PsiElement
@@ -29,6 +28,7 @@ import com.intellij.psi.PsiFile
 import com.intellij.ui.dsl.builder.panel
 import com.redhat.devtools.intellij.common.validation.KubernetesTypeInfo
 import com.redhat.devtools.intellij.kubernetes.editor.inlay.base64.Base64Presentations
+import com.redhat.devtools.intellij.kubernetes.editor.inlay.selector.SelectorPresentations
 import org.jetbrains.yaml.psi.YAMLFile
 import javax.swing.JComponent
 
@@ -81,7 +81,8 @@ internal class ResourceEditorInlayHintsProvider : InlayHintsProvider<NoSettings>
 				file.documents.forEach { document ->
 					val info = KubernetesTypeInfo.create(document) ?: return@forEach
 					val element = document.topLevelValue ?: return@forEach
-					Base64Presentations.create(element, info, sink, editor)?.create()
+					Base64Presentations.create(element, info, sink, editor)
+					SelectorPresentations.create(element, sink, editor)
 				}
 			}
 		}
@@ -90,7 +91,7 @@ internal class ResourceEditorInlayHintsProvider : InlayHintsProvider<NoSettings>
 			return ReadAction.run<Exception> {
 				val info = KubernetesTypeInfo.create(file) ?: return@run
 				val element = file.topLevelValue ?: return@run
-				Base64Presentations.create(element, info, sink, editor)?.create()
+				Base64Presentations.create(element, info, sink, editor)
 			}
 		}
 

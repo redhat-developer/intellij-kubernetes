@@ -40,16 +40,16 @@ object Base64Presentations {
 	private const val SECRET_RESOURCE_KIND = "Secret"
 	private const val CONFIGMAP_RESOURCE_KIND = "ConfigMap"
 
-	fun create(element: PsiElement, info: KubernetesTypeInfo, sink: InlayHintsSink, editor: Editor): InlayPresentationsFactory? {
+	fun create(element: PsiElement, info: KubernetesTypeInfo, sink: InlayHintsSink, editor: Editor): Collection<InlayPresentation>? {
 		return when {
 			isKubernetesResource(SECRET_RESOURCE_KIND, info) -> {
-				val data = getDataValue(element) ?: return null
-				StringPresentationsFactory(data, sink, editor)
+				val data = element.getDataValue() ?: return null
+				StringPresentationsFactory(data, sink, editor).create()
 			}
 
 			isKubernetesResource(CONFIGMAP_RESOURCE_KIND, info) -> {
-				val binaryData = getBinaryData(element) ?: return null
-				BinaryPresentationsFactory(binaryData, sink, editor)
+				val binaryData = element.getBinaryData() ?: return null
+				BinaryPresentationsFactory(binaryData, sink, editor).create()
 			}
 
 			else -> null
@@ -69,8 +69,7 @@ object Base64Presentations {
 
 		fun create(): Collection<InlayPresentation> {
 			return element.children.mapNotNull { child ->
-				val adapter = Base64ValueAdapter(child)
-				create(adapter)
+				create(Base64ValueAdapter(child))
 			}
 		}
 
@@ -97,12 +96,15 @@ object Base64Presentations {
 		private fun create(text: String, onClick: (event: MouseEvent) -> Unit, editor: Editor): InlayPresentation? {
 			val factory = PresentationFactory(editor)
 			val trimmed = trimWithEllipsis(text, INLAY_HINT_MAX_WIDTH) ?: return null
-			val textPresentation = factory.smallText(trimmed)
-			val hoverPresentation = factory.referenceOnHover(textPresentation) { event, _ ->
-				onClick.invoke(event)
-			}
-			val tooltipPresentation = factory.withTooltip("Click to change value", hoverPresentation)
-			return factory.roundWithBackground(tooltipPresentation)
+			return factory.roundWithBackground(
+				factory.withTooltip(
+					"Click to change value",
+					factory.referenceOnHover(
+						factory.smallText(trimmed)) { event, _ ->
+							onClick.invoke(event)
+					}
+				)
+			)
 		}
 
 		private fun onValidValue(setter: (value: String, wrapAt: Int) -> Unit, project: Project?)

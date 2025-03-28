@@ -18,67 +18,21 @@ import com.intellij.openapi.project.Project
 import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiFile
 import com.intellij.psi.PsiFileFactory
+import com.intellij.psi.PsiNamedElement
+import com.intellij.util.containers.toArray
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.doAnswer
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.mock
+import com.nhaarman.mockitokotlin2.whenever
 import org.jetbrains.yaml.YAMLElementGenerator
 import org.jetbrains.yaml.psi.YAMLDocument
-import org.jetbrains.yaml.psi.YAMLFile
 import org.jetbrains.yaml.psi.YAMLKeyValue
+import org.jetbrains.yaml.psi.YAMLMapping
 import org.jetbrains.yaml.psi.YAMLPsiElement
+import org.jetbrains.yaml.psi.YAMLSequence
+import org.jetbrains.yaml.psi.YAMLSequenceItem
 import org.jetbrains.yaml.psi.YAMLValue
-import kotlin.random.Random
-
-fun createYAMLKeyValue(
-	key: String = Random.nextInt().toString(),
-	value: String? = null,
-	parent: YAMLKeyValue? = null,
-	project: Project = mock()
-): YAMLKeyValue {
-	val valueElement: YAMLValue = mock {
-		on { getText() } doReturn value
-	}
-	return mock {
-		on { getName() } doReturn key
-		on { getKeyText() } doReturn key
-		on { getValue() } doReturn valueElement
-		on { getParent() } doReturn parent
-		on { getProject() } doReturn project
-	}
-}
-
-fun createJsonProperty(
-	name: String = Random.nextInt().toString(),
-	value: String? = null,
-	parent: JsonProperty? = null,
-	project: Project = mock()
-): JsonProperty {
-	val valueElement: JsonValue = mock {
-		on { getText() } doReturn value
-	}
-	return mock {
-		on { getName() } doReturn name
-		on { getValue() } doReturn valueElement
-		on { getParent() } doReturn parent
-		on { getProject() } doReturn project
-	}
-}
-
-fun createJsonObject(
-	name: String = Random.nextInt().toString(),
-	properties: List<JsonProperty> = emptyList(),
-	parent: PsiElement? = null,
-	project: Project = mock()
-): JsonObject {
-	return mock {
-		on { getChildren() } doReturn properties.toTypedArray()
-		on { getPropertyList() } doReturn properties
-		on { getName() } doReturn name
-		on { getParent() } doReturn parent
-		on { getProject() } doReturn project
-	}
-}
 
 fun createProjectWithServices(
 	yamlGenerator: YAMLElementGenerator? = null,
@@ -99,28 +53,124 @@ fun createProjectWithServices(
 	}
 }
 
-fun createYAMLFile(documents: List<YAMLDocument>?): YAMLFile {
-	return mock<YAMLFile> {
-		on { getDocuments() } doReturn documents
+fun createKeyValue(key: String, value: String? = null, parent: YAMLMapping? = null, project: Project = mock()): YAMLKeyValue {
+	val valueElement = mock<YAMLValue> {
+		on { text } doReturn value
 	}
+	return createKeyValue(key, valueElement, parent, project)
 }
 
-fun createYAMLValue(children: Array<YAMLPsiElement>): YAMLValue {
-	return mock {
-		on { getChildren() } doReturn children
+fun createKeyValue(key: String, value: YAMLValue, parent: YAMLMapping?, project: Project = mock()): YAMLKeyValue {
+	val keyElement = mock<PsiNamedElement> {
+		on { name } doReturn key
+	}
+	return createKeyValue(keyElement, value, parent, project)
+}
+
+fun createKeyValue(key: PsiNamedElement, value: YAMLValue, parent: YAMLMapping?, project: Project = mock()): YAMLKeyValue {
+	val keyName = key.name!!
+	val valueText = value.text
+	val keyValue = mock<YAMLKeyValue> {
+		on { mock.key } doReturn key
+		on { mock.keyText } doReturn keyName
+		on { mock.value } doReturn value
+		on { mock.valueText } doReturn valueText
+		on { mock.parent } doReturn parent
+		on { mock.project } doReturn project
+	}
+	whenever(value.parent)
+		.thenReturn(keyValue)
+	if (parent != null) {
+		whenever(parent.getKeyValueByKey(keyName))
+			.thenReturn(keyValue)
+	}
+	return keyValue
+}
+
+fun createYAMLMapping(key: String, value: String, parent: YAMLMapping? = null, project: Project = mock()): YAMLMapping {
+	val keyValue = createKeyValue(key, value)
+	return createYAMLMapping(listOf(keyValue))
+}
+
+fun createYAMLMapping(children: Collection<YAMLKeyValue>): YAMLMapping {
+	return mock<YAMLMapping> {
+		on { mock.keyValues } doReturn children
+		on { mock.children } doReturn children.toTypedArray()
 	}
 }
 
 fun createYAMLDocument(yamlValue: YAMLValue): YAMLDocument {
 	return mock {
-		on { getTopLevelValue() } doReturn yamlValue
+		on { topLevelValue } doReturn yamlValue
 	}
 }
 
+fun createYAMLSequence(expressions: List<YAMLSequenceItem>): YAMLSequence {
+	return mock<YAMLSequence> {
+		on { mock.items } doReturn expressions
+	}
+}
+
+fun createYAMLGenerator(): YAMLElementGenerator {
+	return mock<YAMLElementGenerator> {
+		on { createYamlKeyValue(any<String>(), any<String>()) } doReturn mock()
+	}
+}
+
+fun createJsonObject(
+	name: String,
+	properties: List<JsonProperty> = emptyList(),
+	parent: PsiElement? = null,
+	project: Project = mock()
+): JsonObject {
+	return mock {
+		on { mock.children } doReturn properties.toTypedArray()
+		on { mock.propertyList } doReturn properties
+		on { mock.name } doReturn name
+		on { mock.parent } doReturn parent
+		on { mock.project } doReturn project
+	}
+}
+
+fun createProperty(name: String, value: String, parent: JsonObject? = null, project: Project = mock()): JsonProperty {
+	val nameElement = mock<JsonValue> {
+		on { mock.name } doReturn name
+	}
+	val valueElement = mock<JsonObject> {
+		on { mock.name } doReturn name
+		on { mock.text } doReturn value
+	}
+	return createProperty(nameElement, valueElement, parent, project)
+}
+
+fun createProperty(name: String, value: JsonObject, parent: JsonObject?, project: Project = mock()): JsonProperty {
+	val nameElement = mock<JsonValue> {
+		on { mock.name } doReturn name
+	}
+	return createProperty(nameElement, value, parent, project)
+}
+
+fun createProperty(nameElement: JsonValue, value: JsonObject, parent: JsonObject?, project: Project = mock()): JsonProperty {
+	val name = nameElement.name!!
+	val property = mock<JsonProperty> {
+		on { mock.name } doReturn name
+		on { mock.nameElement } doReturn nameElement
+		on { mock.value } doReturn value
+		on { mock.parent } doReturn parent
+		on { mock.project } doReturn project
+	}
+	whenever(value.parent)
+		.thenReturn(property)
+	if (parent != null) {
+		whenever(parent.findProperty(name))
+			.thenReturn(property)
+	}
+	return property
+}
 
 fun createJsonPsiFile(properties: List<JsonProperty>): PsiFile {
 	val firstChild: JsonObject = mock {
-		on { getPropertyList() } doReturn properties
+		on { propertyList } doReturn properties
 	}
 	return mock {
 		on { getFirstChild() } doReturn firstChild
@@ -138,8 +188,3 @@ fun createPsiFileFactory(psiFile: PsiFile): PsiFileFactory {
 	}
 }
 
-fun createYAMLGenerator(): YAMLElementGenerator {
-	return mock<YAMLElementGenerator> {
-		on { createYamlKeyValue(any<String>(), any<String>()) } doReturn mock()
-	}
-}
