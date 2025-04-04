@@ -10,36 +10,23 @@
  ******************************************************************************/
 package com.redhat.devtools.intellij.kubernetes.editor.util
 
-import com.intellij.json.psi.JsonElement
 import com.intellij.json.psi.JsonElementGenerator
-import com.intellij.json.psi.JsonFile
 import com.intellij.json.psi.JsonProperty
-import com.intellij.json.psi.JsonValue
 import com.intellij.openapi.application.ReadAction
 import com.intellij.openapi.fileEditor.FileEditor
 import com.intellij.openapi.project.Project
-import com.intellij.openapi.util.text.StringUtil
 import com.intellij.openapi.util.text.Strings
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiManager
-import com.intellij.psi.PsiNamedElement
 import com.redhat.devtools.intellij.common.validation.KubernetesResourceInfo
 import com.redhat.devtools.intellij.common.validation.KubernetesTypeInfo
 import com.redhat.devtools.intellij.kubernetes.editor.ResourceEditor
 import org.jetbrains.yaml.YAMLElementGenerator
-import org.jetbrains.yaml.psi.YAMLDocument
 import org.jetbrains.yaml.psi.YAMLKeyValue
-import org.jetbrains.yaml.psi.YAMLMapping
-import org.jetbrains.yaml.psi.YAMLPsiElement
-import org.jetbrains.yaml.psi.YAMLSequence
-import org.jetbrains.yaml.psi.YAMLValue
-import java.util.*
+import java.util.Base64
 
 
-private const val KEY_METADATA = "metadata"
-private const val KEY_DATA = "data"
-private const val KEY_BINARY_DATA = "binaryData"
 private const val KEY_RESOURCE_VERSION = "resourceVersion"
 
 /**
@@ -92,51 +79,6 @@ fun getKubernetesResourceInfo(file: VirtualFile?, project: Project): KubernetesR
         }
     } catch (e: RuntimeException) {
         null
-    }
-}
-
-/**
- * Returns the [PsiElement] named "data" within the children of the given [PsiElement].
- * Only [YAMLKeyValue] and [JsonProperty] are supported. Returns `null` otherwise.
- *
- * @param element the PsiElement whose "data" child should be found.
- * @return the PsiElement named "data"
- */
-fun getDataValue(element: PsiElement): PsiElement? {
-    val dataElement = element.children
-        .filterIsInstance<PsiNamedElement>()
-        .find { it.name == KEY_DATA }
-    return when (dataElement) {
-        is YAMLKeyValue ->
-            dataElement.value
-        is JsonProperty ->
-            dataElement.value
-        else ->
-            null
-    }
-}
-
-/**
- * Returns the [PsiElement] named "binaryData" within the children of the given [PsiElement].
- * Only [YAMLKeyValue] and [JsonProperty] are supported. Returns `null` otherwise.
- *
- * @param element the PsiElement whose "binaryData" child should be found.
- * @return the PsiElement named "binaryData"
- */
-fun getBinaryData(element: PsiElement): PsiElement? {
-    return when (element) {
-        is YAMLPsiElement ->
-            element.children
-                .filterIsInstance<YAMLKeyValue>()
-                .find { it.name == KEY_BINARY_DATA }
-                ?.value
-        is JsonElement ->
-            element.children.toList()
-                .filterIsInstance<JsonProperty>()
-                .find { it.name == KEY_BINARY_DATA }
-                ?.value
-        else ->
-            null
     }
 }
 
@@ -203,21 +145,6 @@ fun getValue(element: PsiElement): String? {
     }
 }
 
-/**
- * Returns the startOffset in the [YAMLValue] or [JsonValue] of the given [PsiElement].
- * Returns `null` otherwise.
- *
- * @param element the psi element to retrieve the startOffset from
- * @return the startOffset in the value of the given psi element
- */
-fun getStartOffset(element: PsiElement): Int? {
-    return when (element) {
-        is YAMLKeyValue -> element.value?.textRange?.startOffset
-        is JsonProperty -> element.value?.textRange?.startOffset
-        else -> null
-    }
-}
-
 fun setValue(value: String, element: PsiElement) {
     val newElement = when (element) {
         is YAMLKeyValue ->
@@ -273,4 +200,3 @@ fun getExistingResourceEditor(editor: FileEditor?): ResourceEditor? {
 fun getExistingResourceEditor(file: VirtualFile?): ResourceEditor? {
     return file?.getUserData(ResourceEditor.KEY_RESOURCE_EDITOR)
 }
-
