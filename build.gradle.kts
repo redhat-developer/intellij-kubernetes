@@ -33,6 +33,8 @@ java {
 repositories {
     mavenLocal()
     maven { url = uri("https://repository.jboss.org") }
+    maven { url = uri("https://raw.githubusercontent.com/redhat-developer/intellij-common/repository/snapshots") }
+    maven { url = uri("https://raw.githubusercontent.com/redhat-developer/intellij-common/repository/releases") }
     mavenCentral()
     intellijPlatform {
         defaultRepositories()
