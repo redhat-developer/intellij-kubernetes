@@ -14,10 +14,12 @@ import com.intellij.json.JsonFileType
 import com.intellij.openapi.fileTypes.PlainTextFileType
 import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.resource
 import com.redhat.devtools.intellij.kubernetes.model.util.ResourceException
+import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.Pod
 import io.fabric8.kubernetes.client.utils.Serialization
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
+import org.assertj.core.api.Assertions.tuple
 import org.jetbrains.yaml.YAMLFileType
 import org.junit.Test
 
@@ -57,19 +59,20 @@ class EditorResourceSerializationTest {
     }
 
     @Test
-    fun `#deserialize throws if given multiple json resources`() {
+    fun `#deserialize returns list of resources if given multiple JSON resources`() {
         // given
         val json = """
-            {"apiVersion": "v1", "kind": "Pod"}
-            ---
-            {"apiVersion": "v1", "kind": "Service"}
+            [
+                {"apiVersion": "v1", "kind": "Pod"},
+                {"apiVersion": "v1", "kind": "Service"}
+            ]
         """.trimIndent()
-
-        assertThatThrownBy {
-            // when
-            EditorResourceSerialization.deserialize(json, JsonFileType.INSTANCE, null)
-            // then
-        }.isInstanceOf(ResourceException::class.java)
+        val deserialized = EditorResourceSerialization.deserialize(json, JsonFileType.INSTANCE, null)
+        assertThat(deserialized)
+            .extracting(HasMetadata::getKind, HasMetadata::getApiVersion)
+            .containsExactlyInAnyOrder(
+                tuple("Pod", "v1"),
+                tuple("Service", "v1"))
     }
 
     @Test
@@ -203,17 +206,17 @@ class EditorResourceSerializationTest {
     }
 
     @Test
-    fun `#serialize throws if given multiple resources and non-YAML file type`() {
+    fun `#serialize returns json array for given multiple resources and JSON file type`() {
         // given
         val resources = listOf(
             resource<Pod>("darth vader"),
             resource<Pod>("emperor")
         )
-        assertThatThrownBy {
-            // when
-            EditorResourceSerialization.serialize(resources, JsonFileType.INSTANCE)
-            // then
-        }.isInstanceOf(UnsupportedOperationException::class.java)
+        val expected = Serialization.asJson(resources).trim()
+        // when
+        val serialized = EditorResourceSerialization.serialize(resources, JsonFileType.INSTANCE)
+        // then
+        assertThat(serialized).isEqualTo(expected)
     }
 
     @Test
@@ -259,7 +262,7 @@ class EditorResourceSerializationTest {
     }
 
     @Test
-    fun `#serialize returns null if given unsupported file type`() {
+    fun `#serialize returns '' if given unsupported file type`() {
         // given
         val resource = resource<Pod>("leia")
         // when
@@ -268,5 +271,4 @@ class EditorResourceSerializationTest {
         assertThat(serialized)
             .isEqualTo("")
     }
-
 }
