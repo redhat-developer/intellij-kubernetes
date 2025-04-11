@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Generator: Adobe Illustrator 16.0.0, SVG Export Plug-In . SVG Version: 6.00 Build 0)  -->
+
+<svg
+   version="1.1"
+   id="Capa_1"
+   x="0px"
+   y="0px"
+   width="36"
+   height="28"
+   viewBox="0 0 36 28"
+   xml:space="preserve"
+   sodipodi:docname="selector.svg"
+   inkscape:version="1.4 (e7c3feb1, 2024-10-09)"
+   inkscape:export-filename="selector.svg"
+   inkscape:export-xdpi="71.073486"
+   inkscape:export-ydpi="71.073486"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg"><defs
+   id="defs18"><linearGradient
+     id="linearGradient31"
+     inkscape:swatch="gradient"><stop
+       style="stop-color:#000000;stop-opacity:0;"
+       offset="0.97447795"
+       id="stop31" /><stop
+       style="stop-color:#000000;stop-opacity:0;"
+       offset="1"
+       id="stop32" /></linearGradient><marker
+     style="overflow:visible"
+     id="ArrowWide"
+     refX="0"
+     refY="0"
+     orient="auto-start-reverse"
+     inkscape:stockid="Wide arrow"
+     markerWidth="1.5"
+     markerHeight="1.5"
+     viewBox="0 0 1 1"
+     inkscape:isstock="true"
+     inkscape:collect="always"
+     preserveAspectRatio="xMidYMid"
+     markerUnits="userSpaceOnUse"><path
+       style="fill:none;stroke:context-stroke;stroke-width:1;stroke-linecap:butt"
+       d="M 3,-3 0,0 3,3"
+       transform="rotate(180,0.125,0)"
+       sodipodi:nodetypes="ccc"
+       id="path25" /></marker><inkscape:path-effect
+     effect="fillet_chamfer"
+     id="path-effect21"
+     is_visible="true"
+     lpeversion="1"
+     nodesatellites_param="F,0,0,1,0,35.250054,0,1 @ F,0,0,1,0,0,0,1 @ F,0,0,1,0,0,0,1 @ F,0,0,1,0,52.344225,0,1 @ F,0,0,1,0,0,0,1 @ F,0,0,1,0,0,0,1 @ F,0,0,1,0,0,0,1 @ F,0,0,1,0,0,0,1 | F,0,0,1,0,0,0,1 @ F,0,0,1,0,0,0,1 @ F,0,0,1,0,0,0,1 @ F,0,1,1,0,0,0,1 @ F,0,0,1,0,0,0,1 @ F,0,0,1,0,0,0,1 @ F,0,0,1,0,31.518925,0,1 @ F,0,0,1,0,0,0,1"
+     radius="0"
+     unit="px"
+     method="auto"
+     mode="F"
+     chamfer_steps="1"
+     flexible="false"
+     use_knot_distance="true"
+     apply_no_radius="true"
+     apply_with_radius="true"
+     only_selected="false"
+     hide_knots="false" /></defs><sodipodi:namedview
+   id="namedview18"
+   pagecolor="#ffffff"
+   bordercolor="#000000"
+   borderopacity="0.25"
+   inkscape:showpageshadow="2"
+   inkscape:pageopacity="0.0"
+   inkscape:pagecheckerboard="true"
+   inkscape:deskcolor="#d1d1d1"
+   inkscape:zoom="12.021114"
+   inkscape:cx="16.762174"
+   inkscape:cy="25.829553"
+   inkscape:window-width="1856"
+   inkscape:window-height="922"
+   inkscape:window-x="200"
+   inkscape:window-y="241"
+   inkscape:window-maximized="0"
+   inkscape:current-layer="g2"
+   showguides="true"><sodipodi:guide
+     position="2.2383698,10.215785"
+     orientation="1,0"
+     id="guide42"
+     inkscape:locked="false" /></sodipodi:namedview>
+<g
+   id="g3"
+   transform="translate(-34.603516,-34.587891)">
+	<g
+   id="g2">
+		<g
+   id="g22"
+   transform="matrix(0.02898709,0,0,0.02851268,33.600461,33.601698)" />
+		
+	<rect
+   style="opacity:1;fill:#000000;fill-opacity:0;stroke-width:0.88841;marker-start:url(#ArrowWide)"
+   id="rect25"
+   width="15.06819"
+   height="1.4663951"
+   x="40.913189"
+   y="56.889233"
+   ry="0" /><path
+   id="path3"
+   style="fill:#326ce5;fill-opacity:1;stroke:none;stroke-width:9.40832;stroke-dasharray:none;stroke-opacity:1"
+   d="M 55.806641 35.960938 L 55.806641 35.96875 L 42.683594 49.0625 L 55.826172 61.466797 C 66.806062 61.418897 67.622621 61.457032 78.642578 61.457032 L 78.658203 35.960938 C 67.676637 35.960916 63.429127 35.959438 55.814453 35.960938 L 55.806641 35.960938 z M 59.638672 44.820313 A 4.4089093 4.2841287 0 0 1 64.050782 49.09961 L 59.642578 49.103516 L 64.050782 49.103516 A 4.4089093 4.2841287 0 0 1 59.644532 53.388672 A 4.4089093 4.2841287 0 0 1 55.234375 49.107422 A 4.4089093 4.2841287 0 0 1 59.638672 44.820313 z " /><path
+   id="rect26"
+   style="fill:#c7c7cf;fill-opacity:1;stroke:none;stroke-width:4.43142;stroke-dasharray:none;stroke-opacity:1"
+   d="m 41.781288,57.953157 0.153956,-5.173187 -9.694399,-0.122607 0.210221,-8.107825 9.694398,0.122607 0.197292,-5.588299 10.155751,9.964314 z"
+   sodipodi:nodetypes="cccccccc" /></g>
+</g>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</svg>
