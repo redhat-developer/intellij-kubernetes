@@ -14,6 +14,7 @@ import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.doThrow
 import com.nhaarman.mockitokotlin2.mock
+import com.nhaarman.mockitokotlin2.never
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.whenever
 import com.redhat.devtools.intellij.kubernetes.model.IResourceModel
@@ -113,6 +114,28 @@ class EditorResourceTest {
     }
 
     @Test
+    fun `#push should NOT push resource to cluster if is disposed`() {
+        // given
+        val editorResource = createEditorResource(POD2)
+        editorResource.setDisposed(true)
+        // when
+        editorResource.push()
+        // then
+        verify(clusterResource, never()).push(any())
+    }
+
+    @Test
+    fun `#push should return Disposed state if is disposed`() {
+        // given
+        val editorResource = createEditorResource(POD2)
+        editorResource.setDisposed(true)
+        // when
+        val state = editorResource.push()
+        // then
+        assertThat(state).isInstanceOf(Disposed::class.java)
+    }
+
+    @Test
     fun `#push should push resource to cluster`() {
         // given
         val editorResource = createEditorResource(POD2)
@@ -198,6 +221,28 @@ class EditorResourceTest {
         editorResource.push()
         // then
         assertThat(editorResource.getState()).isInstanceOf(Error::class.java)
+    }
+
+    @Test
+    fun `#pull should NOT pull resource from cluster if editor resource is disposed`() {
+        // given
+        val editorResource = createEditorResource(POD2)
+        editorResource.setDisposed(true)
+        // when
+        editorResource.pull()
+        // then
+        verify(clusterResource, never()).pull(any())
+    }
+
+    @Test
+    fun `#pull should return Disposed state if editor resource is disposed`() {
+        // given
+        val editorResource = createEditorResource(POD2)
+        editorResource.setDisposed(true)
+        // when
+        val state = editorResource.pull()
+        // then
+        assertThat(state).isInstanceOf(Disposed::class.java)
     }
 
     @Test
@@ -514,6 +559,40 @@ class EditorResourceTest {
     }
 
     @Test
+    fun `#getState should return Disposed if resource is disposed`() {
+        // given
+        val editorResource = createEditorResource(POD2)
+        editorResource.setDisposed(true)
+        val state = editorResource.getState()
+        // then
+        assertThat(state).isInstanceOf(Disposed::class.java)
+    }
+
+    @Test
+    fun `#getState should return Disposed even if different state was set after disposal`() {
+        // given
+        val editorResource = createEditorResource(POD2)
+        editorResource.setDisposed(true)
+        val shouldBeIgnored = mock<Error>()
+        editorResource.setState(shouldBeIgnored)
+        // when
+        val state = editorResource.getState()
+        // then
+        assertThat(state).isInstanceOf(Disposed::class.java)
+    }
+
+    @Test
+    fun `#dispose should set disposed to true`() {
+        // given
+        val editorResource = createEditorResource(POD2)
+        // when
+        editorResource.dispose()
+        // then
+        val disposed = editorResource.isDisposed()
+        assertThat(disposed).isTrue()
+    }
+
+    @Test
     fun `#dispose should close clusterResource that was created`() {
         // given
         val editorResource = createEditorResource(POD2)
@@ -522,6 +601,16 @@ class EditorResourceTest {
         // then
         verify(createClusterResource).invoke(POD2, context)
         verify(clusterResource).close()
+    }
+
+    @Test
+    fun `#isDisposed should be false initially`() {
+        // given
+        val editorResource = createEditorResource(POD2)
+        // when
+        val disposed = editorResource.isDisposed()
+        // then
+        assertThat(disposed).isFalse()
     }
 
     @Test

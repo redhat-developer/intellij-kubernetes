@@ -77,6 +77,7 @@ abstract class ClientAdapter<C : KubernetesClient>(private val fabric8Client: C)
             context: String? = null,
             clientBuilder: KubernetesClientBuilder? = null,
             createConfig: (context: String?) -> Config = { context ->
+                Config.autoConfigure(context)
                 val config = Config.autoConfigure(context)
                 config.connectionTimeout = TIMEOUT_CONNECTION
                 config.requestTimeout = TIMEOUT_REQUEST

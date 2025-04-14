@@ -11,6 +11,8 @@
 package com.redhat.devtools.intellij.kubernetes.editor
 
 import com.intellij.openapi.diagnostic.logger
+import com.redhat.devtools.intellij.kubernetes.editor.util.DisposedState
+import com.redhat.devtools.intellij.kubernetes.editor.util.IDisposedState
 import com.redhat.devtools.intellij.kubernetes.model.IResourceModelListener
 import com.redhat.devtools.intellij.kubernetes.model.ResourceModelObservable
 import com.redhat.devtools.intellij.kubernetes.model.ResourceWatch
@@ -25,6 +27,9 @@ import com.redhat.devtools.intellij.kubernetes.model.util.isUnsupported
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.client.KubernetesClient
 import io.fabric8.kubernetes.client.KubernetesClientException
+import java.util.concurrent.locks.ReentrantReadWriteLock
+import kotlin.concurrent.read
+import kotlin.concurrent.write
 
 /**
  * A resource that exists on the cluster. May be [pull]'ed, [push]'ed etc.
@@ -34,8 +39,10 @@ open class ClusterResource protected constructor(
     resource: HasMetadata,
     private val context: IActiveContext<out HasMetadata, out KubernetesClient>,
     private val watch: ResourceWatch<HasMetadata> = ResourceWatch(),
-    private val modelChange: ResourceModelObservable = ResourceModelObservable()
-) {
+    private val modelChange: ResourceModelObservable = ResourceModelObservable(),
+    /* for mocking purposes */
+    private val runAsync: (runnable: () -> Unit) -> Unit = { runnable -> org.jetbrains.concurrency.runAsync(runnable) }
+): IDisposedState by DisposedState() {
     companion object Factory {
         fun create(resource: HasMetadata?, context: IActiveContext<out HasMetadata, out KubernetesClient>?): ClusterResource? {
             return if (resource != null
@@ -52,7 +59,7 @@ open class ClusterResource protected constructor(
     protected open var updatedResource: HasMetadata? = null
     private var isDeleted: Boolean = false
     private var isPushed: Boolean = false
-    private var closed: Boolean = false
+    private val mutex = ReentrantReadWriteLock()
     protected open val watchListeners = WatchListeners(
         {
             // do nothing
@@ -78,11 +85,12 @@ open class ClusterResource protected constructor(
      * @see [HasMetadata.isSameResource]
      */
     protected open fun set(resource: HasMetadata?) {
-        synchronized(this) {
-            if (resource != null
-                && !initialResource.isSameResource(resource)) {
-                return
-            }
+        if (isDisposed()
+            || (resource != null && !initialResource.isSameResource(resource))
+        ) {
+            return
+        }
+        mutex.write {
             this.updatedResource = resource
             setDeleted(resource == null)
         }
@@ -98,9 +106,13 @@ open class ClusterResource protected constructor(
      * @throws ResourceException
      */
     fun pull(forceRequest: Boolean = false): HasMetadata? {
-        synchronized(this) {
+        if (isDisposed()) {
+            return null
+        }
+        mutex.write {
             if (forceRequest
-                || updatedResource == null) {
+                || updatedResource == null
+            ) {
                 this.updatedResource = requestResource()
             }
             return updatedResource
@@ -136,6 +148,9 @@ open class ClusterResource protected constructor(
      * @param resource the resource that shall be saved to the cluster
      */
     fun push(resource: HasMetadata): HasMetadata? {
+        if (isDisposed()) {
+            return null
+        }
         try {
             if (!initialResource.isSameResource(resource)) {
                 throw ResourceException(
@@ -174,7 +189,10 @@ open class ClusterResource protected constructor(
     }
 
     protected open fun setDeleted(deleted: Boolean) {
-        synchronized(this) {
+        if (isDisposed()) {
+            return
+        }
+        mutex.write {
             this.isDeleted = deleted
         }
     }
@@ -219,8 +237,8 @@ open class ClusterResource protected constructor(
     }
 
     fun isDeleted(): Boolean {
-        synchronized(this) {
-            return isDeleted
+        return mutex.read {
+            isDeleted
         }
     }
 
@@ -296,6 +314,9 @@ open class ClusterResource protected constructor(
      */
     fun watch() {
         try {
+            if (isDisposed()) {
+                return
+            }
             logger<ClusterResource>().debug("Watching ${initialResource.kind} ${initialResource.metadata?.name ?: ""}.")
             forcedUpdate()
             watch.watch(
@@ -339,19 +360,18 @@ open class ClusterResource protected constructor(
      * Closes this instance and stops the watches.
      */
     fun close() {
-        synchronized(this) {
-            if (closed) {
-                return
+        if (!setDisposed(true)) {
+            return
+        }
+        runAsync {
+            mutex.read {
+                watch.close()
             }
-            this.closed = true
-            watch.close()
         }
     }
 
     fun isClosed(): Boolean {
-        synchronized(this) {
-            return this.closed
-        }
+        return isDisposed()
     }
 
     /**

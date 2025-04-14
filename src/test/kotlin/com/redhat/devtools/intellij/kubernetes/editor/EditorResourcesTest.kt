@@ -29,10 +29,10 @@ import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.POD2
 import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.POD3
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.PodBuilder
-import java.util.*
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.After
 import org.junit.Test
+import java.util.*
 
 class EditorResourcesTest {
 
@@ -231,7 +231,7 @@ class EditorResourcesTest {
 
     private fun createEditorResourceMock(resource: HasMetadata): EditorResource {
         val editorResource: EditorResource = mock {
-            on { getResource() } doReturn resource
+            on { mock.getResource() } doReturn resource
         }
         // store editorResource mock in list
         editorResources.add(editorResource)
