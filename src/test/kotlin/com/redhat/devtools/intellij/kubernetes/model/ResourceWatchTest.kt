@@ -222,7 +222,11 @@ class ResourceWatchTest {
     class TestableResourceWatch(
         watchOperations: BlockingDeque<WatchOperation<*>>,
         watchOperationsRunner: Runnable = mock()
-    ): ResourceWatch<ResourceKind<out HasMetadata>>(watchOperations, watchOperationsRunner) {
+    ) : ResourceWatch<ResourceKind<out HasMetadata>>(
+        watchOperations,
+        watchOperationsRunner,
+        { runnable: Runnable -> runnable.run() }) {
+
         public override val watches = spy(super.watches)
 
         override fun watch(

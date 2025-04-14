@@ -10,12 +10,14 @@
  ******************************************************************************/
 package com.redhat.devtools.intellij.kubernetes.editor.inlay.base64
 
+import com.intellij.json.psi.JsonProperty
 import com.intellij.psi.PsiElement
 import com.redhat.devtools.intellij.kubernetes.editor.util.decodeBase64
 import com.redhat.devtools.intellij.kubernetes.editor.util.decodeBase64ToBytes
 import com.redhat.devtools.intellij.kubernetes.editor.util.encodeBase64
 import com.redhat.devtools.intellij.kubernetes.editor.util.getValue
 import com.redhat.devtools.intellij.kubernetes.editor.util.setValue
+import org.jetbrains.yaml.psi.YAMLKeyValue
 
 class Base64ValueAdapter(private val element: PsiElement) {
 
@@ -80,6 +82,10 @@ class Base64ValueAdapter(private val element: PsiElement) {
 	}
 
 	fun getStartOffset(): Int? {
-		return com.redhat.devtools.intellij.kubernetes.editor.util.getStartOffset(element)
+		return when(element) {
+			is YAMLKeyValue -> element.value?.textRange?.startOffset
+			is JsonProperty -> element.value?.textRange?.startOffset
+			else -> null
+		}
 	}
 }

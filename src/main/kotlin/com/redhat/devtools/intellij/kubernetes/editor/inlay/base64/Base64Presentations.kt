@@ -40,26 +40,41 @@ object Base64Presentations {
 	private const val SECRET_RESOURCE_KIND = "Secret"
 	private const val CONFIGMAP_RESOURCE_KIND = "ConfigMap"
 
-	fun create(element: PsiElement, info: KubernetesTypeInfo, sink: InlayHintsSink, editor: Editor): InlayPresentationsFactory? {
-		return when {
+	fun create(
+		element: PsiElement,
+		info: KubernetesTypeInfo,
+		sink: InlayHintsSink,
+		editor: Editor,
+		factory: PresentationFactory,
+		/* for testing purposes */
+		stringPresentationFactory: (element: PsiElement, sink: InlayHintsSink, editor: Editor, factory: PresentationFactory) -> Unit
+			= { element, sink, editor, factory ->
+				StringPresentationsFactory(element, sink, editor, factory).create()
+			  },
+		/* for testing purposes */
+		binaryPresentationFactory: (element: PsiElement, sink: InlayHintsSink, editor: Editor, factory: PresentationFactory) -> Unit
+			= { element, sink, editor, factory ->
+				BinaryPresentationsFactory(element, sink, editor, factory).create()
+			},
+	) {
+		when {
 			isKubernetesResource(SECRET_RESOURCE_KIND, info) -> {
-				val data = getDataValue(element) ?: return null
-				StringPresentationsFactory(data, sink, editor)
+				val data = element.getDataValue() ?: return
+				stringPresentationFactory.invoke(data, sink, editor, factory)
 			}
 
 			isKubernetesResource(CONFIGMAP_RESOURCE_KIND, info) -> {
-				val binaryData = getBinaryData(element) ?: return null
-				BinaryPresentationsFactory(binaryData, sink, editor)
+				val binaryData = element.getBinaryData() ?: return
+				binaryPresentationFactory.invoke(binaryData, sink, editor, factory)
 			}
-
-			else -> null
 		}
 	}
 
 	abstract class InlayPresentationsFactory(
 		private val element: PsiElement,
 		protected val sink: InlayHintsSink,
-		protected val editor: Editor
+		protected val editor: Editor,
+		protected val factory: PresentationFactory
 	) {
 
 		protected companion object {
@@ -69,17 +84,15 @@ object Base64Presentations {
 
 		fun create(): Collection<InlayPresentation> {
 			return element.children.mapNotNull { child ->
-				val adapter = Base64ValueAdapter(child)
-				create(adapter)
+				create(Base64ValueAdapter(child))
 			}
 		}
 
 		protected abstract fun create(adapter: Base64ValueAdapter): InlayPresentation?
-
 	}
 
-	class StringPresentationsFactory(element: PsiElement, sink: InlayHintsSink, editor: Editor)
-		: InlayPresentationsFactory(element, sink, editor) {
+	class StringPresentationsFactory(element: PsiElement, sink: InlayHintsSink, editor: Editor, factory: PresentationFactory)
+		: InlayPresentationsFactory(element, sink, editor, factory) {
 
 		override fun create(adapter: Base64ValueAdapter): InlayPresentation? {
 			val decoded = adapter.getDecoded() ?: return null
@@ -89,20 +102,22 @@ object Base64Presentations {
 				onValidValue(adapter::set, editor.project),
 				editor
 			)::show
-			val presentation = create(decoded, onClick, editor) ?: return null
+			val presentation = create(decoded, onClick, factory) ?: return null
 			sink.addInlineElement(offset, false, presentation, false)
 			return presentation
 		}
 
-		private fun create(text: String, onClick: (event: MouseEvent) -> Unit, editor: Editor): InlayPresentation? {
-			val factory = PresentationFactory(editor)
+		private fun create(text: String, onClick: (event: MouseEvent) -> Unit, factory: PresentationFactory): InlayPresentation? {
 			val trimmed = trimWithEllipsis(text, INLAY_HINT_MAX_WIDTH) ?: return null
-			val textPresentation = factory.smallText(trimmed)
-			val hoverPresentation = factory.referenceOnHover(textPresentation) { event, _ ->
-				onClick.invoke(event)
-			}
-			val tooltipPresentation = factory.withTooltip("Click to change value", hoverPresentation)
-			return factory.roundWithBackground(tooltipPresentation)
+			return factory.roundWithBackground(
+				factory.withTooltip(
+					"Click to change value",
+					factory.referenceOnHover(
+						factory.smallText(trimmed)) { event, _ ->
+							onClick.invoke(event)
+					}
+				)
+			)
 		}
 
 		private fun onValidValue(setter: (value: String, wrapAt: Int) -> Unit, project: Project?)
@@ -118,8 +133,8 @@ object Base64Presentations {
 
 	}
 
-	class BinaryPresentationsFactory(element: PsiElement, sink: InlayHintsSink, editor: Editor)
-		: InlayPresentationsFactory(element, sink, editor) {
+	class BinaryPresentationsFactory(element: PsiElement, sink: InlayHintsSink, editor: Editor, factory: PresentationFactory)
+		: InlayPresentationsFactory(element, sink, editor, factory) {
 
 		override fun create(adapter: Base64ValueAdapter): InlayPresentation? {
 			val decoded = adapter.getDecodedBytes() ?: return null

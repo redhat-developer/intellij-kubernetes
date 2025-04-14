@@ -33,6 +33,7 @@ import java.util.*
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.After
 import org.junit.Test
+import java.util.concurrent.atomic.AtomicBoolean
 
 class EditorResourcesTest {
 
@@ -230,8 +231,10 @@ class EditorResourcesTest {
     }
 
     private fun createEditorResourceMock(resource: HasMetadata): EditorResource {
+        val disposed = AtomicBoolean(false)
         val editorResource: EditorResource = mock {
-            on { getResource() } doReturn resource
+            on { mock.getResource() } doReturn resource
+            on { mock.disposed } doReturn disposed
         }
         // store editorResource mock in list
         editorResources.add(editorResource)

@@ -11,11 +11,13 @@
 package com.redhat.devtools.intellij.kubernetes.model
 
 import com.intellij.openapi.diagnostic.logger
+import com.intellij.util.concurrency.AppExecutorUtil
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.client.KubernetesClientException
 import io.fabric8.kubernetes.client.Watch
 import io.fabric8.kubernetes.client.Watcher
 import io.fabric8.kubernetes.client.WatcherException
+import org.jetbrains.concurrency.runAsync
 import java.util.*
 import java.util.concurrent.BlockingDeque
 import java.util.concurrent.ConcurrentHashMap
@@ -29,15 +31,15 @@ import java.util.concurrent.LinkedBlockingDeque
  */
 open class ResourceWatch<T>(
     protected val watchOperations: BlockingDeque<WatchOperation<*>> = LinkedBlockingDeque(),
-    watchOperationsRunner: Runnable = WatchOperationsRunner(watchOperations)
+    watchOperationsRunner: Runnable = WatchOperationsRunner(watchOperations),
+    private val executor: (runnable: Runnable) -> Unit = { runnable -> AppExecutorUtil.getAppExecutorService().execute(runnable) }
 ) {
     companion object {
         @JvmField val WATCH_OPERATION_ENQUEUED: Watch = Watch {  }
     }
 
     protected open val watches: ConcurrentHashMap<T, Watch?> = ConcurrentHashMap()
-    private val executor: ExecutorService = Executors.newWorkStealingPool(20)
-    private val thread = executor.submit(watchOperationsRunner)
+    private val thread = executor.invoke(watchOperationsRunner)
 
     open fun watchAll(
         toWatch: Collection<Pair<T, (watcher: Watcher<in HasMetadata>) -> Watch?>>,
@@ -91,7 +93,9 @@ open class ResourceWatch<T>(
     }
 
     fun close() {
-        closeAll(watches.entries.toList())
+        executor.invoke {
+            closeAll(watches.entries.toList())
+        }
     }
 
     private fun closeAll(entries: Collection<MutableMap.MutableEntry<T, Watch?>>) {

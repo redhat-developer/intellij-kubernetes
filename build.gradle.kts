@@ -32,9 +32,13 @@ java {
 
 repositories {
     mavenLocal()
-    maven { url = uri("https://repository.jboss.org") }
+    /*
+     * github repo with intellij-common needs to be listed before jboss repository. Both have 1.9.9-SNAPSHOT
+     * First hit wins regardless of timestamp
+     */
     maven { url = uri("https://raw.githubusercontent.com/redhat-developer/intellij-common/repository/snapshots") }
     maven { url = uri("https://raw.githubusercontent.com/redhat-developer/intellij-common/repository/releases") }
+    maven { url = uri("https://repository.jboss.org") }
     mavenCentral()
     intellijPlatform {
         defaultRepositories()
