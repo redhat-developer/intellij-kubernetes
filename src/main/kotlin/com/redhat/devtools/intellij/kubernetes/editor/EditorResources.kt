@@ -12,6 +12,8 @@ package com.redhat.devtools.intellij.kubernetes.editor
 
 
 import com.intellij.openapi.Disposable
+import com.redhat.devtools.intellij.kubernetes.editor.util.DisposedState
+import com.redhat.devtools.intellij.kubernetes.editor.util.IDisposedState
 import com.redhat.devtools.intellij.kubernetes.model.IResourceModel
 import com.redhat.devtools.intellij.kubernetes.model.IResourceModelListener
 import com.redhat.devtools.intellij.kubernetes.model.resource.ResourceIdentifier
@@ -24,7 +26,7 @@ open class EditorResources(
     private val resourceModel: IResourceModel,
     private val createEditorResource: (resource: HasMetadata, resourceModel: IResourceModel, resourceChangedListener: IResourceModelListener?) -> EditorResource =
         { resource, model, listener -> EditorResource(resource, model, listener) }
-) : Disposable {
+) : Disposable, IDisposedState by DisposedState() {
     var resourceChangedListener: IResourceModelListener? = null
     private val resources: LinkedHashMap<ResourceIdentifier, EditorResource> = linkedMapOf()
 
@@ -59,7 +61,7 @@ open class EditorResources(
                     // remove editor resource for old resource that doesn't exist anymore
                     !new.contains(identifier)
                             // or editor resource that was disposed (ex. change in namespace, context)
-                            || editorResource.disposed
+                            || editorResource.isDisposed()
                 }
             resources.keys.removeAll(toRemove.keys)
             toRemove.values.forEach { editorResource ->
@@ -162,6 +164,9 @@ open class EditorResources(
     }
 
     override fun dispose() {
+        if (!setDisposed(true)) {
+            return
+        }
         disposeAll()
     }
 

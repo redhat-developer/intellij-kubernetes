@@ -27,6 +27,8 @@ import com.intellij.util.messages.MessageBusConnection
 import com.redhat.devtools.intellij.common.utils.MetadataClutter
 import com.redhat.devtools.intellij.common.validation.KubernetesResourceInfo
 import com.redhat.devtools.intellij.kubernetes.editor.notification.Notifications
+import com.redhat.devtools.intellij.kubernetes.editor.util.DisposedState
+import com.redhat.devtools.intellij.kubernetes.editor.util.IDisposedState
 import com.redhat.devtools.intellij.kubernetes.editor.util.getDocument
 import com.redhat.devtools.intellij.kubernetes.editor.util.isKubernetesResource
 import com.redhat.devtools.intellij.kubernetes.model.IResourceModel
@@ -72,7 +74,7 @@ open class ResourceEditor(
     protected val editorResources: EditorResources = EditorResources(resourceModel),
     private val settings: Settings = Settings.getInstance(),
     private val connection: MessageBusConnection = ApplicationManager.getApplication().messageBus.connect()
-) : Disposable {
+) : Disposable, IDisposedState by DisposedState() {
 
     init {
         Disposer.register(editor, this)
@@ -99,6 +101,9 @@ open class ResourceEditor(
      */
     fun update() {
         runAsync {
+            if (isDisposed()) {
+                return@runAsync
+            }
             try {
                 val resources = createResources(
                     getDocument(editor),
@@ -427,6 +432,9 @@ open class ResourceEditor(
     }
 
     override fun dispose() {
+        if (!setDisposed(true)) {
+            return
+        }
         resourceModel.removeListener(onNamespaceContextChanged)
         connection.dispose()
         editorResources.dispose()

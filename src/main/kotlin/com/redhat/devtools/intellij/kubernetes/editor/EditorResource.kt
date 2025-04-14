@@ -11,6 +11,8 @@
 package com.redhat.devtools.intellij.kubernetes.editor
 
 import com.intellij.openapi.diagnostic.logger
+import com.redhat.devtools.intellij.kubernetes.editor.util.DisposedState
+import com.redhat.devtools.intellij.kubernetes.editor.util.IDisposedState
 import com.redhat.devtools.intellij.kubernetes.model.IResourceModel
 import com.redhat.devtools.intellij.kubernetes.model.IResourceModelListener
 import com.redhat.devtools.intellij.kubernetes.model.context.IActiveContext
@@ -24,8 +26,9 @@ import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.client.KubernetesClient
 import io.fabric8.kubernetes.client.utils.KubernetesResourceUtil
 import io.fabric8.kubernetes.client.utils.Serialization
-import java.util.concurrent.locks.ReentrantLock
-import kotlin.concurrent.withLock
+import java.util.concurrent.locks.ReentrantReadWriteLock
+import kotlin.concurrent.read
+import kotlin.concurrent.write
 
 open class EditorResource(
     /** for testing purposes */
@@ -38,8 +41,7 @@ open class EditorResource(
         context: IActiveContext<out HasMetadata, out KubernetesClient>?
     ) -> ClusterResource? =
         ClusterResource.Factory::create
-) {
-    var disposed: Boolean = false
+): IDisposedState by DisposedState() {
     /** for testing purposes */
     private var state: EditorResourceState? = null
     /** for testing purposes */
@@ -48,7 +50,7 @@ open class EditorResource(
     private var lastPushedPulled: HasMetadata? = Serialization.clone(resource)
     private var resourceVersion: String? = resource.metadata.resourceVersion
 
-    private val resourceChangeMutex = ReentrantLock()
+    private val resourceChangeMutex = ReentrantReadWriteLock()
 
     /**
      * Sets the resource to this instance. Only modified versions of the same resource are processed.
@@ -63,7 +65,7 @@ open class EditorResource(
      * @see [getState]
      */
     fun setResource(new: HasMetadata) {
-        resourceChangeMutex.withLock {
+        resourceChangeMutex.write {
             val existing = this.resource
             if (new.isSameResource(existing)
                 && !areEqual(new, existing)) {
@@ -83,7 +85,7 @@ open class EditorResource(
      * @return the resource that is edited
      */
     fun getResource(): HasMetadata {
-        return resourceChangeMutex.withLock {
+        return resourceChangeMutex.read {
             resource
         }
     }
@@ -94,7 +96,10 @@ open class EditorResource(
 
     /** for testing purposes */
     open fun setState(state: EditorResourceState?) {
-        resourceChangeMutex.withLock {
+        if (isDisposed()) {
+            return
+        }
+        resourceChangeMutex.write {
             this.state = state
         }
     }
@@ -108,9 +113,12 @@ open class EditorResource(
      * @see [createState]
      */
     fun getState(): EditorResourceState {
-        return resourceChangeMutex.withLock {
+        if (isDisposed()) {
+            return Disposed()
+        }
+        resourceChangeMutex.read {
             val existingState = this.state
-            if (existingState == null) {
+            return if (existingState == null) {
                 val newState = createState(resource, null)
                 setState(newState)
                 newState
@@ -167,6 +175,9 @@ open class EditorResource(
     }
 
     fun pull(): EditorResourceState {
+        if (isDisposed()) {
+            return Disposed()
+        }
         val state = try {
             val cluster = clusterResource
             val pulled = cluster?.pull(true)
@@ -203,6 +214,9 @@ open class EditorResource(
     }
 
     fun push(): EditorResourceState {
+        if (isDisposed()) {
+            return Disposed()
+        }
         val state = try {
             val cluster = clusterResource
                 ?: return Error(
@@ -247,35 +261,44 @@ open class EditorResource(
     }
 
     private fun setResourceVersion(version: String?) {
-        resourceChangeMutex.withLock {
+        resourceChangeMutex.write {
             this.resourceVersion = version
         }
     }
 
     /** for testing purposes */
     protected open fun getResourceVersion(): String? {
-        return resourceChangeMutex.withLock {
+        if (isDisposed()) {
+            return null
+        }
+        return resourceChangeMutex.read {
             this.resourceVersion
         }
     }
 
     /** for testing purposes */
     protected open fun setLastPushedPulled(resource: HasMetadata?) {
-        resourceChangeMutex.withLock {
-            lastPushedPulled = resource
+        resourceChangeMutex.write {
+            this.lastPushedPulled = resource
         }
     }
 
     /** for testing purposes */
     protected open fun getLastPushedPulled(): HasMetadata? {
-        return resourceChangeMutex.withLock {
+        if (isDisposed()) {
+            return null
+        }
+        return resourceChangeMutex.read {
             lastPushedPulled
         }
     }
 
     fun isOutdatedVersion(): Boolean {
+        if (isDisposed()) {
+            return false
+        }
         return try {
-            val version =  resourceChangeMutex.withLock {
+            val version =  resourceChangeMutex.read {
                 resourceVersion
             }
             true == clusterResource?.isOutdatedVersion(version)
@@ -332,13 +355,10 @@ open class EditorResource(
     }
 
     fun dispose() {
-        if (disposed) {
+        if (!setDisposed(true)) {
             return
         }
-        this.disposed = true
         clusterResource?.close()
-        setLastPushedPulled(null)
-        setResourceVersion(null)
     }
 
     private fun createClusterResource(resource: HasMetadata): ClusterResource? {

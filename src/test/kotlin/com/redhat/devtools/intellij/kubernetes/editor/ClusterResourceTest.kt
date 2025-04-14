@@ -32,9 +32,9 @@ import io.fabric8.kubernetes.api.model.StatusBuilder
 import io.fabric8.kubernetes.client.KubernetesClient
 import io.fabric8.kubernetes.client.KubernetesClientException
 import io.fabric8.kubernetes.client.Watch
-import java.net.HttpURLConnection
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test
+import java.net.HttpURLConnection
 
 class ClusterResourceTest {
 
@@ -499,7 +499,10 @@ class ClusterResourceTest {
         context: IActiveContext<out HasMetadata, out KubernetesClient>,
         watch: ResourceWatch<HasMetadata>,
         observable: ResourceModelObservable
-        ) : ClusterResource(resource, context, watch, observable) {
+    ) : ClusterResource(
+        resource, context, watch, observable,
+        // run immediately, not async
+        { runnable -> runnable.invoke() }) {
 
         public override var updatedResource: HasMetadata?
             get(): HasMetadata? {
