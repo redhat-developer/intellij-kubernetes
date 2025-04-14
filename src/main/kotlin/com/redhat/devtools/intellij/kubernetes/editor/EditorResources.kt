@@ -59,7 +59,7 @@ open class EditorResources(
                     // remove editor resource for old resource that doesn't exist anymore
                     !new.contains(identifier)
                             // or editor resource that was disposed (ex. change in namespace, context)
-                            || editorResource.disposed
+                            || editorResource.disposed.get()
                 }
             resources.keys.removeAll(toRemove.keys)
             toRemove.values.forEach { editorResource ->

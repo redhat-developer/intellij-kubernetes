@@ -63,6 +63,20 @@ class Error(val title: String, val message: String? = null): EditorResourceState
     }
 }
 
+class Disposed: EditorResourceState() {
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) {
+            return true
+        }
+        return other is Disposed
+    }
+
+    override fun hashCode(): Int {
+        return Objects.hash()
+    }
+}
+
 open class Identical: EditorResourceState()
 
 abstract class Different(val exists: Boolean, val isOutdatedVersion: Boolean): EditorResourceState() {

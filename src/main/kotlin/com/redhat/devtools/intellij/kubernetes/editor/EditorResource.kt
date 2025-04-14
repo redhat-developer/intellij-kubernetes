@@ -24,6 +24,7 @@ import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.client.KubernetesClient
 import io.fabric8.kubernetes.client.utils.KubernetesResourceUtil
 import io.fabric8.kubernetes.client.utils.Serialization
+import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
 
@@ -39,7 +40,7 @@ open class EditorResource(
     ) -> ClusterResource? =
         ClusterResource.Factory::create
 ) {
-    var disposed: Boolean = false
+    var disposed: AtomicBoolean = AtomicBoolean(false)
     /** for testing purposes */
     private var state: EditorResourceState? = null
     /** for testing purposes */
@@ -94,6 +95,9 @@ open class EditorResource(
 
     /** for testing purposes */
     open fun setState(state: EditorResourceState?) {
+        if (disposed.get()) {
+            return
+        }
         resourceChangeMutex.withLock {
             this.state = state
         }
@@ -108,14 +112,18 @@ open class EditorResource(
      * @see [createState]
      */
     fun getState(): EditorResourceState {
-        return resourceChangeMutex.withLock {
-            val existingState = this.state
-            if (existingState == null) {
-                val newState = createState(resource, null)
-                setState(newState)
-                newState
-            } else {
-                existingState
+        return if (disposed.get()) {
+            Disposed()
+        } else {
+            resourceChangeMutex.withLock {
+                val existingState = this.state
+                if (existingState == null) {
+                    val newState = createState(resource, null)
+                    setState(newState)
+                    newState
+                } else {
+                    existingState
+                }
             }
         }
     }
@@ -262,7 +270,7 @@ open class EditorResource(
     /** for testing purposes */
     protected open fun setLastPushedPulled(resource: HasMetadata?) {
         resourceChangeMutex.withLock {
-            lastPushedPulled = resource
+            this.lastPushedPulled = resource
         }
     }
 
@@ -332,13 +340,13 @@ open class EditorResource(
     }
 
     fun dispose() {
-        if (disposed) {
+        if (disposed.get()) {
             return
         }
-        this.disposed = true
-        clusterResource?.close()
+        this.disposed.set(true)
         setLastPushedPulled(null)
         setResourceVersion(null)
+        clusterResource?.close()
     }
 
     private fun createClusterResource(resource: HasMetadata): ClusterResource? {

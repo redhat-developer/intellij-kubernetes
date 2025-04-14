@@ -114,6 +114,8 @@ class EditorResourceStateTest {
         assertThat(Error("yoda", "is a green gnome")).isNotEqualTo(Error("yoda", "is a jedi"))
         assertThat(Error("obiwan", "is a jedi")).isNotEqualTo(Error("yoda", "is a jedi"))
 
+        assertThat(Error("obiwan", "is a jedi")).isNotEqualTo(Disposed())
+
         assertThat(Error("yoda", "is a jedi")).isNotEqualTo(Identical())
 
         assertThat(Error("yoda", "is a jedi")).isNotEqualTo(Modified(true, true))
@@ -134,10 +136,39 @@ class EditorResourceStateTest {
     }
 
     @Test
+    fun `Disposed is not equal to all the other states`() {
+        // given
+        // when
+        assertThat(Disposed()).isNotEqualTo(Error("yoda", "is a jedi"))
+
+        assertThat(Disposed()).isEqualTo(Disposed())
+
+        assertThat(Disposed()).isNotEqualTo(Identical())
+
+        assertThat(Disposed()).isNotEqualTo(Modified(true, true))
+        assertThat(Disposed()).isNotEqualTo(Modified(true, false))
+        assertThat(Disposed()).isNotEqualTo(Modified(false, false))
+
+        assertThat(Disposed()).isNotEqualTo(DeletedOnCluster())
+
+        assertThat(Disposed()).isNotEqualTo(Outdated())
+
+        assertThat(Disposed()).isNotEqualTo(Created(true))
+        assertThat(Disposed()).isNotEqualTo(Created(false))
+
+        assertThat(Disposed()).isNotEqualTo(Updated(true))
+        assertThat(Disposed()).isNotEqualTo(Updated(false))
+
+        assertThat(Disposed()).isNotEqualTo(Pulled())
+    }
+
+    @Test
     fun `Identical is not equal to all the other states`() {
         // given
         // when
         assertThat(Identical()).isNotEqualTo(Error("yoda", "is a jedi"))
+
+        assertThat(Identical()).isNotEqualTo(Disposed())
 
         assertThat(Identical()).isEqualTo(Identical())
 
@@ -166,6 +197,10 @@ class EditorResourceStateTest {
         assertThat(Modified(true, false)).isNotEqualTo(Error("yoda", "is a jedi"))
         assertThat(Modified(false, false)).isNotEqualTo(Error("yoda", "is a jedi"))
         assertThat(Modified(false, true)).isNotEqualTo(Error("yoda", "is a jedi"))
+
+        assertThat(Modified(true, true)).isNotEqualTo(Disposed())
+        assertThat(Modified(false, true)).isNotEqualTo(Disposed())
+        assertThat(Modified(false, false)).isNotEqualTo(Disposed())
 
         assertThat(Modified(true, true)).isNotEqualTo(Identical())
         assertThat(Modified(true, false)).isNotEqualTo(Identical())
@@ -217,6 +252,8 @@ class EditorResourceStateTest {
         // when
         assertThat(DeletedOnCluster()).isNotEqualTo(Error("darth vader", "is on the dark side"))
 
+        assertThat(DeletedOnCluster()).isNotEqualTo(Disposed())
+
         assertThat(DeletedOnCluster()).isNotEqualTo(Identical())
 
         assertThat(DeletedOnCluster()).isNotEqualTo(Modified(true, true))
@@ -242,6 +279,8 @@ class EditorResourceStateTest {
         // given
         // when
         assertThat(Outdated()).isNotEqualTo(Error("obiwan", "is a jedi"))
+
+        assertThat(Outdated()).isNotEqualTo(Disposed())
 
         assertThat(Outdated()).isNotEqualTo(Identical())
 
@@ -269,6 +308,8 @@ class EditorResourceStateTest {
         // when
         assertThat(Created(true)).isNotEqualTo(Error("darth vader", "is on the dark side"))
         assertThat(Created(false)).isNotEqualTo(Error("darth vader", "is on the dark side"))
+
+        assertThat(Created(false)).isNotEqualTo(Disposed())
 
         assertThat(Created(true)).isNotEqualTo(Identical())
         assertThat(Created(false)).isNotEqualTo(Identical())
@@ -309,6 +350,9 @@ class EditorResourceStateTest {
         assertThat(Updated(true)).isNotEqualTo(Error("darth vader", "is on the dark side"))
         assertThat(Updated(false)).isNotEqualTo(Error("darth vader", "is on the dark side"))
 
+        assertThat(Updated(true)).isNotEqualTo(Disposed())
+        assertThat(Updated(false)).isNotEqualTo(Disposed())
+
         assertThat(Updated(true)).isNotEqualTo(Identical())
         assertThat(Updated(false)).isNotEqualTo(Identical())
 
@@ -346,6 +390,8 @@ class EditorResourceStateTest {
         // given
         // when
         assertThat(Pulled()).isNotEqualTo(Error("darth vader", "is on the dark side"))
+
+        assertThat(Pulled()).isNotEqualTo(Disposed())
 
         assertThat(Pulled()).isNotEqualTo(Identical())
 

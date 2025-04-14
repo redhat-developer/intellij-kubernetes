@@ -514,6 +514,29 @@ class EditorResourceTest {
     }
 
     @Test
+    fun `#getState should return Disposed if resource is disposed`() {
+        // given
+        val editorResource = createEditorResource(POD2)
+        editorResource.disposed.set(true)
+        val state = editorResource.getState()
+        // then
+        assertThat(state).isInstanceOf(Disposed::class.java)
+    }
+
+    @Test
+    fun `#getState should return Disposed even if different state was set after disposal`() {
+        // given
+        val editorResource = createEditorResource(POD2)
+        editorResource.disposed.set(true)
+        val shouldBeIgnored = mock<Error>()
+        editorResource.setState(shouldBeIgnored)
+        // when
+        val state = editorResource.getState()
+        // then
+        assertThat(state).isInstanceOf(Disposed::class.java)
+    }
+
+    @Test
     fun `#dispose should close clusterResource that was created`() {
         // given
         val editorResource = createEditorResource(POD2)
