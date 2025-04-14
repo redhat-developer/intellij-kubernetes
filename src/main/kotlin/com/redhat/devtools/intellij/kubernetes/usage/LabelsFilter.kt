@@ -11,7 +11,6 @@
 package com.redhat.devtools.intellij.kubernetes.usage
 
 import com.intellij.psi.PsiElement
-import com.intellij.psi.util.PsiElementFilter
 import com.redhat.devtools.intellij.common.validation.KubernetesTypeInfo
 import com.redhat.devtools.intellij.kubernetes.editor.util.areMatchingMatchExpressions
 import com.redhat.devtools.intellij.kubernetes.editor.util.areMatchingMatchLabels
@@ -38,7 +37,7 @@ import com.redhat.devtools.intellij.kubernetes.editor.util.isStatefulSet
 /**
  * A filter that accepts labels, that are matching a given selector.
  */
-class LabelsFilter(selector: PsiElement): PsiElementFilter {
+class LabelsFilter(selector: PsiElement): PsiElementMappingsFilter {
 
     private val selectorResource: PsiElement? by lazy {
         selector.getResource()
@@ -127,6 +126,11 @@ class LabelsFilter(selector: PsiElement): PsiElementFilter {
             else ->
                 false
         }
+    }
+
+    override fun getMatchingElement(element: PsiElement): PsiElement? {
+        val labeledType = element.getKubernetesTypeInfo() ?: return null
+        return getLabels(labeledType, element, selectorResourceType)
     }
 
     private fun getLabels(

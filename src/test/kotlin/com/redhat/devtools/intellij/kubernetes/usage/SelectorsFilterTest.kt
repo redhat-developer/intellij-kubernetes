@@ -19,6 +19,9 @@ import com.redhat.devtools.intellij.kubernetes.editor.mocks.createTemplate
 import com.redhat.devtools.intellij.kubernetes.editor.mocks.createYAMLSequenceItem
 import com.redhat.devtools.intellij.kubernetes.editor.mocks.createYAMLMapping
 import com.redhat.devtools.intellij.kubernetes.editor.mocks.createYAMLSequence
+import com.redhat.devtools.intellij.kubernetes.editor.util.getLabels
+import com.redhat.devtools.intellij.kubernetes.editor.util.getSelector
+import com.redhat.devtools.intellij.kubernetes.editor.util.getTemplateLabels
 import org.assertj.core.api.Assertions.assertThat
 import org.jetbrains.yaml.psi.YAMLMapping
 import org.junit.Before
@@ -34,7 +37,7 @@ class SelectorsFilterTest {
     private lateinit var filter: SelectorsFilter
 
     private lateinit var pod: YAMLMapping
-    private lateinit var podMatchingSelector: YAMLMapping
+    private lateinit var deploymentMatchingPod: YAMLMapping
 
     @Before
     fun before() {
@@ -45,10 +48,10 @@ class SelectorsFilterTest {
             createYAMLMapping(listOf(createYAMLKeyValue(LABEL_KEY, LABEL_VALUE)))
         )
 
-        this.podMatchingSelector = createYAMLMapping(listOf(
+        this.deploymentMatchingPod = createYAMLMapping(listOf(
             createYAMLKeyValue("kind", "Deployment")
         ))
-        this.podMatchingSelector.createSelector(
+        this.deploymentMatchingPod.createSelector(
             createYAMLMapping(listOf(
                 createYAMLKeyValue(
                     "matchLabels",
@@ -75,7 +78,7 @@ class SelectorsFilterTest {
     fun `#isAccepted returns true if filtered element labels matching all selector labels and expressions`() {
         // given
         // when
-        val isAccepted = filter.isAccepted(podMatchingSelector)
+        val isAccepted = filter.isAccepted(deploymentMatchingPod)
         // then
         assertThat(isAccepted).isTrue()
     }
@@ -221,7 +224,7 @@ class SelectorsFilterTest {
     @Test
     fun `#isAccepted returns true if filtering is deployment with template labels and filtered is deployment with matching labels`() {
         // given
-        podMatchingSelector.createTemplate(
+        deploymentMatchingPod.createTemplate(
             createYAMLMapping(listOf(
                 createYAMLKeyValue(
                     "metadata",
@@ -236,10 +239,46 @@ class SelectorsFilterTest {
                 )
             ))
         )
-        val filter = SelectorsFilter(podMatchingSelector)
+        val filter = SelectorsFilter(pod)
         // when
-        val isAccepted = filter.isAccepted(podMatchingSelector)
+        val isAccepted = filter.isAccepted(deploymentMatchingPod)
         // then
         assertThat(isAccepted).isTrue()
     }
+
+    @Test
+    fun `#getMatchingElement returns deployment selector that matches given pod labels`() {
+        // given
+        val filter = SelectorsFilter(deploymentMatchingPod)
+        // when
+        val matchingElement = filter.getMatchingElement(deploymentMatchingPod)
+        // then
+        assertThat(matchingElement).isEqualTo(deploymentMatchingPod.getSelector())
+    }
+
+    @Test
+    fun `#getMatchingElement returns deployment selector that matches given deployment template labels`() {
+        // given
+        deploymentMatchingPod.createTemplate(
+            createYAMLMapping(listOf(
+                createYAMLKeyValue(
+                    "metadata",
+                    createYAMLMapping(listOf(
+                        createYAMLKeyValue(
+                            "labels",
+                            createYAMLMapping(listOf(
+                                createYAMLKeyValue(LABEL_KEY, LABEL_VALUE) // matching labels in spec>template
+                            ))
+                        )
+                    ))
+                )
+            ))
+        )
+        val filter = SelectorsFilter(deploymentMatchingPod)
+        // when
+        val matchingElement = filter.getMatchingElement(deploymentMatchingPod)
+        // then
+        assertThat(matchingElement).isEqualTo(deploymentMatchingPod.getSelector())
+    }
+
 }

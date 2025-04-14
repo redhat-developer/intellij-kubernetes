@@ -20,9 +20,7 @@ import com.intellij.usages.Usage
 import com.intellij.usages.UsageInfo2UsageAdapter
 import com.intellij.util.Processor
 import com.redhat.devtools.intellij.kubernetes.editor.util.PsiElements
-import com.redhat.devtools.intellij.kubernetes.editor.util.getLabels
 import com.redhat.devtools.intellij.kubernetes.editor.util.getResource
-import com.redhat.devtools.intellij.kubernetes.editor.util.getSelector
 import com.redhat.devtools.intellij.kubernetes.editor.util.isLabels
 import com.redhat.devtools.intellij.kubernetes.editor.util.isSelector
 
@@ -53,9 +51,10 @@ class SelectorUsageSearcher : CustomUsageSearcher() {
              **/
             //val searchScope = options.searchScope
             //if (searchScope.contains(file.virtualFile)) {
-            getAllMatching(searchParameter)
+            val filter = getFilter(searchParameter) ?:  return@run
+            getAllMatching(searchParameter, filter)
                 .forEach { matchingElement ->
-                    val searchResult = getMatchingAttribute(searchParameter, matchingElement)
+                    val searchResult = filter.getMatchingElement(matchingElement)?.parent
                     if (searchResult != null) {
                         processor.process(
                             UsageInfo2UsageAdapter(UsageInfo(searchResult))
@@ -65,15 +64,14 @@ class SelectorUsageSearcher : CustomUsageSearcher() {
         }
     }
 
-    private fun getAllMatching(searchParameter: PsiElement): Collection<PsiElement> {
+    private fun getAllMatching(searchParameter: PsiElement, filter:  PsiElementFilter): Collection<PsiElement> {
         val fileType = searchParameter.containingFile.fileType
         val project = searchParameter.project
-        val filter = getFilter(searchParameter) ?: return emptyList()
         return PsiElements.getAllNoExclusions(fileType, project)
             .filter(filter::isAccepted)
     }
 
-    private fun getFilter(searchParameter: PsiElement): PsiElementFilter? {
+    private fun getFilter(searchParameter: PsiElement): PsiElementMappingsFilter? {
         val resource = searchParameter.getResource() ?: return null
         return when {
             searchParameter.isSelector() ->
@@ -87,14 +85,4 @@ class SelectorUsageSearcher : CustomUsageSearcher() {
         }
     }
 
-    private fun getMatchingAttribute(searchParameter: PsiElement, matchingElement: PsiElement): PsiElement? {
-        return when {
-            searchParameter.isSelector() ->
-                matchingElement.getLabels()?.parent // beginning of labels block/property
-            searchParameter.isLabels() ->
-                matchingElement.getSelector()?.parent // beginning of selector block/property
-            else ->
-                null
-        }
-    }
 }

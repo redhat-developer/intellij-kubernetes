@@ -35,6 +35,7 @@ class LabelsFilterTest {
 
     private lateinit var hasMatchLabelsAndExpressions: YAMLMapping
     private lateinit var matchingPod: YAMLMapping
+    private lateinit var matchingPodLabels: YAMLMapping
 
     @Before
     fun before() {
@@ -59,11 +60,11 @@ class LabelsFilterTest {
         this.matchingPod = createYAMLMapping(listOf(
             createYAMLKeyValue("kind", "Pod")
         ))
-        matchingPod.createLabels(
+        this.matchingPodLabels = matchingPod.createLabels(
             createYAMLMapping(listOf(
                 createYAMLKeyValue(LABEL_KEY, LABEL_VALUE)
             ))
-        )
+        ).value as YAMLMapping
 
         this.filter = LabelsFilter(hasMatchLabelsAndExpressions)
     }
@@ -213,4 +214,40 @@ class LabelsFilterTest {
         assertThat(isAccepted).isTrue()
     }
 
+    @Test
+    fun `#getMatchingElement returns pod labels that match given deployment selector`() {
+        // given
+        // when
+        val matchingElement = filter.getMatchingElement(matchingPod)
+        // then
+        assertThat(matchingElement).isEqualTo(matchingPodLabels)
+    }
+
+    @Test
+    fun `#getMatchingElement returns deployment template labels that match given deployment selector`() {
+        // given
+        val matchingTemplateLabels = createYAMLMapping(listOf(
+            createYAMLKeyValue("kind", "Deployment")
+        ))
+        val templateLabels = createYAMLMapping(listOf(
+            createYAMLKeyValue(LABEL_KEY, LABEL_VALUE) // matching labels in spec>template
+        ))
+        matchingTemplateLabels.createTemplate(
+            createYAMLMapping(listOf(
+                createYAMLKeyValue(
+                    "metadata",
+                    createYAMLMapping(listOf(
+                        createYAMLKeyValue(
+                            "labels",
+                            templateLabels
+                        )
+                    ))
+                )
+            ))
+        )
+        // when
+        val matchingElement = filter.getMatchingElement(matchingTemplateLabels)
+        // then
+        assertThat(matchingElement).isEqualTo(templateLabels)
+    }
 }

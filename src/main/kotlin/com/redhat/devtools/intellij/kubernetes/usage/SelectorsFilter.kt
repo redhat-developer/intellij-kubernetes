@@ -14,6 +14,7 @@ import com.intellij.psi.PsiElement
 import com.intellij.psi.util.PsiElementFilter
 import com.redhat.devtools.intellij.common.validation.KubernetesTypeInfo
 import com.redhat.devtools.intellij.kubernetes.editor.util.getKubernetesTypeInfo
+import com.redhat.devtools.intellij.kubernetes.editor.util.getSelector
 import com.redhat.devtools.intellij.kubernetes.editor.util.hasLabels
 import com.redhat.devtools.intellij.kubernetes.editor.util.hasSelector
 import com.redhat.devtools.intellij.kubernetes.editor.util.hasTemplateLabels
@@ -21,7 +22,7 @@ import com.redhat.devtools.intellij.kubernetes.editor.util.hasTemplateLabels
 /**
  * A filter that accepts selectors that are matching a given label
  */
-class SelectorsFilter(private val labeledResource: PsiElement): PsiElementFilter {
+class SelectorsFilter(private val labeledResource: PsiElement): PsiElementMappingsFilter {
 
     private val labeledResourceType: KubernetesTypeInfo? by lazy {
         labeledResource.getKubernetesTypeInfo()
@@ -30,6 +31,10 @@ class SelectorsFilter(private val labeledResource: PsiElement): PsiElementFilter
     private val hasLabels: Boolean by lazy {
         labeledResource.hasLabels()
                 || labeledResource.hasTemplateLabels()
+    }
+
+    override fun getMatchingElement(element: PsiElement): PsiElement? {
+        return element.getSelector()
     }
 
     override fun isAccepted(toAccept: PsiElement): Boolean {
