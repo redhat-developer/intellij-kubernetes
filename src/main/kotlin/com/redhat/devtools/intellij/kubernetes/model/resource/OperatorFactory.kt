@@ -105,15 +105,6 @@ object OperatorFactory {
         return openshift.map { it.second.invoke(client) }
     }
 
-    fun createAll(client: ClientAdapter<out KubernetesClient>): List<IResourceOperator<out HasMetadata>>{
-        return if (client.isOpenShift()) {
-            @Suppress("UNCHECKED_CAST")
-            createOpenShift(client as ClientAdapter<OpenShiftClient>)
-        } else {
-            createKubernetes(client)
-        }
-    }
-
     inline fun <reified T : IResourceOperator<out HasMetadata>> create(
         kind: ResourceKind<out HasMetadata>,
         client: ClientAdapter<out KubernetesClient>
