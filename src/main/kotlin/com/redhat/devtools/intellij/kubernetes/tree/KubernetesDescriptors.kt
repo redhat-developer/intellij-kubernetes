@@ -15,10 +15,12 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.IconLoader
 import com.redhat.devtools.intellij.kubernetes.model.IResourceModel
 import com.redhat.devtools.intellij.kubernetes.model.context.KubernetesContext
+import com.redhat.devtools.intellij.kubernetes.model.context.LazyOpenShiftContext
 import com.redhat.devtools.intellij.kubernetes.model.resource.ResourceKind
 import com.redhat.devtools.intellij.kubernetes.model.util.getHighestPriorityVersion
 import com.redhat.devtools.intellij.kubernetes.tree.AbstractTreeStructureContribution.DescriptorFactory
 import com.redhat.devtools.intellij.kubernetes.tree.KubernetesStructure.NamespacesFolder
+import com.redhat.devtools.intellij.kubernetes.tree.OpenShiftDescriptors.OPENSHIFT_CLUSTER_ICON
 import com.redhat.devtools.intellij.kubernetes.tree.TreeStructure.ContextDescriptor
 import com.redhat.devtools.intellij.kubernetes.tree.TreeStructure.Folder
 import com.redhat.devtools.intellij.kubernetes.tree.TreeStructure.FolderDescriptor
@@ -50,6 +52,11 @@ import javax.swing.Icon
 
 object KubernetesDescriptors {
 
+	val KUBERNETES_CLUSTER_ICON = IconLoader.getIcon(
+		"/icons/kubernetes-cluster.svg",
+		KubernetesContext::class.java
+	)
+
 	fun createDescriptor(
 		element: Any,
 		childrenKind: ResourceKind<out HasMetadata>?,
@@ -61,12 +68,16 @@ object KubernetesDescriptors {
 			element is DescriptorFactory<*> ->
 				element.create(parent, model, project)
 
+			element is LazyOpenShiftContext ->
+				LazyOpenShiftContextDescriptor(element, model, project)
+
+			element is KubernetesContext ->
+				KubernetesContextDescriptor(element, model, project)
+
 			element is NamespacesFolder
 					&& !isOpenShift(model) ->
 				NamespacesFolderDescriptor(element, parent, model, project)
 
-			element is KubernetesContext ->
-				KubernetesContextDescriptor(element, model, project)
 			element is Namespace ->
 				NamespaceDescriptor(element, parent, model, project)
 			element is Node ->
@@ -90,7 +101,7 @@ object KubernetesDescriptors {
 					|| element is GenericKubernetesResource
 					|| element is ReplicaSet
 					|| element is ReplicationController ->
-					ResourceDescriptor(element as HasMetadata, childrenKind, parent, model, project)
+					ResourceDescriptor(element, childrenKind, parent, model, project)
 			element is CustomResourceDefinition ->
 				CustomResourceDefinitionDescriptor(element, parent, model, project)
 
@@ -103,7 +114,7 @@ object KubernetesDescriptors {
 		return true == model.getCurrentContext()?.isOpenShift()
 	}
 
-	private class KubernetesContextDescriptor(
+	class KubernetesContextDescriptor(
 		element: KubernetesContext,
 		model: IResourceModel,
 		project: Project
@@ -113,7 +124,25 @@ object KubernetesDescriptors {
 		project = project
 	) {
 		override fun getIcon(element: KubernetesContext): Icon {
-			return IconLoader.getIcon("/icons/kubernetes-cluster.svg", javaClass)
+			return KUBERNETES_CLUSTER_ICON
+		}
+	}
+
+	private class LazyOpenShiftContextDescriptor(
+		context: LazyOpenShiftContext,
+		model: IResourceModel,
+		project: Project
+	) : ContextDescriptor<LazyOpenShiftContext>(
+		context = context,
+		model = model,
+		project = project
+	) {
+		override fun getIcon(context: LazyOpenShiftContext): Icon {
+			return if (context.isOpenShift()) {
+				OPENSHIFT_CLUSTER_ICON
+			} else {
+				KUBERNETES_CLUSTER_ICON
+			}
 		}
 	}
 

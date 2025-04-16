@@ -32,6 +32,11 @@ import javax.swing.Icon
 
 object OpenShiftDescriptors {
 
+    val OPENSHIFT_CLUSTER_ICON = IconLoader.getIcon(
+        "/icons/openshift-cluster.svg",
+        OpenShiftContext::class.java
+    )
+
     fun createDescriptor(
         element: Any,
         childrenKind: ResourceKind<out HasMetadata>?,
@@ -40,18 +45,24 @@ object OpenShiftDescriptors {
         project: Project
     ): NodeDescriptor<*>? {
         return when (element) {
-            is OpenShiftContext -> OpenShiftContextDescriptor(element, model, project)
+            is OpenShiftContext ->
+                OpenShiftContextDescriptor(element, model, project)
 
-            is ProjectsFolder -> ProjectsFolderDescriptor(element, parent, model, project)
+            is ProjectsFolder ->
+                ProjectsFolderDescriptor(element, parent, model, project)
 
-            is io.fabric8.openshift.api.model.Project -> ProjectDescriptor(element, parent, model, project)
+            is io.fabric8.openshift.api.model.Project ->
+                ProjectDescriptor(element, parent, model, project)
+
             is ImageStream,
             is DeploymentConfig,
             is ReplicationController,
             is BuildConfig,
             is Build,
-            is Route -> ResourceDescriptor(element as HasMetadata, childrenKind, parent, model, project)
-            else -> null
+            is Route ->
+                ResourceDescriptor(element as HasMetadata, childrenKind, parent, model, project)
+            else ->
+                null
         }
     }
 
@@ -64,8 +75,9 @@ object OpenShiftDescriptors {
         model = model,
         project = project
     ) {
+
         override fun getIcon(element: OpenShiftContext): Icon {
-            return IconLoader.getIcon("/icons/openshift-cluster.svg", javaClass)
+            return OPENSHIFT_CLUSTER_ICON
         }
     }
 

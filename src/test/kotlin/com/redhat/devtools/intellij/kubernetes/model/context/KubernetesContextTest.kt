@@ -998,12 +998,12 @@ class KubernetesContextTest {
 				return super.nonNamespacedOperators
 			}
 
-		override fun getInternalResourceOperators(client: ClientAdapter<out KubernetesClient>)
+		override fun getInternalResourceOperators()
 				: List<IResourceOperator<out HasMetadata>> {
 			return internalResourceOperators
 		}
 
-		override fun getExtensionResourceOperators(client: ClientAdapter<out KubernetesClient>)
+		override fun getExtensionResourceOperators()
 				: List<IResourceOperator<out HasMetadata>> {
 			return extensionResourceOperators
 		}

@@ -13,7 +13,6 @@ package com.redhat.devtools.intellij.kubernetes.model
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.diagnostic.logger
 import com.redhat.devtools.intellij.common.utils.ConfigWatcher
-import com.redhat.devtools.intellij.common.utils.ExecHelper
 import com.redhat.devtools.intellij.kubernetes.model.client.ClientAdapter
 import com.redhat.devtools.intellij.kubernetes.model.client.ClientConfig
 import com.redhat.devtools.intellij.kubernetes.model.context.Context
@@ -77,7 +76,7 @@ interface IAllContexts {
 
 open class AllContexts(
 	private val contextFactory: (ClientAdapter<out KubernetesClient>, IResourceModelObservable) -> IActiveContext<out HasMetadata, out KubernetesClient>? =
-		IActiveContext.Factory::create,
+		IActiveContext.Factory::createLazyOpenShift,
 	private val modelChange: IResourceModelObservable,
 	private val clientFactory: (
 		namespace: String?,
@@ -223,7 +222,7 @@ open class AllContexts(
 	}
 
 	protected open fun reportTelemetry(context: IActiveContext<out HasMetadata, out KubernetesClient>) {
-		ExecHelper.submit {
+		runAsync {
 			val telemetry = TelemetryService.instance.action(NAME_PREFIX_CONTEXT + "use")
 				.property(PROP_IS_OPENSHIFT, context.isOpenShift().toString())
 			try {

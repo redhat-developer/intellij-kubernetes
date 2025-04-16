@@ -22,9 +22,11 @@ import com.redhat.devtools.intellij.kubernetes.model.IResourceModel
 import com.redhat.devtools.intellij.kubernetes.model.IResourceModelObservable
 import com.redhat.devtools.intellij.kubernetes.model.client.ClientAdapter
 import com.redhat.devtools.intellij.kubernetes.model.client.ClientConfig
+import com.redhat.devtools.intellij.kubernetes.model.client.OSClientAdapter
 import com.redhat.devtools.intellij.kubernetes.model.context.IActiveContext
 import com.redhat.devtools.intellij.kubernetes.model.context.IContext
 import com.redhat.devtools.intellij.kubernetes.model.resource.*
+import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.NamespacesOperator
 import io.fabric8.kubernetes.api.model.HasMetadata
 import io.fabric8.kubernetes.api.model.NamedContext
 import io.fabric8.kubernetes.api.model.Namespace
@@ -45,12 +47,14 @@ object Mocks {
                 .whenever(this).invoke(anyOrNull(), anyOrNull())
         }
 
-    fun clientAdapter(clientConfig: ClientConfig?, client: KubernetesClient? = null): ClientAdapter<KubernetesClient> {
-        return mock<ClientAdapter<KubernetesClient>>().apply {
+    inline fun <reified A: ClientAdapter<out KubernetesClient>> clientAdapter(clientConfig: ClientConfig?, client: KubernetesClient? = null, openshiftAdapter: OSClientAdapter? = null): A {
+        return mock<A>().apply {
             doReturn(clientConfig)
                 .whenever(this).config
             doReturn(client)
                 .whenever(this).get()
+            doReturn(openshiftAdapter)
+                .whenever(this).toOpenShift()
         }
     }
 
@@ -79,8 +83,12 @@ object Mocks {
         return context
     }
 
-    fun activeContext(currentNamespace: Namespace, context: NamedContext)
-            : IActiveContext<HasMetadata, KubernetesClient> {
+    fun activeContext(
+        currentNamespace: Namespace,
+        context: NamedContext,
+        namespaceKind: ResourceKind<out HasMetadata> = NamespacesOperator.KIND,
+        isOpenshift: Boolean = false
+    ): IActiveContext<HasMetadata, KubernetesClient> {
         val mock = mock<IActiveContext<HasMetadata, KubernetesClient>>()
         doReturn(currentNamespace.metadata.name)
             .whenever(mock).getCurrentNamespace()
@@ -90,6 +98,10 @@ object Mocks {
             .whenever(mock).namespace
         doReturn(true)
             .whenever(mock).active
+        doReturn(namespaceKind)
+            .whenever(mock).namespaceKind
+        doReturn(isOpenshift)
+            .whenever(mock).isOpenShift()
         return mock
     }
 

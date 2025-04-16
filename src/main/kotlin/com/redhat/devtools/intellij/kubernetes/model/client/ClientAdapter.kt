@@ -37,6 +37,10 @@ open class OSClientAdapter(client: OpenShiftClient, private val kubeClient: Kube
         ClientConfig(kubeClient.configuration)
     }
 
+    override fun toOpenShift(): OSClientAdapter {
+        return this
+    }
+
     override fun isOpenShift(): Boolean {
         return true
     }
@@ -52,17 +56,33 @@ open class KubeClientAdapter(client: KubernetesClient) :
     override fun isOpenShift(): Boolean {
         return false
     }
+
+    override fun toOpenShift(): OSClientAdapter {
+            val kubeClient = get()
+            val osClient = kubeClient.adapt(NamespacedOpenShiftClient::class.java)
+            return OSClientAdapter(osClient, kubeClient)
+    }
 }
 
 abstract class ClientAdapter<C : KubernetesClient>(private val fabric8Client: C) {
 
     companion object Factory {
 
+        const val TIMEOUT_CONNECTION = 5000
+        const val TIMEOUT_REQUEST = 5000
+        const val LIMIT_RECONNECT = 2
+
         fun create(
             namespace: String? = null,
             context: String? = null,
             clientBuilder: KubernetesClientBuilder? = null,
-            createConfig: (context: String?) -> Config = { context -> Config.autoConfigure(context) },
+            createConfig: (context: String?) -> Config = { context ->
+                val config = Config.autoConfigure(context)
+                config.connectionTimeout = TIMEOUT_CONNECTION
+                config.requestTimeout = TIMEOUT_REQUEST
+                config.watchReconnectLimit = LIMIT_RECONNECT
+                config
+            },
             externalTrustManagerProvider: ((toIntegrate: List<X509ExtendedTrustManager>) -> X509TrustManager)? = null
         ): ClientAdapter<out KubernetesClient> {
             KubeConfigEnvValue.copyToSystem()
@@ -76,12 +96,14 @@ abstract class ClientAdapter<C : KubernetesClient>(private val fabric8Client: C)
                     setSslContext(httpClientBuilder, config, trustManager)
                 }
                 .build()
-            return if (ClusterHelper.isOpenShift(kubeClient)) {
-                val osClient = kubeClient.adapt(NamespacedOpenShiftClient::class.java)
-                OSClientAdapter(osClient, kubeClient)
-            } else {
-                KubeClientAdapter(kubeClient)
-            }
+            /**
+             *  Always create kubernetes client.
+             *  Upgrade existing client to OpenShift only async bcs checking if cluster is OpenShift is costly
+             *  and may timeout if cluster is not reachable.
+             *  @see [issue 865](https://github.com/redhat-developer/intellij-kubernetes/issues/865)
+             *  @see ClientAdapter.toOpenShift
+             **/
+            return KubeClientAdapter(kubeClient)
         }
 
         private fun setSslContext(
@@ -114,6 +136,8 @@ abstract class ClientAdapter<C : KubernetesClient>(private val fabric8Client: C)
         ClientConfig(fabric8Client.configuration)
     }
 
+    abstract fun toOpenShift(): OSClientAdapter
+
     abstract fun isOpenShift(): Boolean
 
     fun get(): C {
@@ -143,6 +167,10 @@ abstract class ClientAdapter<C : KubernetesClient>(private val fabric8Client: C)
         } else {
             clients.computeIfAbsent(type) { fabric8Client.adapt(type) } as T
         }
+    }
+
+    fun canAdaptToOpenShift(): Boolean {
+        return ClusterHelper.isOpenShift(fabric8Client)
     }
 
     open fun close() {

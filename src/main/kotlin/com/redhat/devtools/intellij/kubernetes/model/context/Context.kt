@@ -19,7 +19,7 @@ interface IContext {
 	val namespace: String?
 }
 
-open class Context(private val context: NamedContext): IContext {
+open class Context(protected val context: NamedContext): IContext {
 	override val active: Boolean = false
 	override val name: String?
 		get() = context.name

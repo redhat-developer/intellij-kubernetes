@@ -24,12 +24,12 @@ import io.fabric8.kubernetes.client.NamespacedKubernetesClient
 import io.fabric8.kubernetes.client.http.HttpClient
 import io.fabric8.kubernetes.client.impl.AppsAPIGroupClient
 import io.fabric8.openshift.client.NamespacedOpenShiftClient
-import java.security.cert.X509Certificate
-import javax.net.ssl.X509ExtendedTrustManager
-import javax.net.ssl.X509TrustManager
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test
+import java.security.cert.X509Certificate
 import java.util.function.Consumer
+import javax.net.ssl.X509ExtendedTrustManager
+import javax.net.ssl.X509TrustManager
 
 class ClientAdapterTest {
 
@@ -64,6 +64,31 @@ class ClientAdapterTest {
         val isOpenShift = clientAdapter.isOpenShift()
         // then
         assertThat(isOpenShift).isFalse()
+    }
+
+    @Test
+    fun `#toOpenShift should return same instance if it's already a OSClientAdapter`() {
+        // given
+        val clientAdapter = OSClientAdapter(mock(), mock())
+        // when
+        val openShiftAdapter = clientAdapter.toOpenShift()
+        // then
+        assertThat(openShiftAdapter).isEqualTo(clientAdapter)
+    }
+
+    @Test
+    fun `#toOpenShift should return adapt fabric8 client and create new OSClientAdapter`() {
+        // given
+        val osClient = mock<NamespacedOpenShiftClient>()
+        val client = mock<KubernetesClient> {
+            on { adapt(NamespacedOpenShiftClient::class.java) } doReturn osClient
+        }
+        val clientAdapter = KubeClientAdapter(client)
+        // when
+        val openShiftAdapter = clientAdapter.toOpenShift()
+        // then
+        verify(client).adapt(NamespacedOpenShiftClient::class.java)
+        assertThat(openShiftAdapter.get()).isEqualTo(osClient)
     }
 
     @Test
@@ -143,7 +168,7 @@ class ClientAdapterTest {
     }
 
     @Test
-    fun `#create should return KubeClientAdapter if cluster is NOT OpenShift`() {
+    fun `#create should return KubeClientAdapter if cluster is Kubernetes`() {
         // given
         val clientBuilder = createClientBuilder(false)
         // when
@@ -153,13 +178,13 @@ class ClientAdapterTest {
     }
 
     @Test
-    fun `#create should return OSClientAdapter if cluster is OpenShift`() {
+    fun `#create should return KubeClientAdapter if cluster is OpenShift`() {
         // given
         val clientBuilder = createClientBuilder(true)
         // when
         val adapter = ClientAdapter.Factory.create("namespace", "context", clientBuilder, createConfig, trustManagerProvider)
         // then
-        assertThat(adapter).isInstanceOf(OSClientAdapter::class.java)
+        assertThat(adapter).isInstanceOf(KubeClientAdapter::class.java)
     }
 
     @Suppress("SameParameterValue", "UNCHECKED_CAST")

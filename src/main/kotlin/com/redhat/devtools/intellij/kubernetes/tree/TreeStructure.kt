@@ -114,11 +114,11 @@ open class TreeStructure(
                     .map { it.createDescriptor(element, parent, project) }
                     .find { it != null }
             descriptor ?: when (element) {
-                is IContext -> ContextDescriptor(element, parent, model, project)
-                is Exception -> ErrorDescriptor(element, parent, model, project)
-                is Folder -> FolderDescriptor(element, parent, model, project)
-                else -> Descriptor(element, null, parent, model, project)
-            }
+                    is IContext -> ContextDescriptor(element, parent, model, project)
+                    is Exception -> ErrorDescriptor(element, parent, model, project)
+                    is Folder -> FolderDescriptor(element, parent, model, project)
+                    else -> Descriptor(element, null, parent, model, project)
+                }
         } catch (e: Exception) {
             ErrorDescriptor(e, parent, model, project)
         }
@@ -185,7 +185,7 @@ open class TreeStructure(
         }
 
         override fun getIcon(element: C): Icon? {
-            return IconLoader.getIcon("/icons/kubernetes-cluster.svg", javaClass)
+            return KubernetesDescriptors.KUBERNETES_CLUSTER_ICON
         }
     }
 

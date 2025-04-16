@@ -15,6 +15,7 @@ import com.redhat.devtools.intellij.kubernetes.model.IResourceModelObservable
 import com.redhat.devtools.intellij.kubernetes.model.client.ClientAdapter
 import com.redhat.devtools.intellij.kubernetes.model.client.KubeClientAdapter
 import com.redhat.devtools.intellij.kubernetes.model.client.OSClientAdapter
+import com.redhat.devtools.intellij.kubernetes.model.resource.IResourceOperator
 import com.redhat.devtools.intellij.kubernetes.model.resource.ResourceKind
 import com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes.KubernetesReplicas.Replicator
 import io.fabric8.kubernetes.api.model.GenericKubernetesResource
@@ -23,30 +24,29 @@ import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinition
 import io.fabric8.kubernetes.client.KubernetesClient
 import io.fabric8.kubernetes.client.Watch
 import io.fabric8.kubernetes.client.Watcher
+import io.fabric8.openshift.api.model.Project
+import io.fabric8.openshift.client.OpenShiftClient
 import java.net.URL
 
 interface IActiveContext<N: HasMetadata, C: KubernetesClient>: IContext {
 
     companion object Factory {
-        fun create(
+        fun createLazyOpenShift(
             client: ClientAdapter<out KubernetesClient>,
-            observable: IResourceModelObservable
+            modelChange: IResourceModelObservable
         ): IActiveContext<out HasMetadata, out KubernetesClient>? {
             val currentContext = client.config.currentContext ?: return null
-            return if (client.isOpenShift()) {
-                OpenShiftContext(
-                    currentContext,
-                    observable,
-                    client as OSClientAdapter
-                )
-            } else {
-                KubernetesContext(
-                    currentContext,
-                    observable,
-                    client as KubeClientAdapter
-                )
-            }
+            return LazyOpenShiftContext(currentContext, modelChange, client as KubeClientAdapter)
         }
+
+        fun createOpenShift(
+            client: OSClientAdapter,
+            modelChange: IResourceModelObservable
+        ): IActiveContext<Project, OpenShiftClient>? {
+            val currentContext = client.config.currentContext ?: return null
+            return OpenShiftContext(currentContext, modelChange, client)
+        }
+
     }
 
     /**
@@ -65,6 +65,8 @@ interface IActiveContext<N: HasMetadata, C: KubernetesClient>: IContext {
         }
     }
 
+    val namespaceKind : ResourceKind<out HasMetadata>
+
     /**
      * The master url for this context. This is the url of the cluster for this context.
      */
@@ -74,6 +76,16 @@ interface IActiveContext<N: HasMetadata, C: KubernetesClient>: IContext {
      * The version of the cluster for this context
      */
     val version: ClusterInfo
+
+    /**
+     * Returns the list of internal [IResourceOperator]s that are available in this context.
+     * [IResourceOperator]s that are contributed by registrations to the extension point are not included.
+     *
+     * @return the list of [IResourceOperator]s that are available in this context.
+     * @see IResourceOperator
+     * @see com.redhat.devtools.intellij.kubernetes.model.context.ActiveContext.getExtensionResourceOperators
+     */
+    fun getInternalResourceOperators(): List<IResourceOperator<out HasMetadata>>
 
     /**
      * Returns {@code true} if this context is an OpenShift context. This is true for context with an OpenShift cluster.
@@ -129,7 +141,7 @@ interface IActiveContext<N: HasMetadata, C: KubernetesClient>: IContext {
     fun getAllResources(definition: CustomResourceDefinition): Collection<GenericKubernetesResource>
 
     /**
-     * Returns the latest version of the given resource from cluster. Returns `null` if none was found.
+     * Returns the latest version of the given resource from the cluster. Returns `null` if none was found.
      *
      * @param resource which is to be requested from cluster
      *
@@ -265,7 +277,7 @@ interface IActiveContext<N: HasMetadata, C: KubernetesClient>: IContext {
     /**
      * Notifies the context that the given resource was replaced in the cluster.
      * Replaces the resource with the given new version if it exists.
-     * Does nothing otherwiese.
+     * Does nothing otherwise.
      *
      *
      * @param resource the new (version) of the resource
@@ -279,7 +291,7 @@ interface IActiveContext<N: HasMetadata, C: KubernetesClient>: IContext {
      *
      * @return the url of the Dashboard for this context
      */
-    fun getDashboardUrl(): String
+    fun getDashboardUrl(): String?
 
     /**
      * Closes and disposes this context.
