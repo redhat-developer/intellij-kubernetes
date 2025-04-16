@@ -29,6 +29,7 @@ import com.redhat.devtools.intellij.kubernetes.telemetry.TelemetryService.PROP_I
 import com.redhat.devtools.intellij.kubernetes.telemetry.TelemetryService.PROP_KUBERNETES_VERSION
 import com.redhat.devtools.intellij.kubernetes.telemetry.TelemetryService.PROP_OPENSHIFT_VERSION
 import io.fabric8.kubernetes.api.model.HasMetadata
+import io.fabric8.kubernetes.api.model.NamedContext
 import io.fabric8.kubernetes.client.Config
 import io.fabric8.kubernetes.client.KubernetesClient
 import java.util.concurrent.CompletionException
@@ -200,7 +201,29 @@ open class AllContexts(
 			return emptyList()
 		}
 		lock.read {
-			return config.allContexts
+/*
+			val allNamedContexts = config.allContexts
+			val temporary = allNamedContexts.map { Context(it) }
+			asyncActiveContext(allNamedContexts, config, client)
+			return temporary
+*/
+			return config.allContexts.map {
+				if (config.isCurrent(it)) {
+					createActiveContext(client) ?: Context(it)
+				} else {
+					Context(it)
+				}
+			}
+		}
+	}
+
+	private fun asyncActiveContext(
+		allNamedContexts: List<NamedContext>,
+		config: ClientConfig,
+		client: ClientAdapter<out KubernetesClient>?
+	) {
+		runAsync {
+			val allWithActiveContext = allNamedContexts
 				.map {
 					if (config.isCurrent(it)) {
 						createActiveContext(client) ?: Context(it)
@@ -208,6 +231,11 @@ open class AllContexts(
 						Context(it)
 					}
 				}
+			lock.read {
+				_all.clear()
+				_all.addAll(allWithActiveContext)
+			}
+			modelChange.fireAllContextsChanged()
 		}
 	}
 
@@ -223,7 +251,7 @@ open class AllContexts(
 	}
 
 	protected open fun reportTelemetry(context: IActiveContext<out HasMetadata, out KubernetesClient>) {
-		ExecHelper.submit {
+		runAsync {
 			val telemetry = TelemetryService.instance.action(NAME_PREFIX_CONTEXT + "use")
 				.property(PROP_IS_OPENSHIFT, context.isOpenShift().toString())
 			try {
