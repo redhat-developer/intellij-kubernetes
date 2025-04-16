@@ -64,10 +64,6 @@ class OpenShiftReplicas(resourceOperator: NonCachingSingleResourceOperator, getA
     private fun getDeploymentConfig(replicationController: ReplicationController): DeploymentConfig? {
         return getAllResources.getAll(DeploymentConfigsOperator.KIND, IActiveContext.ResourcesIn.CURRENT_NAMESPACE)
             .firstOrNull { deploymentConfig ->
-System.err.println("dc =" +
-        "\nannotations: ${deploymentConfig.metadata.annotations.entries.joinToString { it.toString() } }" +
-        "\nlabels: ${deploymentConfig.metadata.labels.entries.joinToString { it.toString() } }"
-        )
                 DeploymentConfigForReplicationController(replicationController).test(deploymentConfig)
             }
     }
