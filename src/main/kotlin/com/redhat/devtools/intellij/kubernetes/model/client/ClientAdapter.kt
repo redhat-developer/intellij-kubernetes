@@ -76,12 +76,15 @@ abstract class ClientAdapter<C : KubernetesClient>(private val fabric8Client: C)
                     setSslContext(httpClientBuilder, config, trustManager)
                 }
                 .build()
+/*
             return if (ClusterHelper.isOpenShift(kubeClient)) {
                 val osClient = kubeClient.adapt(NamespacedOpenShiftClient::class.java)
                 OSClientAdapter(osClient, kubeClient)
             } else {
                 KubeClientAdapter(kubeClient)
             }
+ */
+            return KubeClientAdapter(kubeClient)
         }
 
         private fun setSslContext(
