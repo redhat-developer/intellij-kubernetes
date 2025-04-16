@@ -52,9 +52,9 @@ import java.net.URL
 
 abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
     context: NamedContext,
-    private val modelChange: IResourceModelObservable,
+    protected val modelChange: IResourceModelObservable,
     val client: ClientAdapter<out C>,
-    protected open val dashboard: IDashboard,
+    protected open val dashboard: IDashboard? = null,
     private var singleResourceOperator: NonCachingSingleResourceOperator = NonCachingSingleResourceOperator(client),
 ) : Context(context), IActiveContext<N, C> {
 
@@ -71,8 +71,6 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
     override val version: ClusterInfo by lazy {
         ClusterHelper.getClusterInfo(client.get())
     }
-
-    protected abstract val namespaceKind : ResourceKind<N>
 
     private val extensionName: ExtensionPointName<IResourceOperatorFactory<HasMetadata, KubernetesClient, IResourceOperator<HasMetadata>>> =
             ExtensionPointName("com.redhat.devtools.intellij.kubernetes.resourceOperators")
@@ -307,7 +305,7 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
     override fun stopWatch(kind: ResourceKind<out HasMetadata>) {
         logger<ActiveContext<*, *>>().debug("Stop watching $kind resources.")
         watch.stopWatch(kind)
-        // don't notify invalidation change because this would cause UI to reload
+        // don't notify invalidation change because this would cause the UI to reload
         // and therefore to repopulate the cache immediately.
         // Any resource operation that eventually happens while the watch is not active would cause the cache
         // to become out-of-sync and it would therefore return invalid resources when asked to do so
@@ -489,27 +487,32 @@ abstract class ActiveContext<N : HasMetadata, C : KubernetesClient>(
     override fun close() {
         logger<ActiveContext<*, *>>().debug("Closing context $name.")
         watch.close()
-        dashboard.close()
+        dashboard?.close()
     }
 
     private fun <P: IResourceOperator<out HasMetadata>> getAllResourceOperators(type: Class<P>)
             : MutableMap<ResourceKind<out HasMetadata>, P> {
         val operators = mutableMapOf<ResourceKind<out HasMetadata>, P>()
         operators.putAll(
-                getInternalResourceOperators(client)
+                getInternalResourceOperators()
                         .filterIsInstance(type)
                         .associateBy { it.kind })
         operators.putAll(
-                getExtensionResourceOperators(client)
+                getExtensionResourceOperators()
                         .filterIsInstance(type)
                         .associateBy { it.kind })
         return operators
     }
 
-    protected abstract fun getInternalResourceOperators(client: ClientAdapter<out C>): List<IResourceOperator<out HasMetadata>>
+    abstract override fun getInternalResourceOperators(): List<IResourceOperator<out HasMetadata>>
 
-    protected open fun getExtensionResourceOperators(client: ClientAdapter<out C>): List<IResourceOperator<out HasMetadata>> {
+    protected open fun getExtensionResourceOperators(): List<IResourceOperator<out HasMetadata>> {
         return extensionName.extensionList
                 .map { it.create(client.get()) }
     }
+
+    override fun getDashboardUrl(): String? {
+        return dashboard?.get()
+    }
+
 }

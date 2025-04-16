@@ -71,7 +71,7 @@ class AllContextsTest {
     private val token = "42"
     private val client = client(true)
     private val clientConfig = clientConfig(currentContext, contexts)
-    private val clientAdapter = clientAdapter(clientConfig, client)
+    private val clientAdapter = clientAdapter<ClientAdapter<KubernetesClient>>(clientConfig, client)
     private val clientFactory = clientFactory(clientAdapter)
 
     private val allContexts = TestableAllContexts(modelChange, contextFactory, clientFactory)
@@ -337,7 +337,7 @@ class AllContextsTest {
         // given
         val clientConfig = clientConfig(null, contexts)
         val client = client(true)
-        val clientAdapter = clientAdapter(clientConfig, client)
+        val clientAdapter = clientAdapter<ClientAdapter<KubernetesClient>>(clientConfig, client)
         val clientFactory = clientFactory(clientAdapter)
         val allContexts = TestableAllContexts(modelChange, contextFactory, clientFactory)
         // when
@@ -359,7 +359,7 @@ class AllContextsTest {
     fun `#setCurrentNamespace(namespace) should NOT observable#fireCurrentNamespaceChanged if new current context is null`() {
         // given
         val client = client(true)
-        val clientAdapter = clientAdapter(null, client) // no config so there are no contexts
+        val clientAdapter = clientAdapter<ClientAdapter<KubernetesClient>>(null, client) // no config so there are no contexts
         val clientFactory = clientFactory(clientAdapter)
         val allContexts = TestableAllContexts(modelChange, contextFactory, clientFactory)
         // when

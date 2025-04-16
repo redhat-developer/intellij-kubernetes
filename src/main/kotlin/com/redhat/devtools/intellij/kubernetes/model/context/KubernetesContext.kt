@@ -32,7 +32,7 @@ open class KubernetesContext(
 	context: NamedContext,
 	modelChange: IResourceModelObservable,
 	client: KubeClientAdapter,
-) : ActiveContext<Namespace, KubernetesClient>(
+) : ActiveContext<HasMetadata, KubernetesClient>(
 		context,
 		modelChange,
 		client,
@@ -43,7 +43,7 @@ open class KubernetesContext(
 		)
 ) {
 
-	override val namespaceKind : ResourceKind<Namespace> =  NamespacesOperator.KIND
+	override val namespaceKind : ResourceKind<out HasMetadata> =  NamespacesOperator.KIND
 
 	private val replicasOperator = KubernetesReplicas(
 		NonCachingSingleResourceOperator(client),
@@ -54,12 +54,14 @@ open class KubernetesContext(
 		}
 	)
 
-	override fun getInternalResourceOperators(client: ClientAdapter<out KubernetesClient>)
+	override fun getInternalResourceOperators()
 			: List<IResourceOperator<out HasMetadata>> {
 		return OperatorFactory.createKubernetes(client)
 	}
 
-	override fun isOpenShift() = false
+	override fun isOpenShift(): Boolean {
+		return false
+	}
 
 	override fun setReplicas(replicas: Int, replicator: Replicator) {
 		replicasOperator.set(replicas, replicator)
@@ -68,10 +70,5 @@ open class KubernetesContext(
 	override fun getReplicas(resource: HasMetadata): Replicator? {
 		return replicasOperator.get(resource)
 	}
-
-	override fun getDashboardUrl(): String {
-		return dashboard.get()
-	}
-
 
 }

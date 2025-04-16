@@ -237,7 +237,7 @@ object ClientMocks {
         return namedContext(name, context)
     }
 
-    fun namedContext(name: String, context: Context? = null): NamedContext {
+    fun namedContext(name: String, context: Context? = mock()): NamedContext {
         return mock {
             on { this.name } doReturn name
             on { this.context } doReturn context
@@ -484,6 +484,4 @@ object ClientMocks {
             .whenever(resource).involvedObject
         return resource
     }
-
-
 }

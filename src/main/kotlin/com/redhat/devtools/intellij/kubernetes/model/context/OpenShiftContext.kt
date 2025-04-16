@@ -11,7 +11,6 @@
 package com.redhat.devtools.intellij.kubernetes.model.context
 
 import com.redhat.devtools.intellij.kubernetes.model.IResourceModelObservable
-import com.redhat.devtools.intellij.kubernetes.model.client.ClientAdapter
 import com.redhat.devtools.intellij.kubernetes.model.client.OSClientAdapter
 import com.redhat.devtools.intellij.kubernetes.model.dashboard.OpenShiftDashboard
 import com.redhat.devtools.intellij.kubernetes.model.resource.IResourceOperator
@@ -30,7 +29,7 @@ import io.fabric8.openshift.client.OpenShiftClient
 open class OpenShiftContext(
 	context: NamedContext,
 	modelChange: IResourceModelObservable,
-	client: OSClientAdapter,
+	client: OSClientAdapter
 ) : ActiveContext<Project, OpenShiftClient>(
 		context,
 		modelChange,
@@ -43,6 +42,7 @@ open class OpenShiftContext(
 ) {
 
 	override val namespaceKind =  ProjectsOperator.KIND
+
 	private val replicasOperator = OpenShiftReplicas(
 		NonCachingSingleResourceOperator(client),
 		object: ResourcesRetrieval {
@@ -52,11 +52,13 @@ open class OpenShiftContext(
 		}
 	)
 
-	override fun getInternalResourceOperators(client: ClientAdapter<out OpenShiftClient>): List<IResourceOperator<out HasMetadata>> {
+	override fun getInternalResourceOperators(): List<IResourceOperator<out HasMetadata>> {
 		return OperatorFactory.createOpenShift(client)
 	}
 
-	override fun isOpenShift() = true
+	override fun isOpenShift(): Boolean {
+		return true
+	}
 
 	override fun setReplicas(replicas: Int, replicator: Replicator) {
 		replicasOperator.set(replicas, replicator)
@@ -64,9 +66,5 @@ open class OpenShiftContext(
 
 	override fun getReplicas(resource: HasMetadata): Replicator? {
 		return replicasOperator.get(resource)
-	}
-
-	override fun getDashboardUrl(): String {
-		return dashboard.get()
 	}
 }

@@ -83,7 +83,7 @@ open class ResourceModel : IResourceModel {
     }
 
     protected open val allContexts: IAllContexts by lazy {
-        AllContexts(IActiveContext.Factory::create, modelChange)
+        AllContexts(IActiveContext.Factory::createLazyOpenShift, modelChange)
     }
 
     override fun setCurrentContext(context: IContext) {
