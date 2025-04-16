@@ -58,11 +58,21 @@ abstract class ClientAdapter<C : KubernetesClient>(private val fabric8Client: C)
 
     companion object Factory {
 
+        const val TIMEOUT_CONNECTION = 5000
+        const val TIMEOUT_REQUEST = 5000
+        const val LIMIT_RECONNECT = 2
+
         fun create(
             namespace: String? = null,
             context: String? = null,
             clientBuilder: KubernetesClientBuilder? = null,
-            createConfig: (context: String?) -> Config = { context -> Config.autoConfigure(context) },
+            createConfig: (context: String?) -> Config = { context ->
+                val config = Config.autoConfigure(context)
+                config.connectionTimeout = TIMEOUT_CONNECTION
+                config.requestTimeout = TIMEOUT_REQUEST
+                config.watchReconnectLimit = LIMIT_RECONNECT
+                config
+            },
             externalTrustManagerProvider: ((toIntegrate: List<X509ExtendedTrustManager>) -> X509TrustManager)? = null
         ): ClientAdapter<out KubernetesClient> {
             KubeConfigEnvValue.copyToSystem()
