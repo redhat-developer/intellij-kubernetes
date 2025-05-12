@@ -363,8 +363,7 @@ class ResourceEditorTest {
         // when
         editor.push(true)
         // then
-        // hides 1) before pushing, 2) after pushing by calling #update
-        verify(notifications, times(2)).hideAll()
+        verify(notifications).hideAll()
     }
 
     @Test

@@ -11,6 +11,7 @@
 package com.redhat.devtools.intellij.kubernetes.settings
 
 import com.intellij.openapi.options.SearchableConfigurable
+import com.redhat.devtools.intellij.kubernetes.settings.Settings.Companion.EDITOR_SYNC_ENABLED_DEFAULT
 import org.jetbrains.annotations.Nls
 import javax.swing.JComponent
 
@@ -51,11 +52,11 @@ internal class SettingsConfigurable: SearchableConfigurable {
     override fun getId(): String = ID
 
     private fun isEditorSyncEnabled(): Boolean {
-        return Settings.getInstance().isEditorSyncEnabled()
+        return Settings.getInstance()?.isEditorSyncEnabled() ?: EDITOR_SYNC_ENABLED_DEFAULT
     }
 
     private fun setEditorSyncEnabled(enabled: Boolean) {
-        Settings.getInstance().setEditorSyncEnabled(enabled)
+        Settings.getInstance()?.setEditorSyncEnabled(enabled)
     }
 
 }

@@ -38,6 +38,7 @@ import com.redhat.devtools.intellij.kubernetes.model.util.ResourceException
 import com.redhat.devtools.intellij.kubernetes.model.util.toMessage
 import com.redhat.devtools.intellij.kubernetes.model.util.toTitle
 import com.redhat.devtools.intellij.kubernetes.settings.Settings
+import com.redhat.devtools.intellij.kubernetes.settings.Settings.Companion.EDITOR_SYNC_ENABLED_DEFAULT
 import com.redhat.devtools.intellij.kubernetes.settings.Settings.Companion.PROP_EDITOR_SYNC_ENABLED
 import com.redhat.devtools.intellij.kubernetes.settings.SettingsChangeListener
 import io.fabric8.kubernetes.api.model.HasMetadata
@@ -72,7 +73,7 @@ open class ResourceEditor(
     private val diff: ResourceDiff = ResourceDiff(project),
     // for mocking purposes
     protected val editorResources: EditorResources = EditorResources(resourceModel),
-    private val settings: Settings = Settings.getInstance(),
+    private val settings: Settings? = Settings.getInstance(),
     private val connection: MessageBusConnection = ApplicationManager.getApplication().messageBus.connect()
 ) : Disposable, IDisposedState by DisposedState() {
 
@@ -125,7 +126,7 @@ open class ResourceEditor(
     }
 
     private fun showNotifications(editorResources: Collection<EditorResource>) {
-        val syncEnabled = Settings.getInstance().isEditorSyncEnabled()
+        val syncEnabled = isEditorSyncEnabled()
         if (editorResources.size == 1) {
             // show notification for 1 resource
             val editorResource = editorResources.firstOrNull() ?: return
@@ -263,7 +264,7 @@ open class ResourceEditor(
     }
 
     fun startWatch(): ResourceEditor {
-        if (settings.isEditorSyncEnabled()) {
+        if (isEditorSyncEnabled()) {
             editorResources.watchAll()
         }
         return this
@@ -317,13 +318,13 @@ open class ResourceEditor(
             }
 
             override fun removed(removed: Any) {
-                if (settings.isEditorSyncEnabled()) {
+                if (isEditorSyncEnabled()) {
                     updateDeleted(removed as? HasMetadata)
                 }
             }
 
             override fun modified(modified: Any) {
-                if (settings.isEditorSyncEnabled()) {
+                if (isEditorSyncEnabled()) {
                     update()
                 }
             }
@@ -438,5 +439,9 @@ open class ResourceEditor(
         resourceModel.removeListener(onNamespaceContextChanged)
         connection.dispose()
         editorResources.dispose()
+    }
+
+    private fun isEditorSyncEnabled(): Boolean {
+        return settings?.isEditorSyncEnabled() ?: EDITOR_SYNC_ENABLED_DEFAULT
     }
 }
