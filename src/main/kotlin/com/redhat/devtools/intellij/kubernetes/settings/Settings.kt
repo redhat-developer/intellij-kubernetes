@@ -17,6 +17,7 @@ import com.intellij.openapi.components.SimplePersistentStateComponent
 import com.intellij.openapi.components.State
 import com.intellij.openapi.components.Storage
 import com.intellij.openapi.components.service
+import com.intellij.openapi.diagnostic.logger
 import com.redhat.devtools.intellij.kubernetes.settings.Settings.SettingsState
 
 @Service
@@ -28,11 +29,15 @@ class Settings: SimplePersistentStateComponent<SettingsState>(SettingsState()) {
 
     companion object {
         const val PROP_EDITOR_SYNC_ENABLED: String = "com.redhat.devtools.intellij.kubernetes.settings.editor.notifications"
+        const val EDITOR_SYNC_ENABLED_DEFAULT = true
 
-        private const val EDITOR_SYNC_ENABLED_DEFAULT = true
-
-        fun getInstance(): Settings {
-            return ApplicationManager.getApplication().service()
+        fun getInstance(): Settings? {
+            return try {
+                ApplicationManager.getApplication().service()
+            } catch (e: Exception) {
+                logger<Settings>().warn("Could not load settings", e)
+                null
+            }
         }
     }
 
