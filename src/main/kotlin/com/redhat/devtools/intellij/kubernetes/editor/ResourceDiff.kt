@@ -14,8 +14,9 @@ import com.intellij.diff.DiffContentFactory
 import com.intellij.diff.DiffDialogHints
 import com.intellij.diff.DiffManager
 import com.intellij.diff.DiffRequestFactory
-import com.intellij.diff.actions.impl.MutableDiffRequestChain
+import com.intellij.diff.chains.SimpleDiffRequestChain
 import com.intellij.diff.contents.DocumentContent
+import com.intellij.diff.requests.SimpleDiffRequest
 import com.intellij.diff.util.DiffUserDataKeys
 import com.intellij.diff.util.Side
 import com.intellij.openapi.application.ApplicationManager
@@ -42,8 +43,9 @@ open class ResourceDiff(private val project: Project) {
      * @param onClosed the lambda that's run when the diff (window) is closed
      */
     fun open(file: VirtualFile, toCompare: String, onClosed: () -> Unit) {
-        val chain: MutableDiffRequestChain = createDiffRequestChain(file, toCompare) ?: return
-        scrollToFirstChange(chain)
+        val request = createDiffRequest(file, toCompare)
+        val chain = SimpleDiffRequestChain(request)
+        scrollToFirstChange(request, chain)
         runInUI {
             val hint = DiffDialogHints(WindowWrapper.Mode.NON_MODAL, null) { wrapper ->
                 UIUtil.runWhenWindowClosed(wrapper.window) { onClosed.invoke() }
@@ -52,20 +54,24 @@ open class ResourceDiff(private val project: Project) {
         }
     }
 
-    private fun createDiffRequestChain(file: VirtualFile, toCompare: String): MutableDiffRequestChain {
+    private fun createDiffRequest(file: VirtualFile, toCompare: String): SimpleDiffRequest {
         val contentFactory = DiffContentFactory.getInstance()
         val left = contentFactory.create(project, file)
         val right = contentFactory.create(project, toCompare, file.fileType)
-        val chain = MutableDiffRequestChain(left, right)
         val requestFactory = DiffRequestFactory.getInstance()
-        chain.windowTitle = requestFactory.getTitle(file)
-        chain.title1 = requestFactory.getContentTitle(file)
-        chain.title2 = "Cluster Resource"
-        return chain
+        return SimpleDiffRequest(requestFactory.getTitle(file),
+            left,
+            right,
+            requestFactory.getContentTitle(file),
+            "Cluster resource"
+        )
     }
 
-    private fun scrollToFirstChange(chain: MutableDiffRequestChain) {
-        val content = chain.content2
+    private fun scrollToFirstChange(request: SimpleDiffRequest, chain: SimpleDiffRequestChain) {
+        if (request.contents.size < 2) {
+            return
+        }
+        val content = request.contents[1]
         if (content !is DocumentContent) {
             return
         }
@@ -74,7 +80,7 @@ open class ResourceDiff(private val project: Project) {
             return
         }
         val currentLine = editors[0].caretModel.logicalPosition.line
-        chain.putRequestUserData(DiffUserDataKeys.SCROLL_TO_LINE, Pair.create(Side.RIGHT, currentLine))
+        chain.putUserData(DiffUserDataKeys.SCROLL_TO_LINE, Pair(Side.RIGHT, currentLine))
     }
 
     /** for testing purposes */
