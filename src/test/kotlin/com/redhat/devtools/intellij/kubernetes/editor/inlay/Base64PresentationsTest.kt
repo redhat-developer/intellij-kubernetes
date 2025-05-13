@@ -14,10 +14,10 @@ import com.intellij.codeInsight.hints.InlayHintsSink
 import com.intellij.codeInsight.hints.presentation.PresentationFactory
 import com.intellij.openapi.editor.Editor
 import com.intellij.psi.PsiElement
-import com.nhaarman.mockitokotlin2.any
-import com.nhaarman.mockitokotlin2.mock
-import com.nhaarman.mockitokotlin2.never
-import com.nhaarman.mockitokotlin2.verify
+import org.mockito.kotlin.any
+import org.mockito.kotlin.mock
+import org.mockito.kotlin.never
+import org.mockito.kotlin.verify
 import com.redhat.devtools.intellij.common.validation.KubernetesTypeInfo
 import com.redhat.devtools.intellij.kubernetes.editor.inlay.base64.Base64Presentations
 import com.redhat.devtools.intellij.kubernetes.editor.mocks.createYAMLKeyValue

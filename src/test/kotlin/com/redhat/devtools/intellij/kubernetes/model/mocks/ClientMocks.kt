@@ -10,10 +10,10 @@
  ******************************************************************************/
 package com.redhat.devtools.intellij.kubernetes.model.mocks
 
-import com.nhaarman.mockitokotlin2.any
-import com.nhaarman.mockitokotlin2.doReturn
-import com.nhaarman.mockitokotlin2.mock
-import com.nhaarman.mockitokotlin2.whenever
+import org.mockito.kotlin.any
+import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.mock
+import org.mockito.kotlin.whenever
 import com.redhat.devtools.intellij.kubernetes.model.util.getApiVersion
 import com.redhat.devtools.intellij.kubernetes.model.util.getHighestPriorityVersion
 import io.fabric8.kubernetes.api.Pluralize

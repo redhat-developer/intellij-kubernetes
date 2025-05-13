@@ -13,7 +13,7 @@ package com.redhat.devtools.intellij.kubernetes.editor
 
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.VirtualFile
-import com.nhaarman.mockitokotlin2.*
+import org.mockito.kotlin.*
 import com.redhat.devtools.intellij.common.validation.KubernetesResourceInfo
 import com.redhat.devtools.intellij.kubernetes.editor.ResourceEditorTabTitleProvider.Companion.TITLE_UNKNOWN_NAME
 import com.redhat.devtools.intellij.kubernetes.model.mocks.Mocks.kubernetesResourceInfo
