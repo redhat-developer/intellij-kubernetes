@@ -10,8 +10,8 @@
  ******************************************************************************/
 package com.redhat.devtools.intellij.kubernetes.model.util
 
-import com.nhaarman.mockitokotlin2.doReturn
-import com.nhaarman.mockitokotlin2.whenever
+import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.whenever
 import com.redhat.devtools.intellij.kubernetes.model.mocks.ClientMocks.resource
 import com.redhat.devtools.intellij.kubernetes.model.mocks.PodMockBuilder
 import com.redhat.devtools.intellij.kubernetes.model.mocks.podStatus

@@ -12,8 +12,8 @@ package com.redhat.devtools.intellij.kubernetes.editor.mocks
 
 import com.intellij.json.psi.JsonObject
 import com.intellij.json.psi.JsonProperty
-import com.nhaarman.mockitokotlin2.doReturn
-import com.nhaarman.mockitokotlin2.mock
+import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.mock
 import com.redhat.devtools.intellij.kubernetes.editor.util.getSelector
 import org.jetbrains.yaml.psi.YAMLKeyValue
 import org.jetbrains.yaml.psi.YAMLMapping

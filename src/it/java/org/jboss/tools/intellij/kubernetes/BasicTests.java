@@ -14,11 +14,14 @@ import com.intellij.remoterobot.RemoteRobot;
 import com.intellij.remoterobot.fixtures.ComponentFixture;
 import com.intellij.remoterobot.fixtures.dataExtractor.RemoteText;
 import com.redhat.devtools.intellij.commonuitest.UITestRunner;
+import com.redhat.devtools.intellij.commonuitest.fixtures.dialogs.FlatWelcomeFrame;
+import com.redhat.devtools.intellij.commonuitest.fixtures.mainidewindow.toolwindowspane.ToolWindowLeftToolbar;
 import com.redhat.devtools.intellij.commonuitest.utils.project.CreateCloseUtils;
 import com.redhat.devtools.intellij.commonuitest.utils.runner.IntelliJVersion;
-import com.redhat.devtools.intellij.commonuitest.fixtures.mainidewindow.toolwindowspane.ToolWindowPane;
+import com.redhat.devtools.intellij.commonuitest.utils.testextension.ScreenshotAfterTestFailExtension;
 import org.jboss.tools.intellij.kubernetes.fixtures.mainidewindow.KubernetesToolsFixture;
 
+import org.jboss.tools.intellij.kubernetes.tests.ClusterConnectedTest;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -26,11 +29,11 @@ import org.junit.jupiter.api.Test;
 import static com.intellij.remoterobot.stepsProcessing.StepWorkerKt.step;
 import static com.intellij.remoterobot.utils.RepeatUtilsKt.waitFor;
 
-import org.jboss.tools.intellij.kubernetes.tests.ClusterConnectedTest;
 import org.jboss.tools.intellij.kubernetes.tests.CreateResourceByEditTest;
 import org.jboss.tools.intellij.kubernetes.tests.OpenResourceEditorTest;
 import org.jboss.tools.intellij.kubernetes.tests.EditResourceTest;
 import org.jboss.tools.intellij.kubernetes.tests.CreateAnotherTypeResourceByEditTest;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.time.Duration;
 import java.util.List;
@@ -40,14 +43,16 @@ import java.util.List;
  *
  * @author olkornii@redhat.com
  */
+@ExtendWith(ScreenshotAfterTestFailExtension.class)
 public class BasicTests {
 
     private static RemoteRobot robot;
     private static ComponentFixture kubernetesViewTree;
+    private static final String CLUSTER_NAME = "minikube";
 
     @BeforeAll
     public static void connect() {
-        robot = UITestRunner.runIde(IntelliJVersion.COMMUNITY_V_2024_1, 8580);
+        robot = UITestRunner.runIde(IntelliJVersion.COMMUNITY_V_2024_3, 8580);
         CreateCloseUtils.createEmptyProject(robot, "test-project");
         openKubernetesTab();
 
@@ -58,39 +63,42 @@ public class BasicTests {
 
     @AfterAll
     public static void closeIde() {
+        CreateCloseUtils.closeProject(robot);
+        FlatWelcomeFrame flatWelcomeFrame = robot.find(FlatWelcomeFrame.class, Duration.ofSeconds(10));
+        flatWelcomeFrame.clearWorkspace();
         UITestRunner.closeIde();
     }
 
     @Test
     public void checkClusterConnected() {
-        step("New Empty Project", () -> ClusterConnectedTest.checkClusterConnected(kubernetesViewTree));
+        step("New Empty Project", () -> new ClusterConnectedTest(CLUSTER_NAME, kubernetesViewTree, robot).checkClusterConnected());
     }
 
     @Test
     public void openResourceEditor() {
-        step("open Resource Editor", () -> OpenResourceEditorTest.checkResourceEditor(robot, kubernetesViewTree));
+        step("Open Resource Editor", () -> new OpenResourceEditorTest(CLUSTER_NAME, kubernetesViewTree, robot).checkResourceEditor());
     }
 
     @Test
     public void editResource() {
-        step("edit Resource", () -> EditResourceTest.editResource(robot, kubernetesViewTree));
+        step("Edit Resource", () -> new EditResourceTest(CLUSTER_NAME, kubernetesViewTree, robot).editResource());
     }
 
     @Test
     public void createResourceByEdit() {
-        step("create Resource", () -> CreateResourceByEditTest.createResourceByEdit(robot, kubernetesViewTree));
+        step("Create Resource", () -> new CreateResourceByEditTest(CLUSTER_NAME, kubernetesViewTree, robot).createResourceByEdit());
 
-        step("delete Resource", () -> CreateResourceByEditTest.deleteResource(robot, kubernetesViewTree));
+        step("Delete Resource", () -> new CreateResourceByEditTest(CLUSTER_NAME, kubernetesViewTree, robot).deleteResource());
     }
 
-    //    @Test
+    @Test
     public void createAnotherResourceTypeByEdit() {
-        step("create another type of Resource", () -> CreateAnotherTypeResourceByEditTest.createAnotherTypeResourceByEdit(robot, kubernetesViewTree));
+        step("Create another type of Resource", () -> new CreateAnotherTypeResourceByEditTest(CLUSTER_NAME, kubernetesViewTree, robot).createAnotherTypeResourceByEdit());
     }
 
     private static void openKubernetesTab(){
-        final ToolWindowPane toolWindowPane = robot.find(ToolWindowPane.class, Duration.ofSeconds(5));
-        toolWindowPane.stripeButton("Kubernetes", false).click();
+        ToolWindowLeftToolbar toolWindowToolbar = robot.find(ToolWindowLeftToolbar.class, Duration.ofSeconds(10));
+        toolWindowToolbar.clickStripeButton("Kubernetes");
     }
 
     private static boolean isKubernetesViewTreeAvailable(){
