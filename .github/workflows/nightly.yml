@@ -1,0 +1,63 @@
+name: Nightly Build
+on:
+  schedule:
+    - cron: '0 1 * * *'
+  workflow_dispatch:
+
+jobs:
+  should-build-change:
+    runs-on: ubuntu-latest
+    outputs:
+      repo-cache-hit: ${{ steps.cache-last-commit.outputs.cache-hit }}
+    steps:
+      - name: Fetch Sources
+        uses: actions/checkout@v4
+      - run: |
+          git rev-parse HEAD >> lastCommit
+      - name: Check New Changes
+        id: cache-last-commit
+        uses: actions/cache@v4
+        with:
+          path: lastCommit
+          key: lastCommit-${{ hashFiles('lastCommit') }}
+
+  # Prepare and publish the plugin to JetBrains Marketplace repository
+  pre-release:
+    needs: should-build-change
+    if: ${{ needs.should-build-change.outputs.repo-cache-hit != 'true' || github.event_name != 'schedule' }}
+    name: Publish Plugin
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      # Check out current repository
+      - name: Fetch Sources
+        uses: actions/checkout@v4
+
+      # Set up Java environment for the next steps
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          java-version: 17
+          distribution: 'temurin'
+          cache: 'gradle'
+
+      # Setup Gradle
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@d9c87d481d55275bb5441eef3fe0e46805f9ef70 #v3.5.0
+        with:
+          add-job-summary: 'on-failure'
+          add-job-summary-as-pr-comment: 'on-failure'
+          validate-wrappers: true
+          gradle-home-cache-cleanup: true
+
+      - name: Publish Plugin
+        env:
+          PUBLISH_TOKEN: ${{ secrets.JETBRAINS_MARKETPLACE_TOKEN }}
+        run: |
+          CURRENT_VERSION=$(grep "projectVersion=" gradle.properties | cut -d'=' -f2)
+          BASE_VERSION=${CURRENT_VERSION%-SNAPSHOT}
+          TIMESTAMP=$(date +'%Y%m%d-%H%M%S')
+          PLUGIN_VERSION="${BASE_VERSION}-${TIMESTAMP}"
+          ./gradlew publishPlugin -PjetBrainsToken=$PUBLISH_TOKEN -PprojectVersion=${PLUGIN_VERSION} -PjetBrainsChannel=nightly
