@@ -68,6 +68,24 @@ class PsiElementExtensionsTest {
     }
 
     @Test
+    fun `#getMatchLabels should return null if selector only has matchExpressions`() {
+        // given
+        val hasMatchExpressions = createYAMLMapping(listOf(
+            createYAMLKeyValue("kind", "Deployment")
+        ))
+        hasMatchExpressions.createMatchExpressions(
+            createYAMLSequence(listOf(
+                createYAMLSequenceItem("jedi", "In", listOf("yoda", "obiwan", "luke"))
+            ))
+        )
+        // when
+        val isNull = yamlElement.getMatchLabels()
+
+        // then
+        assertThat(isNull).isNull()
+    }
+
+    @Test
     fun `#hasMatchLabels should return true when labels exist`() {
         // given
         val matching = createYAMLKeyValue("jedi", "yoda")

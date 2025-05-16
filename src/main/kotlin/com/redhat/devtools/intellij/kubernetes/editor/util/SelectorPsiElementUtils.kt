@@ -15,8 +15,10 @@ import com.intellij.openapi.util.text.StringUtil
 import com.intellij.psi.PsiElement
 import org.jetbrains.yaml.psi.YAMLKeyValue
 import org.jetbrains.yaml.psi.YAMLMapping
+import org.jetbrains.yaml.psi.YAMLScalar
 import org.jetbrains.yaml.psi.YAMLSequence
 import org.jetbrains.yaml.psi.YAMLSequenceItem
+import org.jetbrains.yaml.psi.YAMLValue
 
 private const val KEY_MATCH_LABELS = "matchLabels"
 private const val KEY_MATCH_EXPRESSIONS = "matchExpressions"
@@ -142,11 +144,19 @@ fun YAMLMapping.getMatchLabels(): YAMLMapping? {
     val matchLabels = selector.getKeyValueByKey(KEY_MATCH_LABELS)
     return if (matchLabels != null) {
         matchLabels.value as? YAMLMapping?
-    } else {
+    } else if (selector.getKeyValueByKey(KEY_MATCH_EXPRESSIONS) == null) {
         // Service can have matchLabels as direct children without the 'matchLabels' key.
+        // check if selector has matchExpressions which are not matchLabels
         selector
+    } else {
+        null
     }
 }
+
+private fun YAMLValue.isYamlStringValue(): Boolean {
+    return this is YAMLScalar && this.textValue != null
+}
+
 
 private fun JsonObject.getMatchLabels(): JsonObject? {
     val selector = this.getSelector() ?: return null
