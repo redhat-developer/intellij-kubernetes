@@ -1,8 +1,8 @@
 [versions]
 # libraries
-kubernetes-client = "7.1.0"
-devtools-common = "1.9.10"
-jackson-core = "2.17.0"
+kubernetes-client = "7.3.0"
+devtools-common = "1.9.11-SNAPSHOT"
+jackson-core = "2.19.0"
 commons-lang3 = "3.12.0"
 assertj-core = "3.22.0"
 mockito = "5.12.0"
