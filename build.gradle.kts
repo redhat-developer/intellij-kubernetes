@@ -15,6 +15,12 @@ group = "com.redhat.devtools.intellij"
 version = providers.gradleProperty("projectVersion").get() // Plugin version
 val ideaVersion = providers.gradleProperty("platformVersion").get()
 val javaVersion = 17
+val ideaVersionInt = when {
+    // e.g. '20XY.Z'
+    ideaVersion.length == 6 -> ideaVersion.replace(".", "").substring(2).toInt()
+    // e.g. '2XY.ABCDE.12'
+    else -> ideaVersion.substringBefore(".").toInt()
+}
 
 // Set the JVM language level used to build the project.
 kotlin {
@@ -29,16 +35,12 @@ java {
     targetCompatibility = JavaVersion.toVersion(javaVersion)
 }
 
-
 repositories {
     mavenLocal()
-    /*
-     * github repo with intellij-common needs to be listed before jboss repository. Both have 1.9.9-SNAPSHOT
-     * First hit wins regardless of timestamp
-     */
+    maven { url = uri("https://raw.githubusercontent.com/redhat-developer/intellij-common-ui-test-library/repository/snapshots") }
+    maven { url = uri("https://raw.githubusercontent.com/redhat-developer/intellij-common-ui-test-library/repository/releases") }
     maven { url = uri("https://raw.githubusercontent.com/redhat-developer/intellij-common/repository/snapshots") }
     maven { url = uri("https://raw.githubusercontent.com/redhat-developer/intellij-common/repository/releases") }
-    maven { url = uri("https://repository.jboss.org") }
     mavenCentral()
     intellijPlatform {
         defaultRepositories()
@@ -56,7 +58,7 @@ dependencies {
         /*
          * platformVersion check for JSON breaking changes since 2024.3
          */
-        if (ideaVersion.startsWith("2024.3") || ideaVersion.startsWith("25")) {
+        if (ideaVersionInt >= 243) {
             platformBundledPlugins.add("com.intellij.modules.json")
         }
         println("use bundled Plugins: $platformBundledPlugins")
@@ -74,10 +76,10 @@ dependencies {
     }
 
     implementation(libs.devtools.common)
+    implementation(libs.openshift.client)
     implementation(libs.kubernetes.client)
     implementation(libs.kubernetes.model)
     implementation(libs.kubernetes.model.common)
-    implementation(libs.openshift.client)
     implementation(libs.kubernetes.httpclient.okhttp)
     implementation(libs.jackson.core)
     implementation(libs.commons.lang3)
@@ -135,9 +137,7 @@ intellijPlatform {
 
 tasks {
     fun supportsEnhancedClassRedefinition(): Boolean {
-        val platformVersion = findProperty("platformVersion").toString().toFloatOrNull()
-        return platformVersion != null
-                && platformVersion >= 2024.1
+        return ideaVersionInt >= 241
     }
 
     wrapper {
