@@ -31,6 +31,7 @@ It is available for install from the [JetBrains Marketplace](https://plugins.jet
  - Scale the replicated pods for deployments, deployment configs, replica/stateful sets or replication controllers
  - Describe pods similar to `kubectl describe` but formatting it as yaml for easy collapsing etc.
  - Listing several config files in the KUBECONFIG env variable
+ - Instant display of labeled resources that match a given selector when editing YAML
 
 
 ## Features
@@ -77,8 +78,18 @@ For instance if you're editing a pod, the editor validates it by a kubernetes po
 
 ![editor schema](images/editor-schema.png)
 
-#### Push (Save) to Cluster
+#### Inline hints when editing
+When editing a YAML manifest, you get instantly informed of the number of labeled resources that match your selector expression as you type.
+Clicking the hint you get the details of the matching targets. 
+The opposite works too, of course: you get the matching selectors for your labels.
+![hint matching labels](images/editor-labels-matching-selectors.png)
 
+Base64 encoded values in secrets or configmaps can be edited transparently.
+A hint displays the raw value, and a dialog allows you to provide it unencoded.
+![hint matching labels](images/editor-bas64-encoded-value.png)
+
+
+#### Push (Save) to Cluster
 User can push the local changes made to the cluster in order to update an existing resource or create a new resource.
 The editor is saving the changes to the current context (cluster, namespace and user) that's defined in the kubeconfig.
 There is a `Push` button available in the editor toolbar to make the action more discoverable.
