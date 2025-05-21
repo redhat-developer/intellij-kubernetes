@@ -3,17 +3,17 @@
 kubernetes-client = "7.3.0"
 devtools-common = "1.9.11-SNAPSHOT"
 jackson-core = "2.19.0"
-commons-lang3 = "3.12.0"
+commons-lang3 = "3.17.0"
 assertj-core = "3.22.0"
 mockito = "5.12.0"
-mockito-kotlin = "2.2.0"
-devtools-common-ui-test = "0.4.4-SNAPSHOT"
-junit-platform = "1.11.3"
-junit-jupiter = "5.11.3"
-gson = "2.8.9"
+mockito-kotlin = "5.4.0"
+devtools-common-ui-test = "0.4.4"
+junit-platform = "1.12.2"
+junit-jupiter = "5.12.2"
+gson = "2.10.1"
 
 # plugins
-gradleIntelliJPlugin = "2.2.1"
+gradleIntelliJPlugin = "2.5.0"
 kotlinJvm = "2.0.20"
 
 [libraries]
@@ -28,7 +28,7 @@ commons-lang3 = { group = "org.apache.commons", name = "commons-lang3", version.
 kotlin-test-junit = { group = "org.jetbrains.kotlin", name = "kotlin-test-junit", version.ref = "kotlinJvm" }
 assertj-core = { group = "org.assertj", name = "assertj-core", version.ref = "assertj-core" }
 mockito = { group = "org.mockito", name = "mockito-core", version.ref = "mockito" }
-mockito-kotlin = { group = "com.nhaarman.mockitokotlin2", name = "mockito-kotlin", version.ref = "mockito-kotlin" }
+mockito-kotlin = { group = "org.mockito.kotlin", name = "mockito-kotlin", version.ref = "mockito-kotlin" }
 devtools-common-ui-test = { group = "com.redhat.devtools.intellij", name = "intellij-common-ui-test-library", version.ref = "devtools-common-ui-test" }
 junit-platform-launcher = { group = "org.junit.platform", name = "junit-platform-launcher", version.ref = "junit-platform" }
 junit-platform-suite = { group = "org.junit.platform", name = "junit-platform-suite", version.ref = "junit-platform" }

@@ -22,6 +22,7 @@ import org.jboss.tools.intellij.kubernetes.fixtures.menus.RightClickMenu;
 
 import java.time.Duration;
 import java.util.List;
+import java.util.Optional;
 
 import static com.intellij.remoterobot.search.locators.Locators.byXpath;
 import static com.intellij.remoterobot.utils.RepeatUtilsKt.waitFor;
@@ -35,62 +36,57 @@ public class CreateResourceByEditTest extends AbstractKubernetesTest{
 
     private static final String newResourceName = "newresourcename1";
 
-    public static void createResourceByEdit(RemoteRobot robot, ComponentFixture kubernetesViewTree){
-        openResourceContentList(new String[]{"Nodes"}, kubernetesViewTree);
-        RemoteText selectedResource = getResourceByIdInParent("Nodes", 0, kubernetesViewTree);
-        selectedResource.doubleClick();
+    public CreateResourceByEditTest(String clusterName, ComponentFixture kubernetesViewTree, RemoteRobot remoteRobot) {
+        super(clusterName, kubernetesViewTree, remoteRobot);
+    }
+
+    public void createResourceByEdit(){
+        getFirstResourceInNodes().doubleClick();
 
         EditorsSplittersFixture editorSplitter = robot.find(EditorsSplittersFixture.class);
         Keyboard myKeyboard = new Keyboard(robot);
 
         String text = "\"" + newResourceName;
 
-        RemoteText namePlace = findResourceNamePosition(robot, editorSplitter);
+        RemoteText namePlace = findResourceNamePosition(editorSplitter);
         namePlace.doubleClick();
         myKeyboard.enterText(text); // replace with new name
 
         ActionToolbarMenu toolbarMenu = robot.find(ActionToolbarMenu.class);
         toolbarMenu.pushToCluster();
 
-        waitFor(Duration.ofSeconds(15), Duration.ofSeconds(1), "New resource was not been created.", () -> isResourceCreated(kubernetesViewTree, newResourceName, true)); // wait 15 seconds for Nodes load
+        waitFor(Duration.ofSeconds(15), Duration.ofSeconds(1), "New resource was not been created.", () -> isResourceCreated(newResourceName, true)); // wait 15 seconds for Nodes load
 
         editorSplitter.closeEditor(); // close editor
-        hideClusterContent(kubernetesViewTree);
+        hideClusterContent();
     }
 
-    public static void deleteResource(RemoteRobot robot, ComponentFixture kubernetesViewTree){
-        openResourceContentList(new String[]{"Nodes"}, kubernetesViewTree);
-        kubernetesViewTree.findText(newResourceName).click(MouseButton.RIGHT_BUTTON);
+    public void deleteResource(){
+        kubernetesViewTree.findText(clusterName).rightClick();
         RightClickMenu rightClickMenu = robot.find(RightClickMenu.class);
+        rightClickMenu.select("Refresh");
+        RemoteText toDelete = getNamedResourceInNodes(newResourceName);
+        toDelete.click(MouseButton.RIGHT_BUTTON);
+        rightClickMenu = robot.find(RightClickMenu.class);
         rightClickMenu.select("Delete"); // delete the resource
 
-        waitFor(Duration.ofSeconds(15), Duration.ofSeconds(1), "Delete dialog did not appear.", () -> acceptDeleteDialog(robot));
-        waitFor(Duration.ofSeconds(15), Duration.ofSeconds(1), "New resource was not been deleted.", () -> isResourceDeleted(kubernetesViewTree, newResourceName));
-        hideClusterContent(kubernetesViewTree);
+        waitFor(Duration.ofSeconds(15), Duration.ofSeconds(1), "Delete dialog did not appear.", this::acceptDeleteDialog);
+        waitFor(Duration.ofSeconds(15), Duration.ofSeconds(1), "New resource was not been deleted.", () -> isResourceDeleted(newResourceName));
+        hideClusterContent();
     }
 
-    private static RemoteText findResourceNamePosition(RemoteRobot robot, EditorsSplittersFixture editorSplitter){
-        scrollToVisible(" name:", robot);
+    private RemoteText findResourceNamePosition(EditorsSplittersFixture editorSplitter){
+        scrollToVisible(" name:");
 
         ComponentFixture textFixture = editorSplitter.getEditorTextFixture();
-        List<RemoteText> remoteText = textFixture.findAllText();
 
-        int nameId = 0;
-        boolean nameFound = false;
-        for (RemoteText actual_remote_text : remoteText){
-            if ("name".equals(actual_remote_text.getText())){
-                nameFound = true;
-                break;
-            }
-            nameId++;
-        }
-
-        assertTrue(nameFound, "Resource name not found.");
-
-        return remoteText.get(nameId+3); // +1 because we need the next one, +1 because between every 2 real elements is space, +1 because here is the ":"
+        List<RemoteText> allVisibleElements = textFixture.findAllText();
+        Optional<RemoteText> resourceText = allVisibleElements.stream().filter(remoteText -> remoteText.getText().equals("name")).findFirst();
+        assertTrue(resourceText.isPresent());
+        return allVisibleElements.get(allVisibleElements.indexOf(resourceText.get())+3); // +1 because we need the next one, +1 because between every 2 real elements is space, +1 because here is the ":"
     }
 
-    private static boolean acceptDeleteDialog(RemoteRobot robot){
+    private boolean acceptDeleteDialog(){
         try {
             robot.find(ComponentFixture.class, byXpath("//div[@text='Yes']")).click();
             return true;

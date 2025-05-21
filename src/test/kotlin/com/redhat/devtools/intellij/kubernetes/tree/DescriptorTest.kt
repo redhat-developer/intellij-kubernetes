@@ -11,7 +11,7 @@
 package com.redhat.devtools.intellij.kubernetes.tree
 
 import com.intellij.openapi.project.Project
-import com.nhaarman.mockitokotlin2.mock
+import org.mockito.kotlin.mock
 import com.redhat.devtools.intellij.kubernetes.model.IResourceModel
 import com.redhat.devtools.intellij.kubernetes.model.mocks.Fakes.pod
 import com.redhat.devtools.intellij.kubernetes.tree.TreeStructure.ResourceDescriptor

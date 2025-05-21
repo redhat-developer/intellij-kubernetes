@@ -12,10 +12,10 @@ package com.redhat.devtools.intellij.kubernetes.editor.inlay
 
 import com.intellij.json.psi.JsonProperty
 import com.intellij.psi.PsiElement
-import com.nhaarman.mockitokotlin2.any
-import com.nhaarman.mockitokotlin2.eq
-import com.nhaarman.mockitokotlin2.mock
-import com.nhaarman.mockitokotlin2.verify
+import org.mockito.kotlin.any
+import org.mockito.kotlin.eq
+import org.mockito.kotlin.mock
+import org.mockito.kotlin.verify
 import com.redhat.devtools.intellij.kubernetes.editor.inlay.base64.Base64ValueAdapter
 import com.redhat.devtools.intellij.kubernetes.editor.mocks.createJsonObject
 import com.redhat.devtools.intellij.kubernetes.editor.mocks.createJsonProperty
