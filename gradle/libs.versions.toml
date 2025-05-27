@@ -1,6 +1,6 @@
 [versions]
 # libraries
-kubernetes-client = "7.3.0"
+kubernetes-client = "7.3.1"
 devtools-common = "1.9.11-SNAPSHOT"
 jackson-core = "2.19.0"
 commons-lang3 = "3.12.0"
