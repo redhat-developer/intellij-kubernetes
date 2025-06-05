@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+ #!/usr/bin/env bash
 
 # Note: run from root
 # This is used to run and connect minikube cluster
