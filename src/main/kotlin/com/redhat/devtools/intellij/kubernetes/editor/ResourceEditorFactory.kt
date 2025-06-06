@@ -137,7 +137,7 @@ open class ResourceEditorFactory protected constructor(
     private fun createTelemetry(file: VirtualFile): TelemetryMessageBuilder.ActionMessage {
         val isLocalFile = ResourceFile.isResourceFile(file)
         return getTelemetryMessageBuilder().action(
-            "${TelemetryService.NAME_PREFIX_EDITOR} open ${
+            "${TelemetryService.NAME_PREFIX_EDITOR}open ${
                 if (isLocalFile) {
                     "cluster file"
                 } else {
