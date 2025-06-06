@@ -19,7 +19,7 @@ import com.redhat.devtools.intellij.kubernetes.editor.util.getValue
 import com.redhat.devtools.intellij.kubernetes.editor.util.setValue
 import org.jetbrains.yaml.psi.YAMLKeyValue
 
-class Base64ValueAdapter(private val element: PsiElement) {
+class Base64ValueAdapter(val element: PsiElement) {
 
 	private companion object {
 		private val CONTENT_REGEX = Regex("[^\"\n |]*", RegexOption.MULTILINE)

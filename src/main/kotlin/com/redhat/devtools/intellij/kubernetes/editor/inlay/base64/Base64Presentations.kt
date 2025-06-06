@@ -20,12 +20,13 @@ import com.intellij.openapi.project.Project
 import com.intellij.psi.PsiElement
 import com.redhat.devtools.intellij.common.validation.KubernetesTypeInfo
 import com.redhat.devtools.intellij.kubernetes.balloon.StringInputBalloon
-import com.redhat.devtools.intellij.kubernetes.editor.inlay.base64.Base64Presentations.InlayPresentationsFactory
 import com.redhat.devtools.intellij.kubernetes.editor.inlay.base64.Base64Presentations.create
 import com.redhat.devtools.intellij.kubernetes.editor.util.getBinaryData
 import com.redhat.devtools.intellij.kubernetes.editor.util.getDataValue
+import com.redhat.devtools.intellij.kubernetes.editor.util.getKey
 import com.redhat.devtools.intellij.kubernetes.editor.util.isKubernetesResource
 import com.redhat.devtools.intellij.kubernetes.model.util.trimWithEllipsis
+import com.redhat.devtools.intellij.kubernetes.telemetry.TelemetryService
 import org.jetbrains.concurrency.runAsync
 import java.awt.event.MouseEvent
 
@@ -97,12 +98,7 @@ object Base64Presentations {
 		override fun create(adapter: Base64ValueAdapter): InlayPresentation? {
 			val decoded = adapter.getDecoded() ?: return null
 			val offset = adapter.getStartOffset() ?: return null
-			val onClick = StringInputBalloon(
-				decoded,
-				onValidValue(adapter::set, editor.project),
-				editor
-			)::show
-			val presentation = create(decoded, onClick, factory) ?: return null
+			val presentation = create(decoded, { event -> onClick(adapter.element, decoded, adapter, event) }, factory) ?: return null
 			sink.addInlineElement(offset, false, presentation, false)
 			return presentation
 		}
@@ -120,6 +116,19 @@ object Base64Presentations {
 			)
 		}
 
+		private fun onClick(element: PsiElement, decoded: String, adapter: Base64ValueAdapter, event: MouseEvent) {
+			runAsync {
+				TelemetryService.instance.action("${TelemetryService.NAME_PREFIX_EDITOR_HINT}base64Hint")
+				.property(TelemetryService.PROP_PROPERTY_NAME, element.getKey()?.text)
+				.send()
+			}
+			StringInputBalloon(
+				decoded,
+				onValidValue(adapter::set, editor.project),
+				editor
+			).show(event)
+		}
+
 		private fun onValidValue(setter: (value: String, wrapAt: Int) -> Unit, project: Project?)
 				: (value: String) -> Unit {
 			return { value ->
@@ -130,7 +139,6 @@ object Base64Presentations {
 				}
 			}
 		}
-
 	}
 
 	class BinaryPresentationsFactory(element: PsiElement, sink: InlayHintsSink, editor: Editor, factory: PresentationFactory)

@@ -23,6 +23,7 @@ import io.fabric8.kubernetes.api.model.HasMetadata
 object TelemetryService {
 
     const val NAME_PREFIX_EDITOR = "editor-"
+    const val NAME_PREFIX_EDITOR_HINT = "${NAME_PREFIX_EDITOR}hint_clicked-"
     const val NAME_PREFIX_NAMESPACE = "current_namespace-"
     const val NAME_PREFIX_CONTEXT = "current_context-"
 
@@ -30,6 +31,7 @@ object TelemetryService {
     const val PROP_IS_OPENSHIFT = "is_openshift"
     const val PROP_KUBERNETES_VERSION = "kubernetes_version"
     const val PROP_OPENSHIFT_VERSION = "openshift_version"
+    const val PROP_PROPERTY_NAME = "property_name"
 
     val instance: TelemetryMessageBuilder by lazy {
         return@lazy if (!ApplicationManager.getApplication().isUnitTestMode) {

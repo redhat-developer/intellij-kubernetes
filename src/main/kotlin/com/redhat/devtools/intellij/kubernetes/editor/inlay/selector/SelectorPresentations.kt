@@ -23,8 +23,10 @@ import com.redhat.devtools.intellij.kubernetes.editor.util.getLabels
 import com.redhat.devtools.intellij.kubernetes.editor.util.getSelector
 import com.redhat.devtools.intellij.kubernetes.editor.util.getTemplate
 import com.redhat.devtools.intellij.kubernetes.editor.util.hasTemplate
+import com.redhat.devtools.intellij.kubernetes.telemetry.TelemetryService
 import com.redhat.devtools.intellij.kubernetes.usage.LabelsFilter
 import com.redhat.devtools.intellij.kubernetes.usage.SelectorsFilter
+import org.jetbrains.concurrency.runAsync
 import java.awt.Point
 import java.awt.event.MouseEvent
 import javax.swing.Icon
@@ -156,6 +158,11 @@ object SelectorPresentations {
         return { event, point ->
             val project = editor.project
             if (project != null) {
+                runAsync {
+                    TelemetryService.instance.action("${TelemetryService.NAME_PREFIX_EDITOR_HINT}selector")
+                        .property(TelemetryService.PROP_PROPERTY_NAME, hintedKeyValue.getKey()?.text)
+                        .send()
+                }
                 ShowUsagesAction.startFindUsages(hintedKeyValue, RelativePoint(event), editor)
             }
         }
