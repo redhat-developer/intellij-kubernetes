@@ -19,6 +19,7 @@ import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.never
 import com.nhaarman.mockitokotlin2.whenever
 import com.redhat.devtools.intellij.common.validation.KubernetesTypeInfo
+import com.redhat.devtools.intellij.kubernetes.editor.mocks.createJobTemplate
 import com.redhat.devtools.intellij.kubernetes.editor.mocks.createJsonObject
 import com.redhat.devtools.intellij.kubernetes.editor.mocks.createJsonProperty
 import com.redhat.devtools.intellij.kubernetes.editor.mocks.createLabels
@@ -35,6 +36,7 @@ import org.jetbrains.yaml.psi.YAMLMapping
 import org.junit.Before
 import org.junit.Test
 import org.mockito.MockedStatic
+import kotlin.collections.listOf
 
 class ResourcePsiElementUtilsTest {
 
@@ -295,6 +297,19 @@ class ResourcePsiElementUtilsTest {
     }
 
     @Test
+    fun `#getJobTemplate for YAML returns jobTemplate mapping`() {
+        // given
+        val specMapping = mock<YAMLMapping>()
+        createYAMLKeyValue("spec", specMapping, yamlElement)
+        val templateMapping = mock<YAMLMapping>()
+        createYAMLKeyValue("jobTemplate", templateMapping, specMapping)
+        // when
+        val result = yamlElement.getJobTemplate()
+        // then
+        assertThat(result).isSameAs(templateMapping)
+    }
+
+    @Test
     fun `#getTemplateLabel for YAML returns template labels`() {
         // given
         val templateLabels = createYAMLMapping(listOf(
@@ -320,9 +335,42 @@ class ResourcePsiElementUtilsTest {
     }
 
     @Test
+    fun `#getJobTemplateLabel for YAML returns template labels`() {
+        // given
+        val jobTemplateLabels = createYAMLMapping(listOf(
+            createYAMLKeyValue("jedi", "skywalker")
+        ))
+        yamlElement.createJobTemplate(
+            createYAMLMapping(listOf(
+                createYAMLKeyValue("spec",
+                    createYAMLMapping(listOf(
+                        createYAMLKeyValue("template",
+                            createYAMLMapping(listOf(
+                                createYAMLKeyValue(
+                                    "metadata",
+                                    createYAMLMapping(listOf(
+                                        createYAMLKeyValue(
+                                            "labels",
+                                            jobTemplateLabels
+                                        )
+                                    ))
+                                )
+                            ))
+                        )
+                    ))
+                )
+            ))
+        )
+        // when
+        val found = yamlElement.getJobTemplate()?.getTemplateLabels()
+        // then
+        assertThat(found).isSameAs(jobTemplateLabels)
+    }
+
+    @Test
     fun `#getTemplateLabel for Json returns template labels`() {
         // given
-        val templateLabels = createJsonObject(listOf(
+        val jobTemplateLabels = createJsonObject(listOf(
             createJsonProperty("jedi", "skywalker")
         ))
         jsonElement.createTemplate(
@@ -332,7 +380,7 @@ class ResourcePsiElementUtilsTest {
                     createJsonObject(listOf(
                         createJsonProperty(
                             "labels",
-                            templateLabels
+                            jobTemplateLabels
                         )
                     ))
                 )
@@ -340,6 +388,39 @@ class ResourcePsiElementUtilsTest {
         )
         // when
         val found = jsonElement.getTemplateLabels()
+        // then
+        assertThat(found).isSameAs(jobTemplateLabels)
+    }
+
+    @Test
+    fun `#getJobTemplateLabel for Json returns template labels`() {
+        // given
+        val templateLabels = createJsonObject(listOf(
+            createJsonProperty("jedi", "skywalker")
+        ))
+        jsonElement.createJobTemplate(
+            createJsonObject(listOf(
+                createJsonProperty("spec",
+                    createJsonObject(listOf(
+                        createJsonProperty("template",
+                            createJsonObject(listOf(
+                                createJsonProperty(
+                                    "metadata",
+                                    createJsonObject(listOf(
+                                        createJsonProperty(
+                                            "labels",
+                                            templateLabels
+                                        )
+                                    ))
+                                )
+                            ))
+                        )
+                    ))
+                )
+            ))
+        )
+        // when
+        val found = jsonElement.getJobTemplate()?.getTemplateLabels()
         // then
         assertThat(found).isSameAs(templateLabels)
     }

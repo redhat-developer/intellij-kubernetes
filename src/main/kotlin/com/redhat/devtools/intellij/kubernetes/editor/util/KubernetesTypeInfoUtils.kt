@@ -21,6 +21,7 @@ private const val KIND_PERSISTENT_VOLUME = "PersistentVolume"
 private const val KIND_PERSISTENT_VOLUME_CLAIM = "PersistentVolumeClaim"
 private const val KIND_POD = "Pod"
 private const val KIND_POD_DISRUPTION_BUDGET = "PodDisruptionBudget"
+private const val KIND_REPLICATION_CONTROLLER = "ReplicationController"
 private const val KIND_REPLICA_SET = "ReplicaSet"
 private const val KIND_SERVICE = "Service"
 private const val KIND_STATEFUL_SET = "StatefulSet"
@@ -59,6 +60,10 @@ fun KubernetesTypeInfo.isPod(): Boolean {
 
 fun KubernetesTypeInfo.isPodDisruptionBudget(): Boolean {
     return this.kind == KIND_POD_DISRUPTION_BUDGET
+}
+
+fun KubernetesTypeInfo.isReplicationController(): Boolean {
+    return this.kind == KIND_REPLICATION_CONTROLLER
 }
 
 fun KubernetesTypeInfo.isReplicaSet(): Boolean {

@@ -14,6 +14,7 @@ import com.intellij.psi.PsiElement
 import com.redhat.devtools.intellij.common.validation.KubernetesTypeInfo
 import com.redhat.devtools.intellij.kubernetes.editor.util.areMatchingMatchExpressions
 import com.redhat.devtools.intellij.kubernetes.editor.util.areMatchingMatchLabels
+import com.redhat.devtools.intellij.kubernetes.editor.util.getJobTemplate
 import com.redhat.devtools.intellij.kubernetes.editor.util.getKubernetesTypeInfo
 import com.redhat.devtools.intellij.kubernetes.editor.util.getLabels
 import com.redhat.devtools.intellij.kubernetes.editor.util.getResource
@@ -21,6 +22,7 @@ import com.redhat.devtools.intellij.kubernetes.editor.util.getTemplateLabels
 import com.redhat.devtools.intellij.kubernetes.editor.util.hasMatchExpressions
 import com.redhat.devtools.intellij.kubernetes.editor.util.hasMatchLabels
 import com.redhat.devtools.intellij.kubernetes.editor.util.hasSelector
+import com.redhat.devtools.intellij.kubernetes.editor.util.hasTemplateLabels
 import com.redhat.devtools.intellij.kubernetes.editor.util.isCronJob
 import com.redhat.devtools.intellij.kubernetes.editor.util.isDaemonSet
 import com.redhat.devtools.intellij.kubernetes.editor.util.isDeployment
@@ -31,6 +33,7 @@ import com.redhat.devtools.intellij.kubernetes.editor.util.isPersistentVolumeCla
 import com.redhat.devtools.intellij.kubernetes.editor.util.isPod
 import com.redhat.devtools.intellij.kubernetes.editor.util.isPodDisruptionBudget
 import com.redhat.devtools.intellij.kubernetes.editor.util.isReplicaSet
+import com.redhat.devtools.intellij.kubernetes.editor.util.isReplicationController
 import com.redhat.devtools.intellij.kubernetes.editor.util.isService
 import com.redhat.devtools.intellij.kubernetes.editor.util.isStatefulSet
 
@@ -90,42 +93,33 @@ class LabelsFilter(selector: PsiElement): PsiElementMappingsFilter {
     private fun canSelect(type: KubernetesTypeInfo): Boolean {
         val selectorType = selectorResourceType ?: return false
         return when {
-            selectorType.isDeployment() ->
-                type.isPod()
-                        || type.isDeployment() // can select deployment template
-
-            selectorType.isCronJob() ->
-                type.isPod()
-                        || type.isCronJob() // template
-
-            selectorType.isDaemonSet() ->
-                type.isPod()
-                        || type.isDaemonSet() // template
-
-            selectorType.isJob() ->
-                type.isPod()
-                        || type.isJob() // template
-
-            selectorType.isReplicaSet() ->
-                type.isPod()
-                        || type.isReplicaSet() // template
-
-            selectorType.isStatefulSet() ->
-                type.isPod()
-                        || type.isStatefulSet() // template
-
-            selectorType.isNetworkPolicy()
+            selectorType.isDaemonSet()
+                    || selectorType.isDeployment()
+                    || selectorType.isJob()
+                    || selectorType.isNetworkPolicy()
                     || selectorType.isPodDisruptionBudget()
-                    || selectorType.isService() ->
+                    || selectorType.isReplicaSet()
+                    || selectorType.isReplicationController()
+                    || selectorType.isService()
+                    || selectorType.isStatefulSet() ->
                 type.isPod()
+                        || hasPodTemplate(type)
 
             selectorType.isPersistentVolumeClaim() ->
                 type.isPersistentVolume()
-                        || type.isPersistentVolumeClaim()
 
             else ->
                 false
         }
+    }
+
+    private fun hasPodTemplate(type: KubernetesTypeInfo): Boolean {
+        return type.isCronJob()
+                || type.isDaemonSet()
+                || type.isDeployment()
+                || type.isJob()
+                || type.isReplicaSet()
+                || type.isStatefulSet()
     }
 
     override fun getMatchingElement(element: PsiElement): PsiElement? {
@@ -134,7 +128,7 @@ class LabelsFilter(selector: PsiElement): PsiElementMappingsFilter {
     }
 
     private fun getLabels(
-        labeledType: KubernetesTypeInfo,
+        labeledResourceType: KubernetesTypeInfo,
         labeledResource: PsiElement,
         selectorResourceType: KubernetesTypeInfo?
     ): PsiElement? {
@@ -142,12 +136,10 @@ class LabelsFilter(selector: PsiElement): PsiElementMappingsFilter {
             selectorResourceType == null ->
                 null
 
-            (selectorResourceType.isCronJob() && labeledType.isCronJob())
-                    || (selectorResourceType.isDaemonSet() && labeledType.isDaemonSet())
-                    || (selectorResourceType.isDeployment() && labeledType.isDeployment())
-                    || (selectorResourceType.isJob() && labeledType.isJob())
-                    || (selectorResourceType.isReplicaSet() && labeledType.isReplicaSet())
-                    || (selectorResourceType.isStatefulSet() && labeledType.isStatefulSet()) ->
+            labeledResourceType.isCronJob() ->
+                labeledResource.getJobTemplate()?.getTemplateLabels()
+
+            labeledResource.hasTemplateLabels() ->
                 labeledResource.getTemplateLabels()
 
             else ->

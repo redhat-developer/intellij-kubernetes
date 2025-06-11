@@ -29,6 +29,7 @@ private const val KEY_LABELS = "labels"
 private const val KEY_SPEC = "spec"
 private const val KEY_SELECTOR = "selector"
 private const val KEY_TEMPLATE = "template"
+private const val KEY_JOB_TEMPLATE = "jobTemplate"
 private const val KEY_BINARY_DATA = "binaryData"
 private const val KEY_DATA = "data"
 
@@ -210,6 +211,7 @@ fun JsonObject.getTemplate(): JsonObject? {
     return (this.findProperty(KEY_SPEC)?.value as? JsonObject?)
         ?.findProperty(KEY_TEMPLATE)?.value as? JsonObject?
 }
+
 fun PsiElement.hasTemplateLabels(): Boolean {
     return this.getTemplateLabels() != null
 }
@@ -223,12 +225,33 @@ fun PsiElement.getTemplateLabels(): PsiElement? {
     }
 }
 
+fun PsiElement.getJobTemplate(): PsiElement? {
+    return when(this) {
+        is YAMLMapping -> this.getJobTemplate()
+        is JsonObject -> this.getJobTemplate()
+        else ->
+            null
+    }
+}
+
+fun YAMLMapping.getJobTemplate(): YAMLMapping? {
+    return (this.getKeyValueByKey(KEY_SPEC)?.value as? YAMLMapping)
+        ?.getKeyValueByKey(KEY_JOB_TEMPLATE)?.value as? YAMLMapping
+}
+
+fun JsonObject.getJobTemplate(): JsonObject? {
+    return (this.findProperty(KEY_SPEC)?.value as? JsonObject?)
+        ?.findProperty(KEY_JOB_TEMPLATE)?.value as? JsonObject?
+}
+
 fun YAMLMapping.getTemplateLabels(): YAMLMapping? {
     return this.getTemplate()?.getLabels()
+        ?: getJobTemplate()?.getTemplate()?.getLabels()
 }
 
 fun JsonObject.getTemplateLabels(): JsonObject? {
     return this.getTemplate()?.getLabels()
+        ?: getJobTemplate()?.getTemplate()?.getLabels()
 }
 
 /**
