@@ -35,6 +35,7 @@ private const val KEY_METADATA = "metadata"
 private const val KEY_SELECTOR = "selector"
 private const val KEY_SPEC = "spec"
 private const val KEY_TEMPLATE = "template"
+private const val KEY_JOB_TEMPLATE = "jobTemplate"
 
 fun YAMLMapping.createLabels(labelsChildren: YAMLMapping): YAMLKeyValue {
     val metadataChildren = mock<YAMLMapping>()
@@ -54,21 +55,23 @@ fun JsonObject.createLabels(labelsChildren: JsonObject): JsonProperty {
 }
 
 fun YAMLMapping.createTemplate(templateChildren: YAMLMapping): YAMLKeyValue {
-    var spec = getKeyValueByKey(KEY_SPEC)
-    if (spec == null) {
-        val specMapping = mock<YAMLMapping>()
-        spec = createYAMLKeyValue(KEY_SPEC, specMapping, this)
-    }
+    val spec = getOrCreateSpec()
     return createYAMLKeyValue(KEY_TEMPLATE, templateChildren, spec.value as YAMLMapping)
 }
 
 fun JsonObject.createTemplate(templateChildren: JsonObject): JsonProperty {
-    var spec = findProperty(KEY_SPEC)
-    if (spec == null) {
-        val specMapping = mock<JsonObject>()
-        spec = createJsonProperty(KEY_SPEC, specMapping, this)
-    }
+    val spec = getOrCreateSpec()
     return createJsonProperty(KEY_TEMPLATE, templateChildren, spec.value as JsonObject)
+}
+
+fun YAMLMapping.createJobTemplate(templateChildren: YAMLMapping): YAMLKeyValue {
+    val spec = getOrCreateSpec()
+    return createYAMLKeyValue(KEY_JOB_TEMPLATE, templateChildren, spec.value as YAMLMapping)
+}
+
+fun JsonObject.createJobTemplate(templateChildren: JsonObject): JsonProperty {
+    val spec = getOrCreateSpec()
+    return createJsonProperty(KEY_JOB_TEMPLATE, templateChildren, spec.value as JsonObject)
 }
 
 fun YAMLMapping.createMatchLabels(matchLabels: YAMLMapping): YAMLKeyValue {
@@ -119,21 +122,32 @@ fun createYAMLSequenceItem(key: String, operator: String, values: List<String>):
 }
 
 fun YAMLMapping.createSelector(selectorChildren: YAMLMapping = mock()): YAMLKeyValue {
+    val spec = getOrCreateSpec()
+    return createYAMLKeyValue(KEY_SELECTOR, selectorChildren, spec.value as YAMLMapping)
+}
+
+private fun YAMLMapping.getOrCreateSpec(): YAMLKeyValue {
     var spec = getKeyValueByKey(KEY_SPEC)
     if (spec == null) {
         val specChildren = mock<YAMLMapping>()
         spec = createYAMLKeyValue(KEY_SPEC, specChildren, this)
     }
-    return createYAMLKeyValue(KEY_SELECTOR, selectorChildren, spec.value as YAMLMapping)
+    return spec
 }
 
+
 fun JsonObject.createSelector(selectorChildren: JsonObject = mock()): JsonProperty {
+    val spec = getOrCreateSpec()
+    return createJsonProperty(KEY_SELECTOR, selectorChildren, spec.value as JsonObject)
+}
+
+private fun JsonObject.getOrCreateSpec(): JsonProperty {
     var spec = findProperty(KEY_SPEC)
     if (spec == null) {
-        val specChildren = mock<JsonObject>()
-        spec = createJsonProperty(KEY_SPEC, specChildren, this)
+        val specChild = mock<JsonObject>()
+        spec = createJsonProperty(KEY_SPEC, specChild, this)
     }
-    return createJsonProperty(KEY_SELECTOR, selectorChildren, spec.value as JsonObject)
+    return spec
 }
 
 fun YAMLMapping.createMetadata(): YAMLMapping {

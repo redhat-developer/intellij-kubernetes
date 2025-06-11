@@ -188,12 +188,12 @@ class LabelsFilterTest {
     }
 
     @Test
-    fun `#isAccepted returns true if deployment is selector and filtered element is deployment with matching template labels`() {
+    fun `#isAccepted returns true if deployment has selector that matches labels in it's template`() {
         // given
-        val matchingTemplateLabels = createYAMLMapping(listOf(
+        val hasMatchingTemplateLabels = createYAMLMapping(listOf(
             createYAMLKeyValue("kind", "Deployment")
         ))
-        matchingTemplateLabels.createTemplate(
+        hasMatchingTemplateLabels.createTemplate(
             createYAMLMapping(listOf(
                 createYAMLKeyValue(
                     "metadata",
@@ -201,7 +201,7 @@ class LabelsFilterTest {
                         createYAMLKeyValue(
                             "labels",
                             createYAMLMapping(listOf(
-                                createYAMLKeyValue(LABEL_KEY, LABEL_VALUE) // matching labels in spec>template
+                                createYAMLKeyValue(LABEL_KEY, LABEL_VALUE) // matching labels are in spec>template
                             ))
                         )
                     ))
@@ -209,10 +209,93 @@ class LabelsFilterTest {
             ))
         )
         // when
-        val isAccepted = filter.isAccepted(matchingTemplateLabels)
+        val isAccepted = filter.isAccepted(hasMatchingTemplateLabels) // filter created with selector using LABEL_KEY, LABEL_VALUE
         // then
         assertThat(isAccepted).isTrue()
     }
+
+    @Test
+    fun `#isAccepted returns true if service has selector that is matching labels in a template of a cron job`() {
+        // given
+        val serviceWithSelector = createYAMLMapping(listOf(
+            createYAMLKeyValue("kind", "Service"),
+            createYAMLKeyValue("spec",
+                createYAMLMapping(listOf(
+                    createYAMLKeyValue("selector",
+                        createYAMLMapping(listOf(
+                            createYAMLKeyValue(LABEL_KEY, LABEL_VALUE)
+                        ))
+                    )
+                ))
+            )
+        ))
+        val cronJob = createCronJob(LABEL_KEY, LABEL_VALUE)
+        val filter = LabelsFilter(serviceWithSelector)
+        // when
+        val isAccepted = filter.isAccepted(cronJob)
+        // then
+        assertThat(isAccepted).isTrue()
+    }
+
+    @Test
+    fun `#isAccepted returns false if service has selector that is NOT matching labels in a template of a cron job`() {
+        // given
+        val serviceWithSelector = createYAMLMapping(listOf(
+            createYAMLKeyValue("kind", "Service"),
+            createYAMLKeyValue("spec",
+                createYAMLMapping(listOf(
+                    createYAMLKeyValue("selector",
+                        createYAMLMapping(listOf(
+                            createYAMLKeyValue(LABEL_KEY, LABEL_VALUE)
+                        ))
+                    )
+                ))
+            )
+        ))
+        val cronJob = createCronJob("NOT_LABEL_KEY", "NOT_LABEL_KEY")
+        val filter = LabelsFilter(serviceWithSelector)
+        // when
+        val isAccepted = filter.isAccepted(cronJob)
+        // then
+        assertThat(isAccepted).isFalse()
+    }
+
+    private fun createCronJob(key: String, value: String): YAMLMapping = createYAMLMapping(
+        listOf(
+            createYAMLKeyValue("kind", "CronJob"),
+            createYAMLKeyValue(
+                "spec",
+                createYAMLMapping(listOf(
+                    createYAMLKeyValue(
+                        "jobTemplate",
+                        createYAMLMapping(listOf(
+                            createYAMLKeyValue(
+                                "spec",
+                                createYAMLMapping(listOf(
+                                    createYAMLKeyValue(
+                                        "template",
+                                        createYAMLMapping(listOf(
+                                            createYAMLKeyValue(
+                                                "metadata",
+                                                createYAMLMapping(listOf(
+                                                    createYAMLKeyValue(
+                                                        "labels",
+                                                        createYAMLMapping(listOf(
+                                                            createYAMLKeyValue(key, value)
+                                                        ))
+                                                    )
+                                                ))
+                                            )
+                                        ))
+                                    )
+                                ))
+                            )
+                        ))
+                    )
+                ))
+            )
+        )
+    )
 
     @Test
     fun `#getMatchingElement returns pod labels that match given deployment selector`() {
