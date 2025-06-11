@@ -14,7 +14,7 @@ gson = "2.8.9"
 
 # plugins
 gradleIntelliJPlugin = "2.6.0"
-kotlinJvm = "2.0.20"
+kotlinJvm = "2.1.21"
 
 [libraries]
 openshift-client = { group = "io.fabric8", name = "openshift-client", version.ref = "kubernetes-client" }
