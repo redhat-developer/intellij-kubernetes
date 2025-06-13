@@ -10,6 +10,8 @@
  ******************************************************************************/
 package com.redhat.devtools.intellij.kubernetes.editor
 
+import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.databind.node.ArrayNode
 import com.intellij.json.JsonFileType
 import com.intellij.openapi.fileTypes.FileType
 import com.redhat.devtools.intellij.kubernetes.model.util.ResourceException
@@ -22,7 +24,6 @@ import org.jetbrains.yaml.YAMLFileType
 object EditorResourceSerialization {
 
     const val RESOURCE_SEPARATOR_YAML = "\n---"
-    private const val RESOURCE_SEPARATOR_JSON = ",\n"
 
     /**
      * Returns a list of [HasMetadata] for a given yaml or json string.
@@ -41,32 +42,62 @@ object EditorResourceSerialization {
      * @see JsonFileType.INSTANCE
      */
     fun deserialize(jsonYaml: String?, fileType: FileType?, currentNamespace: String?): List<HasMetadata> {
-        return if (jsonYaml == null
-            || !isSupported(fileType)) {
-            emptyList()
-        } else {
-            val resources = jsonYaml
-                .split(RESOURCE_SEPARATOR_YAML)
-                .filter { jsonYaml -> jsonYaml.isNotBlank() }
-            if (resources.size > 1
-                && YAMLFileType.YML != fileType) {
-                throw ResourceException(
-                    "${fileType?.name ?: "File type"} is not supported for multi-resource documents. Only ${YAMLFileType.YML.name} is.")
+        return try {
+            when {
+                jsonYaml == null ->
+                    emptyList()
+
+                YAMLFileType.YML == fileType ->
+                    yaml2Resources(jsonYaml, currentNamespace)
+
+                JsonFileType.INSTANCE == fileType ->
+                    json2Resources(jsonYaml, currentNamespace)
+
+                else ->
+                    emptyList()
             }
-            try {
-                resources
-                    .map { jsonYaml ->
-                        setMissingNamespace(currentNamespace, createResource<GenericKubernetesResource>(jsonYaml))
+        } catch (e: RuntimeException) {
+            throw ResourceException("Invalid kubernetes yaml/json", e.cause ?: e)
+        }
+    }
+
+    private fun yaml2Resources(yaml: String, currentNamespace: String?): List<HasMetadata> {
+        val resources = yaml
+            .split(RESOURCE_SEPARATOR_YAML)
+            .filter { yaml ->
+                yaml.isNotBlank()
+            }
+        return resources
+            .map { yaml ->
+                setMissingNamespace(currentNamespace, createResource<GenericKubernetesResource>(yaml))
+            }
+            .toList()
+    }
+
+    private fun json2Resources(json: String?, currentNamespace: String?): List<HasMetadata> {
+        val mapper = ObjectMapper()
+        val rootNode = mapper.readTree(json)
+        return when {
+            rootNode.isArray ->
+                (rootNode as ArrayNode)
+                    .mapNotNull { node ->
+                        setMissingNamespace(currentNamespace, mapper.treeToValue(node, GenericKubernetesResource::class.java))
                     }
                     .toList()
-            } catch (e: RuntimeException) {
-                throw ResourceException("Invalid kubernetes yaml/json", e.cause ?: e)
-            }
+            rootNode.isObject ->
+                listOf(
+                    setMissingNamespace(currentNamespace,
+                        mapper.treeToValue(rootNode, GenericKubernetesResource::class.java)
+                    )
+                )
+            else ->
+                emptyList()
         }
     }
 
     private fun setMissingNamespace(namespace: String?, resource: HasMetadata): HasMetadata {
-        if (resource.metadata.namespace.isNullOrEmpty()
+        if (resource.metadata != null
+            && resource.metadata.namespace.isNullOrEmpty()
             && namespace != null) {
             resource.metadata.namespace = namespace
         }
@@ -74,27 +105,36 @@ object EditorResourceSerialization {
     }
 
     fun serialize(resources: List<HasMetadata>, fileType: FileType?): String? {
-        if (fileType == null) {
-            return null
-        }
-        if (resources.size >= 2
-            && fileType != YAMLFileType.YML) {
-            throw UnsupportedOperationException(
-                "${fileType.name} is not supported for multi-resource documents. Only ${YAMLFileType.YML.name} is.")
-        }
-        return resources
-            .mapNotNull { resource -> serialize(resource, fileType) }
-            .joinToString("\n")
+        return try {
+            when {
+                fileType == null ->
+                    null
 
+                YAMLFileType.YML == fileType ->
+                    resources2yaml(resources)
+
+                JsonFileType.INSTANCE == fileType ->
+                    resources2json(resources)
+
+                else ->
+                    ""
+            }
+        } catch (e: RuntimeException) {
+            throw ResourceException("Invalid kubernetes yaml/json", e.cause ?: e)
+        }
     }
 
-    private fun serialize(resource: HasMetadata, fileType: FileType): String? {
-        return when(fileType) {
-            YAMLFileType.YML ->
-                Serialization.asYaml(resource).trim()
-            JsonFileType.INSTANCE ->
-                Serialization.asJson(resource).trim()
-            else -> null
+    private fun resources2yaml(resources: List<HasMetadata>): String {
+        return resources.joinToString("\n") { resource ->
+            Serialization.asYaml(resource).trim()
+        }
+    }
+
+    private fun resources2json(resources: List<HasMetadata>): String {
+        return if (resources.size == 1) {
+            Serialization.asJson(resources.first()).trim()
+        } else {
+            Serialization.asJson(resources).trim()
         }
     }
 
