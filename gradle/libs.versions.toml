@@ -10,7 +10,7 @@ mockito-kotlin = "2.2.0"
 devtools-common-ui-test = "0.4.4-SNAPSHOT"
 junit-platform = "1.11.3"
 junit-jupiter = "5.11.3"
-gson = "2.8.9"
+gson = "2.13.1"
 
 # plugins
 gradleIntelliJPlugin = "2.6.0"
