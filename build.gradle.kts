@@ -70,7 +70,7 @@ dependencies {
         // for local plugin -> https://plugins.jetbrains.com/docs/intellij/tools-gradle-intellij-plugin-faq.html#how-to-add-a-dependency-on-a-plugin-available-in-the-file-system
         //plugins.set(listOf(file("/path/to/plugin/")))
 
-        pluginVerifier(version="1.384")
+        pluginVerifier()
 
         testFramework(TestFrameworkType.Platform)
     }
