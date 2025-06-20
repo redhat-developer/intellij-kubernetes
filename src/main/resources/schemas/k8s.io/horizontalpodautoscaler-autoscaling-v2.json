@@ -31,16 +31,9 @@
               "null"
             ]
           },
-          "description": "Annotations is an unstructured key value map stored with a resource that may be set by external tools to store and retrieve arbitrary metadata. They are not queryable and should be preserved when modifying objects. More info: http://kubernetes.io/docs/user-guide/annotations",
+          "description": "Annotations is an unstructured key value map stored with a resource that may be set by external tools to store and retrieve arbitrary metadata. They are not queryable and should be preserved when modifying objects. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/annotations",
           "type": [
             "object",
-            "null"
-          ]
-        },
-        "clusterName": {
-          "description": "Deprecated: ClusterName is a legacy field that was always cleared by the system and never used; it will be removed completely in 1.25.\n\nThe name in the go struct is changed to help clients detect accidental use.",
-          "type": [
-            "string",
             "null"
           ]
         },
@@ -80,6 +73,7 @@
             "array",
             "null"
           ],
+          "x-kubernetes-list-type": "set",
           "x-kubernetes-patch-strategy": "merge"
         },
         "generateName": {
@@ -104,7 +98,7 @@
               "null"
             ]
           },
-          "description": "Map of string keys and values that can be used to organize and categorize (scope and select) objects. May match selectors of replication controllers and services. More info: http://kubernetes.io/docs/user-guide/labels",
+          "description": "Map of string keys and values that can be used to organize and categorize (scope and select) objects. May match selectors of replication controllers and services. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/labels",
           "type": [
             "object",
             "null"
@@ -175,17 +169,18 @@
           "type": [
             "array",
             "null"
-          ]
+          ],
+          "x-kubernetes-list-type": "atomic"
         },
         "name": {
-          "description": "Name must be unique within a namespace. Is required when creating resources, although some resources may allow a client to request the generation of an appropriate name automatically. Name is primarily intended for creation idempotence and configuration definition. Cannot be updated. More info: http://kubernetes.io/docs/user-guide/identifiers#names",
+          "description": "Name must be unique within a namespace. Is required when creating resources, although some resources may allow a client to request the generation of an appropriate name automatically. Name is primarily intended for creation idempotence and configuration definition. Cannot be updated. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names#names",
           "type": [
             "string",
             "null"
           ]
         },
         "namespace": {
-          "description": "Namespace defines the space within which each name must be unique. An empty namespace is equivalent to the \"default\" namespace, but \"default\" is the canonical representation. Not all objects are required to be scoped to a namespace - the value of this field for those objects will be empty.\n\nMust be a DNS_LABEL. Cannot be updated. More info: http://kubernetes.io/docs/user-guide/namespaces",
+          "description": "Namespace defines the space within which each name must be unique. An empty namespace is equivalent to the \"default\" namespace, but \"default\" is the canonical representation. Not all objects are required to be scoped to a namespace - the value of this field for those objects will be empty.\n\nMust be a DNS_LABEL. Cannot be updated. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/namespaces",
           "type": [
             "string",
             "null"
@@ -219,11 +214,11 @@
                 "type": "string"
               },
               "name": {
-                "description": "Name of the referent. More info: http://kubernetes.io/docs/user-guide/identifiers#names",
+                "description": "Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names#names",
                 "type": "string"
               },
               "uid": {
-                "description": "UID of the referent. More info: http://kubernetes.io/docs/user-guide/identifiers#uids",
+                "description": "UID of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names#uids",
                 "type": "string"
               }
             },
@@ -244,6 +239,10 @@
             "array",
             "null"
           ],
+          "x-kubernetes-list-map-keys": [
+            "uid"
+          ],
+          "x-kubernetes-list-type": "map",
           "x-kubernetes-patch-merge-key": "uid",
           "x-kubernetes-patch-strategy": "merge"
         },
@@ -262,7 +261,7 @@
           ]
         },
         "uid": {
-          "description": "UID is the unique in time and space value for this object. It is typically generated by the server on successful creation of a resource and is not allowed to change on PUT operations.\n\nPopulated by the system. Read-only. More info: http://kubernetes.io/docs/user-guide/identifiers#uids",
+          "description": "UID is the unique in time and space value for this object. It is typically generated by the server on successful creation of a resource and is not allowed to change on PUT operations.\n\nPopulated by the system. Read-only. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names#uids",
           "type": [
             "string",
             "null"
@@ -290,16 +289,16 @@
                     "description": "HPAScalingPolicy is a single policy which must hold true for a specified past interval.",
                     "properties": {
                       "periodSeconds": {
-                        "description": "PeriodSeconds specifies the window of time for which the policy should hold true. PeriodSeconds must be greater than zero and less than or equal to 1800 (30 min).",
+                        "description": "periodSeconds specifies the window of time for which the policy should hold true. PeriodSeconds must be greater than zero and less than or equal to 1800 (30 min).",
                         "format": "int32",
                         "type": "integer"
                       },
                       "type": {
-                        "description": "Type is used to specify the scaling policy.",
+                        "description": "type is used to specify the scaling policy.",
                         "type": "string"
                       },
                       "value": {
-                        "description": "Value contains the amount of change which is permitted by the policy. It must be greater than zero",
+                        "description": "value contains the amount of change which is permitted by the policy. It must be greater than zero",
                         "format": "int32",
                         "type": "integer"
                       }
@@ -329,7 +328,7 @@
                   ]
                 },
                 "stabilizationWindowSeconds": {
-                  "description": "StabilizationWindowSeconds is the number of seconds for which past recommendations should be considered while scaling up or scaling down. StabilizationWindowSeconds must be greater than or equal to zero and less than or equal to 3600 (one hour). If not set, use the default values: - For scale up: 0 (i.e. no stabilization is done). - For scale down: 300 (i.e. the stabilization window is 300 seconds long).",
+                  "description": "stabilizationWindowSeconds is the number of seconds for which past recommendations should be considered while scaling up or scaling down. StabilizationWindowSeconds must be greater than or equal to zero and less than or equal to 3600 (one hour). If not set, use the default values: - For scale up: 0 (i.e. no stabilization is done). - For scale down: 300 (i.e. the stabilization window is 300 seconds long).",
                   "format": "int32",
                   "type": [
                     "integer",
@@ -352,16 +351,16 @@
                     "description": "HPAScalingPolicy is a single policy which must hold true for a specified past interval.",
                     "properties": {
                       "periodSeconds": {
-                        "description": "PeriodSeconds specifies the window of time for which the policy should hold true. PeriodSeconds must be greater than zero and less than or equal to 1800 (30 min).",
+                        "description": "periodSeconds specifies the window of time for which the policy should hold true. PeriodSeconds must be greater than zero and less than or equal to 1800 (30 min).",
                         "format": "int32",
                         "type": "integer"
                       },
                       "type": {
-                        "description": "Type is used to specify the scaling policy.",
+                        "description": "type is used to specify the scaling policy.",
                         "type": "string"
                       },
                       "value": {
-                        "description": "Value contains the amount of change which is permitted by the policy. It must be greater than zero",
+                        "description": "value contains the amount of change which is permitted by the policy. It must be greater than zero",
                         "format": "int32",
                         "type": "integer"
                       }
@@ -391,7 +390,7 @@
                   ]
                 },
                 "stabilizationWindowSeconds": {
-                  "description": "StabilizationWindowSeconds is the number of seconds for which past recommendations should be considered while scaling up or scaling down. StabilizationWindowSeconds must be greater than or equal to zero and less than or equal to 3600 (one hour). If not set, use the default values: - For scale up: 0 (i.e. no stabilization is done). - For scale down: 300 (i.e. the stabilization window is 300 seconds long).",
+                  "description": "stabilizationWindowSeconds is the number of seconds for which past recommendations should be considered while scaling up or scaling down. StabilizationWindowSeconds must be greater than or equal to zero and less than or equal to 3600 (one hour). If not set, use the default values: - For scale up: 0 (i.e. no stabilization is done). - For scale down: 300 (i.e. the stabilization window is 300 seconds long).",
                   "format": "int32",
                   "type": [
                     "integer",
@@ -519,9 +518,7 @@
                               "properties": {
                                 "key": {
                                   "description": "key is the label key that the selector applies to.",
-                                  "type": "string",
-                                  "x-kubernetes-patch-merge-key": "key",
-                                  "x-kubernetes-patch-strategy": "merge"
+                                  "type": "string"
                                 },
                                 "operator": {
                                   "description": "operator represents a key's relationship to a set of values. Valid operators are In, NotIn, Exists and DoesNotExist.",
@@ -538,7 +535,8 @@
                                   "type": [
                                     "array",
                                     "null"
-                                  ]
+                                  ],
+                                  "x-kubernetes-list-type": "atomic"
                                 }
                               },
                               "required": [
@@ -554,7 +552,8 @@
                             "type": [
                               "array",
                               "null"
-                            ]
+                            ],
+                            "x-kubernetes-list-type": "atomic"
                           },
                           "matchLabels": {
                             "additionalProperties": {
@@ -656,18 +655,18 @@
                     "description": "CrossVersionObjectReference contains enough information to let you identify the referred resource.",
                     "properties": {
                       "apiVersion": {
-                        "description": "API version of the referent",
+                        "description": "apiVersion is the API version of the referent",
                         "type": [
                           "string",
                           "null"
                         ]
                       },
                       "kind": {
-                        "description": "Kind of the referent; More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds\"",
+                        "description": "kind is the kind of the referent; More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds",
                         "type": "string"
                       },
                       "name": {
-                        "description": "Name of the referent; More info: http://kubernetes.io/docs/user-guide/identifiers#names",
+                        "description": "name is the name of the referent; More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names",
                         "type": "string"
                       }
                     },
@@ -695,9 +694,7 @@
                               "properties": {
                                 "key": {
                                   "description": "key is the label key that the selector applies to.",
-                                  "type": "string",
-                                  "x-kubernetes-patch-merge-key": "key",
-                                  "x-kubernetes-patch-strategy": "merge"
+                                  "type": "string"
                                 },
                                 "operator": {
                                   "description": "operator represents a key's relationship to a set of values. Valid operators are In, NotIn, Exists and DoesNotExist.",
@@ -714,7 +711,8 @@
                                   "type": [
                                     "array",
                                     "null"
-                                  ]
+                                  ],
+                                  "x-kubernetes-list-type": "atomic"
                                 }
                               },
                               "required": [
@@ -730,7 +728,8 @@
                             "type": [
                               "array",
                               "null"
-                            ]
+                            ],
+                            "x-kubernetes-list-type": "atomic"
                           },
                           "matchLabels": {
                             "additionalProperties": {
@@ -846,9 +845,7 @@
                               "properties": {
                                 "key": {
                                   "description": "key is the label key that the selector applies to.",
-                                  "type": "string",
-                                  "x-kubernetes-patch-merge-key": "key",
-                                  "x-kubernetes-patch-strategy": "merge"
+                                  "type": "string"
                                 },
                                 "operator": {
                                   "description": "operator represents a key's relationship to a set of values. Valid operators are In, NotIn, Exists and DoesNotExist.",
@@ -865,7 +862,8 @@
                                   "type": [
                                     "array",
                                     "null"
-                                  ]
+                                  ],
+                                  "x-kubernetes-list-type": "atomic"
                                 }
                               },
                               "required": [
@@ -881,7 +879,8 @@
                             "type": [
                               "array",
                               "null"
-                            ]
+                            ],
+                            "x-kubernetes-list-type": "atomic"
                           },
                           "matchLabels": {
                             "additionalProperties": {
@@ -1080,18 +1079,18 @@
           "description": "CrossVersionObjectReference contains enough information to let you identify the referred resource.",
           "properties": {
             "apiVersion": {
-              "description": "API version of the referent",
+              "description": "apiVersion is the API version of the referent",
               "type": [
                 "string",
                 "null"
               ]
             },
             "kind": {
-              "description": "Kind of the referent; More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds\"",
+              "description": "kind is the kind of the referent; More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds",
               "type": "string"
             },
             "name": {
-              "description": "Name of the referent; More info: http://kubernetes.io/docs/user-guide/identifiers#names",
+              "description": "name is the name of the referent; More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names",
               "type": "string"
             }
           },
@@ -1182,7 +1181,7 @@
                 "description": "ContainerResourceMetricStatus indicates the current value of a resource metric known to Kubernetes, as specified in requests and limits, describing a single container in each pod in the current scale target (e.g. CPU or memory).  Such metrics are built in to Kubernetes, and have special scaling options on top of those available to normal per-pod metrics using the \"pods\" source.",
                 "properties": {
                   "container": {
-                    "description": "Container is the name of the container in the pods of the scaling target",
+                    "description": "container is the name of the container in the pods of the scaling target",
                     "type": "string"
                   },
                   "current": {
@@ -1233,7 +1232,7 @@
                     "additionalProperties": false
                   },
                   "name": {
-                    "description": "Name is the name of the resource in question.",
+                    "description": "name is the name of the resource in question.",
                     "type": "string"
                   }
                 },
@@ -1315,9 +1314,7 @@
                               "properties": {
                                 "key": {
                                   "description": "key is the label key that the selector applies to.",
-                                  "type": "string",
-                                  "x-kubernetes-patch-merge-key": "key",
-                                  "x-kubernetes-patch-strategy": "merge"
+                                  "type": "string"
                                 },
                                 "operator": {
                                   "description": "operator represents a key's relationship to a set of values. Valid operators are In, NotIn, Exists and DoesNotExist.",
@@ -1334,7 +1331,8 @@
                                   "type": [
                                     "array",
                                     "null"
-                                  ]
+                                  ],
+                                  "x-kubernetes-list-type": "atomic"
                                 }
                               },
                               "required": [
@@ -1350,7 +1348,8 @@
                             "type": [
                               "array",
                               "null"
-                            ]
+                            ],
+                            "x-kubernetes-list-type": "atomic"
                           },
                           "matchLabels": {
                             "additionalProperties": {
@@ -1445,18 +1444,18 @@
                     "description": "CrossVersionObjectReference contains enough information to let you identify the referred resource.",
                     "properties": {
                       "apiVersion": {
-                        "description": "API version of the referent",
+                        "description": "apiVersion is the API version of the referent",
                         "type": [
                           "string",
                           "null"
                         ]
                       },
                       "kind": {
-                        "description": "Kind of the referent; More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds\"",
+                        "description": "kind is the kind of the referent; More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds",
                         "type": "string"
                       },
                       "name": {
-                        "description": "Name of the referent; More info: http://kubernetes.io/docs/user-guide/identifiers#names",
+                        "description": "name is the name of the referent; More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names",
                         "type": "string"
                       }
                     },
@@ -1484,9 +1483,7 @@
                               "properties": {
                                 "key": {
                                   "description": "key is the label key that the selector applies to.",
-                                  "type": "string",
-                                  "x-kubernetes-patch-merge-key": "key",
-                                  "x-kubernetes-patch-strategy": "merge"
+                                  "type": "string"
                                 },
                                 "operator": {
                                   "description": "operator represents a key's relationship to a set of values. Valid operators are In, NotIn, Exists and DoesNotExist.",
@@ -1503,7 +1500,8 @@
                                   "type": [
                                     "array",
                                     "null"
-                                  ]
+                                  ],
+                                  "x-kubernetes-list-type": "atomic"
                                 }
                               },
                               "required": [
@@ -1519,7 +1517,8 @@
                             "type": [
                               "array",
                               "null"
-                            ]
+                            ],
+                            "x-kubernetes-list-type": "atomic"
                           },
                           "matchLabels": {
                             "additionalProperties": {
@@ -1628,9 +1627,7 @@
                               "properties": {
                                 "key": {
                                   "description": "key is the label key that the selector applies to.",
-                                  "type": "string",
-                                  "x-kubernetes-patch-merge-key": "key",
-                                  "x-kubernetes-patch-strategy": "merge"
+                                  "type": "string"
                                 },
                                 "operator": {
                                   "description": "operator represents a key's relationship to a set of values. Valid operators are In, NotIn, Exists and DoesNotExist.",
@@ -1647,7 +1644,8 @@
                                   "type": [
                                     "array",
                                     "null"
-                                  ]
+                                  ],
+                                  "x-kubernetes-list-type": "atomic"
                                 }
                               },
                               "required": [
@@ -1663,7 +1661,8 @@
                             "type": [
                               "array",
                               "null"
-                            ]
+                            ],
+                            "x-kubernetes-list-type": "atomic"
                           },
                           "matchLabels": {
                             "additionalProperties": {
@@ -1755,7 +1754,7 @@
                     "additionalProperties": false
                   },
                   "name": {
-                    "description": "Name is the name of the resource in question.",
+                    "description": "name is the name of the resource in question.",
                     "type": "string"
                   }
                 },
