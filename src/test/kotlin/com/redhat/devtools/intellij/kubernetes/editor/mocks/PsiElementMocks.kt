@@ -10,6 +10,7 @@
  ******************************************************************************/
 package com.redhat.devtools.intellij.kubernetes.editor.mocks
 
+import com.intellij.json.psi.JsonArray
 import com.intellij.json.psi.JsonObject
 import com.intellij.json.psi.JsonProperty
 import com.intellij.json.psi.JsonValue
@@ -73,6 +74,14 @@ fun createYAMLMapping(children: List<YAMLKeyValue>): YAMLMapping {
     }
 }
 
+fun createYAMLMappingForPairs(children: List<Pair<String, YAMLKeyValue?>>): YAMLMapping {
+    return mock<YAMLMapping> {
+        children.forEach { child ->
+            on { mock.getKeyValueByKey(child.first) } doReturn child.second
+        }
+    }
+}
+
 fun createYAMLKeyValue(
     key: String,
     value: String? = null,
@@ -133,9 +142,9 @@ fun createYAMLDocument(yamlValue: YAMLValue): YAMLDocument {
     }
 }
 
-fun createYAMLSequence(expressions: List<YAMLSequenceItem>): YAMLSequence {
+fun createYAMLSequence(items: List<YAMLSequenceItem>): YAMLSequence {
     return mock<YAMLSequence> {
-        on { mock.items } doReturn expressions
+        on { mock.items } doReturn items
     }
 }
 
@@ -175,6 +184,15 @@ fun createJsonObject(children: List<JsonProperty>): JsonObject {
             children.forEach { it.accept(visitor) }
         }
         children.forEach{ doReturn(mock).whenever(it).parent }
+    }
+}
+
+fun createJsonObjectForPairs(textValue: String, children: List<Pair<String, JsonProperty?>>): JsonObject {
+    return mock<JsonObject> {
+        on { text } doReturn textValue
+        children.forEach { child ->
+            on { mock.findProperty(child.first) } doReturn child.second
+        }
     }
 }
 
@@ -223,6 +241,13 @@ fun createJsonProperty(
             .thenReturn(property)
     }
     return property
+}
+
+fun createJsonArray(children: List<JsonObject>): JsonArray {
+    return mock<JsonArray> {
+        on { valueList } doReturn children
+        on { mock.children } doReturn children.toTypedArray()
+    }
 }
 
 fun createJsonPsiFile(properties: List<JsonProperty>): PsiFile {
