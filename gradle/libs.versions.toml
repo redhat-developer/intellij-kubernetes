@@ -11,6 +11,9 @@ devtools-common-ui-test = "0.4.4-SNAPSHOT"
 junit-platform = "1.11.3"
 junit-jupiter = "5.11.3"
 gson = "2.8.9"
+snakeyaml = "2.2"
+json = "20250517"
+everit-json-schema = "1.14.6"
 
 # plugins
 gradleIntelliJPlugin = "2.6.0"
@@ -36,6 +39,9 @@ junit-jupiter = { group = "org.junit.jupiter", name = "junit-jupiter", version.r
 junit-jupiter-api = { group = "org.junit.jupiter", name = "junit-jupiter-api", version.ref = "junit-jupiter" }
 junit-jupiter-engine = { group = "org.junit.jupiter", name = "junit-jupiter-engine", version.ref = "junit-jupiter" }
 gson = { group = "com.google.code.gson", name = "gson", version.ref = "gson" }
+snakeyaml = { group = "org.yaml", name = "snakeyaml", version.ref = "snakeyaml" }
+json = { group = "org.json", name = "json", version.ref = "json" }
+json-schema = {group="com.github.erosb", name="everit-json-schema", version.ref="everit-json-schema"}
 
 [plugins]
 gradleIntelliJPlugin = { id = "org.jetbrains.intellij.platform", version.ref = "gradleIntelliJPlugin" }

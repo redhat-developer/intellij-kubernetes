@@ -83,6 +83,9 @@ dependencies {
     implementation(libs.kubernetes.httpclient.okhttp)
     implementation(libs.jackson.core)
     implementation(libs.commons.lang3)
+    implementation(libs.snakeyaml)
+    implementation(libs.json)
+    implementation(libs.json.schema)
 
     // for unit tests
     testImplementation(libs.assertj.core)
