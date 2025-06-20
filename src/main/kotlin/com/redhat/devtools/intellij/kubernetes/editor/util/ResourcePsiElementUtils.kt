@@ -23,6 +23,8 @@ import org.jetbrains.yaml.psi.YAMLKeyValue
 import org.jetbrains.yaml.psi.YAMLMapping
 import org.jetbrains.yaml.psi.YAMLValue
 
+private const val KEY_API_VERSION = "apiVersion"
+private const val KEY_KIND = "kind"
 private const val KEY_METADATA = "metadata"
 private const val KEY_NAME = "name"
 private const val KEY_LABELS = "labels"
@@ -102,6 +104,35 @@ fun YAMLMapping.getResourceName(): YAMLValue? {
 
 fun JsonObject.getResourceName(): JsonValue? {
     return getMetadata()?.findProperty(KEY_NAME)
+        ?.value
+}
+
+fun PsiElement.getKind(): PsiElement? {
+    return when(this) {
+        is YAMLDocument -> (this.topLevelValue as? YAMLMapping)?.getKind()
+        is YAMLMapping -> getKind()
+        is JsonObject -> getKind()
+        else -> null
+    }
+}
+
+fun JsonObject.getKind(): JsonObject? {
+    return this.findProperty(KEY_KIND)
+        ?.value as? JsonObject
+}
+
+fun YAMLMapping.getKind(): YAMLValue? {
+    return this.getKeyValueByKey(KEY_KIND)
+        ?.value
+}
+
+fun JsonObject.getApiVersion(): JsonObject? {
+    return this.findProperty(KEY_API_VERSION)
+        ?.value as? JsonObject
+}
+
+fun YAMLMapping.getApiVersion(): YAMLValue? {
+    return this.getKeyValueByKey(KEY_API_VERSION)
         ?.value
 }
 
