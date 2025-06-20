@@ -25,6 +25,7 @@
             "admission.k8s.io/v1",
             "admission.k8s.io/v1beta1",
             "admissionregistration.k8s.io/v1",
+            "admissionregistration.k8s.io/v1alpha1",
             "admissionregistration.k8s.io/v1beta1",
             "apiextensions.k8s.io/v1",
             "apiextensions.k8s.io/v1beta1",
@@ -34,6 +35,7 @@
             "apps/v1beta1",
             "apps/v1beta2",
             "authentication.k8s.io/v1",
+            "authentication.k8s.io/v1alpha1",
             "authentication.k8s.io/v1beta1",
             "authorization.k8s.io/v1",
             "authorization.k8s.io/v1beta1",
@@ -44,20 +46,24 @@
             "batch/v1",
             "batch/v1beta1",
             "certificates.k8s.io/v1",
+            "certificates.k8s.io/v1alpha1",
             "certificates.k8s.io/v1beta1",
             "coordination.k8s.io/v1",
+            "coordination.k8s.io/v1alpha1",
             "coordination.k8s.io/v1beta1",
             "discovery.k8s.io/v1",
             "discovery.k8s.io/v1beta1",
             "events.k8s.io/v1",
             "events.k8s.io/v1beta1",
             "extensions/v1beta1",
-            "flowcontrol.apiserver.k8s.io/v1alpha1",
+            "flowcontrol.apiserver.k8s.io/v1",
             "flowcontrol.apiserver.k8s.io/v1beta1",
             "flowcontrol.apiserver.k8s.io/v1beta2",
+            "flowcontrol.apiserver.k8s.io/v1beta3",
             "imagepolicy.k8s.io/v1alpha1",
             "internal.apiserver.k8s.io/v1alpha1",
             "networking.k8s.io/v1",
+            "networking.k8s.io/v1alpha1",
             "networking.k8s.io/v1beta1",
             "node.k8s.io/v1",
             "node.k8s.io/v1alpha1",
@@ -67,12 +73,14 @@
             "rbac.authorization.k8s.io/v1",
             "rbac.authorization.k8s.io/v1alpha1",
             "rbac.authorization.k8s.io/v1beta1",
+            "resource.k8s.io/v1alpha3",
             "scheduling.k8s.io/v1",
             "scheduling.k8s.io/v1alpha1",
             "scheduling.k8s.io/v1beta1",
             "storage.k8s.io/v1",
             "storage.k8s.io/v1alpha1",
-            "storage.k8s.io/v1beta1"
+            "storage.k8s.io/v1beta1",
+            "storagemigration.k8s.io/v1alpha1"
           ]
         },
         "dryRun": {
@@ -86,7 +94,8 @@
           "type": [
             "array",
             "null"
-          ]
+          ],
+          "x-kubernetes-list-type": "atomic"
         },
         "gracePeriodSeconds": {
           "description": "The duration in seconds before the object should be deleted. Value must be non-negative integer. The value zero indicates delete immediately. If this value is nil, the default grace period for the specified type will be used. Defaults to a per object value if not specified. zero means delete immediately.",
@@ -173,6 +182,11 @@
         {
           "group": "admissionregistration.k8s.io",
           "kind": "DeleteOptions",
+          "version": "v1alpha1"
+        },
+        {
+          "group": "admissionregistration.k8s.io",
+          "kind": "DeleteOptions",
           "version": "v1beta1"
         },
         {
@@ -214,6 +228,11 @@
           "group": "authentication.k8s.io",
           "kind": "DeleteOptions",
           "version": "v1"
+        },
+        {
+          "group": "authentication.k8s.io",
+          "kind": "DeleteOptions",
+          "version": "v1alpha1"
         },
         {
           "group": "authentication.k8s.io",
@@ -268,12 +287,22 @@
         {
           "group": "certificates.k8s.io",
           "kind": "DeleteOptions",
+          "version": "v1alpha1"
+        },
+        {
+          "group": "certificates.k8s.io",
+          "kind": "DeleteOptions",
           "version": "v1beta1"
         },
         {
           "group": "coordination.k8s.io",
           "kind": "DeleteOptions",
           "version": "v1"
+        },
+        {
+          "group": "coordination.k8s.io",
+          "kind": "DeleteOptions",
+          "version": "v1alpha1"
         },
         {
           "group": "coordination.k8s.io",
@@ -308,7 +337,7 @@
         {
           "group": "flowcontrol.apiserver.k8s.io",
           "kind": "DeleteOptions",
-          "version": "v1alpha1"
+          "version": "v1"
         },
         {
           "group": "flowcontrol.apiserver.k8s.io",
@@ -319,6 +348,11 @@
           "group": "flowcontrol.apiserver.k8s.io",
           "kind": "DeleteOptions",
           "version": "v1beta2"
+        },
+        {
+          "group": "flowcontrol.apiserver.k8s.io",
+          "kind": "DeleteOptions",
+          "version": "v1beta3"
         },
         {
           "group": "imagepolicy.k8s.io",
@@ -338,6 +372,11 @@
         {
           "group": "networking.k8s.io",
           "kind": "DeleteOptions",
+          "version": "v1alpha1"
+        },
+        {
+          "group": "networking.k8s.io",
+          "kind": "DeleteOptions",
           "version": "v1beta1"
         },
         {
@@ -381,6 +420,11 @@
           "version": "v1beta1"
         },
         {
+          "group": "resource.k8s.io",
+          "kind": "DeleteOptions",
+          "version": "v1alpha3"
+        },
+        {
           "group": "scheduling.k8s.io",
           "kind": "DeleteOptions",
           "version": "v1"
@@ -409,6 +453,11 @@
           "group": "storage.k8s.io",
           "kind": "DeleteOptions",
           "version": "v1beta1"
+        },
+        {
+          "group": "storagemigration.k8s.io",
+          "kind": "DeleteOptions",
+          "version": "v1alpha1"
         }
       ],
       "additionalProperties": false
@@ -433,16 +482,9 @@
               "null"
             ]
           },
-          "description": "Annotations is an unstructured key value map stored with a resource that may be set by external tools to store and retrieve arbitrary metadata. They are not queryable and should be preserved when modifying objects. More info: http://kubernetes.io/docs/user-guide/annotations",
+          "description": "Annotations is an unstructured key value map stored with a resource that may be set by external tools to store and retrieve arbitrary metadata. They are not queryable and should be preserved when modifying objects. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/annotations",
           "type": [
             "object",
-            "null"
-          ]
-        },
-        "clusterName": {
-          "description": "Deprecated: ClusterName is a legacy field that was always cleared by the system and never used; it will be removed completely in 1.25.\n\nThe name in the go struct is changed to help clients detect accidental use.",
-          "type": [
-            "string",
             "null"
           ]
         },
@@ -482,6 +524,7 @@
             "array",
             "null"
           ],
+          "x-kubernetes-list-type": "set",
           "x-kubernetes-patch-strategy": "merge"
         },
         "generateName": {
@@ -506,7 +549,7 @@
               "null"
             ]
           },
-          "description": "Map of string keys and values that can be used to organize and categorize (scope and select) objects. May match selectors of replication controllers and services. More info: http://kubernetes.io/docs/user-guide/labels",
+          "description": "Map of string keys and values that can be used to organize and categorize (scope and select) objects. May match selectors of replication controllers and services. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/labels",
           "type": [
             "object",
             "null"
@@ -577,17 +620,18 @@
           "type": [
             "array",
             "null"
-          ]
+          ],
+          "x-kubernetes-list-type": "atomic"
         },
         "name": {
-          "description": "Name must be unique within a namespace. Is required when creating resources, although some resources may allow a client to request the generation of an appropriate name automatically. Name is primarily intended for creation idempotence and configuration definition. Cannot be updated. More info: http://kubernetes.io/docs/user-guide/identifiers#names",
+          "description": "Name must be unique within a namespace. Is required when creating resources, although some resources may allow a client to request the generation of an appropriate name automatically. Name is primarily intended for creation idempotence and configuration definition. Cannot be updated. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names#names",
           "type": [
             "string",
             "null"
           ]
         },
         "namespace": {
-          "description": "Namespace defines the space within which each name must be unique. An empty namespace is equivalent to the \"default\" namespace, but \"default\" is the canonical representation. Not all objects are required to be scoped to a namespace - the value of this field for those objects will be empty.\n\nMust be a DNS_LABEL. Cannot be updated. More info: http://kubernetes.io/docs/user-guide/namespaces",
+          "description": "Namespace defines the space within which each name must be unique. An empty namespace is equivalent to the \"default\" namespace, but \"default\" is the canonical representation. Not all objects are required to be scoped to a namespace - the value of this field for those objects will be empty.\n\nMust be a DNS_LABEL. Cannot be updated. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/namespaces",
           "type": [
             "string",
             "null"
@@ -621,11 +665,11 @@
                 "type": "string"
               },
               "name": {
-                "description": "Name of the referent. More info: http://kubernetes.io/docs/user-guide/identifiers#names",
+                "description": "Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names#names",
                 "type": "string"
               },
               "uid": {
-                "description": "UID of the referent. More info: http://kubernetes.io/docs/user-guide/identifiers#uids",
+                "description": "UID of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names#uids",
                 "type": "string"
               }
             },
@@ -646,6 +690,10 @@
             "array",
             "null"
           ],
+          "x-kubernetes-list-map-keys": [
+            "uid"
+          ],
+          "x-kubernetes-list-type": "map",
           "x-kubernetes-patch-merge-key": "uid",
           "x-kubernetes-patch-strategy": "merge"
         },
@@ -664,7 +712,7 @@
           ]
         },
         "uid": {
-          "description": "UID is the unique in time and space value for this object. It is typically generated by the server on successful creation of a resource and is not allowed to change on PUT operations.\n\nPopulated by the system. Read-only. More info: http://kubernetes.io/docs/user-guide/identifiers#uids",
+          "description": "UID is the unique in time and space value for this object. It is typically generated by the server on successful creation of a resource and is not allowed to change on PUT operations.\n\nPopulated by the system. Read-only. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names#uids",
           "type": [
             "string",
             "null"
