@@ -251,6 +251,23 @@
                              parentId="tools"
                              displayName="Red Hat Kubernetes"
                              instance="com.redhat.devtools.intellij.kubernetes.settings.SettingsConfigurable" />
+
+        <localInspection
+            language="yaml"
+            shortName="com.redhat.devtools.intellij.kubernetes.validation.KubernetesResourceYamlValidationInspection"
+            displayName="Kubernetes Resource validation"
+            groupName="Kubernetes Resource Validation"
+            enabledByDefault="true"
+            level="ERROR"
+            implementationClass="com.redhat.devtools.intellij.kubernetes.validation.ResourcesValidation" />
+        <localInspection
+                language="JSON"
+                shortName="com.redhat.devtools.intellij.kubernetes.validation.KubernetesResourceJsonValidationInspection"
+                displayName="Kubernetes resource validation"
+                groupName="Kubernetes Resource Validation"
+                enabledByDefault="true"
+                level="ERROR"
+                implementationClass="com.redhat.devtools.intellij.kubernetes.validation.ResourcesValidation" />
     </extensions>
 
     <extensionPoints>
