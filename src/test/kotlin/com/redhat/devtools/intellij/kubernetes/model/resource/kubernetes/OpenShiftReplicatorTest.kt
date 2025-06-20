@@ -10,9 +10,9 @@
  ******************************************************************************/
 package com.redhat.devtools.intellij.kubernetes.model.resource.kubernetes
 
-import com.nhaarman.mockitokotlin2.doReturn
-import com.nhaarman.mockitokotlin2.mock
-import com.nhaarman.mockitokotlin2.verify
+import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.mock
+import org.mockito.kotlin.verify
 import com.redhat.devtools.intellij.kubernetes.model.resource.openshift.OpenShiftReplicas.OpenShiftReplicator
 import io.fabric8.openshift.api.model.DeploymentConfig
 import io.fabric8.openshift.api.model.DeploymentConfigBuilder

@@ -10,9 +10,9 @@
  ******************************************************************************/
 package com.redhat.devtools.intellij.kubernetes.model.mocks
 
-import com.nhaarman.mockitokotlin2.doReturn
-import com.nhaarman.mockitokotlin2.mock
-import com.nhaarman.mockitokotlin2.whenever
+import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.mock
+import org.mockito.kotlin.whenever
 import io.fabric8.kubernetes.api.model.ContainerState
 import io.fabric8.kubernetes.api.model.ContainerStateRunning
 import io.fabric8.kubernetes.api.model.ContainerStateTerminated
