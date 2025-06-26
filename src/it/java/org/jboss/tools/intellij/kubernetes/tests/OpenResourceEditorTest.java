@@ -28,22 +28,26 @@ import static com.intellij.remoterobot.utils.RepeatUtilsKt.waitFor;
  * @author olkornii@redhat.com
  */
 public class OpenResourceEditorTest extends AbstractKubernetesTest{
-    public static void checkResourceEditor(RemoteRobot robot, ComponentFixture kubernetesViewTree){
-        openResourceContentList(new String[]{"Nodes"}, kubernetesViewTree);
-        RemoteText selectedResource = getResourceByIdInParent("Nodes", 0, kubernetesViewTree); // get the resource with id 0
+
+    public OpenResourceEditorTest(String clusterName, ComponentFixture kubernetesViewTree, RemoteRobot remoteRobot) {
+        super(clusterName, kubernetesViewTree, remoteRobot);
+    }
+
+    public void checkResourceEditor(){
+        RemoteText selectedResource = getNamedResourceInNodes(resourceName);
         selectedResource.click(MouseButton.RIGHT_BUTTON); // select the resource
         RightClickMenu rightClickMenu = robot.find(RightClickMenu.class); // open the yml editor
         rightClickMenu.select("Edit..."); // open the yml editor
 
         EditorsSplittersFixture editorSplitter = robot.find(EditorsSplittersFixture.class);
-        waitFor(Duration.ofSeconds(15), Duration.ofSeconds(1), "Editor is not available.", () -> isEditorOpened(robot)); // wait 15 seconds for editor
-        waitFor(Duration.ofSeconds(15), Duration.ofSeconds(1), "Resource schema is wrong.", () -> isSchemaSet(robot, "v1#Node")); // wait 15 seconds for set right schema
+        waitFor(Duration.ofSeconds(15), Duration.ofSeconds(1), "Editor is not available.", this::isEditorOpened); // wait 15 seconds for editor
+        waitFor(Duration.ofSeconds(15), Duration.ofSeconds(1), "Resource schema is wrong.", this::isSchemaSet); // wait 15 seconds for set right schema
 
         editorSplitter.closeEditor(); // close editor
-        hideClusterContent(kubernetesViewTree);
+        hideClusterContent();
     }
 
-    private static boolean isEditorOpened(RemoteRobot robot){
+    private boolean isEditorOpened(){
         try {
             robot.find(ComponentFixture.class, byXpath("//div[@class='EditorComponentImpl']"));
         } catch (WaitForConditionTimeoutException e) {
@@ -52,10 +56,10 @@ public class OpenResourceEditorTest extends AbstractKubernetesTest{
         return true;
     }
 
-    private static boolean isSchemaSet(RemoteRobot robot, String schemaName){
+    private boolean isSchemaSet(){
         try {
             IdeStatusBarFixture statusBarFixture = robot.find(IdeStatusBarFixture.class);
-            statusBarFixture.withIconAndArrows("Schema: " + schemaName);
+            statusBarFixture.withIconAndArrows("Schema: v1#Pod");
         } catch (WaitForConditionTimeoutException e) {
             return false;
         }

@@ -14,79 +14,76 @@ import com.intellij.remoterobot.RemoteRobot;
 import com.intellij.remoterobot.fixtures.ComponentFixture;
 import com.intellij.remoterobot.fixtures.dataExtractor.RemoteText;
 import com.intellij.remoterobot.utils.Keyboard;
+import org.assertj.swing.core.MouseButton;
 import org.jboss.tools.intellij.kubernetes.fixtures.mainidewindow.EditorsSplittersFixture;
 import org.jboss.tools.intellij.kubernetes.fixtures.menus.ActionToolbarMenu;
+import org.jboss.tools.intellij.kubernetes.fixtures.menus.RightClickMenu;
 
+import java.awt.event.KeyEvent;
 import java.util.List;
+import java.util.Optional;
 
+import static com.intellij.remoterobot.search.locators.Locators.byXpath;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * @author olkornii@redhat.com
  */
 public class EditResourceTest extends AbstractKubernetesTest{
-    public static void editResource(RemoteRobot robot, ComponentFixture kubernetesViewTree){
+
+    public EditResourceTest(String clusterName, ComponentFixture kubernetesViewTree, RemoteRobot remoteRobot) {
+        super(clusterName, kubernetesViewTree, remoteRobot);
+    }
+
+    public void editResource(){
         String yodaLabel = "yoda_label";
         String yodaText = "yoda_text";
 
-        openResourceContentList(new String[]{"Nodes"}, kubernetesViewTree);
-        RemoteText selectedResource = getResourceByIdInParent("Nodes", 0, kubernetesViewTree);
-        selectedResource.doubleClick();
+        getNamedResourceInNodes("hello-minikube").doubleClick();
 
         EditorsSplittersFixture editorSplitter = robot.find(EditorsSplittersFixture.class);
 
-        RemoteText placeForNewLabel = getPlaceForNewLabel(editorSplitter);
-        placeForNewLabel.click();
-
-        String text = "    " + yodaLabel +": \"" + yodaText;
+        String text = yodaLabel +": \"" + yodaText;
         Keyboard myKeyboard = new Keyboard(robot);
 
+        RemoteText placeForNewLabel = getPlaceForNewLabel(editorSplitter);
+        placeForNewLabel.click();
+        myKeyboard.key(KeyEvent.VK_RIGHT);
         myKeyboard.enter(); // create empty line
-        placeForNewLabel.click(); // focus on the empty line
         myKeyboard.enterText(text); // enter text
 
         ActionToolbarMenu toolbarMenu = robot.find(ActionToolbarMenu.class);
         toolbarMenu.pushToCluster();
 
         editorSplitter.closeEditor();
-        hideClusterContent(kubernetesViewTree);
+        hideClusterContent();
 
-        openResourceContentList(new String[]{"Nodes"}, kubernetesViewTree);
-
-        selectedResource.doubleClick();
+        RemoteText resource = getNamedResourceInNodes("hello-minikube");
+        resource.doubleClick();
         ComponentFixture textFixtureNew = editorSplitter.getEditorTextFixture();
-        scrollToVisible(yodaLabel, robot);
-        List<RemoteText> remoteTextNew = textFixtureNew.findAllText();
-        boolean labelExist = false;
-        for (RemoteText actual_remote_text : remoteTextNew){
-            if (actual_remote_text.getText().contains(yodaText)){
-                labelExist = true;
-                break;
-            }
-        }
+        Optional<RemoteText> label = textFixtureNew.findAllText().stream().filter(remoteText -> remoteText.getText().contains(yodaText)).findFirst();
+        assertTrue(
+            label.isPresent(),
+            "Label '" + yodaLabel + "' not found.");
 
-        editorSplitter.closeEditor(); // close editor
-        hideClusterContent(kubernetesViewTree);
+        editorSplitter.closeEditor();
 
-        assertTrue(labelExist, "Label '" + yodaLabel + "' not found.");
+        //delete pod to refresh label
+        resource.click(MouseButton.RIGHT_BUTTON);
+        RightClickMenu rightClickMenu = robot.find(RightClickMenu.class);
+        rightClickMenu.select("Delete");
+        robot.find(ComponentFixture.class, byXpath("//div[@text='Yes']")).click();
+
+        hideClusterContent();
     }
 
-    private static RemoteText getPlaceForNewLabel (EditorsSplittersFixture editorSplitter) {
+    private RemoteText getPlaceForNewLabel (EditorsSplittersFixture editorSplitter) {
         ComponentFixture textFixture = editorSplitter.getEditorTextFixture();
-        List<RemoteText> remoteText = textFixture.findAllText();
 
-        int labelsId = 0;
-        boolean labelsFound = false;
-        for (RemoteText actual_remote_text : remoteText){
-            if ("labels".equals(actual_remote_text.getText())){
-                labelsFound = true;
-                break;
-            }
-            labelsId++;
-        }
+        List<RemoteText> allVisibleElements = textFixture.findAllText();
+        Optional<RemoteText> resourceText = allVisibleElements.stream().filter(remoteText -> remoteText.getText().equals("labels")).findFirst();
+        assertTrue(resourceText.isPresent());
 
-        assertTrue(labelsFound, "Labels not found in resource.");
-
-        return remoteText.get(labelsId+2); // +1 because we need the next one, +1 because between every 2 real elements is space
+        return allVisibleElements.get(allVisibleElements.indexOf(resourceText.get())+1);
     }
 }

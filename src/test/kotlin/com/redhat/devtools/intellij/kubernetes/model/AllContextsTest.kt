@@ -10,17 +10,17 @@
  ******************************************************************************/
 package com.redhat.devtools.intellij.kubernetes.model
 
-import com.nhaarman.mockitokotlin2.any
-import com.nhaarman.mockitokotlin2.anyOrNull
-import com.nhaarman.mockitokotlin2.argThat
-import com.nhaarman.mockitokotlin2.clearInvocations
-import com.nhaarman.mockitokotlin2.doReturn
-import com.nhaarman.mockitokotlin2.doThrow
-import com.nhaarman.mockitokotlin2.mock
-import com.nhaarman.mockitokotlin2.never
-import com.nhaarman.mockitokotlin2.times
-import com.nhaarman.mockitokotlin2.verify
-import com.nhaarman.mockitokotlin2.whenever
+import org.mockito.kotlin.any
+import org.mockito.kotlin.anyOrNull
+import org.mockito.kotlin.argThat
+import org.mockito.kotlin.clearInvocations
+import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.doThrow
+import org.mockito.kotlin.mock
+import org.mockito.kotlin.never
+import org.mockito.kotlin.times
+import org.mockito.kotlin.verify
+import org.mockito.kotlin.whenever
 import com.redhat.devtools.intellij.kubernetes.model.client.ClientAdapter
 import com.redhat.devtools.intellij.kubernetes.model.context.IActiveContext
 import com.redhat.devtools.intellij.kubernetes.model.context.IContext
@@ -205,7 +205,7 @@ class AllContextsTest {
         allContexts.all // create all contexts
         val activeContext = activeContext(resource(newCurrentContext.namespace!!), namedContext1)
         /**
-         * Trying to use {@code com.nhaarman.mockitokotlin2.doReturn} leads to
+         * Trying to use {@code org.mockito.kotlin.doReturn} leads to
          * "Overload Resolution Ambiguity" with {@code org.mockito.Mockito.doReturn} in intellij.
          * Gradle compiles it just fine
          *
