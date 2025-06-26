@@ -53,6 +53,11 @@ public class BasicTests {
     @BeforeAll
     public static void connect() {
         robot = UITestRunner.runIde(IntelliJVersion.COMMUNITY_V_2023_1, 8580);
+
+        FlatWelcomeFrame flatWelcomeFrame = robot.find(FlatWelcomeFrame.class, Duration.ofSeconds(10));
+        flatWelcomeFrame.disableNotifications();
+        flatWelcomeFrame.preventTipDialogFromOpening();
+
         CreateCloseUtils.createEmptyProject(robot, "test-project");
         openKubernetesTab();
 
