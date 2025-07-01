@@ -13,7 +13,6 @@ package com.redhat.devtools.intellij.kubernetes.validation
 import com.intellij.openapi.diagnostic.logger
 import io.fabric8.kubernetes.client.utils.ApiVersionUtil
 import java.io.IOException
-import java.io.InputStream
 import java.util.concurrent.ConcurrentHashMap
 
 object KubernetesSchema {

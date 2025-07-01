@@ -238,6 +238,11 @@
         <codeInsight.inlayProvider language="JSON"
                                    implementationClass="com.redhat.devtools.intellij.kubernetes.editor.inlay.ResourceEditorInlayHintsProvider"
                                    id="com.redhat.devtools.intellij.kubernetes.editor.json.ResourceEditorInlayHintsProvider"/>
+        <completion.contributor language="yaml"
+                                implementationClass="com.redhat.devtools.intellij.kubernetes.completion.YamlKubernetesCompletionContributor"/>
+        <completion.contributor language="JSON"
+                                implementationClass="com.redhat.devtools.intellij.kubernetes.completion.JsonKubernetesCompletionContributor"/>
+
         <findUsagesHandlerFactory
                 order="last, before default"
                 implementation="com.redhat.devtools.intellij.kubernetes.usage.SelectorUsagesHandlerFactory"/>
