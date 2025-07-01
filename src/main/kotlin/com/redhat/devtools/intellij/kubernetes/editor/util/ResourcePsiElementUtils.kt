@@ -128,6 +128,15 @@ fun YAMLMapping.getKind(): YAMLValue? {
         ?.value
 }
 
+fun PsiElement.getApiVersion(): PsiElement? {
+    return when(this) {
+        is YAMLDocument -> (this.topLevelValue as? YAMLMapping)?.getApiVersion()
+        is YAMLMapping -> getApiVersion()
+        is JsonObject -> getApiVersion()
+        else -> null
+    }
+}
+
 fun JsonObject.getApiVersion(): JsonValue? {
     return this.findProperty(KEY_API_VERSION)
         ?.value
