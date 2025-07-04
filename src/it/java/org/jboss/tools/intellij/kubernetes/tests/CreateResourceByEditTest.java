@@ -41,7 +41,7 @@ public class CreateResourceByEditTest extends AbstractKubernetesTest{
     }
 
     public void createResourceByEdit(){
-        getFirstResourceInNodes().doubleClick();
+        getFirstResourceInNodes().doubleClick(MouseButton.LEFT_BUTTON);
 
         EditorsSplittersFixture editorSplitter = robot.find(EditorsSplittersFixture.class);
         Keyboard myKeyboard = new Keyboard(robot);
@@ -49,7 +49,7 @@ public class CreateResourceByEditTest extends AbstractKubernetesTest{
         String text = "\"" + newResourceName;
 
         RemoteText namePlace = findResourceNamePosition(editorSplitter);
-        namePlace.doubleClick();
+        namePlace.doubleClick(MouseButton.LEFT_BUTTON);
         myKeyboard.enterText(text); // replace with new name
 
         ActionToolbarMenu toolbarMenu = robot.find(ActionToolbarMenu.class);

@@ -15,7 +15,8 @@ import com.intellij.remoterobot.fixtures.ComponentFixture;
 import com.intellij.remoterobot.fixtures.dataExtractor.RemoteText;
 import com.redhat.devtools.intellij.commonuitest.UITestRunner;
 import com.redhat.devtools.intellij.commonuitest.fixtures.dialogs.FlatWelcomeFrame;
-import com.redhat.devtools.intellij.commonuitest.fixtures.mainidewindow.toolwindowspane.ToolWindowLeftToolbar;
+import com.redhat.devtools.intellij.commonuitest.fixtures.mainidewindow.toolwindowspane.ToolWindowPane;
+import com.redhat.devtools.intellij.commonuitest.utils.constants.XPathDefinitions;
 import com.redhat.devtools.intellij.commonuitest.utils.project.CreateCloseUtils;
 import com.redhat.devtools.intellij.commonuitest.utils.runner.IntelliJVersion;
 import com.redhat.devtools.intellij.commonuitest.utils.testextension.ScreenshotAfterTestFailExtension;
@@ -26,6 +27,7 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
+import static com.intellij.remoterobot.search.locators.Locators.byXpath;
 import static com.intellij.remoterobot.stepsProcessing.StepWorkerKt.step;
 import static com.intellij.remoterobot.utils.RepeatUtilsKt.waitFor;
 
@@ -102,8 +104,8 @@ public class BasicTests {
     }
 
     private static void openKubernetesTab(){
-        ToolWindowLeftToolbar toolWindowToolbar = robot.find(ToolWindowLeftToolbar.class, Duration.ofSeconds(10));
-        toolWindowToolbar.clickStripeButton("Kubernetes");
+        ToolWindowPane toolWindowToolbar = robot.find(ToolWindowPane.class, Duration.ofSeconds(10));
+        toolWindowToolbar.button(byXpath(XPathDefinitions.label("Kubernetes"))).click();
     }
 
     private static boolean isKubernetesViewTreeAvailable(){
