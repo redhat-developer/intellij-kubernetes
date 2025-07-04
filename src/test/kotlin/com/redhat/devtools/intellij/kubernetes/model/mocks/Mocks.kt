@@ -10,12 +10,12 @@
  ******************************************************************************/
 package com.redhat.devtools.intellij.kubernetes.model.mocks
 
-import com.nhaarman.mockitokotlin2.any
-import com.nhaarman.mockitokotlin2.anyOrNull
-import com.nhaarman.mockitokotlin2.doAnswer
-import com.nhaarman.mockitokotlin2.doReturn
-import com.nhaarman.mockitokotlin2.mock
-import com.nhaarman.mockitokotlin2.whenever
+import org.mockito.kotlin.any
+import org.mockito.kotlin.anyOrNull
+import org.mockito.kotlin.doAnswer
+import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.mock
+import org.mockito.kotlin.whenever
 import com.redhat.devtools.intellij.common.validation.KubernetesResourceInfo
 import com.redhat.devtools.intellij.common.validation.KubernetesTypeInfo
 import com.redhat.devtools.intellij.kubernetes.model.IResourceModel
@@ -62,7 +62,7 @@ object Mocks {
             : (ClientAdapter<out KubernetesClient>, IResourceModelObservable) -> IActiveContext<out HasMetadata, out KubernetesClient> {
         return mock {
             /**
-             * Trying to use {@code com.nhaarman.mockitokotlin2.doReturn} leads to
+             * Trying to use {@code org.mockito.kotlin.doReturn} leads to
              * "Overload Resolution Ambiguity" with {@code org.mockito.Mockito.doReturn} in intellij.
              * Gradle compiles it just fine
              *

@@ -14,162 +14,113 @@ import com.intellij.remoterobot.RemoteRobot;
 import com.intellij.remoterobot.fixtures.ComponentFixture;
 import com.intellij.remoterobot.fixtures.dataExtractor.RemoteText;
 import com.intellij.remoterobot.utils.Keyboard;
-import com.intellij.remoterobot.utils.WaitForConditionTimeoutException;
-import com.redhat.devtools.intellij.commonuitest.fixtures.dialogs.errors.IdeFatalErrorsDialog;
 import org.assertj.swing.core.MouseButton;
-import org.jboss.tools.intellij.kubernetes.fixtures.mainidewindow.IdeStatusBarFixture;
-
-import java.awt.*;
-import java.awt.datatransfer.Clipboard;
 import java.awt.event.KeyEvent;
 import java.time.Duration;
 import java.util.List;
+import java.util.Optional;
 
 import static com.intellij.remoterobot.search.locators.Locators.byXpath;
 import static com.intellij.remoterobot.utils.RepeatUtilsKt.waitFor;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * @author olkornii@redhat.com
  */
 public abstract class AbstractKubernetesTest {
 
-    public static void openResourceContentList(String[] path, ComponentFixture kubernetesViewTree){
-        openClusterContent(kubernetesViewTree);
-        for (String resourceForOpen : path){
-            kubernetesViewTree.findText(resourceForOpen).doubleClick(MouseButton.LEFT_BUTTON); // open Nodes content
-            try {
-                Thread.sleep(3000); // sleep for few seconds, cluster need some time to reload nodes
-            } catch (InterruptedException e) {
-                e.printStackTrace();
+    protected static final String NODES = "Nodes";
+    protected static final String resourceName = "hello-minikube"; // resource created in script
+    protected final ComponentFixture kubernetesViewTree;
+    protected final RemoteRobot robot;
+    protected final String clusterName;
+
+    AbstractKubernetesTest(String clusterName, ComponentFixture kubernetesViewTree, RemoteRobot remoteRobot) {
+        this.clusterName = clusterName;
+        this.kubernetesViewTree = kubernetesViewTree;
+        this.robot = remoteRobot;
+    }
+
+    public void openResourceContentList(String[] path){
+        for (String resourceToOpen : path){
+            List<RemoteText> findings = kubernetesViewTree.findAllText(resourceToOpen);
+            if (findings.isEmpty()){
+                fail("Can't find resource " + resourceToOpen);
             }
-            waitFor(Duration.ofSeconds(15), Duration.ofSeconds(1), "Resources is not available.", () -> isResourcesLoaded(kubernetesViewTree));
+            kubernetesViewTree.findText(resourceToOpen).doubleClick(MouseButton.LEFT_BUTTON); // open resource content
+            waitFor(Duration.ofSeconds(15), Duration.ofSeconds(1), "Resource to be available.", this::isResourcesLoaded);
         }
     }
 
-    public static boolean isResourcesLoaded(ComponentFixture kubernetesViewTree){
-        List<RemoteText> allTextFromTree = kubernetesViewTree.findAllText();
-        for (RemoteText actualText : allTextFromTree){
-            if (actualText.getText().contains("loading...")){
-                return false;
-            }
-        }
-        return true;
+    public boolean isResourcesLoaded(){
+        return kubernetesViewTree.findAllText().stream().noneMatch(remoteText -> remoteText.getText().contains("loading..."));
     }
 
-    public static void openClusterContent(ComponentFixture kubernetesViewTree){
+    protected void openClusterContent(){
+        kubernetesViewTree.findText(clusterName).doubleClick(MouseButton.LEFT_BUTTON);
+        waitFor(Duration.ofSeconds(15), Duration.ofSeconds(1), "Kubernetes Tree View to be available.", this::isNodesOpened);
+    }
+
+    public boolean isNodesOpened(){
+        return kubernetesViewTree.findAllText().stream().anyMatch(remoteText -> remoteText.getText().equals(NODES));
+    }
+
+    public RemoteText getFirstResourceInNodes(){
+        openClusterContent();
+        openResourceContentList(new String[]{NODES});
+        List<RemoteText> allVisibleElements = kubernetesViewTree.findAllText();
+        Optional<RemoteText> resourceText = allVisibleElements.stream().filter(remoteText -> remoteText.getText().equals(NODES)).findFirst();
+        assertTrue(resourceText.isPresent());
+        return allVisibleElements.get(allVisibleElements.indexOf(resourceText.get())+1);
+    }
+
+    /**
+     * open a resource under the 'Nodes' item
+     * @param resourceName the resource to open
+     * @return the remoteText found with that name
+     */
+    public RemoteText getNamedResourceInNodes(String resourceName){
+        openClusterContent();
+        openResourceContentList(new String[]{NODES});
+        return getResource(resourceName);
+    }
+
+    protected RemoteText getResource(String resourceName){
+        waitFor(Duration.ofSeconds(15), Duration.ofSeconds(1), "Resource to be available.", () -> kubernetesViewTree.findAllText().stream().anyMatch(remoteText -> remoteText.getText().startsWith(resourceName)));
+        List<RemoteText> allVisibleElements = kubernetesViewTree.findAllText();
+        Optional<RemoteText> resourceText = allVisibleElements.stream().filter(remoteText -> remoteText.getText().startsWith(resourceName)).findFirst();
+        assertTrue(resourceText.isPresent());
+        assertTrue(allVisibleElements.contains(resourceText.get()));
+        assertTrue(allVisibleElements.lastIndexOf(resourceText.get()) < allVisibleElements.size());
+        return allVisibleElements.get(allVisibleElements.indexOf(resourceText.get()));
+    }
+
+    public void hideClusterContent(){
+        kubernetesViewTree.findText(clusterName).doubleClick(MouseButton.LEFT_BUTTON);
+    }
+
+    public boolean isResourceCreated(String resourceName, boolean hardCompare){
         List<RemoteText> kubernetesToolsText = kubernetesViewTree.findAllText();
-        boolean needClickOnMinikube = true;
-        for (RemoteText findNodes : kubernetesToolsText){
-            if (findNodes.getText().contains("Nodes")){
-                needClickOnMinikube = false;
-                break;
-            }
-        }
-        if (needClickOnMinikube){
-            String clusterText = kubernetesViewTree.findAllText().get(0).getText();
-            kubernetesViewTree.findText(clusterText).doubleClick(MouseButton.LEFT_BUTTON);
-        }
-        waitFor(Duration.ofSeconds(15), Duration.ofSeconds(1), "Kubernetes Tree View is not available.", () -> isNodesOpened(kubernetesViewTree));
-    }
 
-    public static boolean isNodesOpened(ComponentFixture kubernetesViewTree){
-        List<RemoteText> allTextFromTree = kubernetesViewTree.findAllText();
-        for (RemoteText actualText : allTextFromTree){
-            if (actualText.getText().contains("Nodes")){
-                return true;
-            }
-        }
-        return false;
-    }
-
-    public static RemoteText getResourceByIdInParent(String parentName, int id, ComponentFixture kubernetesViewTree){
-        List<RemoteText> kubernetesToolsText = kubernetesViewTree.findAllText();
-        int parentId = 0;
-        for (RemoteText findParent : kubernetesToolsText){
-            if (findParent.getText().contains(parentName)){
-                break;
-            }
-            parentId++;
-        }
-        return kubernetesViewTree.findAllText().get(parentId + id + 1);
-    }
-
-    public static void hideClusterContent(ComponentFixture kubernetesViewTree){
-        String clusterText = kubernetesViewTree.findAllText().get(0).getText();
-        kubernetesViewTree.findText(clusterText).doubleClick(); // hide cluster content
-    }
-
-    public static boolean isResourceCreated(ComponentFixture kubernetesViewTree, String resourceName, boolean hardCompare){
-        List<RemoteText> kubernetesToolsText = kubernetesViewTree.findAllText();
-
+        Optional<RemoteText> resourceText;
         if (hardCompare){
-            for (RemoteText findNewResource : kubernetesToolsText){
-                if (resourceName.equals(findNewResource.getText())){
-                    return true;
-                }
-            }
+            resourceText = kubernetesToolsText.stream().filter(remoteText -> remoteText.getText().equals(resourceName)).findFirst();
         } else {
-            for (RemoteText findNewResource : kubernetesToolsText){
-                if (findNewResource.getText().contains(resourceName)){
-                    return true;
-                }
-            }
+            resourceText = kubernetesToolsText.stream().filter(remoteText -> remoteText.getText().contains(resourceName)).findFirst();
         }
-        return false;
+        return resourceText.isPresent();
     }
 
-    public static boolean isResourceDeleted(ComponentFixture kubernetesViewTree, String resourceName){
-        List<RemoteText> kubernetesToolsText = kubernetesViewTree.findAllText();
-        for (RemoteText findNewResource : kubernetesToolsText){
-            if (resourceName.equals(findNewResource.getText())){
-                return false;
-            }
-        }
-        return true;
+    public boolean isResourceDeleted(String resourceName){
+        return kubernetesViewTree.findAllText().stream().noneMatch(remoteText -> remoteText.getText().equals(resourceName));
     }
 
-    public static boolean isError(RemoteRobot robot){
-        IdeStatusBarFixture ideStatusBar = robot.find(IdeStatusBarFixture.class);
-        try {
-            ideStatusBar.ideErrorsIcon();
-        } catch (WaitForConditionTimeoutException e) {
-            return false;
-        }
-        return true;
-    }
-
-    public static void clearErrors(RemoteRobot robot){
-        IdeStatusBarFixture statusBar = robot.find(IdeStatusBarFixture.class);
-        try {
-            statusBar.ideErrorsIcon().click();
-        } catch (WaitForConditionTimeoutException e) {
-            e.printStackTrace();
-        }
-        IdeFatalErrorsDialog ideErrorsDialog = robot.find(IdeFatalErrorsDialog.class);
-        ideErrorsDialog.clearAll();
-    }
-
-    public static Clipboard getSystemClipboard()
-    {
-        Toolkit defaultToolkit = Toolkit.getDefaultToolkit();
-        return defaultToolkit.getSystemClipboard();
-    }
-
-    public static void scrollToVisible(String text, RemoteRobot robot) {
+    public void scrollToVisible(String text) {
         Keyboard myKeyboard = new Keyboard(robot);
         myKeyboard.hotKey(KeyEvent.VK_CONTROL, KeyEvent.VK_F);
         robot.find(ComponentFixture.class, byXpath("//div[@class='SearchTextArea']")).click();
-
-        clearSearchField(robot);
-
         myKeyboard.enterText(text);
     }
 
-    private static void clearSearchField(RemoteRobot robot) {
-        try {
-            robot.find(ComponentFixture.class, byXpath("//div[@myaction='null (null)']")).click();
-        } catch (WaitForConditionTimeoutException e) {
-            e.printStackTrace();
-        }
-    }
 }

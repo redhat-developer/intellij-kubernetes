@@ -14,20 +14,17 @@ import com.intellij.remoterobot.RemoteRobot;
 import com.intellij.remoterobot.fixtures.ComponentFixture;
 import com.intellij.remoterobot.fixtures.dataExtractor.RemoteText;
 import com.intellij.remoterobot.utils.Keyboard;
-import org.assertj.swing.core.MouseButton;
-import org.jboss.tools.intellij.kubernetes.fixtures.dialogs.IdeFatalErrorsDialogFixture;
 import org.jboss.tools.intellij.kubernetes.fixtures.mainidewindow.EditorsSplittersFixture;
-import org.jboss.tools.intellij.kubernetes.fixtures.mainidewindow.IdeStatusBarFixture;
 import org.jboss.tools.intellij.kubernetes.fixtures.menus.ActionToolbarMenu;
 import org.jboss.tools.intellij.kubernetes.fixtures.menus.RightClickMenu;
 
-import java.awt.datatransfer.Clipboard;
-import java.awt.datatransfer.StringSelection;
 import java.awt.event.KeyEvent;
 import java.time.Duration;
+import java.util.Optional;
 
+import static com.intellij.remoterobot.search.locators.Locators.byXpath;
 import static com.intellij.remoterobot.utils.RepeatUtilsKt.waitFor;
-import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * @author olkornii@redhat.com
@@ -36,86 +33,91 @@ public class CreateAnotherTypeResourceByEditTest extends AbstractKubernetesTest{
 
     private static final String newResourceName = "newresourcename2";
 
-    public static void createAnotherTypeResourceByEdit(RemoteRobot robot, ComponentFixture kubernetesViewTree){
-        clearErrors(robot);
+    public CreateAnotherTypeResourceByEditTest(String clusterName, ComponentFixture kubernetesViewTree, RemoteRobot remoteRobot) {
+        super(clusterName, kubernetesViewTree, remoteRobot);
+    }
 
-        openResourceContentList(new String[]{"Nodes"}, kubernetesViewTree);
-        RemoteText selectedResource = getResourceByIdInParent("Nodes", 0, kubernetesViewTree);
-        selectedResource.doubleClick();
+    public void createAnotherTypeResourceByEdit(){
+        getNamedResourceInNodes(resourceName).doubleClick();
 
         EditorsSplittersFixture editorSplitter = robot.find(EditorsSplittersFixture.class);
-        Keyboard myKeyboard = new Keyboard(robot);
 
-        setupNewPod(robot, myKeyboard);
-
-        clearErrors(robot);
+        setupNewPod();
 
         ActionToolbarMenu toolbarMenu = robot.find(ActionToolbarMenu.class);
         toolbarMenu.pushToCluster();
 
-        checkErrors(robot);
-
         editorSplitter.closeEditor(); // close editor
-        hideClusterContent(kubernetesViewTree);
-        openResourceContentList(new String[] {"Workloads", "Pods"}, kubernetesViewTree);
-        waitFor(Duration.ofSeconds(15), Duration.ofSeconds(1), "New resource was not been created.", () -> isResourceCreated(kubernetesViewTree, newResourceName, false));
-        hideClusterContent(kubernetesViewTree);
+        hideClusterContent();
+
+        openClusterContent();
+        openResourceContentList(new String[] {"Workloads", "Deployments"});
+        waitFor(Duration.ofSeconds(15), Duration.ofSeconds(1), "New resource was not been created.", () -> isResourceCreated(newResourceName, false));
+
+        //delete pod to refresh label
+        Optional<RemoteText> deploymentResource = kubernetesViewTree.findAllText().stream().filter(remoteText -> remoteText.getText().contains(newResourceName)).findFirst();
+        assertTrue(deploymentResource.isPresent());
+        deploymentResource.get().rightClick();
+        RightClickMenu rightClickMenu = robot.find(RightClickMenu.class);
+        rightClickMenu.select("Delete");
+        robot.find(ComponentFixture.class, byXpath("//div[@text='Yes']")).click();
+        hideClusterContent();
     }
 
-    private static void setupNewPod(RemoteRobot robot, Keyboard myKeyboard){
-        Clipboard clipboard = getSystemClipboard();
-
-        String text = "apiVersion: apps/v1\n" +
-                "kind: Deployment\n" +
-                "metadata:\n" +
-                "  name: " + newResourceName + "\n" +
-                "spec:\n" +
-                "  replicas: 2\n" +
-                "  selector:\n" +
-                "    matchLabels:\n" +
-                "      app: sise\n" +
-                "  template:\n" +
-                "    metadata:\n" +
-                "      labels:\n" +
-                "        app: sise\n" +
-                "    spec:\n" +
-                "      containers:\n" +
-                "      - name: sise\n" +
-                "        image: quay.io/openshiftlabs/simpleservice:0.5.0\n" +
-                "        ports:\n" +
-                "        - containerPort: 9876\n" +
-                "        env:\n" +
-                "        - name: SIMPLE_SERVICE_VERSION\n" +
-                "          value: \"0.9\"";
-
-        clipboard.setContents(new StringSelection(text), null);
-
-        EditorsSplittersFixture editorSplitter = robot.find(EditorsSplittersFixture.class);
-        ComponentFixture textFixture = editorSplitter.getEditorTextFixture();
-        RemoteText remoteText = textFixture.findAllText().get(0);
+    private void setupNewPod(){
+        Keyboard myKeyboard = new Keyboard(robot);
 
         myKeyboard.hotKey(KeyEvent.VK_CONTROL, KeyEvent.VK_A);
-        remoteText.click(MouseButton.RIGHT_BUTTON);
+        myKeyboard.backspace();
 
-        RightClickMenu rightClickMenu = robot.find(RightClickMenu.class);
-        rightClickMenu.select("Paste");
-        try {
-            Thread.sleep(3000);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
+        // enter text
+        myKeyboard.enterText("apiVersion: apps/v1");
+        myKeyboard.enter();
+        myKeyboard.enterText("kind: Deployment");
+        myKeyboard.enter();
+        myKeyboard.enterText("metadata:");
+        myKeyboard.enter();
+        myKeyboard.enterText("name: " + newResourceName);
+        myKeyboard.enter();
+        myKeyboard.enterText("labels:");
+        myKeyboard.enter();
+        myKeyboard.enterText("app: nginx");
+        myKeyboard.enter();
+        myKeyboard.backspace();
+        myKeyboard.backspace();
+        myKeyboard.enterText("spec:");
+        myKeyboard.enter();
+        myKeyboard.enterText("replicas: 2");
+        myKeyboard.enter();
+        myKeyboard.enterText("selector:");
+        myKeyboard.enter();
+        myKeyboard.enterText("matchLabels:");
+        myKeyboard.enter();
+        myKeyboard.enterText("app: nginx");
+        myKeyboard.enter();
+        myKeyboard.backspace();
+        myKeyboard.backspace();
+        myKeyboard.enterText("template:");
+        myKeyboard.enter();
+        myKeyboard.enterText("metadata:");
+        myKeyboard.enter();
+        myKeyboard.enterText("labels:");
+        myKeyboard.enter();
+        myKeyboard.enterText("app: nginx");
+        myKeyboard.enter();
+        myKeyboard.backspace();
+        myKeyboard.backspace();
+        myKeyboard.enterText("spec:");
+        myKeyboard.enter();
+        myKeyboard.enterText("containers:");
+        myKeyboard.enter();
+        myKeyboard.enterText("- name: nginx");
+        myKeyboard.enter();
+        myKeyboard.enterText("image: nginx:1.14.2");
+        myKeyboard.enter();
+        myKeyboard.enterText("ports:");
+        myKeyboard.enter();
+        myKeyboard.enterText("- containerPort: 80");
     }
 
-    private static void checkErrors(RemoteRobot robot){
-        StringBuilder errorMessage = new StringBuilder();
-        boolean isErrorAfterPush = isError(robot);
-        if (isErrorAfterPush){
-            robot.find(IdeStatusBarFixture.class).ideErrorsIcon().click();
-            IdeFatalErrorsDialogFixture ideErrorsDialog = robot.find(IdeFatalErrorsDialogFixture.class);
-            for (RemoteText remoteText: ideErrorsDialog.exceptionDescriptionJTextArea().findAllText()){
-                errorMessage.append(remoteText.getText());
-            }
-        }
-        assertFalse(isErrorAfterPush, errorMessage.toString());
-    }
 }

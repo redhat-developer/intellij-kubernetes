@@ -10,16 +10,25 @@
  ******************************************************************************/
 package org.jboss.tools.intellij.kubernetes.tests;
 
+import com.intellij.remoterobot.RemoteRobot;
 import com.intellij.remoterobot.fixtures.ComponentFixture;
+import org.assertj.swing.core.MouseButton;
 
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 /**
  * @author olkornii@redhat.com
  */
 public class ClusterConnectedTest extends AbstractKubernetesTest{
-    public static void checkClusterConnected(ComponentFixture kubernetesViewTree){
-        String clusterText = kubernetesViewTree.findAllText().get(0).getText();
-        assertTrue(clusterText.contains("minikube"));
+
+    public ClusterConnectedTest(String clusterName, ComponentFixture kubernetesViewTree, RemoteRobot remoteRobot) {
+        super(clusterName, kubernetesViewTree, remoteRobot);
+    }
+
+    public void checkClusterConnected(){
+        assertNotNull(kubernetesViewTree.findText(clusterName));
+        kubernetesViewTree.findText(clusterName).doubleClick(MouseButton.LEFT_BUTTON);
+        assertNotNull(kubernetesViewTree.findText(NODES));
+        hideClusterContent();
     }
 }
