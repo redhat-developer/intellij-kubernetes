@@ -17,7 +17,7 @@ everit-json-schema = "1.14.6"
 
 # plugins
 gradleIntelliJPlugin = "2.6.0"
-kotlinJvm = "2.0.20"
+kotlinJvm = "2.1.21"
 
 [libraries]
 openshift-client = { group = "io.fabric8", name = "openshift-client", version.ref = "kubernetes-client" }
