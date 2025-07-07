@@ -10,7 +10,7 @@
  ******************************************************************************/
 package com.redhat.devtools.intellij.kubernetes.editor.util
 
-import com.nhaarman.mockitokotlin2.mock
+import org.mockito.kotlin.mock
 import com.redhat.devtools.intellij.kubernetes.editor.mocks.createYAMLKeyValue
 import com.redhat.devtools.intellij.kubernetes.editor.mocks.createMatchExpressions
 import com.redhat.devtools.intellij.kubernetes.editor.mocks.createMatchLabels

@@ -28,21 +28,25 @@ import static com.intellij.remoterobot.utils.RepeatUtilsKt.waitFor;
  * @author olkornii@redhat.com
  */
 public class OpenResourceEditorTest extends AbstractKubernetesTest{
-    public static void checkResourceEditor(RemoteRobot robot, ComponentFixture kubernetesViewTree){
-        openResourceContentList(new String[]{"Nodes"}, kubernetesViewTree);
-        RemoteText selectedResource = getResourceByIdInParent("Nodes", 0, kubernetesViewTree); // get the resource with id 0
+
+    public OpenResourceEditorTest(String clusterName, ComponentFixture kubernetesViewTree, RemoteRobot remoteRobot) {
+        super(clusterName, kubernetesViewTree, remoteRobot);
+    }
+
+    public void checkResourceEditor(){
+        RemoteText selectedResource = getNamedResourceInNodes(resourceName);
         selectedResource.click(MouseButton.RIGHT_BUTTON); // select the resource
         RightClickMenu rightClickMenu = robot.find(RightClickMenu.class); // open the yml editor
         rightClickMenu.select("Edit..."); // open the yml editor
 
         EditorsSplittersFixture editorSplitter = robot.find(EditorsSplittersFixture.class);
-        waitFor(Duration.ofSeconds(15), Duration.ofSeconds(1), "Editor is not available.", () -> isEditorOpened(robot)); // wait 15 seconds for editor
+        waitFor(Duration.ofSeconds(15), Duration.ofSeconds(1), "Editor is not available.", this::isEditorOpened); // wait 15 seconds for editor
 
         editorSplitter.closeEditor(); // close editor
-        hideClusterContent(kubernetesViewTree);
+        hideClusterContent();
     }
 
-    private static boolean isEditorOpened(RemoteRobot robot){
+    private boolean isEditorOpened(){
         try {
             robot.find(ComponentFixture.class, byXpath("//div[@class='EditorComponentImpl']"));
         } catch (WaitForConditionTimeoutException e) {
