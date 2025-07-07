@@ -153,11 +153,6 @@ fun YAMLMapping.getMatchLabels(): YAMLMapping? {
     }
 }
 
-private fun YAMLValue.isYamlStringValue(): Boolean {
-    return this is YAMLScalar && this.textValue != null
-}
-
-
 private fun JsonObject.getMatchLabels(): JsonObject? {
     val selector = this.getSelector() ?: return null
     val matchLabels = selector.findProperty(KEY_MATCH_LABELS)

@@ -14,7 +14,10 @@ import com.intellij.json.psi.JsonObject
 import com.intellij.json.psi.JsonProperty
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.whenever
 import com.redhat.devtools.intellij.kubernetes.editor.util.getSelector
+import org.jetbrains.yaml.psi.YAMLDocument
+import org.jetbrains.yaml.psi.YAMLFile
 import org.jetbrains.yaml.psi.YAMLKeyValue
 import org.jetbrains.yaml.psi.YAMLMapping
 import org.jetbrains.yaml.psi.YAMLSequence
@@ -116,8 +119,12 @@ fun createYAMLSequenceItem(key: String, operator: String, values: List<String>):
         on { getKeyValueByKey(KEY_MATCHEXPRESSIONS_OPERATOR) } doReturn operatorElement
         on { getKeyValueByKey(KEY_MATCHEXPRESSIONS_VALUES) } doReturn valuesElement
     }
+    return createYAMLSequenceItem(mapping)
+}
+
+fun createYAMLSequenceItem(value: YAMLMapping): YAMLSequenceItem {
     return mock<YAMLSequenceItem> {
-        on { mock.value } doReturn mapping
+        on { mock.value } doReturn value
     }
 }
 
@@ -160,4 +167,16 @@ fun JsonObject.createMetadata(): JsonObject {
     val metadataChildren = mock<JsonObject>()
     createJsonProperty(KEY_METADATA, metadataChildren, this)
     return metadataChildren
+}
+
+fun createDocument(topLevelValue: YAMLMapping?): YAMLDocument {
+    return mock<YAMLDocument> {
+        on { mock.topLevelValue } doReturn topLevelValue
+    }
+}
+
+fun YAMLFile.createDocuments(documents: List<YAMLDocument>): List<YAMLDocument> {
+    doReturn(documents)
+        .whenever(this).documents
+    return documents
 }

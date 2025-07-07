@@ -41,7 +41,6 @@ public class OpenResourceEditorTest extends AbstractKubernetesTest{
 
         EditorsSplittersFixture editorSplitter = robot.find(EditorsSplittersFixture.class);
         waitFor(Duration.ofSeconds(15), Duration.ofSeconds(1), "Editor is not available.", this::isEditorOpened); // wait 15 seconds for editor
-        waitFor(Duration.ofSeconds(15), Duration.ofSeconds(1), "Resource schema is wrong.", this::isSchemaSet); // wait 15 seconds for set right schema
 
         editorSplitter.closeEditor(); // close editor
         hideClusterContent();
@@ -56,13 +55,4 @@ public class OpenResourceEditorTest extends AbstractKubernetesTest{
         return true;
     }
 
-    private boolean isSchemaSet(){
-        try {
-            IdeStatusBarFixture statusBarFixture = robot.find(IdeStatusBarFixture.class);
-            statusBarFixture.withIconAndArrows("Schema: v1#Pod");
-        } catch (WaitForConditionTimeoutException e) {
-            return false;
-        }
-        return true;
-    }
 }

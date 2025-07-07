@@ -169,7 +169,7 @@ class ContainersDescriber(private val pod: Pod): Describer {
 
 	private fun createValueEnvVar(envVar: EnvVar): Paragraph {
 		val value = when {
-			envVar.value.isNotBlank() -> {
+			!envVar.value.isNullOrBlank() -> {
 				if (envVar.value.contains("\n")) {
 					"|\n${envVar.value}"
 				} else {

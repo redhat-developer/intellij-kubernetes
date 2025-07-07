@@ -14,6 +14,7 @@ import com.intellij.json.psi.JsonFile
 import com.intellij.json.psi.JsonObject
 import com.intellij.json.psi.JsonProperty
 import com.intellij.json.psi.JsonValue
+import com.intellij.openapi.util.text.StringUtil
 import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiFile
 import com.redhat.devtools.intellij.common.validation.KubernetesTypeInfo
@@ -23,6 +24,8 @@ import org.jetbrains.yaml.psi.YAMLKeyValue
 import org.jetbrains.yaml.psi.YAMLMapping
 import org.jetbrains.yaml.psi.YAMLValue
 
+private const val KEY_API_VERSION = "apiVersion"
+private const val KEY_KIND = "kind"
 private const val KEY_METADATA = "metadata"
 private const val KEY_NAME = "name"
 private const val KEY_LABELS = "labels"
@@ -103,6 +106,44 @@ fun YAMLMapping.getResourceName(): YAMLValue? {
 
 fun JsonObject.getResourceName(): JsonValue? {
     return getMetadata()?.findProperty(KEY_NAME)
+        ?.value
+}
+
+fun PsiElement.getKind(): PsiElement? {
+    return when(this) {
+        is YAMLDocument -> (this.topLevelValue as? YAMLMapping)?.getKind()
+        is YAMLMapping -> getKind()
+        is JsonObject -> getKind()
+        else -> null
+    }
+}
+
+fun JsonObject.getKind(): JsonValue? {
+    return this.findProperty(KEY_KIND)
+        ?.value
+}
+
+fun YAMLMapping.getKind(): YAMLValue? {
+    return this.getKeyValueByKey(KEY_KIND)
+        ?.value
+}
+
+fun PsiElement.getApiVersion(): PsiElement? {
+    return when(this) {
+        is YAMLDocument -> (this.topLevelValue as? YAMLMapping)?.getApiVersion()
+        is YAMLMapping -> getApiVersion()
+        is JsonObject -> getApiVersion()
+        else -> null
+    }
+}
+
+fun JsonObject.getApiVersion(): JsonValue? {
+    return this.findProperty(KEY_API_VERSION)
+        ?.value
+}
+
+fun YAMLMapping.getApiVersion(): YAMLValue? {
+    return this.getKeyValueByKey(KEY_API_VERSION)
         ?.value
 }
 
@@ -283,6 +324,14 @@ fun PsiElement.getDataValue(): PsiElement? {
         is YAMLMapping -> this.getKeyValueByKey(KEY_DATA)?.value
         is JsonObject -> this.findProperty(KEY_DATA)?.value
         else -> null
+    }
+}
+
+fun unquote(value: String?): String? {
+    return if (value.isNullOrBlank()) {
+        return value
+    } else {
+        StringUtil.unquoteString(value)
     }
 }
 
