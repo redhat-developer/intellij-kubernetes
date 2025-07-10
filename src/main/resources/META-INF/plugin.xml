@@ -10,6 +10,24 @@
     </description>
     <change-notes>
         <![CDATA[
+        <h3>1.7.0</h3>
+        <ul>
+            <li><a href="https://github.com/redhat-developer/intellij-kubernetes/issues/861">Editor: provide validation and autocomplete in multi-resource documents</a></li>
+            <li><a href="https://github.com/redhat-developer/intellij-kubernetes/issues/861">Updated kubernetes schema to 1.31.1</a></li>
+            <li><a href="https://github.com/redhat-developer/intellij-kubernetes/issues/882">Selectors are now matching labels in templates, too</a></li>
+            <li><a href="https://github.com/redhat-developer/intellij-kubernetes/issues/905">Dont error when describing a pod that has no value for an env value</a></li>
+        </ul>
+        <h3>1.6.1</h3>
+        <ul>
+            <li><a href="https://github.com/redhat-developer/intellij-kubernetes/issues/878">Fixed pvc selector matching pv in editor</a></li>
+        </ul>
+        <h3>1.6.0</h3>
+        <ul>
+            <li><a href="https://github.com/redhat-developer/intellij-kubernetes/issues/642">Allow to navigate from selector to matching labels/expressions and vice versa</a></li>
+            <li><a href="https://github.com/redhat-developer/intellij-kubernetes/issues/852">Allow to edit secrets and config maps in multi-resource documents</a></li>
+            <li><a href="https://github.com/redhat-developer/intellij-kubernetes/issues/865">Dont freeze when a cluster is non-responsive</a></li>
+            <li><a href="https://github.com/redhat-developer/intellij-kubernetes/issues/842">Dont fatal error when describing a pod</a></li>
+        </ul>
         <h3>1.5.0</h3>
         <ul>
             <li><a href="https://github.com/redhat-developer/intellij-kubernetes/issues/763">Allow to disable editor notifications</a></li>
