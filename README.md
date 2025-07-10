@@ -5,6 +5,10 @@
 
 # Kubernetes
 
+> ⚠️ **This plugin is no longer actively maintained.**  
+> While you are free to use it as-is, no new features or bug fixes are planned.  
+> Contributions are still very welcome via pull requests.
+
 ## Overview
 
 JetBrains IDEA plugin that allows to browse, create, modify and delete resources on Kubernetes or OpenShift clusters.
@@ -32,7 +36,7 @@ It is available for install from the [JetBrains Marketplace](https://plugins.jet
  - Describe pods similar to `kubectl describe` but formatting it as yaml for easy collapsing etc.
  - Listing several config files in the KUBECONFIG env variable
  - Instant display of labeled resources that match a given selector when editing YAML
-
+ - Validate and autocomplete edited resources based on schema (even in multi-resource documents)
 
 ## Features
 
