@@ -38,7 +38,7 @@ jobs:
           REPORTS=$(cat ${{ github.workspace }}/build/reports/pluginVerifier/*/report.md | sed 's/^#/##/')
           echo "$REPORTS" >> $GITHUB_STEP_SUMMARY
       - name: Upload report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         if: always()
         with:
           name: verifier-reports
