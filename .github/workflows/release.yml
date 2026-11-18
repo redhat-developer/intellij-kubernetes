@@ -104,7 +104,7 @@ jobs:
           gh pr create -B main -H $NEW_VERSION --title "chore(skip-release): set version to $NEW_VERSION" --body 'Created by Github action'
 
       - name: Simple conventional changelog
-        uses: redhat-developer/simple-conventional-changelog@0a6db1ac3910c2cf66f2e1a530951dba1ece8540 #0.0.12
+        uses: redhat-developer/simple-conventional-changelog@d1060338b82efbffd09263457a470151597aa8a0 #0.0.13
         id: changelog
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
